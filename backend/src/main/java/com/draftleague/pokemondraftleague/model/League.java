@@ -19,8 +19,8 @@ import java.util.Set; // Use Set for collections here
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = {"trainers", "matches"}) // Exclude collections to prevent infinite loops
-@EqualsAndHashCode(exclude = {"trainers", "matches"}) // Exclude collections from EqualsAndHashCode
+@ToString(exclude = { "trainers", "matches" }) // Exclude collections to prevent infinite loops
+@EqualsAndHashCode(exclude = { "trainers", "matches" }) // Exclude collections from EqualsAndHashCode
 public class League {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,12 +32,14 @@ public class League {
     // --- Relationships ---
 
     // A League has MANY Trainers
-    // 'mappedBy' indicates the field in the 'Trainer' entity that owns the relationship
+    // 'mappedBy' indicates the field in the 'Trainer' entity that owns the
+    // relationship
     @OneToMany(mappedBy = "league", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Trainer> trainers;
 
     // A League has MANY Matches
-    // 'mappedBy' indicates the field in the 'Match' entity that owns the relationship
+    // 'mappedBy' indicates the field in the 'Match' entity that owns the
+    // relationship
     @OneToMany(mappedBy = "league", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Match> matches;
 

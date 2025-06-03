@@ -1,4 +1,4 @@
-package com.draftleague.pokemon_showdown_draft_league;
+package com.draftleague.pokemondraftleague;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
