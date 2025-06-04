@@ -39,3 +39,4 @@ out/
 ### run script ###
 run.sh
 .env
+.nvim.lua

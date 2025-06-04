@@ -8,7 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/pokemon")
@@ -20,29 +19,50 @@ public class PokemonController {
 		this.pokemonService = pokemonService;
 	}
 
+	@PostMapping
+	public ResponseEntity<Pokemon> createPokemon(@RequestBody Pokemon pokemon) {
+		Pokemon savedPokemon = pokemonService.savePokemon(pokemon);
+		return new ResponseEntity<>(savedPokemon, HttpStatus.CREATED);
+	}
+
 	@GetMapping
 	public ResponseEntity<List<Pokemon>> getAllPokemon() {
 		List<Pokemon> pokemonList = pokemonService.getAllPokemon();
-		return ResponseEntity.ok(pokemonList);
+		return new ResponseEntity<>(pokemonList, HttpStatus.OK);
 	}
 
 	@GetMapping("/{id}")
 	public ResponseEntity<Pokemon> getPokemonById(@PathVariable Long id) {
 		return pokemonService.getPokemonById(id)
-				.map(ResponseEntity::ok)
-				.orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+				.map(pokemon -> new ResponseEntity<>(pokemon, HttpStatus.OK))
+				.orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
 	}
 
-	// You might not need these for a draft league if Pokemon data is seeded
-	// @PostMapping
-	// public ResponseEntity<Pokemon> createPokemon(@RequestBody Pokemon pokemon) {
-	// Pokemon savedPokemon = pokemonService.savePokemon(pokemon);
-	// return new ResponseEntity<>(savedPokemon, HttpStatus.CREATED);
-	// }
+	@GetMapping("/name/{name}")
+	public ResponseEntity<Pokemon> getPokemonByName(@PathVariable String name) {
+		return pokemonService.getPokemonByName(name)
+				.map(pokemon -> new ResponseEntity<>(pokemon, HttpStatus.OK))
+				.orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
+	}
 
-	// @DeleteMapping("/{id}")
-	// public ResponseEntity<Void> deletePokemon(@PathVariable Long id) {
-	// pokemonService.deletePokemon(id);
-	// return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-	// }
+	@PutMapping("/{id}")
+	public ResponseEntity<Pokemon> updatePokemon(@PathVariable Long id, @RequestBody Pokemon pokemon) {
+		if (!pokemon.getId().equals(id)) {
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+		}
+		if (pokemonService.getPokemonById(id).isEmpty()) {
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+		Pokemon updatedPokemon = pokemonService.savePokemon(pokemon);
+		return new ResponseEntity<>(updatedPokemon, HttpStatus.OK);
+	}
+
+	@DeleteMapping("/{id}")
+	public ResponseEntity<Void> deletePokemon(@PathVariable Long id) {
+		if (pokemonService.getPokemonById(id).isEmpty()) {
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+		pokemonService.deletePokemon(id);
+		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+	}
 }
