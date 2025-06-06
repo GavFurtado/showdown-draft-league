@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository // Marks this interface as a Spring Data JPA repository
-public interface PokemonRepository extends JpaRepository<Pokemon, Long> {
+public interface PokemonRepository extends JpaRepository<Pokemon, Integer> {
 	// Pokemon: The entity type this repository manages
 	// Long: The data type of the entity's primary key (Pokemon's 'id' is a Long)
 

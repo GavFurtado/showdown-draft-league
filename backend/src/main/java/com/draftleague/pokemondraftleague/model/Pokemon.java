@@ -25,23 +25,24 @@ public class Pokemon {
 
     @Id // Marks this field as the primary key of the table
     @GeneratedValue(strategy = GenerationType.IDENTITY) // Tells the DB to auto-increment this ID
-    private Long id;
+    private Integer id;
     private String name;
-    private String type1; // e.g., "Grass", "Fire"
-    private String type2; // e.g., "Poison", "Flying" (can be null)
+    private String type1;
+    private String type2; // (can be null)
+    private String form; // added for CSV: "form" (can be null)
 
     // Base Stat Spread
-    private Integer baseHp;
-    private Integer baseAttack;
-    private Integer baseDefense;
-    private Integer baseSpecialAttack;
-    private Integer baseSpecialDefense;
-    private Integer baseSpeed;
-
+    private Integer hp;
+    private Integer attack;
+    private Integer defense;
+    private Integer spAttack;
+    private Integer spDefense;
+    private Integer speed;
+    private int total; // Added for CSV: "Total"
     private Integer draftCost; // Field for the cost of the Pokemon in the draft
+    private int generation; // Added for CSV: "Generation"
 
     // --- Relationship ---
-
     // A Pokemon is drafted by ONE Trainer (or null if not drafted yet)
     // Many-to-One relationship from Pokemon to Trainer
     @ManyToOne

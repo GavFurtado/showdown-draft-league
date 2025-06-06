@@ -32,7 +32,7 @@ public class PokemonController {
 	}
 
 	@GetMapping("/{id}")
-	public ResponseEntity<Pokemon> getPokemonById(@PathVariable Long id) {
+	public ResponseEntity<Pokemon> getPokemonById(@PathVariable Integer id) { // Changed Long to Integer
 		return pokemonService.getPokemonById(id)
 				.map(pokemon -> new ResponseEntity<>(pokemon, HttpStatus.OK))
 				.orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
@@ -46,7 +46,7 @@ public class PokemonController {
 	}
 
 	@PutMapping("/{id}")
-	public ResponseEntity<Pokemon> updatePokemon(@PathVariable Long id, @RequestBody Pokemon pokemon) {
+	public ResponseEntity<Pokemon> updatePokemon(@PathVariable Integer id, @RequestBody Pokemon pokemon) {
 		if (!pokemon.getId().equals(id)) {
 			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		}
@@ -58,7 +58,7 @@ public class PokemonController {
 	}
 
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> deletePokemon(@PathVariable Long id) {
+	public ResponseEntity<Void> deletePokemon(@PathVariable Integer id) { // Changed Long to Integer
 		if (pokemonService.getPokemonById(id).isEmpty()) {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
