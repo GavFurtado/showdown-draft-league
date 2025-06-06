@@ -20,6 +20,9 @@ import lombok.ToString; // Custom toString generation
 
 import java.util.Set; // For the collection of drafted Pokemon
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 @Entity // This annotation marks this class as a JPA entity, meaning it maps to a
         // database table.
 @Data
@@ -35,7 +38,7 @@ public class Trainer {
     private Long id;
 
     private String name; // Trainer's display name.
-    private String discordId; // Optional: Discord user ID if you integrate with Discord.
+    private String discordId;
 
     @Column(unique = true, nullable = false) // Ensures username is unique and cannot be null.
     private String username; // Username for login.
@@ -50,7 +53,7 @@ public class Trainer {
     // table will have the foreign key.
     @ManyToOne
     @JoinColumn(name = "league_id", nullable = false) // Creates a 'league_id' column in the 'trainer' table that
-                                                      // references the League's ID. Must not be null.
+    @JsonBackReference
     private League league; // The League this Trainer belongs to.
 
     // One Trainer can draft MANY Pokemon.
@@ -60,5 +63,6 @@ public class Trainer {
                                               // the Trainer reference.
             cascade = CascadeType.ALL, // If a Trainer is deleted, cascade this operation to their drafted Pokemon.
             orphanRemoval = true) // If a Pokemon is removed from this set, it's also removed from the database.
+    @JsonManagedReference
     private Set<Pokemon> draftedPokemon; // A collection of Pokemon this trainer has drafted.
 }

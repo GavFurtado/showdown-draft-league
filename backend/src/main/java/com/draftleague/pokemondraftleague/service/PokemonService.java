@@ -25,11 +25,11 @@ public class PokemonService {
 		return pokemonRepository.findAll();
 	}
 
-	public Optional<Pokemon> getPokemonById(Long id) {
+	public Optional<Pokemon> getPokemonById(Integer id) { // Changed Long to Integer
 		return pokemonRepository.findById(id);
 	}
 
-	public void deletePokemon(Long id) {
+	public void deletePokemon(Integer id) { // Changed Long to Integer
 		pokemonRepository.deleteById(id);
 	}
 

@@ -20,13 +20,15 @@ import lombok.ToString; // For Lombok
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "league_match")
-@ToString(exclude = { "league", "trainer1", "trainer2", "winner" }) // Exclude related entities to prevent infinite
-                                                                    // loops
+@ToString(exclude = { "league", "trainer1", "trainer2", "winner" })
 @EqualsAndHashCode(exclude = { "league", "trainer1", "trainer2", "winner" }) // Exclude related entities from
                                                                              // EqualsAndHashCode
 public class Match {
@@ -37,21 +39,25 @@ public class Match {
     // A Match belongs to ONE League
     @ManyToOne
     @JoinColumn(name = "league_id", nullable = false) // Foreign key to League
+    @JsonBackReference
     private League league;
 
     // Trainer 1 is a participant in the match
     @ManyToOne
     @JoinColumn(name = "trainer1_id", nullable = false) // Foreign key to Trainer
+    @JsonBackReference
     private Trainer trainer1;
 
     // Trainer 2 is a participant in the match
     @ManyToOne
     @JoinColumn(name = "trainer2_id", nullable = false) // Foreign key to Trainer
+    @JsonBackReference
     private Trainer trainer2;
 
     // The Winner of the match (optional if match not yet played)
     @ManyToOne
     @JoinColumn(name = "winner_id") // Foreign key to Trainer (can be null)
+    @JsonBackReference
     private Trainer winner;
 
     private Integer roundNumber; // e.g., 1, 2, 3... unsure if i'll use this or not

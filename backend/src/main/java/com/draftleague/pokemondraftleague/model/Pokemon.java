@@ -1,11 +1,12 @@
-// src/main/java/com/draftleague/pokemondraftleague/model/Pokemon.java
 package com.draftleague.pokemondraftleague.model;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.JoinColumn;
 
@@ -17,34 +18,40 @@ import lombok.ToString;
 
 @Entity
 @Data
-@NoArgsConstructor // Lombok: Generates a no-argument constructor (required by JPA)
+@NoArgsConstructor
 @AllArgsConstructor // Lombok: Generates a constructor with arguments for all fields
-@ToString(exclude = { "draftedByTrainer" }) // Exclude Trainer from ToString to prevent infinite loops
-@EqualsAndHashCode(exclude = { "draftedByTrainer" }) // Exclude Trainer from EqualsAndHashCode
+@ToString(exclude = { "draftedByTrainer" })
+@EqualsAndHashCode(exclude = { "draftedByTrainer" })
 public class Pokemon {
 
-    @Id // Marks this field as the primary key of the table
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // Tells the DB to auto-increment this ID
-    private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
     private String name;
-    private String type1; // e.g., "Grass", "Fire"
-    private String type2; // e.g., "Poison", "Flying" (can be null)
+    private String type1;
+    private String type2; // (can be null)
 
-    // Base Stat Spread
-    private Integer baseHp;
-    private Integer baseAttack;
-    private Integer baseDefense;
-    private Integer baseSpecialAttack;
-    private Integer baseSpecialDefense;
-    private Integer baseSpeed;
+    // Base Stat Spread (order adjusted to align with common CSV order/parsing)
+    private Integer hp;
+    private Integer attack;
+    private Integer defense;
+    private Integer spAttack; // Renamed from specialAttack
+    private Integer spDefense; // Renamed from specialDefense
+    private Integer speed;
+    private Integer total;
 
-    private Integer draftCost; // Field for the cost of the Pokemon in the draft
+    // Abilities (added these fields as they are parsed from CSV)
+    private String ability;
+    private String hiddenAbility; // (can be null)
+
+    // Other fields not directly from CSV or for specific game mechanics
+    private String form; // (can be null)
+    private Integer draftCost; // Field for the cost of the Pokemon in the draft (can be null initially)
+    private Integer generation; // (can be null, or default to 0 if preferred)
 
     // --- Relationship ---
-
-    // A Pokemon is drafted by ONE Trainer (or null if not drafted yet)
-    // Many-to-One relationship from Pokemon to Trainer
     @ManyToOne
-    @JoinColumn(name = "trainer_id") // Foreign key column in the 'pokemon' table. Nullable by default.
+    @JoinColumn(name = "trainer_id")
+    @JsonBackReference
     private Trainer draftedByTrainer; // The trainer who drafted this Pokemon (can be null if not drafted)
 }
