@@ -15,6 +15,9 @@ import lombok.ToString; // For Lombok
 
 import java.util.Set; // Use Set for collections here
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -35,12 +38,16 @@ public class League {
     // 'mappedBy' indicates the field in the 'Trainer' entity that owns the
     // relationship
     @OneToMany(mappedBy = "league", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    @JsonBackReference
     private Set<Trainer> trainers;
 
     // A League has MANY Matches
     // 'mappedBy' indicates the field in the 'Match' entity that owns the
     // relationship
     @OneToMany(mappedBy = "league", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    @JsonBackReference
     private Set<Match> matches;
 
     // Custom constructor for initial seeding (without collections)
