@@ -7,8 +7,8 @@ import org.springframework.context.annotation.Bean;
 @SpringBootApplication
 public class PokemonShowdownDraftLeagueApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(PokemonShowdownDraftLeagueApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(PokemonShowdownDraftLeagueApplication.class, args);
+    }
 
 }

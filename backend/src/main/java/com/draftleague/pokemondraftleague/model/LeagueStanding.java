@@ -22,15 +22,7 @@ import lombok.ToString;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "league_standing", uniqueConstraints = @UniqueConstraint(columnNames = { "league_id", "trainer_id" }) // Ensures
-                                                                                                                    // only
-                                                                                                                    // one
-                                                                                                                    // standing
-                                                                                                                    // per
-                                                                                                                    // trainer
-                                                                                                                    // per
-                                                                                                                    // league
-)
+@Table(name = "league_standing", uniqueConstraints = @UniqueConstraint(columnNames = { "league_id", "trainer_id" }))
 @ToString(exclude = { "league", "trainer" }) // Exclude related entities to prevent infinite loops
 @EqualsAndHashCode(exclude = { "league", "trainer" }) // Exclude related entities from EqualsAndHashCode
 public class LeagueStanding {

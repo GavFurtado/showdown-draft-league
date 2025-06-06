@@ -10,16 +10,16 @@ import java.util.List;
 
 @Repository
 public interface MatchRepository extends JpaRepository<Match, Long> {
-	// Find all matches for a specific league
-	List<Match> findByLeague(League league);
+    // Find all matches for a specific league
+    List<Match> findByLeague(League league);
 
-	// Find matches by league and match type (e.g., "REGULAR_SEASON", "PLAYOFF")
-	List<Match> findByLeagueAndType(League league, String type);
+    // Find matches by league and match type (e.g., "REGULAR_SEASON", "PLAYOFF")
+    List<Match> findByLeagueAndType(League league, String type);
 
-	// Find matches by league and status (e.g., "SCHEDULED", "COMPLETED")
-	List<Match> findByLeagueAndStatus(League league, String status);
+    // Find matches by league and status (e.g., "SCHEDULED", "COMPLETED")
+    List<Match> findByLeagueAndStatus(League league, String status);
 
-	// Custom query method: Find completed regular season matches for standings
-	// calculation
-	List<Match> findByLeagueAndTypeAndStatus(League league, String type, String status);
+    // Custom query method: Find completed regular season matches for standings
+    // calculation
+    List<Match> findByLeagueAndTypeAndStatus(League league, String type, String status);
 }

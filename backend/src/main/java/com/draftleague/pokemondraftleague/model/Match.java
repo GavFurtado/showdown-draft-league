@@ -28,8 +28,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "league_match")
-@ToString(exclude = { "league", "trainer1", "trainer2", "winner" }) // Exclude related entities to prevent infinite
-                                                                    // loops
+@ToString(exclude = { "league", "trainer1", "trainer2", "winner" })
 @EqualsAndHashCode(exclude = { "league", "trainer1", "trainer2", "winner" }) // Exclude related entities from
                                                                              // EqualsAndHashCode
 public class Match {
