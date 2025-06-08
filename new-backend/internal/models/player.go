@@ -23,7 +23,7 @@ type Player struct {
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relationships
-	User   User      `gorm:"foreignKey:UserID"`
-	League League    `gorm:"foreignKey:LeagueID"`
-	Roster []Pokemon `gorm:"foreignKey:PlayerID" json:"Roster"`
+	User   User           `gorm:"foreignKey:UserID"`
+	League League         `gorm:"foreignKey:LeagueID"`
+	Roster []PlayerRoster `gorm:"foreignKey:PlayerID" json:"Roster"`
 }
