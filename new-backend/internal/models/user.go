@@ -9,8 +9,8 @@ import (
 
 type User struct {
 	Id               uuid.UUID      `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	DiscordID        string         `gorm:"uniqueIndex;not null" json:discord_id`
-	DiscordUsername  string         `gorm:"not null" json:discord_username`
+	DiscordID        string         `gorm:"uniqueIndex;not null" json:"discord_id"`
+	DiscordUsername  string         `gorm:"not null" json:"discord_username"`
 	DiscordAvatarURL string         `json:"discord_avatar_url"`
 	CreatedAt        time.Time      `json:"created_at"`
 	UpdatedAt        time.Time      `json:"updated_at"`
