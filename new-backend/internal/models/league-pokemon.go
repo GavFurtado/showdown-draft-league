@@ -1,0 +1,29 @@
+package models
+
+import (
+	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
+// LeaguePokemon are the Pokemon availabile for a particular league
+// This essentially represents the "League Draft Pool" for a given league.
+type LeaguePokemon struct {
+	ID               uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	LeagueID         uuid.UUID `gorm:"type:uuid;not null" json:"league_id"`
+	PokemonSpeciesID uuid.UUID `gorm:"type:uuid;not null" json:"pokemon_species_id"`
+	Cost             int       `gorm:"not null" json:"cost"`                      // League-specific cost for this Pokemon species
+	IsAvailable      bool      `gorm:"not null;default:true" json:"is_available"` // Can this species be drafted in this league?
+
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+
+	// Relationships
+	League         League         `gorm:"foreignKey:LeagueID"`
+	PokemonSpecies PokemonSpecies `gorm:"foreignKey:PokemonSpeciesID"`
+
+	// Unique constraint: A species can only be defined once per league's draft pool
+	// You might add this via GORM migrations or a direct SQL DDL: UNIQUE (league_id, pokemon_species_id)
+}

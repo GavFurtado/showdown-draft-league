@@ -1,0 +1,33 @@
+// internal/models/drafted_pokemon.go
+package models
+
+import (
+	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
+// DraftedPokemon represents a specific Pokemon species that has been drafted by a player in a league.
+type DraftedPokemon struct {
+	ID               uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	LeagueID         uuid.UUID `gorm:"type:uuid;not null" json:"league_id"`
+	PlayerID         uuid.UUID `gorm:"type:uuid;not null" json:"player_id"`
+	PokemonSpeciesID uuid.UUID `gorm:"type:uuid;not null" json:"pokemon_species_id"` // Which base species was drafted?
+
+	DraftPickNumber int `json:"draft_pick_number"` // The sequential number of this pick in the draft
+	// IsReleased: True if the Pokemon has been released back to the draft pool (free agents)
+	IsReleased bool           `gorm:"default:false" json:"is_released"`
+	CreatedAt  time.Time      `json:"created_at"`
+	UpdatedAt  time.Time      `json:"updated_at"`
+	DeletedAt  gorm.DeletedAt `gorm:"index" json:"-"`
+
+	// Relationships
+	League         League         `gorm:"foreignKey:LeagueID"`
+	Player         Player         `gorm:"foreignKey:PlayerID"`
+	PokemonSpecies PokemonSpecies `gorm:"foreignKey:PokemonSpeciesID"`
+
+	// Unique Constraint for Drafted Pokemon:
+	// A PokemonSpecies can only be drafted ONCE per league if it's not released.
+	// This would typically be enforced with a unique partial index on (league_id, pokemon_species_id) WHERE is_released = FALSE
+}
