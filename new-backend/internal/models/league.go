@@ -33,6 +33,7 @@ type League struct {
 	// League has many LeaguePokemon (its defined draft pool)
 	DefinedPokemon []LeaguePokemon `gorm:"foreignKey:LeagueID" json:"defined_pokemon"`
 
+
 	// League has many DraftedPokemon (all Pokemon drafted in this league)
 	AllDraftedPokemon []DraftedPokemon `gorm:"foreignKey:LeagueID" json:"all_drafted_pokemon"` // Useful for checking global draft status
 }
