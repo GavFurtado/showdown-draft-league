@@ -26,8 +26,4 @@ type DraftedPokemon struct {
 	League         League         `gorm:"foreignKey:LeagueID"`
 	Player         Player         `gorm:"foreignKey:PlayerID"`
 	PokemonSpecies PokemonSpecies `gorm:"foreignKey:PokemonSpeciesID"`
-
-	// Unique Constraint for Drafted Pokemon:
-	// A PokemonSpecies can only be drafted ONCE per league if it's not released.
-	// This would typically be enforced with a unique partial index on (league_id, pokemon_species_id) WHERE is_released = FALSE
 }

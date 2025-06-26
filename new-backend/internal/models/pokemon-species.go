@@ -40,5 +40,5 @@ type BaseStats struct {
 
 type Sprites struct {
 	FrontDefault    string `json:"front_default"`
-	OfficialArtwork string `json:"official_artwork"`
+	OfficialArtwork string `json:"official_artwork"` // not used
 }
