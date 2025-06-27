@@ -22,6 +22,7 @@ type League struct {
 	Status                LeagueStatus   `gorm:"type:varchar(50);not null;default:'pending'" json:"status"`
 	MaxPokemonPerPlayer   uint           `gorm:"not null;default:0" json:"max_pokemon_per_player"`
 	AllowWeeklyFreeAgents bool           `gorm:"not null;deafult:false" json:"allow_free_agents"` // in case this gets more complex
+	StartingDraftPoints   uint           `gorm:"not null;default:140" json:"starting_draft_points"`
 	CreatedAt             time.Time      `json:"created_at"`
 	UpdatedAt             time.Time      `json:"updated_at"`
 	DeletedAt             gorm.DeletedAt `gorm:"index" json:"-"`
@@ -32,7 +33,6 @@ type League struct {
 
 	// League has many LeaguePokemon (its defined draft pool)
 	DefinedPokemon []LeaguePokemon `gorm:"foreignKey:LeagueID" json:"defined_pokemon"`
-
 
 	// League has many DraftedPokemon (all Pokemon drafted in this league)
 	AllDraftedPokemon []DraftedPokemon `gorm:"foreignKey:LeagueID" json:"all_drafted_pokemon"` // Useful for checking global draft status

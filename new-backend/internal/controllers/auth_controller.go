@@ -24,7 +24,7 @@ var discordOauthConfig *oauth2.Config
 type DiscordUser struct {
 	ID            string `json:"id"`
 	Username      string `json:"username"`
-	Discriminator string `json:"discriminator"` // deprecated in Discord but maybe it's needed
+	Discriminator string `json:"discriminator"` // deprecated in Discord but some legacy MFs
 	Avatar        string `json:"avatar"`
 }
 

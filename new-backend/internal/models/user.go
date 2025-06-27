@@ -15,6 +15,7 @@ type User struct {
 	CreatedAt        time.Time      `json:"created_at"`
 	UpdatedAt        time.Time      `json:"updated_at"`
 	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
+	IsAdmin          bool           `gorm:"default:false;not null" json:"is_admin"` // cannot be altered through the server. Requires manual intervention on the database
 	// Relationships
 	LeaguesCreated []League `gorm:"foreignKey:CommissionerUserID"` // List of Leagues this user has created
 	Players        []Player `gorm:"foreignKey:UserID"`             // Player entities in various leagues
