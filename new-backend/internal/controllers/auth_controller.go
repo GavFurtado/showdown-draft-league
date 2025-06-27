@@ -98,7 +98,7 @@ func (aCtrl *AuthController) DiscCallback(ctx *gin.Context) {
 
 	user, err := aCtrl.userRepo.GetUserByDiscordID(discordUser.ID)
 	if err != nil {
-		if err.Error() == "RecordNotFoundError" {
+		if err.Error() == "record not found" {
 			// User does not exist, create a new one
 			log.Printf("Creating new user for Discord ID: %s", discordUser.ID)
 			newUser := models.User{
