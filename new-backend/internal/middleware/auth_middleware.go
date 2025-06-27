@@ -48,7 +48,7 @@ func AuthMiddleware(jwtService *services.JWTService, userRepo *repositories.User
 
 // Helper for Controllers to get current user context
 func GetUserFromContext(ctx *gin.Context) (*models.User, bool) {
-	val, exists := ctx.Get("currentuser")
+	val, exists := ctx.Get("currentUser")
 	if !exists {
 		return nil, false
 	}

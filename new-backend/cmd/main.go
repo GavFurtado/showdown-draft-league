@@ -34,6 +34,7 @@ func main() {
 		&models.Game{},
 		&models.PlayerRoster{},
 	)
+
 	if err != nil {
 		log.Fatalf("Failed to auto-migrate database: %v", err)
 	}
@@ -56,4 +57,3 @@ func main() {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }
-

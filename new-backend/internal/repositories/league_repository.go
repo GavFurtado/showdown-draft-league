@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
@@ -60,6 +61,20 @@ func (r *LeagueRepository) CreateLeague(league *models.League) (*models.League, 
 	return league, nil
 }
 
+// checks if a given user is a player in a specific league.
+func (r *LeagueRepository) IsUserPlayerInLeague(userID, leagueID uuid.UUID) (bool, error) {
+	var player models.Player
+	err := r.db.Where("user_id = ? AND league_id = ?", userID, leagueID).First(&player).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil // User is not a player in this league
+		}
+		return false, fmt.Errorf("failed to check player membership: %w", err) // Other database error
+	}
+	return true, nil // User is a player in this league
+}
+
 // gets League by ID with relationships preloaded
 func (r *LeagueRepository) GetLeagueByID(id uuid.UUID) (*models.League, error) {
 	// Preload will load the associated relationships as opposed to lazy loading
@@ -88,6 +103,19 @@ func (r *LeagueRepository) GetLeaguesByCommissioner(userID uuid.UUID) ([]models.
 	}
 
 	return leagues, nil
+}
+
+// gets total count of Leagues where userID is the Commisioner
+func (r *LeagueRepository) GetLeaguesCountByCommissioner(userID uuid.UUID) (int64, error) {
+	var count int64
+	err := r.db.Model(&models.League{}).
+		Where("commissioner_user_id = ?", userID).
+		Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
 
 // gets all Leagues where userID is a player

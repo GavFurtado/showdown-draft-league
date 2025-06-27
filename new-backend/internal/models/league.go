@@ -26,14 +26,13 @@ type League struct {
 	CreatedAt             time.Time      `json:"created_at"`
 	UpdatedAt             time.Time      `json:"updated_at"`
 	DeletedAt             gorm.DeletedAt `gorm:"index" json:"-"`
+
 	// Relationships
 	CommissionerUserID uuid.UUID `gorm:"type:uuid;not null" json:"commissioner_id"`
 	CommisionerUser    User      `gorm:"foreignKey:CommisionerUserID"`
 	Players            []Player  `gorm:"foreignKey:LeagueID"`
-
 	// League has many LeaguePokemon (its defined draft pool)
 	DefinedPokemon []LeaguePokemon `gorm:"foreignKey:LeagueID" json:"defined_pokemon"`
-
 	// League has many DraftedPokemon (all Pokemon drafted in this league)
 	AllDraftedPokemon []DraftedPokemon `gorm:"foreignKey:LeagueID" json:"all_drafted_pokemon"` // Useful for checking global draft status
 }
