@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/middleware"

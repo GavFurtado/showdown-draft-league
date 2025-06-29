@@ -7,6 +7,6 @@ import (
 
 type UserController struct {
 	userRepo   *repositories.UserRepository
-	playerRepo *repositories.PlayerRepository
-	leagueRepo *repositories.LeagueRepository
+	playerRepo *repositories.playerRepository
+	leagueRepo *()
 }
