@@ -1,12 +1,14 @@
 package controllers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
-	"github.com.GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/middleware"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -85,7 +87,7 @@ func (ctrl *UserController) UpdateProfile(ctx *gin.Context) {
 		return
 	}
 
-	updatedUser, err := ctrl.userService.UpdateProfile(userID, req)
+	updatedUser, err := ctrl.userService.UpdateProfileHandler(userID, req)
 	if err != nil {
 		log.Printf("(Error: UpdateProfile) - Service failed: %v\n", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
@@ -95,3 +97,25 @@ func (ctrl *UserController) UpdateProfile(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, updatedUser)
 }
 
+func (ctrl *UserController) GetMyLeagues(ctx *gin.Context) {
+	currentUser, exists := middleware.GetUserFromContext(ctx)
+	if !exists {
+		log.Printf("(Error: GetMyLeagues) - no user in context\n")
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "User information not available"})
+		return
+	}
+
+	leagues, err := ctrl.userService.GetMyLeaguesHandler(currentUser.ID)
+	if err != nil {
+		if err.Error() == fmt.Sprintf("user not found: %w", err) { // should be unreachable code
+			log.Printf("(Error: GetMyLeagues) - user not found %w\n", err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		log.Printf("(Error: GetMyLeagues) - Other Database error occurred %w\n", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"leagues": leagues}) // lets hope i didn't screw up the json tags
+}

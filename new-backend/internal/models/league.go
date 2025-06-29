@@ -21,7 +21,7 @@ type League struct {
 	RulesetID             *uuid.UUID     `gorm:"type:uuid;" json:"ruleset_id"`
 	Status                LeagueStatus   `gorm:"type:varchar(50);not null;default:'pending'" json:"status"`
 	MaxPokemonPerPlayer   uint           `gorm:"not null;default:0" json:"max_pokemon_per_player"`
-	AllowWeeklyFreeAgents bool           `gorm:"not null;deafult:false" json:"allow_free_agents"` // in case this gets more complex
+	AllowWeeklyFreeAgents bool           `gorm:"not null;default:false" json:"allow_free_agents"` // in case this gets more complex
 	StartingDraftPoints   uint           `gorm:"not null;default:140" json:"starting_draft_points"`
 	IsSnakeRoundDraft     bool           `gorm:"not null;default:true" json:"is_snake_round_draft"`
 	CreatedAt             time.Time      `json:"created_at"`
@@ -33,9 +33,9 @@ type League struct {
 	CommisionerUser    User      `gorm:"foreignKey:CommisionerUserID"`
 	Players            []Player  `gorm:"foreignKey:LeagueID"`
 	// League has many LeaguePokemon (its defined draft pool)
-	DefinedPokemon []LeaguePokemon `gorm:"foreignKey:LeagueID" json:"defined_pokemon"`
+	DefinedPokemon []LeaguePokemon `gorm:"foreignKey:LeagueID" json:"-"`
 	// League has many DraftedPokemon (all Pokemon drafted in this league)
-	AllDraftedPokemon []DraftedPokemon `gorm:"foreignKey:LeagueID" json:"all_drafted_pokemon"` // Useful for checking global draft status
+	AllDraftedPokemon []DraftedPokemon `gorm:"foreignKey:LeagueID" json:"-"` // Useful for checking global draft status
 }
 
 // this might be breaking convention by having functions in the models but idgaf

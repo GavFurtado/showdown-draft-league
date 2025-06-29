@@ -17,6 +17,7 @@ type UserService interface {
 	GetMyProfileHandler(userID uuid.UUID) (*models.User, error)
 	GetMyDiscordDetailsHandler(userID uuid.UUID) (*common.DiscordUser, error)
 	UpdateProfileHandler(userID uuid.UUID, req common.UpdateProfileRequest) (*models.User, error)
+	GetMyLeaguesHandler(userID uuid.UUID) ([]models.League, error)
 }
 
 type userServiceImpl struct {
@@ -83,4 +84,21 @@ func (s *userServiceImpl) UpdateProfileHandler(userID uuid.UUID, input common.Up
 	}
 
 	return updatedUser, nil
+}
+
+func (s *userServiceImpl) GetMyLeaguesHandler(userID uuid.UUID) ([]models.League, error) {
+	log.Printf("UserService: GetMyLeaguesHandler called for user %s", userID)
+
+	leagues, err := s.userRepo.GetUserLeagues(userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Printf("UserService: User %s not found when fetching leagues.", userID)
+			return nil, fmt.Errorf("user not found: %w", err)
+		}
+		// other errors
+		log.Printf("UserService: Failed to retrieve leagues for user %s: %v", userID, err)
+		return nil, fmt.Errorf("failed to retrieve user leagues: %w", err)
+	}
+
+	return leagues, nil
 }

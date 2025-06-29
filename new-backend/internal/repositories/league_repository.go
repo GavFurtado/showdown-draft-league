@@ -75,7 +75,7 @@ func (r *LeagueRepository) IsUserPlayerInLeague(userID, leagueID uuid.UUID) (boo
 	return true, nil // User is a player in this league
 }
 
-// gets League by ID with relationships preloaded
+// gets League by League ID with relationships preloaded
 func (r *LeagueRepository) GetLeagueByID(id uuid.UUID) (*models.League, error) {
 	// Preload will load the associated relationships as opposed to lazy loading
 	var league models.League
@@ -118,15 +118,17 @@ func (r *LeagueRepository) GetLeaguesCountByCommissioner(userID uuid.UUID) (int6
 	return count, nil
 }
 
-// gets all Leagues where userID is a player
-func (r *LeagueRepository) GetLeaguesByPlayer(userID uuid.UUID) ([]models.League, error) {
+// fetches all Leagues where the given userID is a player.
+func (r *LeagueRepository) GetLeaguesByUser(userID uuid.UUID) ([]models.League, error) {
 	var leagues []models.League
 
-	err := r.db.Where("player.user_id = ?", userID).
-		Preload("CommissionerUser"). // not sure if this is right
-		Preload("Players").
-		Preload("Players.User").
-		Find(&leagues).Error
+	err := r.db.
+		// Joins with the Player table on the common LeagueID
+		Joins("JOIN players ON players.league_id = leagues.id").
+		// Filter the results where the player's user_id matches the provided userID
+		Where("players.user_id = ?", userID).
+		Find(&leagues).Error // Finds the League records
+
 	if err != nil {
 		return nil, err
 	}

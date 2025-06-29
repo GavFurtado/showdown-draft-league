@@ -39,7 +39,7 @@ func (s *JWTService) GenerateToken(userID uuid.UUID) (string, error) {
 func (s *JWTService) ValidateToken(tokenString string) (uuid.UUID, error) {
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("(Error: jwt.Parse) - unexpected signing method: %w", t.Header["alg"])
+			return nil, fmt.Errorf("(Error: jwt.Parse) - unexpected signing method: %s", t.Header["alg"])
 		}
 		return s.secretKey, nil
 	})

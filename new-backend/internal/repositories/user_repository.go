@@ -51,3 +51,34 @@ func (r *UserRepository) UpdateUser(user *models.User) (*models.User, error) {
 	}
 	return user, nil
 }
+
+// fetches all Leagues that a specific user is a player in.
+func (r *UserRepository) GetUserLeagues(userID uuid.UUID) ([]models.League, error) {
+	var user models.User
+
+	// Fetch the user, preloading their players and each player's associated league.
+	err := r.db.
+		Preload("Players").        // Preload the Player records for this user
+		Preload("Players.League"). // For each Player, preload its associated League
+		Where("id = ?", userID).   // Find the specific user
+		First(&user).Error         // Fetch the user
+
+	if err != nil {
+		return nil, err // gorm.ErrRecordNotFound or other DB errors
+	}
+
+	// Extract the unique Leagues from the preloaded Players slice
+	// collect unique leagues
+	leagues := make([]models.League, 0, len(user.Players))
+	uniqueLeagues := make(map[uuid.UUID]struct{})
+
+	for _, player := range user.Players {
+		// Check if the league has already been added to avoid duplicates
+		if _, ok := uniqueLeagues[player.League.ID]; !ok {
+			leagues = append(leagues, player.League)
+			uniqueLeagues[player.League.ID] = struct{}{}
+		}
+	}
+
+	return leagues, nil
+}
