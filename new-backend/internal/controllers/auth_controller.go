@@ -137,9 +137,9 @@ func (aCtrl *AuthController) DiscCallback(ctx *gin.Context) {
 	}
 
 	// Generate JWT token
-	jwtToken, err := aCtrl.jwtService.GenerateToken(user.Id)
+	jwtToken, err := aCtrl.jwtService.GenerateToken(user.ID)
 	if err != nil {
-		log.Printf("Failed to generate JWT for user %s: %v", user.Id, err)
+		log.Printf("Failed to generate JWT for user %s: %v", user.ID, err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create session"})
 		return
 	}

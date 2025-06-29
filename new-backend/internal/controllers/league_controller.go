@@ -34,22 +34,21 @@ type leagueRequest struct {
 	EndDate               *time.Time `json:"end_date" binding:"omitempty,datetime=02/01/2006"`
 }
 
-// func NewLeagueController(leagueRepo *repositories.LeagueRepository,
-//
-//		userRepo *repositories.UserRepository,
-//		playerRepo *repositories.PlayerRepository,
-//		leaguePokemonRepo *repositories.LeaguePokemonRepository,
-//		draftedPokemonRepo *repositories.DraftedPokemonRepository,
-//		gameRepo *repositories.GameRepository) {
-//
-//		return LeagueController{
-//			&userRepo,
-//			&playerRepo,
-//			&leaguePokemonRepo,
-//			&draftedPokemonRepo,
-//			&gameRepo,
-//		}
-//	}
+func NewLeagueController(leagueRepo *repositories.LeagueRepository,
+	userRepo *repositories.UserRepository,
+	playerRepo *repositories.PlayerRepository,
+	leaguePokemonRepo *repositories.LeaguePokemonRepository,
+	draftedPokemonRepo *repositories.DraftedPokemonRepository,
+	gameRepo *repositories.GameRepository) LeagueController {
+
+	return LeagueController{
+		userRepo:           userRepo,
+		playerRepo:         playerRepo,
+		leaguePokemonRepo:  leaguePokemonRepo,
+		draftedPokemonRepo: draftedPokemonRepo,
+		gameRepo:           gameRepo,
+	}
+}
 func (ctrl *LeagueController) CreateLeague(ctx *gin.Context) {
 	const maxLeaguesCommisionable = 2
 	currentUser, exists := middleware.GetUserFromContext(ctx)

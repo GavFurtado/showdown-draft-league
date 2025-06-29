@@ -20,7 +20,7 @@ type Game struct {
 	RoundNumber         int            `gorm:"not null" json:"round_number"`            // The round/week number in the tournament
 	Status              GameStatus     `gorm:"type:varchar(50);not null;default:'pending'" json:"status"`
 	ReportedByUserID    *uuid.UUID     `gorm:"type:uuid" json:"reported_by_user_id"` // Who reported the result
-	ShowdownReplayLinks []string       `gorm:"type:text[]" json:"replay_links"`
+	ShowdownReplayLinks []string       `gorm:"type:text[]" binding:"url" json:"replay_links"`
 	CreatedAt           time.Time      `json:"created_at"`
 	UpdatedAt           time.Time      `json:"updated_at"`
 	DeletedAt           gorm.DeletedAt `gorm:"index" json:"-"`

@@ -8,7 +8,7 @@ import (
 )
 
 // LeaguePokemon are the Pokemon availabile for a particular league
-// This essentially represents the "League Draft Pool" for a given league.
+// This essentially represents the "League's Draft Pool" for a given league.
 type LeaguePokemon struct {
 	ID               uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
 	LeagueID         uuid.UUID `gorm:"type:uuid;not null" json:"league_id"`
