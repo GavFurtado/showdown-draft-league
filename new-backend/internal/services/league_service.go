@@ -60,7 +60,7 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input common.LeagueRe
 		CommissionerUserID:    userID,
 		RulesetID:             input.RulesetID,
 		MaxPokemonPerPlayer:   input.MaxPokemonPerPlayer,
-		StartingDraftPoints:   input.StartingDraftPoints,
+		StartingDraftPoints:   int(input.StartingDraftPoints),
 		AllowWeeklyFreeAgents: input.AllowWeeklyFreeAgents,
 		StartDate:             input.StartDate,
 		EndDate:               input.EndDate,

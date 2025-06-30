@@ -22,7 +22,7 @@ type League struct {
 	Status                LeagueStatus   `gorm:"type:varchar(50);not null;default:'pending'" json:"status"`
 	MaxPokemonPerPlayer   uint           `gorm:"not null;default:0" json:"max_pokemon_per_player"`
 	AllowWeeklyFreeAgents bool           `gorm:"not null;default:false" json:"allow_free_agents"` // in case this gets more complex
-	StartingDraftPoints   uint           `gorm:"not null;default:140" json:"starting_draft_points"`
+	StartingDraftPoints   int            `gorm:"not null;default:140" json:"starting_draft_points"`
 	IsSnakeRoundDraft     bool           `gorm:"not null;default:true" json:"is_snake_round_draft"`
 	CreatedAt             time.Time      `json:"created_at"`
 	UpdatedAt             time.Time      `json:"updated_at"`

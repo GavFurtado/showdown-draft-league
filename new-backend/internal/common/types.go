@@ -28,3 +28,19 @@ type LeagueRequest struct {
 type UpdateProfileRequest struct {
 	ShowdownName string `json:"showdown_name" binding:"omitempty"`
 }
+
+type PlayerRequest struct {
+	UserID       uuid.UUID `json:"user_id" binding:"required"`
+	LeagueID     uuid.UUID `json:"league_id" binding:"required"`
+	InLeagueName *string   `json:"in_league_name" binding:"omitempty" validate:"min=3,max=20"`
+	TeamName     *string   `json:"team_name" binding:"omitempty" validate:"min=3,max=20"`
+}
+
+type UpdatePlayerInfoRequest struct {
+	InLeagueName  *string `json:"in_league_name" binding:"omitempty" validate:"min=3,max=20"`
+	TeamName      *string `json:"team_name" binding:"omitempty" validate:"min=3,max=20"`
+	Wins          *int    `json:"wins" binding:"omitempty" validate:"min=0"`
+	Losses        *int    `json:"losses" binding:"omitempty" validate:"min=0"`
+	DraftPoints   *int    `json:"draft_points" binding:"omitempty" validate:"min=0"`
+	DraftPosition *int    `json:"draft_position" binding:"omitempty" validate:"min=0"`
+}

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/middleware"
@@ -32,7 +31,7 @@ func (ctrl *UserController) GetMyProfile(ctx *gin.Context) {
 		return
 	}
 
-	user, err := ctrl.userService.GetMyProfile(currentUser.ID)
+	user, err := ctrl.userService.GetMyProfileHandler(currentUser.ID)
 	if err != nil {
 		log.Printf("(Error: GetMyProfile) - Service failed: %v\n", err)
 		if err.Error() == "user not found" {
@@ -56,7 +55,7 @@ func (ctrl *UserController) GetMyDiscordDetails(ctx *gin.Context) {
 		return
 	}
 
-	discordDetails, err := ctrl.userService.GetMyDiscordDetails(currentUser.ID)
+	discordDetails, err := ctrl.userService.GetMyDiscordDetailsHandler(currentUser.ID)
 	if err != nil {
 		log.Printf("(Error: GetMyDiscordDetails) - Service failed: %v\n", err)
 		if err.Error() == "user not found" {

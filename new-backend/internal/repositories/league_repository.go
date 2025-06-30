@@ -76,14 +76,14 @@ func (r *LeagueRepository) IsUserPlayerInLeague(userID, leagueID uuid.UUID) (boo
 }
 
 // gets League by League ID with relationships preloaded
-func (r *LeagueRepository) GetLeagueByID(id uuid.UUID) (*models.League, error) {
+func (r *LeagueRepository) GetLeagueByID(leagueID uuid.UUID) (*models.League, error) {
 	// Preload will load the associated relationships as opposed to lazy loading
 	var league models.League
 
 	err := r.db.Preload("CommisionerUser").
 		Preload("Players").
 		Preload("Players.User").
-		First(&league, "id = ?", id).Error
+		First(&league, "id = ?", leagueID).Error
 	if err != nil {
 		return nil, err
 	}

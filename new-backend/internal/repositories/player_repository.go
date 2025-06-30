@@ -49,7 +49,7 @@ func (r *PlayerRepository) GetPlayerByUserAndLeague(userID, leagueID uuid.UUID) 
 		First(&player).Error
 
 	if err != nil {
-		return nil, fmt.Errorf("(Error: GetPlayerByUserAndLeague) - failed to get player: %w", err)
+		return nil, fmt.Errorf("failed to get player: %w", err)
 	}
 	return &player, nil
 }
@@ -122,6 +122,17 @@ func (r *PlayerRepository) UpdatePlayerRecord(playerID uuid.UUID, wins, losses i
 	return nil
 }
 
+func (r *PlayerRepository) UpdatePlayerDraftPosition(playerID uuid.UUID, newPosition int) error {
+	err := r.db.Model(&models.Player{}).
+		Where("id = ?", playerID).
+		Update("draft_position", newPosition).Error
+
+	if err != nil {
+		return fmt.Errorf("(Error: UpdatePlayerDraftPosition) - failed to update draft position: %w", err)
+	}
+	return nil
+}
+
 // gets player count for a specific league
 func (r *PlayerRepository) GetPlayerCountByLeague(leagueID uuid.UUID) (int64, error) {
 	var count int64
@@ -179,6 +190,7 @@ func (r *PlayerRepository) IsUserInLeague(userID, leagueID uuid.UUID) (bool, err
 
 // gets player with full roster details
 func (r *PlayerRepository) GetPlayerWithFullRoster(playerID uuid.UUID) (*models.Player, error) {
+
 	var player models.Player
 	err := r.db.Preload("User").
 		Preload("League").
@@ -189,6 +201,57 @@ func (r *PlayerRepository) GetPlayerWithFullRoster(playerID uuid.UUID) (*models.
 
 	if err != nil {
 		return nil, fmt.Errorf("(Error: GetPlayerWithFullRoster) - failed to get player with roster: %w", err)
+	}
+	return &player, nil
+}
+
+// finds a player by user ID and league ID.
+// Returns (player, nil) if found, (nil, nil) if not found, (nil, error) for other DB errors.
+func (r *PlayerRepository) FindPlayerByUserAndLeague(userID, leagueID uuid.UUID) (*models.Player, error) {
+	var player models.Player
+	err := r.db.
+		Where("user_id = ? AND league_id = ?", userID, leagueID).
+		First(&player).Error
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to find player by user ID (%s) and league ID (%s): %w", userID, leagueID, err)
+	}
+	return &player, nil
+}
+
+// finds a player by their in-league name and league ID.
+// Returns (player, nil) if found, (nil, nil) if not found, (nil, error) for other DB errors.
+func (r *PlayerRepository) FindPlayerByInLeagueNameAndLeagueID(inLeagueName string, leagueID uuid.UUID) (*models.Player, error) {
+	var player models.Player
+	err := r.db.
+		Where("in_league_name = ? AND league_id = ?", inLeagueName, leagueID).
+		First(&player).Error
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to find player by in-league name (%s) and league ID (%s): %w", inLeagueName, leagueID, err)
+	}
+	return &player, nil
+}
+
+// finds a player by their team name and league ID.
+// Returns (player, nil) if found, (nil, nil) if not found, (nil, error) for other DB errors.
+func (r *PlayerRepository) FindPlayerByTeamNameAndLeagueID(teamName string, leagueID uuid.UUID) (*models.Player, error) {
+	var player models.Player
+	err := r.db.
+		Where("team_name = ? AND league_id = ?", teamName, leagueID).
+		First(&player).Error
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to find player by team name (%s) and league ID (%s): %w", teamName, leagueID, err)
 	}
 	return &player, nil
 }
