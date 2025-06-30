@@ -1,2 +1,4 @@
 .env
 data/all_pokemon_data.json
+OpenCode.md
+.opencode/

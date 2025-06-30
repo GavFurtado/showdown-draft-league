@@ -10,23 +10,23 @@ import (
 	"gorm.io/gorm"
 )
 
-// TODO: - this shouldn't go here but there is no other place at the moment
-//
-//	consider possibly having a set time for the reset a day after one round of the round robin finishes
 type League struct {
-	ID                    uuid.UUID      `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	Name                  string         `gorm:"not null" json:"name"`
-	StartDate             time.Time      `gorm:"not null" json:"start_date"`
-	EndDate               *time.Time     `json:"end_date"`
-	RulesetID             *uuid.UUID     `gorm:"type:uuid;" json:"ruleset_id"`
-	Status                LeagueStatus   `gorm:"type:varchar(50);not null;default:'pending'" json:"status"`
-	MaxPokemonPerPlayer   uint           `gorm:"not null;default:0" json:"max_pokemon_per_player"`
-	AllowWeeklyFreeAgents bool           `gorm:"not null;default:false" json:"allow_free_agents"` // in case this gets more complex
-	StartingDraftPoints   int            `gorm:"not null;default:140" json:"starting_draft_points"`
-	IsSnakeRoundDraft     bool           `gorm:"not null;default:true" json:"is_snake_round_draft"`
-	CreatedAt             time.Time      `json:"created_at"`
-	UpdatedAt             time.Time      `json:"updated_at"`
-	DeletedAt             gorm.DeletedAt `gorm:"index" json:"-"`
+	ID                       uuid.UUID      `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	Name                     string         `gorm:"not null" json:"name"`
+	StartDate                time.Time      `gorm:"not null" json:"start_date"`
+	EndDate                  *time.Time     `json:"end_date"`
+	RulesetID                *uuid.UUID     `gorm:"type:uuid;" json:"ruleset_id"`
+	Status                   LeagueStatus   `gorm:"type:varchar(50);not null;default:'pending'" json:"status"`
+	MaxPokemonPerPlayer      uint           `gorm:"not null;default:0" json:"max_pokemon_per_player"`
+	AllowWeeklyFreeAgents    bool           `gorm:"not null;default:false" json:"allow_free_agents"` // in case this gets more complex
+	FreeAgencyPointsPerRound int            `gorm:"not null;default:1" json:"free_agency_points_per_round"`
+	AllowTrading             bool           `gorm:"not null;default:false" json:"allow_trading"`
+	StartingDraftPoints      int            `gorm:"not null;default:140" json:"starting_draft_points"`
+	IsSnakeRoundDraft        bool           `gorm:"not null;default:true" json:"is_snake_round_draft"`
+	CreatedAt                time.Time      `json:"created_at"`
+	UpdatedAt                time.Time      `json:"updated_at"`
+	DeletedAt                gorm.DeletedAt `gorm:"index" json:"-"`
+	DiscordWebhookURL        *string        `json:"discord_webhoook_url"`
 
 	// Relationships
 	CommissionerUserID uuid.UUID `gorm:"type:uuid;not null" json:"commissioner_id"`
