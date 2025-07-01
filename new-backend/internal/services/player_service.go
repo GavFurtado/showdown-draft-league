@@ -55,18 +55,18 @@ func (s *playerServiceImpl) CreatePlayerHandler(input *common.PlayerRequest) (*m
 	if err != nil {
 		log.Printf("Service: CreatePlayerHandler - Failed to fetch league %s: %v", input.LeagueID, err)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrLeagueNotFound
+			return nil, common.ErrLeagueNotFound
 		}
-		return nil, fmt.Errorf("%w: failed to retrieve league data", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve league data", common.ErrInternalService)
 	}
 
 	user, err := s.userRepo.GetUserByID(input.UserID)
 	if err != nil {
 		log.Printf("Service: CreatePlayerHandler - Failed to fetch user %s: %v", input.UserID, err)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrUserNotFound
+			return nil, common.ErrUserNotFound
 		}
-		return nil, fmt.Errorf("%w: failed to retrieve user data", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve user data", common.ErrInternalService)
 	}
 
 	// Fallback for InLeagueName and TeamName (always happens if empty)
@@ -83,30 +83,30 @@ func (s *playerServiceImpl) CreatePlayerHandler(input *common.PlayerRequest) (*m
 	existingPlayerByUser, err := s.playerRepo.FindPlayerByUserAndLeague(input.UserID, input.LeagueID)
 	if err != nil {
 		log.Printf("Service: CreatePlayerHandler - Failed to check for existing player by user ID %s in league %s: %v", input.UserID, input.LeagueID, err)
-		return nil, fmt.Errorf("%w: failed to check existing player data", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to check existing player data", common.ErrInternalService)
 	}
 	if existingPlayerByUser != nil {
-		return nil, ErrUserAlreadyInLeague
+		return nil, common.ErrUserAlreadyInLeague
 	}
 
 	// b. Check for Unique InLeagueName within the League
 	existingPlayerByName, err := s.playerRepo.FindPlayerByInLeagueNameAndLeagueID(*input.InLeagueName, input.LeagueID)
 	if err != nil {
 		log.Printf("Service: CreatePlayerHandler - Failed to check for existing player by in-league name '%s' in league %s: %v", input.InLeagueName, input.LeagueID, err)
-		return nil, fmt.Errorf("%w: failed to check in-league name uniqueness", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to check in-league name uniqueness", common.ErrInternalService)
 	}
 	if existingPlayerByName != nil {
-		return nil, fmt.Errorf("%w: '%s'", ErrInLeagueNameTaken, input.InLeagueName)
+		return nil, fmt.Errorf("%w: '%s'", common.ErrInLeagueNameTaken, input.InLeagueName)
 	}
 
 	// c. Check for Unique TeamName within the League
 	existingPlayerByTeamName, err := s.playerRepo.FindPlayerByTeamNameAndLeagueID(*input.TeamName, input.LeagueID)
 	if err != nil {
 		log.Printf("Service: CreatePlayerHandler - Failed to check for existing player by team name '%s' in league %s: %v", input.TeamName, input.LeagueID, err)
-		return nil, fmt.Errorf("%w: failed to check team name uniqueness", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to check team name uniqueness", common.ErrInternalService)
 	}
 	if existingPlayerByTeamName != nil {
-		return nil, fmt.Errorf("%w: '%s'", ErrTeamNameTaken, input.TeamName)
+		return nil, fmt.Errorf("%w: '%s'", common.ErrTeamNameTaken, input.TeamName)
 	}
 	// --- END UNIQUENESS CHECKS ---
 
@@ -127,7 +127,7 @@ func (s *playerServiceImpl) CreatePlayerHandler(input *common.PlayerRequest) (*m
 	createdPlayer, err := s.playerRepo.CreatePlayer(&player)
 	if err != nil {
 		log.Printf("Service: CreatePlayerHandler - Failed to create player for user %s in league %s: %v", input.UserID, input.LeagueID, err)
-		return nil, fmt.Errorf("%w: failed to add player to league", ErrFailedToCreatePlayer)
+		return nil, fmt.Errorf("%w: failed to add player to league", common.ErrFailedToCreatePlayer)
 	}
 
 	log.Printf("Service: CreatePlayerHandler - Player %s created for user %s in league %s.", createdPlayer.ID, input.UserID, input.LeagueID)
@@ -141,10 +141,10 @@ func (s *playerServiceImpl) GetPlayerByIDHandler(playerID uuid.UUID, currentUser
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("Service: GetPlayerByIDHandler - Player %s not found: %v", playerID, err)
-			return nil, ErrPlayerNotFound
+			return nil, common.ErrPlayerNotFound
 		}
 		log.Printf("Service: GetPlayerByIDHandler - Failed to retrieve player %s: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to retrieve player data", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve player data", common.ErrInternalService)
 	}
 
 	// Authorization checks
@@ -161,7 +161,7 @@ func (s *playerServiceImpl) GetPlayerByIDHandler(playerID uuid.UUID, currentUser
 	isCurrentUserInLeague, err := s.playerRepo.IsUserInLeague(currentUser.ID, player.LeagueID)
 	if err != nil {
 		log.Printf("Service: GetPlayerByIDHandler - Error checking current user %s's league membership in league %s: %v", currentUser.ID, player.LeagueID, err)
-		return nil, fmt.Errorf("%w: failed to perform league membership authorization check", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to perform league membership authorization check", common.ErrInternalService)
 	}
 
 	if isCurrentUserInLeague {
@@ -171,14 +171,14 @@ func (s *playerServiceImpl) GetPlayerByIDHandler(playerID uuid.UUID, currentUser
 	}
 
 	log.Printf("Service: GetPlayerByIDHandler - Unauthorized access attempt by user %s to player %s.", currentUser.ID, playerID)
-	return nil, ErrUnauthorized
+	return nil, common.ErrUnauthorized
 }
 
 func (s *playerServiceImpl) GetPlayersByLeagueHandler(leagueID, userID uuid.UUID, isUserAnAdmin bool) ([]models.Player, error) {
 	players, err := s.playerRepo.GetPlayersByLeague(leagueID)
 	if err != nil {
 		log.Printf("Service: GetPlayersByLeagueHandler - Failed to retrieve players for league %s: %v", leagueID, err)
-		return nil, fmt.Errorf("%w: failed to retrieve players data", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve players data", common.ErrInternalService)
 	}
 
 	if isUserAnAdmin {
@@ -190,7 +190,7 @@ func (s *playerServiceImpl) GetPlayersByLeagueHandler(leagueID, userID uuid.UUID
 	isCurrentUserInLeague, err := s.playerRepo.IsUserInLeague(userID, leagueID)
 	if err != nil {
 		log.Printf("Service: GetPlayersByLeagueHandler - Error checking current user %s's league membership in league %s: %v", userID, leagueID, err)
-		return nil, fmt.Errorf("%w: failed to perform league membership authorization check", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to perform league membership authorization check", common.ErrInternalService)
 	}
 
 	if isCurrentUserInLeague {
@@ -199,7 +199,7 @@ func (s *playerServiceImpl) GetPlayersByLeagueHandler(leagueID, userID uuid.UUID
 	}
 
 	log.Printf("Service: GetPlayersByLeagueHandler - Unauthorized access attempt by user %s to league %s players.", userID, leagueID)
-	return nil, ErrUnauthorized
+	return nil, common.ErrUnauthorized
 }
 
 func (s *playerServiceImpl) GetPlayersByUserHandler(
@@ -210,7 +210,7 @@ func (s *playerServiceImpl) GetPlayersByUserHandler(
 	players, err := s.playerRepo.GetPlayersByUser(userID)
 	if err != nil {
 		log.Printf("Service: GetPlayersByUserHandler - Failed to retrieve players for user %s: %v", userID, err)
-		return nil, fmt.Errorf("%w: failed to retrieve player data", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve player data", common.ErrInternalService)
 	}
 
 	// is currentUser an admin or is requesting their own player
@@ -220,7 +220,7 @@ func (s *playerServiceImpl) GetPlayersByUserHandler(
 	}
 
 	log.Printf("Service: GetPlayersByUserHandler - Unauthorized access attempt by user %s to view players for user %s.", currentUserID, userID)
-	return nil, ErrUnauthorized
+	return nil, common.ErrUnauthorized
 }
 
 func (s *playerServiceImpl) GetPlayerWithFullRosterHandler(playerID, currentUserID uuid.UUID, isCurrentUserAnAdmin bool) (*models.Player, error) {
@@ -229,10 +229,10 @@ func (s *playerServiceImpl) GetPlayerWithFullRosterHandler(playerID, currentUser
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("Service: GetPlayerWithFullRosterHandler - Player %s not found: %v", playerID, err)
-			return nil, ErrPlayerNotFound
+			return nil, common.ErrPlayerNotFound
 		}
 		log.Printf("Service: GetPlayerWithFullRosterHandler - Failed to retrieve player %s with full roster: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to retrieve player data", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve player data", common.ErrInternalService)
 	}
 
 	if isCurrentUserAnAdmin {
@@ -247,7 +247,7 @@ func (s *playerServiceImpl) GetPlayerWithFullRosterHandler(playerID, currentUser
 	isCurrentUserInLeague, err := s.playerRepo.IsUserInLeague(currentUserID, player.LeagueID)
 	if err != nil {
 		log.Printf("Service: GetPlayerWithFullRosterHandler - Error checking current user %s's league membership in league %s: %v", currentUserID, player.LeagueID, err)
-		return nil, fmt.Errorf("%w: failed to perform league membership authorization check", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to perform league membership authorization check", common.ErrInternalService)
 	}
 
 	if isCurrentUserInLeague {
@@ -256,7 +256,7 @@ func (s *playerServiceImpl) GetPlayerWithFullRosterHandler(playerID, currentUser
 	}
 
 	log.Printf("Service: GetPlayerWithFullRosterHandler - Unauthorized access attempt by user %s to player %s's roster.", currentUserID, playerID)
-	return nil, ErrUnauthorized
+	return nil, common.ErrUnauthorized
 }
 
 func (s *playerServiceImpl) UpdatePlayerProfile(
@@ -269,10 +269,10 @@ func (s *playerServiceImpl) UpdatePlayerProfile(
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("Service: UpdatePlayerProfile - Player %s not found.", playerID)
-			return nil, ErrPlayerNotFound
+			return nil, common.ErrPlayerNotFound
 		}
 		log.Printf("Service: UpdatePlayerProfile - Failed to fetch player %s: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to retrieve player for update", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve player for update", common.ErrInternalService)
 	}
 
 	isSelfUpdate := currentUser.ID == existingPlayer.UserID
@@ -280,7 +280,7 @@ func (s *playerServiceImpl) UpdatePlayerProfile(
 	league, err := s.leagueRepo.GetLeagueByID(existingPlayer.LeagueID)
 	if err != nil {
 		log.Printf("Service: UpdatePlayerProfile - Failed to fetch league %s for player %s: %v", existingPlayer.LeagueID, playerID, err)
-		return nil, fmt.Errorf("%w: could not verify league for authorization", ErrInternalService)
+		return nil, fmt.Errorf("%w: could not verify league for authorization", common.ErrInternalService)
 	}
 	if league.CommissionerUserID == currentUser.ID {
 		isCommissioner = true
@@ -289,7 +289,7 @@ func (s *playerServiceImpl) UpdatePlayerProfile(
 	// Authorization: Only self or commissioner can update profile fields
 	if !isSelfUpdate && !isCommissioner {
 		log.Printf("Service: UpdatePlayerProfile - Unauthorized access attempt by user %s to update player %s's profile.", currentUser.ID, playerID)
-		return nil, ErrUnauthorized
+		return nil, common.ErrUnauthorized
 	}
 
 	// Apply updates selectively and perform business validation
@@ -299,10 +299,10 @@ func (s *playerServiceImpl) UpdatePlayerProfile(
 			existing, err := s.playerRepo.FindPlayerByInLeagueNameAndLeagueID(*inLeagueName, existingPlayer.LeagueID)
 			if err != nil {
 				log.Printf("Service: UpdatePlayerProfile - DB error checking in-league name uniqueness: %v", err)
-				return nil, fmt.Errorf("%w: failed to check in-league name uniqueness", ErrInternalService)
+				return nil, fmt.Errorf("%w: failed to check in-league name uniqueness", common.ErrInternalService)
 			}
 			if existing != nil && existing.ID != existingPlayer.ID {
-				return nil, fmt.Errorf("%w: '%s'", ErrInLeagueNameTaken, *inLeagueName)
+				return nil, fmt.Errorf("%w: '%s'", common.ErrInLeagueNameTaken, *inLeagueName)
 			}
 		}
 		existingPlayer.InLeagueName = *inLeagueName
@@ -314,10 +314,10 @@ func (s *playerServiceImpl) UpdatePlayerProfile(
 			existing, err := s.playerRepo.FindPlayerByTeamNameAndLeagueID(*teamName, existingPlayer.LeagueID)
 			if err != nil {
 				log.Printf("Service: UpdatePlayerProfile - DB error checking team name uniqueness: %v", err)
-				return nil, fmt.Errorf("%w: failed to check team name uniqueness", ErrInternalService)
+				return nil, fmt.Errorf("%w: failed to check team name uniqueness", common.ErrInternalService)
 			}
 			if existing != nil && existing.ID != existingPlayer.ID {
-				return nil, fmt.Errorf("%w: '%s'", ErrTeamNameTaken, *teamName)
+				return nil, fmt.Errorf("%w: '%s'", common.ErrTeamNameTaken, *teamName)
 			}
 		}
 		existingPlayer.TeamName = *teamName
@@ -332,7 +332,7 @@ func (s *playerServiceImpl) UpdatePlayerProfile(
 	updatedPlayer, err := s.playerRepo.UpdatePlayer(existingPlayer)
 	if err != nil {
 		log.Printf("Service: UpdatePlayerProfile - Failed to save updated player %s: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to save player profile updates", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to save player profile updates", common.ErrInternalService)
 	}
 
 	log.Printf("Service: UpdatePlayerProfile - Player %s profile updated by user %s.", playerID, currentUser.ID)
@@ -351,35 +351,35 @@ func (s *playerServiceImpl) UpdatePlayerDraftPoints(
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("Service: UpdatePlayerDraftPoints - Player %s not found.", playerID)
-			return nil, ErrPlayerNotFound
+			return nil, common.ErrPlayerNotFound
 		}
 		log.Printf("Service: UpdatePlayerDraftPoints - Failed to fetch player %s: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to retrieve player for draft points update", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve player for draft points update", common.ErrInternalService)
 	}
 
 	// Authorization: Only commissioner can update draft points
 	league, err := s.leagueRepo.GetLeagueByID(existingPlayer.LeagueID)
 	if err != nil {
 		log.Printf("Service: UpdatePlayerDraftPoints - Failed to fetch league %s for player %s: %v", existingPlayer.LeagueID, playerID, err)
-		return nil, fmt.Errorf("%w: could not verify league for authorization", ErrInternalService)
+		return nil, fmt.Errorf("%w: could not verify league for authorization", common.ErrInternalService)
 	}
 	if league.CommissionerUserID != currentUser.ID {
 		log.Printf("Service: UpdatePlayerDraftPoints - Unauthorized attempt by user %s to update player %s's draft points (not commissioner).", currentUser.ID, playerID)
-		return nil, ErrUnauthorized
+		return nil, common.ErrUnauthorized
 	}
 
 	// 3. Perform update using the specific repository method
 	err = s.playerRepo.UpdatePlayerDraftPoints(playerID, draftPoints)
 	if err != nil {
 		log.Printf("Service: UpdatePlayerDraftPoints - Failed to update player %s draft points: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to update player draft points", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to update player draft points", common.ErrInternalService)
 	}
 
 	// 4. Fetch the updated player to return
 	updatedPlayer, err := s.playerRepo.GetPlayerByID(playerID)
 	if err != nil {
 		log.Printf("Service: UpdatePlayerDraftPoints - Failed to re-fetch player %s after update: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to re-fetch updated player", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to re-fetch updated player", common.ErrInternalService)
 	}
 
 	log.Printf("Service: UpdatePlayerDraftPoints - Player %s draft points updated to %d by commissioner %s.", playerID, draftPoints, currentUser.ID)
@@ -398,35 +398,35 @@ func (s *playerServiceImpl) UpdatePlayerRecord(
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("Service: UpdatePlayerRecord - Player %s not found.", playerID)
-			return nil, ErrPlayerNotFound
+			return nil, common.ErrPlayerNotFound
 		}
 		log.Printf("Service: UpdatePlayerRecord - Failed to fetch player %s: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to retrieve player for record update", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve player for record update", common.ErrInternalService)
 	}
 
 	// Authorization: Only commissioner can update win/loss record
 	league, err := s.leagueRepo.GetLeagueByID(existingPlayer.LeagueID)
 	if err != nil {
 		log.Printf("Service: UpdatePlayerRecord - Failed to fetch league %s for player %s: %v", existingPlayer.LeagueID, playerID, err)
-		return nil, fmt.Errorf("%w: could not verify league for authorization", ErrInternalService)
+		return nil, fmt.Errorf("%w: could not verify league for authorization", common.ErrInternalService)
 	}
 	if league.CommissionerUserID != currentUser.ID {
 		log.Printf("Service: UpdatePlayerRecord - Unauthorized attempt by user %s to update player %s's record (not commissioner).", currentUser.ID, playerID)
-		return nil, ErrUnauthorized
+		return nil, common.ErrUnauthorized
 	}
 
 	// Perform update using the specific repository method
 	err = s.playerRepo.UpdatePlayerRecord(playerID, wins, losses)
 	if err != nil {
 		log.Printf("Service: UpdatePlayerRecord - Failed to update player %s record: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to update player record", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to update player record", common.ErrInternalService)
 	}
 
 	// Fetch the updated player to return
 	updatedPlayer, err := s.playerRepo.GetPlayerByID(playerID)
 	if err != nil {
 		log.Printf("Service: UpdatePlayerRecord - Failed to re-fetch player %s after update: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to re-fetch updated player", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to re-fetch updated player", common.ErrInternalService)
 	}
 
 	log.Printf("Service: UpdatePlayerRecord - Player %s record updated to W%d-L%d by commissioner %s.", playerID, wins, losses, currentUser.ID)
@@ -444,35 +444,35 @@ func (s *playerServiceImpl) UpdatePlayerDraftPosition(
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("Service: UpdatePlayerDraftPosition - Player %s not found.", playerID)
-			return nil, ErrPlayerNotFound
+			return nil, common.ErrPlayerNotFound
 		}
 		log.Printf("Service: UpdatePlayerDraftPosition - Failed to fetch player %s: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to retrieve player for draft position update", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve player for draft position update", common.ErrInternalService)
 	}
 
 	// Authorization: Only commissioner can update draft position
 	league, err := s.leagueRepo.GetLeagueByID(existingPlayer.LeagueID)
 	if err != nil {
 		log.Printf("Service: UpdatePlayerDraftPosition - Failed to fetch league %s for player %s: %v", existingPlayer.LeagueID, playerID, err)
-		return nil, fmt.Errorf("%w: could not verify league for authorization", ErrInternalService)
+		return nil, fmt.Errorf("%w: could not verify league for authorization", common.ErrInternalService)
 	}
 	if league.CommissionerUserID != currentUser.ID {
 		log.Printf("Service: UpdatePlayerDraftPosition - Unauthorized attempt by user %s to update player %s's draft position (not commissioner).", currentUser.ID, playerID)
-		return nil, ErrUnauthorized
+		return nil, common.ErrUnauthorized
 	}
 
 	// Perform update using the specific repository method
 	err = s.playerRepo.UpdatePlayerDraftPosition(playerID, draftPosition)
 	if err != nil {
 		log.Printf("Service: UpdatePlayerDraftPosition - Failed to update player %s draft position: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to update player draft position", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to update player draft position", common.ErrInternalService)
 	}
 
 	// 4. Fetch the updated player to return
 	updatedPlayer, err := s.playerRepo.GetPlayerByID(playerID)
 	if err != nil {
 		log.Printf("Service: UpdatePlayerDraftPosition - Failed to re-fetch player %s after update: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to re-fetch updated player", ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to re-fetch updated player", common.ErrInternalService)
 	}
 
 	log.Printf("Service: UpdatePlayerDraftPosition - Player %s draft position updated to %d by commissioner %s.", playerID, draftPosition, currentUser.ID)

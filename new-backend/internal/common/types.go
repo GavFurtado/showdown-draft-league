@@ -14,7 +14,7 @@ type DiscordUser struct {
 	Avatar        string `json:"avatar"`
 }
 
-// Response Structs
+// Request Structs
 type LeagueRequest struct {
 	Name                  string     `json:"name" binding:"required"`
 	RulesetID             *uuid.UUID `json:"ruleset_id"`
@@ -43,4 +43,19 @@ type UpdatePlayerInfoRequest struct {
 	Losses        *int    `json:"losses" binding:"omitempty" validate:"min=0"`
 	DraftPoints   *int    `json:"draft_points" binding:"omitempty" validate:"min=0"`
 	DraftPosition *int    `json:"draft_position" binding:"omitempty" validate:"min=0"`
+}
+
+// represents the structure for sending messages to Discord webhooks.
+type DiscordWebhookPayload struct {
+	Content   string                `json:"content,omitempty"`
+	Username  string                `json:"username,omitempty"`
+	AvatarURL string                `json:"avatar_url,omitempty"`
+	Embeds    []DiscordWebhookEmbed `json:"embeds,omitempty"`
+}
+
+// represents an embed object within a Discord webhook payload.
+type DiscordWebhookEmbed struct {
+	Title       string `json:"title,omitempty"`
+	Description string `json:"description,omitempty"`
+	Color       int    `json:"color,omitempty"` // RGB color integer
 }

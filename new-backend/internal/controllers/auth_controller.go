@@ -72,4 +72,3 @@ func (aCtrl *AuthController) DiscCallback(ctx *gin.Context) {
 	// Redirect to dashboard
 	ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/dashboard", aCtrl.cfg.AppBaseURL))
 }
-

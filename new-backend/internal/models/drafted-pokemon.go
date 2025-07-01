@@ -16,7 +16,7 @@ type DraftedPokemon struct {
 	PokemonSpeciesID uuid.UUID `gorm:"type:uuid;not null" json:"pokemon_species_id"` // Which base species was drafted?
 
 	DraftRoundNumber int `json:"draft_round_number"` // The round this pokemon was drafted in
-	DraftPickNumber int `json:"draft_pick_number"` // The sequential number of this pick in the draft
+	DraftPickNumber  int `json:"draft_pick_number"`  // The sequential number of this pick in the draft
 	// IsReleased: True if the Pokemon has been released back to the draft pool (free agents)
 	IsReleased bool           `gorm:"default:false" json:"is_released"`
 	CreatedAt  time.Time      `json:"created_at"`

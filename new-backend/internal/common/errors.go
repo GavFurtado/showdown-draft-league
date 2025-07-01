@@ -1,12 +1,14 @@
-package services
+package common
 
 import "errors"
 
 var (
+
 	// Common resource not found errors
-	ErrLeagueNotFound = errors.New("league not found")
-	ErrUserNotFound   = errors.New("user not found")
-	ErrPlayerNotFound = errors.New("player not found")
+	ErrLeagueNotFound         = errors.New("league not found")
+	ErrUserNotFound           = errors.New("user not found")
+	ErrPlayerNotFound         = errors.New("player not found")
+	ErrPokemonSpeciesNotFound = errors.New("species not found")
 
 	// Player creation specific errors
 	ErrUserAlreadyInLeague  = errors.New("user is already a player in this league")
@@ -17,5 +19,11 @@ var (
 	// Authorization errors
 	ErrUnauthorized           = errors.New("unauthorized: you do not have permission to perform this action")
 	ErrInvalidUpdateForPlayer = errors.New("players cannot update score or draft details directly")
-	ErrInternalService        = errors.New("internal service error") // For unexpected DB or internal issues
+
+	// Business Logic Errors
+	ErrMaxLeagueCreationLimitReached = errors.New("maximum league creation limit reached")
+	ErrInvalidInput                  = errors.New("invalid input/request")
+
+	// Internal Service Errors
+	ErrInternalService = errors.New("internal service error")
 )
