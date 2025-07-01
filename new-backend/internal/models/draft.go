@@ -42,7 +42,7 @@ const (
 )
 
 // Validate DraftStatus for database interactions
-func (ds DraftStatus) isValid() bool {
+func (ds DraftStatus) IsValid() bool {
 	switch ds {
 	case DraftStatusPending, DraftStatusStarted, DraftStatusPaused, DraftStatusCompleted:
 		return true
@@ -53,7 +53,7 @@ func (ds DraftStatus) isValid() bool {
 
 // Value implements the driver.Valuer interface for GORM/database saving.
 func (ds DraftStatus) Value() (driver.Value, error) {
-	if !ds.isValid() {
+	if !ds.IsValid() {
 		return nil, fmt.Errorf("invalid DraftStatus value: %s", ds)
 	}
 	return string(ds), nil
@@ -70,7 +70,7 @@ func (ds *DraftStatus) Scan(value interface{}) error {
 		return fmt.Errorf("DraftStatus: expected string, got %T", value)
 	}
 	newStatus := DraftStatus(str)
-	if !newStatus.isValid() {
+	if !newStatus.IsValid() {
 		return fmt.Errorf("invalid DraftStatus value retrieved from DB: %s", str)
 	}
 	*ds = newStatus

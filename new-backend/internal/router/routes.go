@@ -53,6 +53,13 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	api := r.Group("/api")
 	api.Use(middleware.AuthMiddleware(jwtService, userRepo))
 	{
+		// api.GET("/leagues/:id")
+		// api.GET("/leagues/:id")
+		// api.GET("/leagues/:id")
+		// api.GET("/profile", userController.GetUserProfile)
+	}
+	api.Use(middleware.AuthMiddleware(jwtService, userRepo))
+	{
 		// api.GET("/profile", userController.GetUserProfile)
 	}
 }

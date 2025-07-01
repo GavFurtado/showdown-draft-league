@@ -36,13 +36,12 @@ func (r *LeagueRepository) CreateLeague(league *models.League) (*models.League, 
 		return nil, fmt.Errorf("(Error: CreateLeague) - failed to create transaction: %v", err)
 	}
 
-	// League was created
 	// Add the commissioner (creator of league) as a player
 	commisionerPlayer := &models.Player{
 		UserID:         league.CommissionerUserID,
 		LeagueID:       league.ID,
-		InLeagueName:   "",                  // can be set by player later
-		TeamName:       "Commissioner Team", // can be changed later (optional)
+		InLeagueName:   "",  // can be set by player later
+		TeamName:       nil, // can be changed later (optional)
 		DraftPoints:    int(league.StartingDraftPoints),
 		IsCommissioner: true,
 		DraftPosition:  1, // TODO: look into this. Should be random, no?
