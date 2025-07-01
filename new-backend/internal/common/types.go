@@ -29,6 +29,7 @@ type UpdateProfileRequest struct {
 	ShowdownName string `json:"showdown_name" binding:"omitempty"`
 }
 
+// -- Player Related --
 type PlayerRequest struct {
 	UserID       uuid.UUID `json:"user_id" binding:"required"`
 	LeagueID     uuid.UUID `json:"league_id" binding:"required"`
@@ -45,6 +46,26 @@ type UpdatePlayerInfoRequest struct {
 	DraftPosition *int    `json:"draft_position" binding:"omitempty" validate:"min=0"`
 }
 
+// -- DraftedPokemon Related --
+type DraftedPokemonCreateRequest struct {
+	LeagueID         uuid.UUID `json:"league_id" binding:"required"`
+	PlayerID         uuid.UUID `json:"player_id" binding:"required"`
+	PokemonSpeciesID uuid.UUID `json:"pokemon_species_id" binding:"required"`
+	DraftRoundNumber int       `json:"draft_round_number"`
+	DraftPickNumber  int       `json:"draft_pick_number"`
+	IsReleased       *bool     `json:"is_released,omitempty"`
+}
+
+type DraftedPokemonUpdateRequest struct {
+	LeagueID         *uuid.UUID `json:"league_id,omitempty"`
+	PlayerID         *uuid.UUID `json:"player_id,omitempty"`
+	PokemonSpeciesID *uuid.UUID `json:"pokemon_species_id,omitempty"`
+	DraftRoundNumber *int       `json:"draft_round_number,omitempty"`
+	DraftPickNumber  *int       `json:"draft_pick_number,omitempty"`
+	IsReleased       *bool      `json:"is_released,omitempty"`
+}
+
+// -- Webhook related --
 // represents the structure for sending messages to Discord webhooks.
 type DiscordWebhookPayload struct {
 	Content   string                `json:"content,omitempty"`

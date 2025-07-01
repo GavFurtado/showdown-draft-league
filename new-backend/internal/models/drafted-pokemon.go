@@ -27,4 +27,5 @@ type DraftedPokemon struct {
 	League         League         `gorm:"foreignKey:LeagueID"`
 	Player         Player         `gorm:"foreignKey:PlayerID"`
 	PokemonSpecies PokemonSpecies `gorm:"foreignKey:PokemonSpeciesID"`
+	LeaguePokemon  LeaguePokemon  `gorm:"foreignKey:LeaguePokemonID"`
 }
