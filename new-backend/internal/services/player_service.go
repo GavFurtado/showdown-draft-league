@@ -13,7 +13,7 @@ import (
 )
 
 type PlayerService interface {
-	CreatePlayerHandler(input *common.PlayerRequest) (*models.Player, error)
+	CreatePlayerHandler(input *common.PlayerCreateRequest) (*models.Player, error)
 
 	GetPlayerByIDHandler(playerID uuid.UUID, currentUser *models.User) (*models.Player, error)
 	GetPlayersByLeagueHandler(leagueID, userID uuid.UUID, isUserAnAdmin bool) ([]models.Player, error)
@@ -49,7 +49,7 @@ func NewPlayerService(
 	}
 }
 
-func (s *playerServiceImpl) CreatePlayerHandler(input *common.PlayerRequest) (*models.Player, error) {
+func (s *playerServiceImpl) CreatePlayerHandler(input *common.PlayerCreateRequest) (*models.Player, error) {
 	// fetch League and User details
 	league, err := s.leagueRepo.GetLeagueByID(input.LeagueID)
 	if err != nil {

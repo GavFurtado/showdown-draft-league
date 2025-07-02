@@ -12,7 +12,7 @@ type Player struct {
 	UserID         uuid.UUID      `gorm:"type:uuid;unique;not null" json:"user_id"`
 	LeagueID       uuid.UUID      `gorm:"type:uuid;unique;not null" json:"league_id"`
 	InLeagueName   string         `json:"in_league_name"`
-	TeamName       *string        `json:"team_name"`
+	TeamName       string         `gorm:"not null" json:"team_name"`
 	Wins           int            `gorm:"default:0;not null" json:"wins"`
 	Losses         int            `gorm:"default:0;not null" json:"losses"`
 	DraftPoints    int            `gorm:"default:140;not null" json:"points"`

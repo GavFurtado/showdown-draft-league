@@ -30,7 +30,7 @@ type UpdateProfileRequest struct {
 }
 
 // -- Player Related --
-type PlayerRequest struct {
+type PlayerCreateRequest struct {
 	UserID       uuid.UUID `json:"user_id" binding:"required"`
 	LeagueID     uuid.UUID `json:"league_id" binding:"required"`
 	InLeagueName *string   `json:"in_league_name" binding:"omitempty" validate:"min=3,max=20"`
