@@ -201,10 +201,7 @@ func (r *DraftedPokemonRepository) TradePokemon(draftedPokemonID, newPlayerID uu
 }
 
 // performs a draft transaction (draft Pokemon and update league Pokemon availability)
-func (r *DraftedPokemonRepository) DraftPokemonTransaction(
-	draftedPokemon *models.DraftedPokemon,
-	leagueID, pokemonSpeciesID uuid.UUID,
-) error {
+func (r *DraftedPokemonRepository) DraftPokemonTransaction(draftedPokemon *models.DraftedPokemon) error {
 	tx := r.db.Begin()
 	if tx.Error != nil {
 		return fmt.Errorf("(Error: DraftPokemonTransaction) - failed to start transaction: %w", tx.Error)
@@ -223,12 +220,38 @@ func (r *DraftedPokemonRepository) DraftPokemonTransaction(
 		return fmt.Errorf("(Error: DraftPokemonTransaction) - failed to create drafted pokemon: %w", err)
 	}
 
-	// Mark the Pokemon as unavailable in the league pool
+	// Mark the Pokemon as unavailable in the league pool using LeaguePokemonID
+	var leaguePokemon models.LeaguePokemon
+	if err := tx.First(&leaguePokemon, "id = ?", draftedPokemon.LeaguePokemonID).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("(Error: DraftPokemonTransaction) - failed to get league pokemon: %w", err)
+	}
+
 	if err := tx.Model(&models.LeaguePokemon{}).
-		Where("league_id = ? AND pokemon_species_id = ?", leagueID, pokemonSpeciesID).
+		Where("id = ?", draftedPokemon.LeaguePokemonID).
 		Update("is_available", false).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("(Error: DraftPokemonTransaction) - failed to mark pokemon unavailable: %w", err)
+	}
+
+	// Deduct DraftPoints from the player
+	var player models.Player
+	if err := tx.First(&player, "id = ?", draftedPokemon.PlayerID).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("(Error: DraftPokemonTransaction) - failed to get player: %w", err)
+	}
+
+	// Ensure player has enough points (this check should ideally also be done in service)
+	if player.DraftPoints < leaguePokemon.Cost {
+		tx.Rollback()
+		// Return a specific error for insufficient points
+		return fmt.Errorf("(Error: DraftPokemonTransaction) - insufficient draft points for player %s", player.ID)
+	}
+
+	player.DraftPoints -= leaguePokemon.Cost
+	if err := tx.Save(&player).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("(Error: DraftPokemonTransaction) - failed to update player points: %w", err)
 	}
 
 	return tx.Commit().Error

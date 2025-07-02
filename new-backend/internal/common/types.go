@@ -47,7 +47,7 @@ type UpdatePlayerInfoRequest struct {
 }
 
 // -- DraftedPokemon Related --
-type DraftedPokemonCreateRequest struct {
+type DraftedPokemonCreateDTO struct {
 	LeagueID         uuid.UUID `json:"league_id" binding:"required"`
 	PlayerID         uuid.UUID `json:"player_id" binding:"required"`
 	PokemonSpeciesID uuid.UUID `json:"pokemon_species_id" binding:"required"`

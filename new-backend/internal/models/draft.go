@@ -16,7 +16,7 @@ type Draft struct {
 	Status                      DraftStatus       `gorm:"type:varchar(50);not null;default:'PENDING'" json:"status"`
 	CurrentTurnPlayerID         *uuid.UUID        `gorm:"type:uuid;index" json:"current_turn_player_id"` // Nullable: Player whose turn it is
 	CurrentRound                int               `gorm:"default:1;not null" json:"current_round"`
-	CurrentPickInRound          int               `gorm:"default:0;not null" json:"current_pick_in_round"`              // Current pick number within the round (0-based)
+	CurrentPickInRound          int               `gorm:"default:0;not null" json:"current_pick_in_round"`              // Current pick number within the round (1-based)
 	PlayersWithAccumulatedPicks map[uuid.UUID]int `gorm:"type:jsonb" json:"players_with_accumulated_picks"`             // Map of PlayerID to accumulated picks
 	CurrentTurnStartTime        *time.Time        `gorm:"type:timestamp with time zone" json:"current_turn_start_time"` // When the current turn started
 	TurnTimeLimit               int               `gorm:"default:43200;not null" json:"turn_time_limit"`                // Time limit per turn in seconds (default: 12 hours = 43200 seconds)
