@@ -140,25 +140,6 @@ func (s *draftServiceImpl) StartDraft(currentUser *models.User, leagueID uuid.UU
 	return draft, nil
 }
 
-/**
-2.  **Refactor `DraftService` Core:**
-    *   **Implement Main Draft Flow:** The `MakePick` function will be enhanced to handle the full pick process:
-        *   Fetching the current `Draft` and associated `League` state.
-        *   Validating the draft status (must be `STARTED`).
-        *   Authorizing the user (must be the current turn player or commissioner/admin).
-        *   Validating the selected `PokemonSpecies`: ensure it exists, is in the league's available pool (`LeaguePokemon`), and is not already drafted (unless it's a free agent pickup).
-        *   Getting the next sequential draft pick number for the league.
-        *   Creating the `models.DraftedPokemon` instance for the pick.
-        *   Executing the database operations atomically (transaction) to:
-            *   Create the `DraftedPokemon` record.
-            *   Mark the corresponding `LeaguePokemon` entry as unavailable (`IsAvailable = false`).
-            *   Update the `Draft` model (increment pick number, update round, set next turn player, update turn start time).
-            *   Update the `Player`'s draft points if applicable (e.g., for free agency pickups).
-        *   Handling the transition to the next turn, including calculating the next player based on snake/non-snake format.
-        *   Checking for draft completion and updating statuses if necessary.
-        *   Triggering webhook notifications for successful picks and turn changes.
-*/
-
 // assuming the controller fetches the draft to send it here
 // only used for the initial draft (not free agent transactions)
 func (s *draftServiceImpl) MakePick(currentUser *models.User, league *models.League, leaguePokemonID uuid.UUID) error {

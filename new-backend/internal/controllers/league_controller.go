@@ -12,18 +12,26 @@ import (
 	"github.com/google/uuid"
 )
 
-type LeagueController struct {
+type LeagueController interface {
+	// creates a new league if the user has less than 2 leagues commissioned
+	CreateLeague(ctx *gin.Context)
+	// handles fetching a league by ID for an authorized user.
+	GetLeague(ctx *gin.Context)
+}
+
+type leagueControllerImpl struct {
 	leagueService services.LeagueService
 }
 
-func NewLeagueController(leagueService services.LeagueService) LeagueController {
-	return LeagueController{
+func NewLeagueController(leagueService services.LeagueService) *leagueControllerImpl {
+	return &leagueControllerImpl{
 		leagueService: leagueService,
 	}
 }
 
+// POST /api/leagues
 // creates a new league if the current user has less than 2 Leagues commisioned
-func (ctrl *LeagueController) CreateLeague(ctx *gin.Context) {
+func (ctrl *leagueControllerImpl) CreateLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
 		log.Printf("(Error: CreateLeague) - no user in context\n")
@@ -54,8 +62,9 @@ func (ctrl *LeagueController) CreateLeague(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, league)
 }
 
+// GET /api/leagues/:id
 // handles fetching a league by ID for an authorized user.
-func (ctrl *LeagueController) GetLeague(ctx *gin.Context) {
+func (ctrl *leagueControllerImpl) GetLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
 		log.Printf("(Error: GetLeague) - no user in context\n")

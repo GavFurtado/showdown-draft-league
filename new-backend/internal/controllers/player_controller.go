@@ -10,7 +10,6 @@ import (
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"golang.org/x/text/cases"
 )
 
 // handles player-related HTTP requests.
@@ -25,7 +24,7 @@ type PlayerController interface {
 	GetPlayersByUser(ctx *gin.Context)
 	// Get a player with their full roster
 	GetPlayerWithFullRoster(ctx *gin.Context)
-	// Update a player's profile (in-league name, team name); Expects a payload
+	// Update a player's profile; Expects a payload
 	UpdatePlayerProfile(ctx *gin.Context)
 }
 
@@ -125,7 +124,7 @@ func (c *playerControllerImpl) GetPlayerByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, player)
 }
 
-// GET /api/:leagueID/players
+// GET /api/:id/players
 // GET all players in a league :leagueId
 func (c *playerControllerImpl) GetPlayersByLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
@@ -136,7 +135,7 @@ func (c *playerControllerImpl) GetPlayersByLeague(ctx *gin.Context) {
 	}
 
 	// get param
-	leagueIDStr := ctx.Param("leagueID")
+	leagueIDStr := ctx.Param("id")
 	leagueID, err := uuid.Parse(leagueIDStr)
 	if err != nil { // if the str was "" (which btw idk how that happens) it's still handled here
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
@@ -165,7 +164,7 @@ func (c *playerControllerImpl) GetPlayersByLeague(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, players)
 }
 
-// (GET /users/:userID/players)
+// (GET /users/:id/players)
 // Get all players associated with a specific user
 func (c playerControllerImpl) GetPlayersByUser(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
@@ -177,7 +176,7 @@ func (c playerControllerImpl) GetPlayersByUser(ctx *gin.Context) {
 	}
 
 	// get param
-	userIDstr := ctx.Param("userID")
+	userIDstr := ctx.Param("id")
 	userID, err := uuid.Parse(userIDstr)
 	if err != nil { // if the str was "" (which btw idk how that happens) it's still handled here
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
@@ -203,7 +202,7 @@ func (c playerControllerImpl) GetPlayersByUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, players)
 }
 
-// GET /players/:playerID/roster
+// GET /players/:id/roster
 // Get a player with their full roster
 func (c *playerControllerImpl) GetPlayerWithFullRoster(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
@@ -215,8 +214,8 @@ func (c *playerControllerImpl) GetPlayerWithFullRoster(ctx *gin.Context) {
 	}
 
 	// get param
-	playerIDStr := ctx.Param("playerID")
-	playerID, err := uuid.Parse(userIDsi)
+	playerIDStr := ctx.Param("id")
+	playerID, err := uuid.Parse(playerIDStr)
 	if err != nil { // if the str was "" (which btw idk how that happens) it's still handled here
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
 		return
@@ -243,8 +242,8 @@ func (c *playerControllerImpl) GetPlayerWithFullRoster(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, player)
 }
 
-// PUT /players/:playerID/profile
-// Update a player's profile (in-league name, team name) Expects a payload
+// PUT /players/:id/profile
+// Update a player's profile; Expects a payload
 func (c *playerControllerImpl) UpdatePlayerProfile(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
@@ -261,7 +260,7 @@ func (c *playerControllerImpl) UpdatePlayerProfile(ctx *gin.Context) {
 		return
 	}
 
-	playerIDstr := ctx.Param("playerID")
+	playerIDstr := ctx.Param("id")
 	playerID, err := uuid.Parse(playerIDstr)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
@@ -277,6 +276,7 @@ func (c *playerControllerImpl) UpdatePlayerProfile(ctx *gin.Context) {
 	}
 
 	// TO POINTER OR NOT TO POINTER???????????????????????????????
+	// i shall find out soon when i test
 
 	if req.DraftPoints != nil {
 		player = c.updatePlayerDraftPoints(ctx, currentUser, playerID, req.DraftPoints)
@@ -384,6 +384,3 @@ func (c *playerControllerImpl) updatePlayerRecord(ctx *gin.Context, currentUser 
 	}
 	return player
 }
-
-// IMMEDIATE: FIGURE OUT IF ITS GOTTA BE POINTERS OR NON POINTERS; TO CHECK FOR NULLS OR NOT TO BE
-// would be easier to do this if you ever wrote tests but you dont
