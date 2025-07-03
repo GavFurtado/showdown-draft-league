@@ -47,7 +47,7 @@ func (ctrl *leagueControllerImpl) CreateLeague(ctx *gin.Context) {
 
 	log.Printf("(CreateLeague) - Received league creation request: %v", req)
 
-	league, err := ctrl.leagueService.CreateLeague(currentUser.ID, req)
+	league, err := ctrl.leagueService.CreateLeague(currentUser.ID, &req)
 	if err != nil {
 		log.Printf("(Error: CreateLeague) - Service failed: %v\n", err)
 		// Check for specific service errors to return appropriate HTTP status

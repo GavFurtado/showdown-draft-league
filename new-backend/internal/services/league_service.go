@@ -14,7 +14,7 @@ import (
 // defines the interface for league-related business logic.
 type LeagueService interface {
 	// handles the business logic for creating a new league.
-	CreateLeague(userID uuid.UUID, input *common.LeagueRequest) (*models.League, error)
+	CreateLeague(userID uuid.UUID, req *common.LeagueRequest) (*models.League, error)
 	// Get league entity using leagueID
 	GetLeagueByIDForUser(userID, leagueID uuid.UUID) (*models.League, error)
 }

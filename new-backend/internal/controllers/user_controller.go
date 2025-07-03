@@ -116,5 +116,5 @@ func (ctrl *UserController) GetMyLeagues(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"leagues": leagues}) // lets hope i didn't screw up the json tags
+	ctx.JSON(http.StatusOK, leagues) // lets hope i didn't screw up the json tags
 }

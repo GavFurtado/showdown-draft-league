@@ -38,7 +38,7 @@ func NewPlayerController(playerService services.PlayerService) *playerController
 	}
 }
 
-// POST /api/league/:id/join (id being leagueID)
+// POST /api/leagues/:id/join (id being leagueID)
 // Creates a player for the league :id, essentially joining the league
 func (c *playerControllerImpl) JoinLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
@@ -124,8 +124,8 @@ func (c *playerControllerImpl) GetPlayerByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, player)
 }
 
-// GET /api/:id/players
-// GET all players in a league :leagueId
+// GET /api/leagues/:id/players
+// GET all players in a league :id
 func (c *playerControllerImpl) GetPlayersByLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
@@ -247,15 +247,12 @@ func (c *playerControllerImpl) GetPlayerWithFullRoster(ctx *gin.Context) {
 func (c *playerControllerImpl) UpdatePlayerProfile(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
-		log.Printf("PlayerController: UpdatePlayerProfile - no user in context\n")
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrNoUserInContext.Error()})
 		return
-
 	}
 
 	var req common.UpdatePlayerInfoRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		log.Printf("PlayerController: UpdatePlayerProfile - bad request\n")
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -267,64 +264,70 @@ func (c *playerControllerImpl) UpdatePlayerProfile(ctx *gin.Context) {
 		return
 	}
 
-	var player *models.Player
+	var updatedPlayer *models.Player
 
-	// validate fields in the req (four different service methods update the profile of a player)
-	// use local helpers for selective updating
 	if req.TeamName != nil || req.InLeagueName != nil {
-		player = c.updatePlayerProfile(ctx, currentUser, playerID, req.InLeagueName, req.TeamName)
+		updatedPlayer = c.updatePlayerProfileFields(ctx, currentUser, playerID, req.InLeagueName, req.TeamName)
+		if ctx.Writer.Written() {
+			return
+		}
 	}
 
-	// TO POINTER OR NOT TO POINTER???????????????????????????????
-	// i shall find out soon when i test
-
 	if req.DraftPoints != nil {
-		player = c.updatePlayerDraftPoints(ctx, currentUser, playerID, req.DraftPoints)
+		updatedPlayer = c.updatePlayerDraftPoints(ctx, currentUser, playerID, req.DraftPoints)
+		if ctx.Writer.Written() {
+			return
+		}
 	}
 
 	if req.DraftPosition != nil {
-		player = c.updatePlayerDraftPosition(ctx, currentUser, playerID, req.DraftPosition)
+		updatedPlayer = c.updatePlayerDraftPosition(ctx, currentUser, playerID, req.DraftPosition)
+		if ctx.Writer.Written() {
+			return
+		}
 	}
 
 	if req.Wins != nil || req.Losses != nil {
-		player = c.updatePlayerRecord(ctx, currentUser, playerID, *req.Wins, *req.Losses)
+		if req.Wins == nil || req.Losses == nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Both wins and losses must be provided to update record"})
+			return
+		}
+		updatedPlayer = c.updatePlayerRecord(ctx, currentUser, playerID, *req.Wins, *req.Losses)
+		if ctx.Writer.Written() {
+			return
+		}
 	}
 
-	ctx.JSON(http.StatusOK, player)
+	ctx.JSON(http.StatusOK, updatedPlayer)
 }
 
 // -- Update Player Profile helper functions --
-// returns no errors because the errors are managed here (yes i am making exception)
-func (c *playerControllerImpl) updatePlayerProfile(ctx *gin.Context, currentUser *models.User, playerID uuid.UUID, inLeagueName *string, teamName *string) *models.Player {
+
+// updatePlayerProfileFields updates the in-league name and team name.
+func (c *playerControllerImpl) updatePlayerProfileFields(ctx *gin.Context, currentUser *models.User, playerID uuid.UUID, inLeagueName *string, teamName *string) *models.Player {
 	player, err := c.playerService.UpdatePlayerProfile(currentUser, playerID, inLeagueName, teamName)
 	if err != nil {
-		// yes this is not the right method technically but it basically is
-		log.Printf("PlayerController: UpdatePlayerProfile - error occured in the Service Method")
 		switch err {
 		case common.ErrPlayerNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		case common.ErrTeamNameTaken:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		case common.ErrTeamNameTaken:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		case common.ErrInLeagueNameTaken, common.ErrTeamNameTaken:
+			ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 		case common.ErrInternalService:
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		case common.ErrUnauthorized:
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		default:
-			// fallback
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unxpected error"})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "unexpected error"})
 		}
 		return nil
 	}
 	return player
 }
 
+// updatePlayerDraftPoints updates a player's draft points.
 func (c *playerControllerImpl) updatePlayerDraftPoints(ctx *gin.Context, currentUser *models.User, playerID uuid.UUID, draftPoints *int) *models.Player {
 	player, err := c.playerService.UpdatePlayerDraftPoints(currentUser, playerID, draftPoints)
 	if err != nil {
-		// yes this is not the right method technically but it basically is
-		log.Printf("PlayerController: UpdatePlayerProfile - error occured in the Service Method")
 		switch err {
 		case common.ErrPlayerNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
@@ -333,21 +336,17 @@ func (c *playerControllerImpl) updatePlayerDraftPoints(ctx *gin.Context, current
 		case common.ErrUnauthorized:
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		default:
-			// fallback
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unxpected error"})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "unexpected error"})
 		}
 		return nil
 	}
 	return player
-
 }
 
+// updatePlayerDraftPosition updates a player's draft position.
 func (c *playerControllerImpl) updatePlayerDraftPosition(ctx *gin.Context, currentUser *models.User, playerID uuid.UUID, draftPosition *int) *models.Player {
-
-	player, err := c.playerService.UpdatePlayerDraftPosition(currentUser, playerID, draftPosition)
+	player, err := c.playerService.UpdatePlayerDraftPosition(currentUser, playerID, *draftPosition)
 	if err != nil {
-		// yes this is not the right method technically but it basically is
-		log.Printf("PlayerController: UpdatePlayerProfile - error occured in the Service Method")
 		switch err {
 		case common.ErrPlayerNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
@@ -356,19 +355,17 @@ func (c *playerControllerImpl) updatePlayerDraftPosition(ctx *gin.Context, curre
 		case common.ErrUnauthorized:
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		default:
-			// fallback
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unxpected error"})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "unexpected error"})
 		}
 		return nil
 	}
 	return player
 }
 
+// updatePlayerRecord updates a player's win/loss record.
 func (c *playerControllerImpl) updatePlayerRecord(ctx *gin.Context, currentUser *models.User, playerID uuid.UUID, wins int, losses int) *models.Player {
 	player, err := c.playerService.UpdatePlayerRecord(currentUser, playerID, wins, losses)
 	if err != nil {
-		// yes this is not the right method technically but it basically is
-		log.Printf("PlayerController: UpdatePlayerProfile - error occured in the Service Method")
 		switch err {
 		case common.ErrPlayerNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
@@ -377,10 +374,11 @@ func (c *playerControllerImpl) updatePlayerRecord(ctx *gin.Context, currentUser 
 		case common.ErrUnauthorized:
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		default:
-			// fallback
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unxpected error"})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "unexpected error"})
 		}
 		return nil
 	}
 	return player
 }
+
+// --  END Update Player Profile helper functions --
