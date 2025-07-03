@@ -21,7 +21,7 @@ type PlayerService interface {
 	GetPlayerWithFullRosterHandler(playerID, currentUserID uuid.UUID, isCurrentUserAnAdmin bool) (*models.Player, error)
 
 	UpdatePlayerProfile(currentUser *models.User, playerID uuid.UUID, inLeagueName *string, teamName *string) (*models.Player, error)
-	UpdatePlayerDraftPoints(currentUser *models.User, playerID uuid.UUID, draftPoints int) (*models.Player, error)
+	UpdatePlayerDraftPoints(currentUser *models.User, playerID uuid.UUID, draftPoints *int) (*models.Player, error)
 	UpdatePlayerRecord(currentUser *models.User, playerID uuid.UUID, wins int, losses int) (*models.Player, error)
 	UpdatePlayerDraftPosition(currentUser *models.User, playerID uuid.UUID, draftPosition int) (*models.Player, error)
 
@@ -213,6 +213,8 @@ func (s *playerServiceImpl) GetPlayersByUserHandler(
 		return nil, fmt.Errorf("%w: failed to retrieve player data", common.ErrInternalService)
 	}
 
+	// TODO: why did I invert the flow like this. TF is wrong with me
+
 	// is currentUser an admin or is requesting their own player
 	if isCurrentUserAnAdmin || currentUserID == userID {
 		log.Printf("Service: GetPlayersByUserHandler - User %s (admin or self) accessing players for user %s.", currentUserID, userID)
@@ -265,6 +267,7 @@ func (s *playerServiceImpl) UpdatePlayerProfile(
 	inLeagueName *string,
 	teamName *string,
 ) (*models.Player, error) {
+	// fetch existing user
 	existingPlayer, err := s.playerRepo.GetPlayerByID(playerID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -277,11 +280,15 @@ func (s *playerServiceImpl) UpdatePlayerProfile(
 
 	isSelfUpdate := currentUser.ID == existingPlayer.UserID
 	isCommissioner := false
+
+	// fetch league
 	league, err := s.leagueRepo.GetLeagueByID(existingPlayer.LeagueID)
 	if err != nil {
 		log.Printf("Service: UpdatePlayerProfile - Failed to fetch league %s for player %s: %v", existingPlayer.LeagueID, playerID, err)
 		return nil, fmt.Errorf("%w: could not verify league for authorization", common.ErrInternalService)
 	}
+
+	// set commisioner
 	if league.CommissionerUserID == currentUser.ID {
 		isCommissioner = true
 	}
@@ -343,7 +350,7 @@ func (s *playerServiceImpl) UpdatePlayerProfile(
 func (s *playerServiceImpl) UpdatePlayerDraftPoints(
 	currentUser *models.User,
 	playerID uuid.UUID,
-	draftPoints int,
+	draftPoints *int, // inconsistent pointer vs non pointer with the update profile related services
 ) (*models.Player, error) {
 
 	// Fetch the player to verify league context and authorization
@@ -368,8 +375,14 @@ func (s *playerServiceImpl) UpdatePlayerDraftPoints(
 		return nil, common.ErrUnauthorized
 	}
 
+	if draftPoints == nil {
+		// how is this possbile?
+		log.Printf("Service: UpdatePlayerDraftPoints - request draft points is somehow nil (should be impossible in the service layer)")
+		return nil, common.ErrInternalService
+	}
+
 	// 3. Perform update using the specific repository method
-	err = s.playerRepo.UpdatePlayerDraftPoints(playerID, draftPoints)
+	err = s.playerRepo.UpdatePlayerDraftPoints(playerID, *draftPoints)
 	if err != nil {
 		log.Printf("Service: UpdatePlayerDraftPoints - Failed to update player %s draft points: %v", playerID, err)
 		return nil, fmt.Errorf("%w: failed to update player draft points", common.ErrInternalService)
