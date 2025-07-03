@@ -59,8 +59,8 @@ var LeagueStatuses = []LeagueStatus{
 	LeagueStatusCancelled,
 }
 
-// checks if LeagueStatus isValid
-func (ls LeagueStatus) isValid() bool {
+// checks if LeagueStatus IsValid
+func (ls LeagueStatus) IsValid() bool {
 	for _, status := range LeagueStatuses {
 		if ls == status {
 			return true
@@ -79,7 +79,7 @@ func (ls LeagueStatus) String() string {
 // Value() implements the driver.Valuer interface for GORM/database saving.
 // Tells GORM how to convert the custom type into a database-compatible type (string).
 func (ls LeagueStatus) Value() (driver.Value, error) {
-	if !ls.isValid() {
+	if !ls.IsValid() {
 		return nil, fmt.Errorf("invalid LeagueStatus value: %s", ls)
 	}
 	return string(ls), nil
@@ -98,7 +98,7 @@ func (ls *LeagueStatus) Scan(value interface{}) error {
 	}
 	// Important: Validate the string from the database to ensure it's a known status
 	newStatus := LeagueStatus(str)
-	if !newStatus.isValid() {
+	if !newStatus.IsValid() {
 		return fmt.Errorf("invalid LeagueStatus value retrieved from DB: %s", str)
 	}
 	*ls = newStatus

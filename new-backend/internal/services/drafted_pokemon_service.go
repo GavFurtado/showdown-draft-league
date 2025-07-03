@@ -13,8 +13,6 @@ import (
 )
 
 type DraftedPokemonService interface {
-	// creates a new drafted Pokemon entry.
-	CreateDraftedPokemon(req *common.DraftedPokemonCreateRequest) (*models.DraftedPokemon, error)
 	// gets drafted Pokemon by ID with relationships.
 	GetDraftedPokemonByID(currentUser *models.User, id uuid.UUID) (*models.DraftedPokemon, error)
 	// gets all Pokemon drafted by a specific player.

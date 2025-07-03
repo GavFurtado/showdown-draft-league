@@ -25,12 +25,8 @@ type LeagueRequest struct {
 	EndDate               *time.Time `json:"end_date" binding:"omitempty,datetime=02/01/2006"`
 }
 
-type UpdateProfileRequest struct {
-	ShowdownName string `json:"showdown_name" binding:"omitempty"`
-}
-
 // -- Player Related --
-type PlayerRequest struct {
+type PlayerCreateRequest struct {
 	UserID       uuid.UUID `json:"user_id" binding:"required"`
 	LeagueID     uuid.UUID `json:"league_id" binding:"required"`
 	InLeagueName *string   `json:"in_league_name" binding:"omitempty" validate:"min=3,max=20"`
@@ -38,16 +34,18 @@ type PlayerRequest struct {
 }
 
 type UpdatePlayerInfoRequest struct {
-	InLeagueName  *string `json:"in_league_name" binding:"omitempty" validate:"min=3,max=20"`
-	TeamName      *string `json:"team_name" binding:"omitempty" validate:"min=3,max=20"`
-	Wins          *int    `json:"wins" binding:"omitempty" validate:"min=0"`
-	Losses        *int    `json:"losses" binding:"omitempty" validate:"min=0"`
-	DraftPoints   *int    `json:"draft_points" binding:"omitempty" validate:"min=0"`
-	DraftPosition *int    `json:"draft_position" binding:"omitempty" validate:"min=0"`
+	InLeagueName *string `json:"in_league_name" binding:"omitempty" validate:"min=3,max=20"`
+	TeamName     *string `json:"team_name" binding:"omitempty" validate:"min=3,max=20"`
+	// TODO: i forgot to add this field before and now i cba to add this functionality rnrn
+	// ShowdownName *string `json:"showdown_name" binding:"omitempty"`
+	Wins          *int `json:"wins" binding:"omitempty" validate:"min=0"`
+	Losses        *int `json:"losses" binding:"omitempty" validate:"min=0"`
+	DraftPoints   *int `json:"draft_points" binding:"omitempty" validate:"min=0"`
+	DraftPosition *int `json:"draft_position" binding:"omitempty" validate:"min=0"`
 }
 
 // -- DraftedPokemon Related --
-type DraftedPokemonCreateRequest struct {
+type DraftedPokemonCreateDTO struct {
 	LeagueID         uuid.UUID `json:"league_id" binding:"required"`
 	PlayerID         uuid.UUID `json:"player_id" binding:"required"`
 	PokemonSpeciesID uuid.UUID `json:"pokemon_species_id" binding:"required"`

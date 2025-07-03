@@ -59,7 +59,7 @@ func (ctrl *LeagueController) GetLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
 		log.Printf("(Error: GetLeague) - no user in context\n")
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "User information not available"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrNoUserInContext.Error()})
 		return
 	}
 
@@ -68,7 +68,7 @@ func (ctrl *LeagueController) GetLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(leagueIDStr)
 	if err != nil {
 		log.Printf("(Error: GetLeague) - Invalid league ID format: %v\n", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid league ID format"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
 		return
 	}
 

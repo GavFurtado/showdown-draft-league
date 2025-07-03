@@ -4,6 +4,7 @@ import Login from "./pages/login"
 import Navbar from "./componenets/navbar"
 import Dashboard from './pages/dashboard';
 import StandingsTable from './pages/dashboard';
+import Draftboard from "./pages/draftboard"
 function App() {
 
   return (
@@ -11,7 +12,8 @@ function App() {
       <Navbar />       { /* Add auth to Navbar so that it only shows when user is logged in */ }
       <Routes>
         <Route path='/dashboard' element={<Dashboard />}/>
-        <Route path='/' element={<Login />}/>
+        <Route path='/' element={<Login />} />
+        <Route path='/bruh' element={<Draftboard />} />
       </Routes>
     </BrowserRouter>
   )

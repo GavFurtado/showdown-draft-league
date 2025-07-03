@@ -10,6 +10,7 @@ var (
 	ErrPlayerNotFound         = errors.New("player not found")
 	ErrPokemonSpeciesNotFound = errors.New("species not found")
 	ErrDraftedPokemonNotFound = errors.New("drafted pokemon instance not found")
+	ErrDraftNotFound          = errors.New("drafted information not found for league")
 
 	// Player creation specific errors
 	ErrUserAlreadyInLeague  = errors.New("user is already a player in this league")
@@ -25,7 +26,13 @@ var (
 	ErrMaxLeagueCreationLimitReached = errors.New("maximum league creation limit reached")
 	ErrInvalidInput                  = errors.New("invalid input/request")
 	ErrConflict                      = errors.New("record already exists. cannot make a duplicate")
+	ErrInvalidState                  = errors.New("invalid state for this operation")
+	ErrInsufficientDraftPoints       = errors.New("insufficient draft points to complete this operation")
 
 	// Internal Service Errors
 	ErrInternalService = errors.New("internal service error")
+
+	// Controller Errors
+	ErrParsingParams   = errors.New("error parsing params")
+	ErrNoUserInContext = errors.New("user information not available")
 )
