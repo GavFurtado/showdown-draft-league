@@ -30,7 +30,7 @@ type League struct {
 
 	// Relationships
 	CommissionerUserID uuid.UUID `gorm:"type:uuid;not null" json:"commissioner_id"`
-	CommisionerUser    User      `gorm:"foreignKey:CommisionerUserID"`
+	CommissionerUser   User      `gorm:"foreignKey:CommissionerUserID;references:ID"`
 	Players            []Player  `gorm:"foreignKey:LeagueID"`
 	// League has many LeaguePokemon (its defined draft pool)
 	DefinedPokemon []LeaguePokemon `gorm:"foreignKey:LeagueID" json:"-"`

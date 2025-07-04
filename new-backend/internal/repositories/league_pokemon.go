@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"

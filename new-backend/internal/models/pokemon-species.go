@@ -8,7 +8,7 @@ import (
 type PokemonSpecies struct {
 	ID    uint     `gorm:"primaryKey;uniqueIndex" json:"id"`
 	Name  string   `gorm:"not null" json:"name"`
-	Types []string `gorm:"text[]" json:"types"`
+	Types []string `gorm:"type:jsonb" json:"types"`
 
 	// Abilities: Stored as JSONB, GORM will marshal/unmarshal slice of structs
 	Abilities []Ability `gorm:"type:jsonb" json:"abilities"`

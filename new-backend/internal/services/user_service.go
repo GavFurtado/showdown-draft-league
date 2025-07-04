@@ -75,8 +75,8 @@ func (s *userServiceImpl) UpdateProfileHandler(userID uuid.UUID, input common.Up
 		return nil, common.ErrInternalService
 	}
 
-	if input.ShowdownName != "" {
-		user.ShowdownUsername = input.ShowdownName
+	if input.ShowdownName != nil {
+		user.ShowdownUsername = *input.ShowdownName
 	}
 
 	updatedUser, err := s.userRepo.UpdateUser(user)

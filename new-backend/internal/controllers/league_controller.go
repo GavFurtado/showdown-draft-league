@@ -100,3 +100,5 @@ func (ctrl *leagueControllerImpl) GetLeague(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, league)
 }
+
+// other league controllers

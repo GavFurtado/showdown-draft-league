@@ -90,40 +90,6 @@ func (s *draftedPokemonServiceImpl) isUserPlayerInLeague(userID, leagueID uuid.U
 
 // --- Service Methods ---
 
-// creates a new drafted Pokemon entry.
-func (s *draftedPokemonServiceImpl) CreateDraftedPokemon(req *common.DraftedPokemonCreateRequest) (*models.DraftedPokemon, error) {
-	draftedPokemon := &models.DraftedPokemon{
-		LeagueID:         req.LeagueID,
-		PlayerID:         req.PlayerID,
-		PokemonSpeciesID: req.PokemonSpeciesID,
-		DraftRoundNumber: req.DraftRoundNumber,
-		DraftPickNumber:  req.DraftPickNumber,
-	}
-
-	if req.IsReleased != nil {
-		draftedPokemon.IsReleased = *req.IsReleased
-	} else {
-		// GORM handles `default:false`.
-	}
-
-	// TODO: adjust this once draft model is fixed
-	// Perhaps check the Draft model's current Draft number
-	// check if drafting is completed etc (although controller shouldn't let a req reach here in that case)
-	if draftedPokemon.DraftRoundNumber == 0 {
-		// rn 0 is fine
-	}
-	if draftedPokemon.DraftPickNumber == 0 {
-		// 0 is fine for now
-	}
-
-	returnedDraftedPokemon, err := s.draftedPokemonRepo.CreateDraftedPokemon(draftedPokemon)
-	if err != nil {
-		return nil, err
-	}
-
-	return returnedDraftedPokemon, nil
-}
-
 // gets drafted Pokemon by ID with relationships.
 func (s *draftedPokemonServiceImpl) GetDraftedPokemonByID(currentUser *models.User, id uuid.UUID) (*models.DraftedPokemon, error) {
 	pokemon, err := s.draftedPokemonRepo.GetDraftedPokemonByID(id)
@@ -546,7 +512,7 @@ func (s *draftedPokemonServiceImpl) DraftPokemonTransaction(
 	// Does the pokemon species exist in the league pool and is it available? (Can be checked here)
 	// Does the player have enough draft points? (Can be checked here)
 
-	err = s.draftedPokemonRepo.DraftPokemonTransaction(draftedPokemon, leagueID, pokemonSpeciesID)
+	err = s.draftedPokemonRepo.DraftPokemonTransaction(draftedPokemon)
 	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.DraftPokemonTransaction) - Failed to perform draft transaction for league %s, species %s: %v", leagueID, pokemonSpeciesID, err)
 		return fmt.Errorf("failed to perform draft transaction: %w", err)

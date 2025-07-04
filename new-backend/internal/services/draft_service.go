@@ -250,7 +250,7 @@ func (s *draftServiceImpl) MakePick(currentUser *models.User, league *models.Lea
 
 	// update draft model
 	// get all players to change set the CurrentPlayer's turn for the next one
-	allPlayers, err := s.playerRepo.GetPlayersByLeague()
+	allPlayers, err := s.playerRepo.GetPlayersByLeague(draft.LeagueID)
 	if err != nil {
 		log.Printf("DraftService: MakePick - Could not get all players in league %d: %w\n", league.ID, err)
 		return common.ErrInternalService

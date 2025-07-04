@@ -26,7 +26,7 @@ func LoadConfig() *Config {
 		JWTSecret:           getEnv("JWT_SECRET"),
 	}
 
-	Assert((cfg.DiscordClientID == "" || cfg.DiscordClientSecret == "" || cfg.DiscordRedirectURI == "" ||
+	Assert(!(cfg.DiscordClientID == "" || cfg.DiscordClientSecret == "" || cfg.DiscordRedirectURI == "" ||
 		cfg.AppBaseURL == "" || cfg.DatabaseURL == "" || cfg.JWTSecret == ""),
 		"Missing required environment variables for Discord OAuth or database connection.")
 

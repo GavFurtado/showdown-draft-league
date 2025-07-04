@@ -25,8 +25,8 @@ type DraftedPokemon struct {
 	DeletedAt  gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relationships
-	League         League         `gorm:"foreignKey:LeagueID"`
-	Player         Player         `gorm:"foreignKey:PlayerID"`
-	PokemonSpecies PokemonSpecies `gorm:"foreignKey:PokemonSpeciesID"`
-	LeaguePokemon  LeaguePokemon  `gorm:"foreignKey:LeaguePokemonID"`
+	League         League         `gorm:"foreignKey:LeagueID;references:ID"`
+	Player         Player         `gorm:"foreignKey:PlayerID;references:ID"`
+	PokemonSpecies PokemonSpecies `gorm:"foreignKey:PokemonSpeciesID;references:ID"`
+	LeaguePokemon  LeaguePokemon  `gorm:"foreignKey:LeaguePokemonID;references:ID"`
 }
