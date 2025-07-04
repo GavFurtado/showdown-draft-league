@@ -1,12 +1,7 @@
 import React, { useState } from 'react';
 
-export default function PokemonCard() {
-    const [isFlipped, setIsFlipped] = useState(false);
-    const pokemon={
-        pic:"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/257.png",
-        name:"Blaziken",
-        cost:10,
-    }   
+export default function PokemonCard(pokemon) {
+    const [isFlipped, setIsFlipped] = useState(false); 
     const handleFlip = () => {
         setIsFlipped(!isFlipped);
     };
@@ -19,7 +14,7 @@ export default function PokemonCard() {
     return (
         // Container of the whole thing : Sets perspective for effect and provides a clickable area
         <div
-        className=" group h-80 w-60 rounded-lg shadow-lg relative cursor-pointer [perspective:1000px]" // Fixed size for the card
+        className=" group h-70 w-47 rounded-lg shadow-lg relative cursor-pointer [perspective:1000px]" // Fixed size for the card
         onClick={handleFlip}
         >
         {/* Inner container: This is the part that actually flips */}
@@ -43,13 +38,16 @@ export default function PokemonCard() {
                 />
                 <div className='flex justify-between w-[100%]'>
                     {/* Pokémon Name */}
-                    <h3 className="text-xl font-bold text-gray-800 mb-2 text-center">
+                    <div>
+                    <h3 className="text-lg pb-0 mb-0 font-bold text-gray-800 mb-2 text-center">
                         {pokemon.name}
                     </h3>
+                    <p className='p-0 m-0'>{pokemon.type}</p>
+                    </div>
 
                     {/* Pokémon Cost */}
                     <p className="text-lg font-semibold">
-                        {pokemon.cost}
+                        {pokemon.cost || 10}
                     </p>
                 </div>
                 
@@ -57,17 +55,22 @@ export default function PokemonCard() {
 
             {/* Back Face of the Card */}
             <div className="absolute inset-0 bg-gray-700 text-white rounded-lg p-4 flex flex-col [backface-visibility:hidden] [transform:rotateY(180deg)]">
-                <h3 className="text-2xl font-bold mb-4 text-center">
+                <h3 className="text-l font-bold mb-4 text-center">
                     {pokemon.name}
                 </h3>
-                <p className="text-base text-center mb-auto">
-                    Super Cool Pokemon bruh
-                </p>
-                <ul className="text-left mt-4 ">
-                    <li>Type: Fire</li>
-                    <li>Ability: kicking or sum</li>
-                    <li>HP: 69420</li>
+                <ul className="text-left text-s">
+                    <li>Hp: {pokemon.hp}</li>
+                    <li>Attack: {pokemon.attack}</li>
+                    <li>Defense: {pokemon.defense}</li>
+                    <li>Special Attack: {pokemon.specialAtk}</li>
+                    <li>Special Defense: {pokemon.specialDef}</li>
+                    <li>Speed: {pokemon.speed}</li>
+                    <li>Abilities: {pokemon.ability}</li>
+
                 </ul>
+                <p className="text-base text-center mb-auto">
+                    
+                </p>
             </div>
         </div>
         </div>

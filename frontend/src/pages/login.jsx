@@ -23,7 +23,7 @@ const imageStyle={
         minWidth:"5vw",
         paddingBottom:"0px",
         marginBottom:'0px'
-        
+
 }
 
 export default function Login(){

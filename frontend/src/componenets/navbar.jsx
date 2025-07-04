@@ -15,7 +15,6 @@ function classNames(...classes) {
 export default function Example(props) {
 
     const logoPic = "https://www.elitefourum.com/uploads/default/original/3X/4/b/4bbe5270ed2b07d84730959af8819f255a922ea0.png";
-    const backgroundColor="#2D3142"
     navigation = navigation.map(navigationPage=>{
         return{
         ...navigationPage,
@@ -24,7 +23,7 @@ export default function Example(props) {
     })
 
     return (
-        <Disclosure style={{backgroundColor:`${backgroundColor}`}}as="nav" className="bg-gray-800">
+        <Disclosure as="nav" className="bg-[#2D3142]">
         <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
             <div className="relative flex h-16 items-center justify-between">
             
