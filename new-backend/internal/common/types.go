@@ -18,19 +18,19 @@ type DiscordUser struct {
 type LeagueRequest struct {
 	Name                  string     `json:"name" binding:"required"`
 	RulesetID             *uuid.UUID `json:"ruleset_id"`
-	MaxPokemonPerPlayer   uint       `json:"max_pokemon_per_player" binding:"gte=1, max=12"`
-	StartingDraftPoints   uint       `json:"starting_draft_points" binding:"gte=20, max=150"`
+	MaxPokemonPerPlayer   uint       `json:"max_pokemon_per_player" binding:"gte=1,max=12"`
+	StartingDraftPoints   uint       `json:"starting_draft_points" binding:"gte=20,max=150"`
 	AllowWeeklyFreeAgents bool       `json:"allow_free_agents"`
-	StartDate             time.Time  `json:"start_date" binding:"required,datetime=02/01/2006"`
-	EndDate               *time.Time `json:"end_date" binding:"omitempty,datetime=02/01/2006"`
+	StartDate             time.Time  `json:"start_date" binding:"required"`
+	EndDate               *time.Time `json:"end_date" binding:"omitempty"`
 }
 
 type UpdateProfileRequest struct {
-	ShowdownName string `json:"showdown_name" binding:"omitempty"`
+	ShowdownName *string `json:"showdown_name" binding:"omitempty"`
 }
 
 // -- Player Related --
-type PlayerRequest struct {
+type PlayerCreateRequest struct {
 	UserID       uuid.UUID `json:"user_id" binding:"required"`
 	LeagueID     uuid.UUID `json:"league_id" binding:"required"`
 	InLeagueName *string   `json:"in_league_name" binding:"omitempty" validate:"min=3,max=20"`
@@ -47,7 +47,7 @@ type UpdatePlayerInfoRequest struct {
 }
 
 // -- DraftedPokemon Related --
-type DraftedPokemonCreateRequest struct {
+type DraftedPokemonCreateDTO struct {
 	LeagueID         uuid.UUID `json:"league_id" binding:"required"`
 	PlayerID         uuid.UUID `json:"player_id" binding:"required"`
 	PokemonSpeciesID uuid.UUID `json:"pokemon_species_id" binding:"required"`

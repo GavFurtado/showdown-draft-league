@@ -88,6 +88,19 @@ func (r *LeaguePokemonRepository) GetLeaguePokemonBySpecies(leagueID, pokemonSpe
 	return &leaguePokemon, nil
 }
 
+// gets a specific Pokemon from a league's draft pool by its ID
+func (r *LeaguePokemonRepository) GetLeaguePokemonByID(leaguePokemonID uuid.UUID) (*models.LeaguePokemon, error) {
+	var leaguePokemon models.LeaguePokemon
+	err := r.db.Preload("League").
+		Preload("PokemonSpecies").
+		First(&leaguePokemon, "id = ?", leaguePokemonID).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("(Error: GetLeaguePokemonByID) - failed to get league pokemon by ID: %w", err)
+	}
+	return &leaguePokemon, nil
+}
+
 // updates a Pokemon's availability or cost in a league
 func (r *LeaguePokemonRepository) UpdateLeaguePokemon(leaguePokemon *models.LeaguePokemon) (*models.LeaguePokemon, error) {
 	err := r.db.Select("cost", "is_available", "updated_at").

@@ -30,7 +30,7 @@ type League struct {
 
 	// Relationships
 	CommissionerUserID uuid.UUID `gorm:"type:uuid;not null" json:"commissioner_id"`
-	CommisionerUser    User      `gorm:"foreignKey:CommisionerUserID"`
+	CommissionerUser   User      `gorm:"foreignKey:CommissionerUserID;references:ID;inverseOf:LeaguesCreated"`
 	Players            []Player  `gorm:"foreignKey:LeagueID"`
 	// League has many LeaguePokemon (its defined draft pool)
 	DefinedPokemon []LeaguePokemon `gorm:"foreignKey:LeagueID" json:"-"`
@@ -42,6 +42,7 @@ type League struct {
 type LeagueStatus string
 
 const (
+	LeagueStatusPending       LeagueStatus = "PENDING"
 	LeagueStatusSetup         LeagueStatus = "SETUP"
 	LeagueStatusDrafting      LeagueStatus = "DRAFTING"
 	LeagueStatusRegularSeason LeagueStatus = "REGULARSEASON"
@@ -51,6 +52,7 @@ const (
 )
 
 var LeagueStatuses = []LeagueStatus{
+	LeagueStatusPending,
 	LeagueStatusSetup,
 	LeagueStatusDrafting,
 	LeagueStatusRegularSeason,
@@ -59,8 +61,8 @@ var LeagueStatuses = []LeagueStatus{
 	LeagueStatusCancelled,
 }
 
-// checks if LeagueStatus isValid
-func (ls LeagueStatus) isValid() bool {
+// checks if LeagueStatus IsValid
+func (ls LeagueStatus) IsValid() bool {
 	for _, status := range LeagueStatuses {
 		if ls == status {
 			return true
@@ -79,7 +81,7 @@ func (ls LeagueStatus) String() string {
 // Value() implements the driver.Valuer interface for GORM/database saving.
 // Tells GORM how to convert the custom type into a database-compatible type (string).
 func (ls LeagueStatus) Value() (driver.Value, error) {
-	if !ls.isValid() {
+	if !ls.IsValid() {
 		return nil, fmt.Errorf("invalid LeagueStatus value: %s", ls)
 	}
 	return string(ls), nil
@@ -97,8 +99,8 @@ func (ls *LeagueStatus) Scan(value interface{}) error {
 		return fmt.Errorf("LeagueStatus: expected string, got %T", value)
 	}
 	// Important: Validate the string from the database to ensure it's a known status
-	newStatus := LeagueStatus(str)
-	if !newStatus.isValid() {
+	newStatus := LeagueStatus(str).Normalize()
+	if !newStatus.IsValid() {
 		return fmt.Errorf("invalid LeagueStatus value retrieved from DB: %s", str)
 	}
 	*ls = newStatus

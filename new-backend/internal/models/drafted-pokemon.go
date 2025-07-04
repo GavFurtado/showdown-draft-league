@@ -13,7 +13,8 @@ type DraftedPokemon struct {
 	ID               uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
 	LeagueID         uuid.UUID `gorm:"type:uuid;not null" json:"league_id"`
 	PlayerID         uuid.UUID `gorm:"type:uuid;not null" json:"player_id"`
-	PokemonSpeciesID uuid.UUID `gorm:"type:uuid;not null" json:"pokemon_species_id"` // Which base species was drafted?
+	PokemonSpeciesID uuid.UUID `gorm:"type:uuid;not null" json:"pokemon_species_id"` // Which base species was drafted? (used to skip checking the leaguePokemon)
+	LeaguePokemonID  uuid.UUID `gorm:"type:uuid;not null" json:"league_pokemon_id"`
 
 	DraftRoundNumber int `json:"draft_round_number"` // The round this pokemon was drafted in
 	DraftPickNumber  int `json:"draft_pick_number"`  // The sequential number of this pick in the draft
@@ -24,8 +25,8 @@ type DraftedPokemon struct {
 	DeletedAt  gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relationships
-	League         League         `gorm:"foreignKey:LeagueID"`
-	Player         Player         `gorm:"foreignKey:PlayerID"`
-	PokemonSpecies PokemonSpecies `gorm:"foreignKey:PokemonSpeciesID"`
-	LeaguePokemon  LeaguePokemon  `gorm:"foreignKey:LeaguePokemonID"`
+	League         League         `gorm:"foreignKey:LeagueID;references:ID"`
+	Player         Player         `gorm:"foreignKey:PlayerID;references:ID"`
+	PokemonSpecies PokemonSpecies `gorm:"foreignKey:PokemonSpeciesID;references:ID"`
+	LeaguePokemon  LeaguePokemon  `gorm:"foreignKey:LeaguePokemonID;references:ID"`
 }

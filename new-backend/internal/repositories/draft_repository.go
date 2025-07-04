@@ -28,7 +28,7 @@ func (r *draftRepository) GetDraftByLeagueID(leagueID uuid.UUID) (*models.Draft,
 	draft := &models.Draft{}
 	if err := r.db.Where("league_id = ?", leagueID).First(draft).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, nil // Or a custom "not found" error
+			return nil, nil
 		}
 		return nil, err
 	}
