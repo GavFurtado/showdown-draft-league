@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"fmt"
-
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/google/uuid"
 	"gorm.io/gorm"

@@ -30,7 +30,7 @@ type League struct {
 
 	// Relationships
 	CommissionerUserID uuid.UUID `gorm:"type:uuid;not null" json:"commissioner_id"`
-	CommissionerUser   User      `gorm:"foreignKey:CommissionerUserID;references:ID"`
+	CommissionerUser   User      `gorm:"foreignKey:CommissionerUserID;references:ID;inverseOf:LeaguesCreated"`
 	Players            []Player  `gorm:"foreignKey:LeagueID"`
 	// League has many LeaguePokemon (its defined draft pool)
 	DefinedPokemon []LeaguePokemon `gorm:"foreignKey:LeagueID" json:"-"`
@@ -42,6 +42,7 @@ type League struct {
 type LeagueStatus string
 
 const (
+	LeagueStatusPending       LeagueStatus = "PENDING"
 	LeagueStatusSetup         LeagueStatus = "SETUP"
 	LeagueStatusDrafting      LeagueStatus = "DRAFTING"
 	LeagueStatusRegularSeason LeagueStatus = "REGULARSEASON"
@@ -51,6 +52,7 @@ const (
 )
 
 var LeagueStatuses = []LeagueStatus{
+	LeagueStatusPending,
 	LeagueStatusSetup,
 	LeagueStatusDrafting,
 	LeagueStatusRegularSeason,
@@ -97,7 +99,7 @@ func (ls *LeagueStatus) Scan(value interface{}) error {
 		return fmt.Errorf("LeagueStatus: expected string, got %T", value)
 	}
 	// Important: Validate the string from the database to ensure it's a known status
-	newStatus := LeagueStatus(str)
+	newStatus := LeagueStatus(str).Normalize()
 	if !newStatus.IsValid() {
 		return fmt.Errorf("invalid LeagueStatus value retrieved from DB: %s", str)
 	}

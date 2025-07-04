@@ -49,7 +49,6 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	leagueController := controllers.NewLeagueController(leagueService)
 	playerController := controllers.NewPlayerController(playerService)
 
-	println(authController)
 	// ---- Public Routes ---
 	// These do not require any authorization
 	r.GET("/", HomeHandler)
@@ -85,7 +84,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config) {
 			users.GET("/me/discord", userController.GetMyDiscordDetails)
 			users.GET("/me/leagues", userController.GetMyLeagues)
 			users.PUT("/profile", userController.UpdateProfile)
-			users.GET("/:id/players", playerController.GetPlayersByLeague)
+			users.GET("/:id/players", playerController.GetPlayersByUser)
 		}
 
 		players := api.Group("/players")

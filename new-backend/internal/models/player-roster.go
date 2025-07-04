@@ -18,6 +18,6 @@ type PlayerRoster struct {
 	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relationships
-	Player         Player         `gorm:"foreignKey:PlayerID;references:ID"`
+	Player         Player         `gorm:"foreignKey:PlayerID;references:ID;inverseOf:Roster"`
 	DraftedPokemon DraftedPokemon `gorm:"foreignKey:DraftedPokemonID;references:ID"`
 }

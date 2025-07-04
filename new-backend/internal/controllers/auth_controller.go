@@ -31,12 +31,23 @@ func NewAuthController(
 	}
 }
 
-// initiates the Discord OAuth2 login flow
 func (aCtrl *AuthController) Login(ctx *gin.Context) {
-	state := uuid.New().String()
-	ctx.SetCookie("oauthstate", state, 300, "/", aCtrl.cfg.AppBaseURL, false, true)
+	// 1. Check for existing JWT cookie
+	token, err := ctx.Cookie("token")
+	if err == nil {
+		// 2. Try to validate it
+		if userID, err := aCtrl.authService.VerifyToken(token); err == nil {
+			// 3. Valid token -> go straight to frontend dashboard
+			log.Printf("user already authenticated: %s\n", userID)
+			ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/dashboard", aCtrl.cfg.AppBaseURL))
+			return
+		}
+	}
 
-	// Use the injected discordOauthConfig
+	// 4. No valid token → begin Discord OAuth flow
+	state := uuid.New().String()
+	ctx.SetCookie("oauthstate", state, 300, "/", "localhost", false, true)
+
 	url := aCtrl.discordOauthConfig.AuthCodeURL(state)
 	ctx.Redirect(http.StatusTemporaryRedirect, url)
 }
@@ -68,6 +79,7 @@ func (aCtrl *AuthController) DiscCallback(ctx *gin.Context) {
 	// Set JWT as an HTTP-only cookie
 	const sessionTokenPeriod = int((time.Hour * 24 * 7 * 30 / time.Second)) // 30 days
 	ctx.SetCookie("token", jwtToken, sessionTokenPeriod, "/", aCtrl.cfg.AppBaseURL, false, true)
+	ctx.Header("Authorization", fmt.Sprintf("Bearer %s", jwtToken)) // this is just extra but it's fine i think
 
 	// Redirect to dashboard
 	ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/dashboard", aCtrl.cfg.AppBaseURL))

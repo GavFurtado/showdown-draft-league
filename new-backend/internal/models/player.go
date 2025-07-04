@@ -25,5 +25,5 @@ type Player struct {
 	// Relationships
 	User   User           `gorm:"foreignKey:UserID;references:ID"`
 	League League         `gorm:"foreignKey:LeagueID;references:ID"`
-	Roster []PlayerRoster `gorm:"foreignKey:PlayerID" json:"Roster"`
+	Roster []PlayerRoster `gorm:"foreignKey:PlayerID;references:ID;inverseOf:Player"`
 }

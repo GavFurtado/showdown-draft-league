@@ -29,9 +29,9 @@ func (r *PlayerRepository) GetPlayerByID(id uuid.UUID) (*models.Player, error) {
 	var player models.Player
 	err := r.db.Preload("User").
 		Preload("League").
-		Preload("PlayerRoster").
-		Preload("PlayerRoster.DraftedPokemon").
-		Preload("PlayerRoster.DraftedPokemon.PokemonSpecies").
+		Preload("Roster").
+		Preload("Roster.DraftedPokemon").
+		Preload("Roster.DraftedPokemon.PokemonSpecies").
 		First(&player, "id = ?", id).Error
 
 	if err != nil {

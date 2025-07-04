@@ -13,18 +13,24 @@ import (
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
+	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 )
 
 // defines the interface for authentication-related business logic.
 type AuthService interface {
 	HandleDiscordCallback(ctx context.Context, code string) (*models.User, string, error)
+	VerifyToken(token string) (uuid.UUID, error)
 }
 
 type authServiceImpl struct {
 	userRepo           *repositories.UserRepository
 	jwtService         *JWTService
 	discordOauthConfig *oauth2.Config
+}
+
+func (s *authServiceImpl) VerifyToken(token string) (uuid.UUID, error) {
+	return s.jwtService.ValidateToken(token)
 }
 
 // creates a new instance of AuthService, receiving the pre-configured oauth2.Config.

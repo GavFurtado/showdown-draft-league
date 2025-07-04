@@ -37,7 +37,7 @@ func (r *LeagueRepository) CreateLeague(league *models.League) (*models.League, 
 	}
 
 	// Add the commissioner (creator of league) as a player
-	commisionerPlayer := &models.Player{
+	commissionerPlayer := &models.Player{
 		UserID:         league.CommissionerUserID,
 		LeagueID:       league.ID,
 		InLeagueName:   "", // can be set by player later
@@ -46,7 +46,7 @@ func (r *LeagueRepository) CreateLeague(league *models.League) (*models.League, 
 		IsCommissioner: true,
 		DraftPosition:  1, // TODO: look into this. Should be random, no?
 	}
-	if err := tx.Create(commisionerPlayer).Error; err != nil {
+	if err := tx.Create(commissionerPlayer).Error; err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("(Error: CreateLeague) - failed to create commissioner player: %w", err)
 	}
@@ -79,7 +79,7 @@ func (r *LeagueRepository) GetLeagueByID(leagueID uuid.UUID) (*models.League, er
 	// Preload will load the associated relationships as opposed to lazy loading
 	var league models.League
 
-	err := r.db.Preload("CommisionerUser").
+	err := r.db.Preload("CommissionerUser").
 		Preload("Players").
 		Preload("Players.User").
 		First(&league, "id = ?", leagueID).Error
@@ -179,7 +179,7 @@ func (r *LeagueRepository) DeleteLeague(leagueId uuid.UUID) error {
 func (r *LeagueRepository) GetLeagueWithFullDetails(id uuid.UUID) (*models.League, error) {
 	var league models.League
 
-	err := r.db.Preload("CommisionerUser").
+	err := r.db.Preload("CommissionerUser").
 		Preload("Players").
 		Preload("Players.User").
 		Preload("Players.Roster").

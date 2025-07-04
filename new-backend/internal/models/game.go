@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql/driver"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -83,7 +84,7 @@ func (gs *GameStatus) Scan(value interface{}) error {
 		return fmt.Errorf("GameStatus: expected string, got %T", value)
 	}
 	// Important: Validate the string from the database to ensure it's a known status
-	newStatus := GameStatus(str)
+	newStatus := GameStatus(str).Normalize()
 	if !newStatus.IsValid() {
 		// This indicates potential data integrity issues in your DB if an invalid status is retrieved
 		return fmt.Errorf("invalid GameStatus value retrieved from DB: %s", str)
@@ -92,3 +93,6 @@ func (gs *GameStatus) Scan(value interface{}) error {
 	return nil
 }
 
+func (gs GameStatus) Normalize() GameStatus {
+	return GameStatus(strings.ToUpper(string(gs)))
+}

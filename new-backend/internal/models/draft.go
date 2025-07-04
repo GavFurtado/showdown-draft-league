@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql/driver"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -69,11 +70,15 @@ func (ds *DraftStatus) Scan(value interface{}) error {
 	if !ok {
 		return fmt.Errorf("DraftStatus: expected string, got %T", value)
 	}
-	newStatus := DraftStatus(str)
+	newStatus := DraftStatus(str).Normalize()
 	if !newStatus.IsValid() {
 		// Log or handle this error appropriately, as it indicates bad data in DB
 		return fmt.Errorf("invalid DraftStatus value retrieved from DB: %s", str)
 	}
 	*ds = newStatus
 	return nil
+}
+
+func (ds DraftStatus) Normalize() DraftStatus {
+	return DraftStatus(strings.ToUpper(string(ds)))
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/middleware"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 type UserController struct {
@@ -72,21 +71,21 @@ func (ctrl *UserController) GetMyDiscordDetails(ctx *gin.Context) {
 // updates a user's profile
 // currently (29/06/25) only does Showdown Username cuz that's the only thing that should be updatable
 func (ctrl *UserController) UpdateProfile(ctx *gin.Context) {
-	userIDStr := ctx.Param("id")
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil { // unreachable code (should be)
-		log.Printf("(Error: UpdateProfile) - bad user ID format\n")
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id format"})
+	// doesn't have admin override (can be done if we just have userID in req instead and modify the service a little bit)
+	currentUser, exists := middleware.GetUserFromContext(ctx)
+	if !exists {
+		log.Printf("(Error: GetMyProfile) - no user in context\n")
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "User information not available"})
 		return
 	}
 
 	var req common.UpdateProfileRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Missing field(s) in the payload"})
 		return
 	}
 
-	updatedUser, err := ctrl.userService.UpdateProfileHandler(userID, req)
+	updatedUser, err := ctrl.userService.UpdateProfileHandler(currentUser.ID, req)
 	if err != nil {
 		log.Printf("(Error: UpdateProfile) - Service failed: %v\n", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})

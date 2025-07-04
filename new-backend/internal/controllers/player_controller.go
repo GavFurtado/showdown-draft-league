@@ -51,7 +51,7 @@ func (c *playerControllerImpl) JoinLeague(ctx *gin.Context) {
 	var req common.PlayerCreateRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		log.Printf("PlayerController: JoinLeague - bad request\n")
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields in payload"})
 		return
 	}
 
