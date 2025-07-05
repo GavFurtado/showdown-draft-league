@@ -118,6 +118,26 @@
   border-bottom: 3px solid #16a085;
 }
 
+/* styles for dashboard and flex content of tables */
+
 .container-dashboard{
   display: flex;
+  background-color: #BFC0C0;
+  flex-wrap: wrap;
+  height: 100vh;
+  border: black solid 10px;
+  margin: 1rem 1rem;
+}
+
+.player-welcome > h1{
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+  color: #1e2a38;
+  font-size: 3rem;
+}
+
+.player-welcome{
+  width: 100%;
+  margin-top: 2rem;
+  margin-left: 2rem;
 }
