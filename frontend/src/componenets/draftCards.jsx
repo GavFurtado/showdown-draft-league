@@ -5,12 +5,17 @@ export default function PokemonCard(pokemon) {
     const handleFlip = () => {
         setIsFlipped(!isFlipped);
     };
-
     const handleImageError = (e) => {
         e.target.onerror = null;
         e.target.src = `https://placehold.co/150x150/cccccc/333333?text=No+Image`;
     };
-
+    const types = pokemon.type.map(t => {
+        if (typeof t === 'string' && t.length > 0) {
+            return t.charAt(0).toUpperCase() + t.slice(1);
+        }
+        return t;
+    }).join(', ');
+    const abilities=pokemon.ability.map(a => a.name).join(', ')
     return (
         // Container of the whole thing : Sets perspective for effect and provides a clickable area
         <div
@@ -36,17 +41,17 @@ export default function PokemonCard(pokemon) {
                     onError={handleImageError}
                     className="w-[100%] h-[100%] object-contain mb-4 bg-gray-100 p-2"
                 />
-                <div className='flex justify-between w-[100%]'>
+                <div className='flex w-[100%] justify-between'>
                     {/* Pokémon Name */}
                     <div>
-                    <h3 className="text-lg pb-0 mb-0 font-bold text-gray-800 mb-2 text-center">
-                        {pokemon.name}
-                    </h3>
-                    <p className='p-0 m-0'>{pokemon.type}</p>
+                        <h3 className="text-lg pb-0 mb-0 font-bold text-gray-800 text-left">
+                            {pokemon.name}
+                        </h3>
+                        <p className='p-0 m-0 text-left text-sm text-gray-600'>{types}</p>
                     </div>
 
                     {/* Pokémon Cost */}
-                    <p className="text-lg font-semibold">
+                    <p className="text-lg font-semibold text-right">
                         {pokemon.cost || 10}
                     </p>
                 </div>
@@ -65,7 +70,7 @@ export default function PokemonCard(pokemon) {
                     <li>Special Attack: {pokemon.specialAtk}</li>
                     <li>Special Defense: {pokemon.specialDef}</li>
                     <li>Speed: {pokemon.speed}</li>
-                    <li>Abilities: {pokemon.ability}</li>
+                    <li>Abilities: {abilities}</li>
 
                 </ul>
                 <p className="text-base text-center mb-auto">
