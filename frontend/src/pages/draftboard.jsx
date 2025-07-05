@@ -35,6 +35,7 @@ export default function Draftboard(){
             update=update.sort((a, b) => {
                 const statA = a.stats[newFilter.sortByStat];
                 const statB = b.stats[newFilter.sortByStat];
+
                 return newFilter.sortOrder === 'asc' ? statA - statB : statB - statA;
             });
         }

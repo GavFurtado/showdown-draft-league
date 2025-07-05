@@ -23,7 +23,4 @@ type LeaguePokemon struct {
 	// Relationships
 	League         League         `gorm:"foreignKey:LeagueID;references:ID"`
 	PokemonSpecies PokemonSpecies `gorm:"foreignKey:PokemonSpeciesID;references:ID"`
-
-	// Unique constraint: A species can only be defined once per league's draft pool
-	// You might add this via GORM migrations or a direct SQL DDL: UNIQUE (league_id, pokemon_species_id)
 }

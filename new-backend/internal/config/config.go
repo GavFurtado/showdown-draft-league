@@ -2,6 +2,7 @@ package config
 
 import (
 	. "github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
+	"github.com/joho/godotenv"
 	"log"
 	"os"
 )
@@ -16,6 +17,12 @@ type Config struct {
 }
 
 func LoadConfig() *Config {
+
+	// Load environment variables from .env file
+	err := godotenv.Load()
+	if err != nil {
+		log.Printf("Warning: .env file not found or could not be loaded: %v", err)
+	}
 
 	cfg := &Config{
 		DiscordClientID:     getEnv("DISCORD_CLIENT_ID"),

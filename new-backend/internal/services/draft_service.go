@@ -15,7 +15,7 @@ import (
 
 type DraftService interface {
 	StartDraft(currentUser *models.User, leagueID uuid.UUID) (*models.Draft, error)
-	// MakePick(leagueID, pokemonSpeciesID uuid.UUID, currentUser *models.User) (*models.Draft, error)
+	MakePick(currentUser *models.User, league *models.League, leaguePokemonID uuid.UUID) error
 	// SkipTurn(leagueID uuid.UUID, currentUser *models.User) (*models.Draft, error)
 	// StartTradingPeriod(leagueID uuid.UUID, currentUser *models.User) (*models.League, error)
 	// EndTradingPeriod(leagueID uuid.UUID, currentUser *models.User) (*models.League, error)
@@ -76,7 +76,7 @@ func (s *draftServiceImpl) StartDraft(currentUser *models.User, leagueID uuid.UU
 	league, err := (*s.leagueRepo).GetLeagueByID(leagueID)
 	if err != nil {
 		log.Printf("(Error: DraftService.StartDraft) - Could not get league %s: %v\n", leagueID, err)
-		return nil, common.ErrInternalService
+		return nil, common.ErrLeagueNotFound
 	}
 
 	if league == nil {
