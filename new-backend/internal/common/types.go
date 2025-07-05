@@ -46,6 +46,12 @@ type UpdatePlayerInfoRequest struct {
 	DraftPosition *int    `json:"draft_position" binding:"omitempty" validate:"min=0"`
 }
 
+type LeaguePokemonCreateRequest struct {
+	LeagueID         uuid.UUID `json:"league_id" binding:"required"`
+	PokemonSpeciesID uuid.UUID `json:"pokemon_species_id" binding:"required"`
+	Cost             int       `json:"cost" binding:"required" validate:"max=20"`
+}
+
 // -- DraftedPokemon Related --
 type DraftedPokemonCreateDTO struct {
 	LeagueID         uuid.UUID `json:"league_id" binding:"required"`

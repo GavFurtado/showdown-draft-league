@@ -76,7 +76,7 @@ func (ls LeagueStatus) String() string {
 	return string(ls)
 }
 
-// Extra work to make it work with the DB (more specifically GORM)
+// Extra work to make it work with the DB
 
 // Value() implements the driver.Valuer interface for GORM/database saving.
 // Tells GORM how to convert the custom type into a database-compatible type (string).
