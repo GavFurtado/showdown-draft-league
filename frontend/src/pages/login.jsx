@@ -2,6 +2,10 @@ import loginJpg from '../assets/login-bg.jpg'
 import discordPng from '../assets/discord-logo.png'
 import { API_BASE_URL, discordLogin } from '../services/api'
 
+<<<<<<< HEAD
+=======
+import { discordLogin } from '../services/api';
+>>>>>>> 8455965 (fixed login event handler)
 const backgroundStyle = {
     backgroundImage: `url('${loginJpg}')`,
     backgroundSize: 'cover',
