@@ -1,66 +1,63 @@
-import { useState, useEffect, useRef } from 'react';
+import {useEffect, useRef } from 'react';
 
 const pokemonTypes = [
-    'Normal', 'Fire', 'Water', 'Grass', 'Electric', 'Ice', 'Fighting',
-    'Poison', 'Ground', 'Flying', 'Psychic', 'Bug', 'Rock', 'Ghost',
-    'Dragon', 'Steel', 'Dark', 'Fairy',
+    'normal', 'fire', 'water', 'grass', 'electric', 'ice', 'fighting',
+    'poison', 'ground', 'flying', 'psychic', 'bug', 'rock', 'ghost',
+    'dragon', 'steel', 'dark', 'fairy',
 ];
 
 const pokemonStats = [
-    { key: 'hp', name: 'HP' },
-    { key: 'attack', name: 'Attack' },
-    { key: 'defense', name: 'Defense' },
-    { key: 'spAttack', name: 'Sp. Attack' },
-    { key: 'spDefense', name: 'Sp. Defense' },
-    { key: 'speed', name: 'Speed' },
+    { key: 'HP', name: 'hp' },
+    { key: 'Attack', name: 'attack' },
+    { key: 'Defense', name: 'defense' },
+    { key: 'Sp. Attack', name: 'special-attack' },
+    { key: 'Sp. Defense', name: 'specaial-defence' },
+    { key: 'Speed', name: 'speed' },
 ];
 
-export default function Filter() {
-    const [selectedTypes, setSelectedTypes] = useState([]);
-    const [selectedCost, setSelectedCost] = useState('');
-    const [sortByStat, setSortByStat] = useState('');
-    const [sortOrder, setSortOrder] = useState('asc');
+export default function Filter(props) {
+    const {selectedTypes, selectedCost, sortByStat, sortOrder} = props.filters
+    const updateFilter = props.updateFilter
+    const resetAllFilters = props.resetAllFilters
 
-    const handleTypeChange = (type) => {
-        setSelectedTypes((prevTypes) =>
-            prevTypes.includes(type)
-                ? prevTypes.filter((t) => t !== type)
-                : [...prevTypes, type]
-        );
-    };
+    function handleTypeChange(type){
+        let newSelectedTypes
+        if (selectedTypes.includes(type)) {
+            newSelectedTypes = selectedTypes.filter(t => t !== type);
+        } else {
+            newSelectedTypes = [...selectedTypes, type];
+        }
+        updateFilter("selectedTypes",newSelectedTypes)
+    }
 
     const handleSelectedCostChange = (event) => {
         const value = event.target.value;
         if (value === '') {
-            setSelectedCost('');
+            updateFilter("selectedCost","")
         } else {
             const numValue = parseInt(value, 10);
             if (!isNaN(numValue) && numValue >= 1 && numValue <= 20) {
-                setSelectedCost(numValue);
+                updateFilter("selectedCost",numValue);
             } else if (numValue < 1) {
-                setSelectedCost(1);
+                updateFilter("selectedCost",1);
             } else if (numValue > 20) {
-                setSelectedCost(20);
+                updateFilter("selectedCost",20);
             } else {
-                setSelectedCost('');
+                updateFilter("selectedCost","");
             }
         }
     };
 
     const handleSortByStatChange = (event) => {
-        setSortByStat(event.target.value);
+        const statObj = pokemonStats.find(x => x.key === event.target.value);
+        const statName = statObj ? statObj.name : null;
+        updateFilter("sortByStat", statName); 
     };
-
     const handleSortOrderChange = (event) => {
-        setSortOrder(event.target.value);
+        updateFilter("sortOrder",event.target.value);
     };
 
-    const resetAllFilters = () => {
-        setSelectedTypes([]);
-        setSelectedCost('');
-        setSortByStat('');
-        setSortOrder('asc');
-    };
+   
     const typeRef = useRef();
     const costRef = useRef();
     const statRef = useRef();
@@ -131,7 +128,7 @@ export default function Filter() {
                                         checked={selectedTypes.includes(type)}
                                         onChange={() => handleTypeChange(type)}
                                     />
-                                    <span className="text-sm font-medium"> {type} </span>
+                                    <span className="text-sm font-medium"> {type.charAt(0).toUpperCase() + type.slice(1)} </span>
                                 </label>
                             ))}
                         </div>
@@ -179,7 +176,7 @@ export default function Filter() {
                         />
                         <button
                             type="button"
-                            onClick={() => setSelectedCost('')}
+                            onClick={() => updateFilter("selectedCost",'')}
                             className={`text-sm underline transition-colors text-[#BFC0C0] hover:text-white mt-3 self-end`}
                         >
                             Reset
@@ -218,14 +215,14 @@ export default function Filter() {
                             <label htmlFor="sortByStat" className="block text-sm font-medium text-white mb-1">Sort By:</label>
                             <select
                                 id="sortByStat"
-                                value={sortByStat}
+                                value={pokemonStats.find(x => x.name === sortByStat)?.key || ''}
                                 onChange={handleSortByStatChange}
                                 className={`mt-0.5 w-full rounded border-[#4F5D75] shadow-sm sm:text-sm
                                             bg-[#4F5D75] text-white focus:ring-[#EF8354] focus:border-[#EF8354]`}
                             >
                                 <option value="">None</option>
                                 {pokemonStats.map(stat => (
-                                    <option key={stat.key} value={stat.key}>{stat.name}</option>
+                                    <option key={stat.key} value={stat.key}>{stat.key}</option>
                                 ))}
                             </select>
                         </div>
@@ -247,7 +244,7 @@ export default function Filter() {
                     <div className="flex items-center justify-end px-3 py-2">
                         <button
                             type="button"
-                            onClick={() => { setSortByStat(''); setSortOrder('asc'); }}
+                            onClick={() => { updateFilter("sortByStat",''); updateFilter("sortOrder",'asc'); }}
                             className={`text-sm underline transition-colors text-[#BFC0C0] hover:text-white`}
                         >
                             Reset

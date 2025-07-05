@@ -52,7 +52,7 @@ export default function PokemonCard(pokemon) {
 
                     {/* Pokémon Cost */}
                     <p className="text-lg font-semibold text-right">
-                        {pokemon.cost || 10}
+                        {pokemon.cost}
                     </p>
                 </div>
                 

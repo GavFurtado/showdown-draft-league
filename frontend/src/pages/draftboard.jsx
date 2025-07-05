@@ -4,17 +4,50 @@ import pokemonData from "../assets/pokemons.json"
 import Filter from "../componenets/filter"
 import {useState} from "react"
 
-
-
-export default function draftboard(){
-    const cards = pokemonData.map(pokemon=>{
-    const name = pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1)
-    const [filters, setFilters] = useState({
+const defaultFilters = {
         selectedTypes: [],
         selectedCost: '',
         sortByStat: '',
         sortOrder: 'asc',
-    });
+    };
+
+export default function Draftboard(){
+    const [cards,setCards] = useState(pokemonData);
+    const [filters, setFilters] = useState(defaultFilters);
+
+    function updateFilter(key,value){
+        const newFilter = {...filters,[key]:value}
+        setFilters(newFilter)
+
+        let update = [...pokemonData]
+        if(newFilter.selectedTypes.length>0){
+            update=update.filter(card=>
+                newFilter.selectedTypes.some(type =>
+                card.types.includes(type)
+                )
+            );
+        }
+        if(newFilter.selectedCost){
+            update=update.filter(card=>card.cost === newFilter.selectedCost)
+        }
+        if (newFilter.sortByStat) {
+            console.log(newFilter.sortByStat)
+            update=update.sort((a, b) => {
+                const statA = a.stats[newFilter.sortByStat];
+                const statB = b.stats[newFilter.sortByStat];
+                return newFilter.sortOrder === 'asc' ? statA - statB : statB - statA;
+            });
+        }
+
+
+        setCards(update)            
+    }
+    
+    const resetAllFilters = () => {
+        setFilters(defaultFilters)
+    };
+    const cardsToDisplay = cards.map(pokemon=>{
+        const name = pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1)
         return <DraftCard key={pokemon.id}
             name={name} 
             pic={pokemon.sprites.front_default}
@@ -26,10 +59,10 @@ export default function draftboard(){
             specialAtk={pokemon.stats["special-attack"]}
             specialDef={pokemon.stats["special-defense"]}
             speed={pokemon.stats.speed}
+            cost={pokemon.cost || 10}
         
         />
     })
-    //for filter: stats, types, cost, name
     return(
         <>
         <div className="h-full bg-[#BFC0C0]  ">
@@ -63,10 +96,10 @@ export default function draftboard(){
                                 </svg>
                             </span>
                         </div>
-                        <Filter/>
+                        <Filter updateFilter={updateFilter} filters={filters} resetAllFilters={resetAllFilters} />
                     </div>
                     <div className="grid grid-cols-5 gap-4 m-4 p-6 mt-0 pt-0 pr-8 overflow-scroll h-screen rounded-2xl">
-                        {cards}
+                        {cardsToDisplay}
                     </div>
                 </div>
             
