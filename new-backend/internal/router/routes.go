@@ -6,6 +6,7 @@ import (
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/middleware"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
 	"gorm.io/gorm"
@@ -21,6 +22,13 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	draftedPokemonRepo := repositories.NewDraftedPokemonRepository(db)
 	// draftRepo := repositories.NewDraftRepository(db)
 	gameRepo := repositories.NewGameRepository(db)
+
+	// --- CORS Middleware ---
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowOrigins = []string{cfg.AppBaseURL}
+	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
+	r.Use(cors.New(corsConfig))
 
 	//  --- Initialize Services ---
 	discordOauthConfig := &oauth2.Config{
