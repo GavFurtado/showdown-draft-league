@@ -2,11 +2,19 @@ import NavBar from "../componenets/navbar"
 import DraftCard from "../componenets/draftCards"
 import pokemonData from "../assets/pokemons.json"
 import Filter from "../componenets/filter"
+import {useState} from "react"
+
+
 
 export default function draftboard(){
     const cards = pokemonData.map(pokemon=>{
-        const name = pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1)
-
+    const name = pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1)
+    const [filters, setFilters] = useState({
+        selectedTypes: [],
+        selectedCost: '',
+        sortByStat: '',
+        sortOrder: 'asc',
+    });
         return <DraftCard key={pokemon.id}
             name={name} 
             pic={pokemon.sprites.front_default}
