@@ -3,9 +3,13 @@ import discordPng from '../assets/discord-logo.png'
 import { API_BASE_URL, discordLogin } from '../services/api'
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 import { discordLogin } from '../services/api';
 >>>>>>> 8455965 (fixed login event handler)
+=======
+import { discordLogin } from '../services/api';
+>>>>>>> 8455965d990708f95fc0c01f26bd2fb5eb96e625
 const backgroundStyle = {
     backgroundImage: `url('${loginJpg}')`,
     backgroundSize: 'cover',
