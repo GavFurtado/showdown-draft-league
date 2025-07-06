@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dropdown with JS</title>
+  <style>
+    .dropdown-container {
+      width: 400px;
+      margin: 20px;
+      font-family: sans-serif;
+    }
+
+    .toggle-button {
+      background-color: #e3350d;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .dropdown-content {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: all 0.4s ease;
+      background-color: #fff3cd;
+      margin-top: 10px;
+      padding: 0 20px;
+      border-radius: 8px;
+      border: 1px solid #ffeeba;
+    }
+
+    .dropdown-content.show {
+      max-height: 300px;
+      opacity: 1;
+      padding: 15px 20px;
+    }
+
+    .dropdown-content p {
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="dropdown-container">
+    <button class="toggle-button" onclick="toggleDropdown()">View Pokémon League Info</button>
+    <div class="dropdown-content" id="dropdown">
+      <p><strong>League Name:</strong> Galar League</p>
+      <p><strong>Region:</strong> Galar</p>
+      <p><strong>Champion:</strong> Leon</p>
+      <p><strong>Entry Requirement:</strong> Victory in Champion Cup</p>
+      <p><strong>Featured Pokémon:</strong> Charizard, Dragapult, Rillaboom</p>
+    </div>
+  </div>
+
+  <script>
+    function toggleDropdown() {
+      const dropdown = document.getElementById('dropdown');
+      dropdown.classList.toggle('show');
+    }
+  </script>
+
+</body>
+</html>
