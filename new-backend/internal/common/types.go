@@ -6,7 +6,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// represents the basic information retrieved from Discord's /users/@me endpoint.
+// TODO: fix the fact that some of these fields are uncessarily pointers (i misunderstood omitempty)
+
 type DiscordUser struct {
 	ID            string `json:"id"`
 	Username      string `json:"username"`
@@ -38,18 +39,25 @@ type PlayerCreateRequest struct {
 }
 
 type UpdatePlayerInfoRequest struct {
-	InLeagueName  *string `json:"in_league_name" binding:"omitempty" validate:"min=3,max=20"`
-	TeamName      *string `json:"team_name" binding:"omitempty" validate:"min=3,max=20"`
-	Wins          *int    `json:"wins" binding:"omitempty" validate:"min=0"`
-	Losses        *int    `json:"losses" binding:"omitempty" validate:"min=0"`
-	DraftPoints   *int    `json:"draft_points" binding:"omitempty" validate:"min=0"`
-	DraftPosition *int    `json:"draft_position" binding:"omitempty" validate:"min=0"`
+	InLeagueName  *string `json:"in_league_name,omitempty" validate:"min=3,max=20"`
+	TeamName      *string `json:"team_name,omitempty" validate:"min=3,max=20"`
+	Wins          *int    `json:"wins,omitempty" validate:"min=0"`
+	Losses        *int    `json:"losses,omitempty" validate:"min=0"`
+	DraftPoints   *int    `json:"draft_points,omitempty" validate:"min=0"`
+	DraftPosition *int    `json:"draft_position,omitempty" validate:"min=0"`
 }
 
+// -- LeaguePokemon Related --
 type LeaguePokemonCreateRequest struct {
 	LeagueID         uuid.UUID `json:"league_id" binding:"required"`
-	PokemonSpeciesID uuid.UUID `json:"pokemon_species_id" binding:"required"`
+	PokemonSpeciesID int64     `json:"pokemon_species_id" binding:"required"`
 	Cost             int       `json:"cost" binding:"required" validate:"max=20"`
+}
+
+type LeaguePokemonUpdateRequest struct {
+	LeaguePokemonID uuid.UUID `json:"league_pokemon_id" binding:"required"`
+	Cost            int       `json:"cost,omitempty" validate:"max=20"`
+	IsAvailable     bool      `json:"is_available,omitempty"`
 }
 
 // -- DraftedPokemon Related --

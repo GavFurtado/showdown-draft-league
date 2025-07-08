@@ -35,7 +35,7 @@ func (r *PokemonSpeciesRepository) FindPokemonSpecies(filter string) ([]models.P
 }
 
 // retrieves a single pokemon species from the database by its ID.
-func (r *PokemonSpeciesRepository) GetPokemonSpeciesByID(id int) (*models.PokemonSpecies, error) {
+func (r *PokemonSpeciesRepository) GetPokemonSpeciesByID(id int64) (*models.PokemonSpecies, error) {
 	var pokemon models.PokemonSpecies
 	result := r.db.First(&pokemon, id)
 	if result.Error != nil {
