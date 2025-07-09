@@ -27,8 +27,7 @@ type PlayerService interface {
 
 	// can't be implemented currently, see "definition" of this function for more information
 	// SetCommissionerStatus(playerID uuid.UUID, isCommissioner bool, currentUser *models.User) error
-
-	// func (s *playerServiceImpl) LeaveLeague(playerID uuid.UUID) error
+	// (s *playerServiceImpl) LeaveLeague(playerID uuid.UUID) error
 }
 
 type playerServiceImpl struct {

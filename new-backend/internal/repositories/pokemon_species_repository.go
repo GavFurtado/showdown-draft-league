@@ -73,7 +73,7 @@ func (r *PokemonSpeciesRepository) UpdatePokemonSpecies(pokemon *models.PokemonS
 }
 
 // deletes a pokemon species record from the database by its ID.
-func (r *PokemonSpeciesRepository) DeletePokemonSpecies(id int) error {
+func (r *PokemonSpeciesRepository) DeletePokemonSpecies(id int64) error {
 	result := r.db.Delete(&models.PokemonSpecies{}, id)
 	return result.Error
 }

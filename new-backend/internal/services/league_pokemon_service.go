@@ -147,7 +147,7 @@ func (s *leaguePokemonServiceImpl) CreatePokemonForLeague(
 	// Create the LeaguePokemon using the repository
 	createdLeaguePokemon, err := s.leaguePokemonRepo.CreateLeaguePokemon(leaguePokemon)
 	if err != nil {
-		log.Printf("(Service: CreatePokemonForLeague) - failed to create league pokemon: %w", err)
+		log.Printf("(Service: CreatePokemonForLeague) - failed to create league pokemon: %s", err.Error())
 		return nil, common.ErrInternalService
 	}
 

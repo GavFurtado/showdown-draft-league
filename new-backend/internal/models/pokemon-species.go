@@ -6,18 +6,12 @@ import (
 )
 
 type PokemonSpecies struct {
-	ID    uint     `gorm:"primaryKey;uniqueIndex" json:"id"`
-	Name  string   `gorm:"not null" json:"name"`
-	Types []string `gorm:"type:jsonb" json:"types"`
-
-	// Abilities: Stored as JSONB, GORM will marshal/unmarshal slice of structs
+	ID        int64     `gorm:"primaryKey;uniqueIndex" json:"id"`
+	Name      string    `gorm:"not null" json:"name"`
+	Types     []string  `gorm:"type:jsonb" json:"types"`
 	Abilities []Ability `gorm:"type:jsonb" json:"abilities"`
-
-	// Stats: Stored as JSONB, GORM will marshal/unmarshal struct
-	Stats BaseStats `gorm:"type:jsonb" json:"stats"`
-
-	// Sprites: Stored as JSONB, GORM will marshal/unmarshal struct
-	Sprites Sprites `gorm:"type:jsonb" json:"sprites"`
+	Stats     BaseStats `gorm:"type:jsonb" json:"stats"`
+	Sprites   Sprites   `gorm:"type:jsonb" json:"sprites"`
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`

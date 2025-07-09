@@ -14,20 +14,20 @@ import (
 type PokemonSpeciesService interface {
 	GetAllPokemonSpecies() ([]models.PokemonSpecies, error)
 	ListPokemonSpecies(filter string) ([]models.PokemonSpecies, error)
-	GetPokemonSpeciesByID(id int) (*models.PokemonSpecies, error)
+	GetPokemonSpeciesByID(id int64) (*models.PokemonSpecies, error)
 	GetPokemonSpeciesByName(name string) (*models.PokemonSpecies, error)
 	CreatePokemonSpecies(pokemon *models.PokemonSpecies) error
 	UpdatePokemonSpecies(pokemon *models.PokemonSpecies) error
-	DeletePokemonSpecies(id int) error
+	DeletePokemonSpecies(id int64) error
 }
 
 type pokemonServiceImpl struct {
 	pokemonRepo *repositories.PokemonSpeciesRepository
 }
 
-func NewPokemonSpeciesService(repo *repositories.PokemonSpeciesRepository) PokemonSpeciesService {
+func NewPokemonSpeciesService(pokemonRepo *repositories.PokemonSpeciesRepository) PokemonSpeciesService {
 	return &pokemonServiceImpl{
-		pokemonRepo: repo,
+		pokemonRepo: pokemonRepo,
 	}
 }
 
@@ -42,7 +42,7 @@ func (s *pokemonServiceImpl) ListPokemonSpecies(filter string) ([]models.Pokemon
 }
 
 // retrieves a single pokemon species by its ID.
-func (s *pokemonServiceImpl) GetPokemonSpeciesByID(id int) (*models.PokemonSpecies, error) {
+func (s *pokemonServiceImpl) GetPokemonSpeciesByID(id int64) (*models.PokemonSpecies, error) {
 	if id <= 0 {
 		log.Printf("(Error: PokemonSpeciesService.GetPokemonSpeciesByID) - Invalid input ID: %d", id)
 		return nil, common.ErrInvalidInput
@@ -87,7 +87,7 @@ func (s *pokemonServiceImpl) CreatePokemonSpecies(pokemon *models.PokemonSpecies
 	}
 
 	// Check if pokemon with the same ID or name already exists
-	existingByID, err := s.pokemonRepo.GetPokemonSpeciesByID(int(pokemon.ID))
+	existingByID, err := s.pokemonRepo.GetPokemonSpeciesByID(pokemon.ID)
 	if err != nil && err != gorm.ErrRecordNotFound {
 		log.Printf("(Error: PokemonSpeciesService.CreatePokemonSpecies) - Error checking existing pokemon by ID %d: %v", pokemon.ID, err)
 		return fmt.Errorf("error checking existing pokemon by ID: %w", err)
@@ -126,7 +126,7 @@ func (s *pokemonServiceImpl) UpdatePokemonSpecies(pokemon *models.PokemonSpecies
 	}
 
 	// Check if the pokemon exists
-	_, err := s.pokemonRepo.GetPokemonSpeciesByID(int(pokemon.ID))
+	_, err := s.pokemonRepo.GetPokemonSpeciesByID(pokemon.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("(Info: PokemonSpeciesService.UpdatePokemonSpecies) - Pokemon species with ID %d not found for update", pokemon.ID)
@@ -147,7 +147,7 @@ func (s *pokemonServiceImpl) UpdatePokemonSpecies(pokemon *models.PokemonSpecies
 }
 
 // deletes a pokemon species record.
-func (s *pokemonServiceImpl) DeletePokemonSpecies(id int) error {
+func (s *pokemonServiceImpl) DeletePokemonSpecies(id int64) error {
 	if id <= 0 {
 		log.Printf("(Error: PokemonSpeciesService.DeletePokemonSpecies) - Invalid input ID: %d", id)
 		return common.ErrInvalidInput

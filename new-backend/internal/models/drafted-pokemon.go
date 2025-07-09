@@ -13,7 +13,7 @@ type DraftedPokemon struct {
 	ID               uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
 	LeagueID         uuid.UUID `gorm:"type:uuid;not null" json:"league_id"`
 	PlayerID         uuid.UUID `gorm:"type:uuid;not null" json:"player_id"`
-	PokemonSpeciesID uuid.UUID `gorm:"type:uuid;not null" json:"pokemon_species_id"` // Which base species was drafted? (used to skip checking the leaguePokemon)
+	PokemonSpeciesID int64     `gorm:"type:uuid;not null" json:"pokemon_species_id"` // Which base species was drafted? (used to skip checking the leaguePokemon)
 	LeaguePokemonID  uuid.UUID `gorm:"type:uuid;not null" json:"league_pokemon_id"`
 
 	DraftRoundNumber int `json:"draft_round_number"` // The round this pokemon was drafted in
