@@ -1,9 +1,7 @@
 import loginJpg from '../assets/login-bg.jpg'
 import discordPng from '../assets/discord-logo.png'
-import { API_BASE_URL, discordLogin } from '../services/api'
+import { API_BASE_URL} from '../services/api'
 
-import { discordLogin } from '../services/api';
-import { discordLogin } from '../services/api';
 
 const backgroundStyle = {
     backgroundImage: `url('${loginJpg}')`,
