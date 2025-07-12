@@ -17,17 +17,17 @@ type LeaguePokemonService interface {
 }
 
 type leaguePokemonServiceImpl struct {
-	leaguePokemonRepo  *repositories.LeaguePokemonRepository
-	leagueRepo         *repositories.LeagueRepository
-	userRepo           *repositories.UserRepository
-	pokemonSpeciesRepo *repositories.PokemonSpeciesRepository
+	leaguePokemonRepo  repositories.LeaguePokemonRepository
+	leagueRepo         repositories.LeagueRepository
+	userRepo           repositories.UserRepository
+	pokemonSpeciesRepo repositories.PokemonSpeciesRepository
 }
 
 func NewLeaguePokemonService(
-	leaguePokemonRepo *repositories.LeaguePokemonRepository,
-	leagueRepo *repositories.LeagueRepository,
-	userRepo *repositories.UserRepository,
-	pokemonSpeciesRepo *repositories.PokemonSpeciesRepository,
+	leaguePokemonRepo repositories.LeaguePokemonRepository,
+	leagueRepo repositories.LeagueRepository,
+	userRepo repositories.UserRepository,
+	pokemonSpeciesRepo repositories.PokemonSpeciesRepository,
 ) LeaguePokemonService {
 	return &leaguePokemonServiceImpl{
 		leaguePokemonRepo:  leaguePokemonRepo,

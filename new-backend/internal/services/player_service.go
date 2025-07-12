@@ -31,15 +31,15 @@ type PlayerService interface {
 }
 
 type playerServiceImpl struct {
-	playerRepo *repositories.PlayerRepository
-	leagueRepo *repositories.LeagueRepository
-	userRepo   *repositories.UserRepository
+	playerRepo repositories.PlayerRepository
+	leagueRepo repositories.LeagueRepository
+	userRepo   repositories.UserRepository
 }
 
 func NewPlayerService(
-	playerRepo *repositories.PlayerRepository,
-	leagueRepo *repositories.LeagueRepository,
-	userRepo *repositories.UserRepository,
+	playerRepo repositories.PlayerRepository,
+	leagueRepo repositories.LeagueRepository,
+	userRepo repositories.UserRepository,
 ) PlayerService {
 	return &playerServiceImpl{
 		playerRepo: playerRepo,

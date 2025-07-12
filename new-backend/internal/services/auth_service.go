@@ -24,7 +24,7 @@ type AuthService interface {
 }
 
 type authServiceImpl struct {
-	userRepo           *repositories.UserRepository
+	userRepo           repositories.UserRepository
 	jwtService         *JWTService
 	discordOauthConfig *oauth2.Config
 }
@@ -35,7 +35,7 @@ func (s *authServiceImpl) VerifyToken(token string) (uuid.UUID, error) {
 
 // creates a new instance of AuthService, receiving the pre-configured oauth2.Config.
 func NewAuthService(
-	userRepo *repositories.UserRepository,
+	userRepo repositories.UserRepository,
 	jwtService *JWTService,
 	oauthConfig *oauth2.Config,
 ) AuthService {

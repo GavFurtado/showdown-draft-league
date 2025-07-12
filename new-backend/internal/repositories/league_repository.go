@@ -9,15 +9,41 @@ import (
 	"gorm.io/gorm"
 )
 
-type LeagueRepository struct {
+type LeagueRepository interface {
+	// create a new league and sets up the commissioner player for the league (that needs to be updated)
+	CreateLeague(league *models.League) (*models.League, error)
+	// checks if a given user is a player in a specific league.
+	IsUserPlayerInLeague(userID, leagueID uuid.UUID) (bool, error)
+	// gets League by League ID with relationships preloaded
+	GetLeagueByID(leagueID uuid.UUID) (*models.League, error)
+	// gets a league (by id) with all its related data
+	GetLeagueWithFullDetails(id uuid.UUID) (*models.League, error)
+	// gets all Leagues where userID is the commisioner
+	GetLeaguesByCommissioner(userID uuid.UUID) ([]models.League, error)
+	// gets total count of Leagues where userID is the Commisioner
+	GetLeaguesCountByCommissioner(userID uuid.UUID) (int64, error)
+	// fetches all Leagues where the given userID is a player.
+	GetLeaguesByUser(userID uuid.UUID) ([]models.League, error)
+	// updates a league (name, start_date, ruleset_id, status, max_pokemon_per_player, free_agents)
+	UpdateLeague(league *models.League) (*models.League, error)
+	// soft deletes a league and all associated data
+	DeleteLeague(leagueId uuid.UUID) error
+	// Public helper to check if a user is the commissioner of a league
+	IsUserCommissioner(userID, leagueID uuid.UUID) (bool, error)
+}
+
+type leagueRepositoryImpl struct {
 	db *gorm.DB
 }
 
-func NewLeagueRepository(db *gorm.DB) *LeagueRepository {
-	return &LeagueRepository{db: db}
+func NewLeagueRepository(db *gorm.DB) LeagueRepository {
+	return &leagueRepositoryImpl{
+		db: db,
+	}
 }
 
-func (r *LeagueRepository) CreateLeague(league *models.League) (*models.League, error) {
+// create a new league and sets up the commissioner player for the league (that needs to be updated)
+func (r *leagueRepositoryImpl) CreateLeague(league *models.League) (*models.League, error) {
 	tx := r.db.Begin()
 	if tx.Error != nil {
 		return nil, fmt.Errorf("(Error: CreateLeague) - failed to start transaction: %w", tx.Error)
@@ -61,7 +87,7 @@ func (r *LeagueRepository) CreateLeague(league *models.League) (*models.League, 
 }
 
 // checks if a given user is a player in a specific league.
-func (r *LeagueRepository) IsUserPlayerInLeague(userID, leagueID uuid.UUID) (bool, error) {
+func (r *leagueRepositoryImpl) IsUserPlayerInLeague(userID, leagueID uuid.UUID) (bool, error) {
 	var player models.Player
 	err := r.db.Where("user_id = ? AND league_id = ?", userID, leagueID).First(&player).Error
 
@@ -75,7 +101,7 @@ func (r *LeagueRepository) IsUserPlayerInLeague(userID, leagueID uuid.UUID) (boo
 }
 
 // gets League by League ID with relationships preloaded
-func (r *LeagueRepository) GetLeagueByID(leagueID uuid.UUID) (*models.League, error) {
+func (r *leagueRepositoryImpl) GetLeagueByID(leagueID uuid.UUID) (*models.League, error) {
 	// Preload will load the associated relationships as opposed to lazy loading
 	var league models.League
 
@@ -91,7 +117,7 @@ func (r *LeagueRepository) GetLeagueByID(leagueID uuid.UUID) (*models.League, er
 }
 
 // gets all Leagues where userID is the commisioner
-func (r *LeagueRepository) GetLeaguesByCommissioner(userID uuid.UUID) ([]models.League, error) {
+func (r *leagueRepositoryImpl) GetLeaguesByCommissioner(userID uuid.UUID) ([]models.League, error) {
 	var leagues []models.League
 
 	err := r.db.Where("commissioner_user_id = ?", userID).
@@ -105,7 +131,7 @@ func (r *LeagueRepository) GetLeaguesByCommissioner(userID uuid.UUID) ([]models.
 }
 
 // gets total count of Leagues where userID is the Commisioner
-func (r *LeagueRepository) GetLeaguesCountByCommissioner(userID uuid.UUID) (int64, error) {
+func (r *leagueRepositoryImpl) GetLeaguesCountByCommissioner(userID uuid.UUID) (int64, error) {
 	var count int64
 	err := r.db.Model(&models.League{}).
 		Where("commissioner_user_id = ?", userID).
@@ -118,7 +144,7 @@ func (r *LeagueRepository) GetLeaguesCountByCommissioner(userID uuid.UUID) (int6
 }
 
 // fetches all Leagues where the given userID is a player.
-func (r *LeagueRepository) GetLeaguesByUser(userID uuid.UUID) ([]models.League, error) {
+func (r *leagueRepositoryImpl) GetLeaguesByUser(userID uuid.UUID) ([]models.League, error) {
 	var leagues []models.League
 
 	err := r.db.
@@ -135,7 +161,8 @@ func (r *LeagueRepository) GetLeaguesByUser(userID uuid.UUID) ([]models.League, 
 	return leagues, nil
 }
 
-func (r *LeagueRepository) UpdateLeague(league *models.League) (*models.League, error) {
+// updates a league (name, start_date, ruleset_id, status, max_pokemon_per_player, free_agents)
+func (r *leagueRepositoryImpl) UpdateLeague(league *models.League) (*models.League, error) {
 	err := r.db.Select(
 		"name", "start_date", "end_date", "ruleset_id", "status",
 		"max_pokemon_per_player", "allow_weekly_free_agents", "updated_at",
@@ -149,7 +176,7 @@ func (r *LeagueRepository) UpdateLeague(league *models.League) (*models.League, 
 }
 
 // soft deletes a league and all associated data
-func (r *LeagueRepository) DeleteLeague(leagueId uuid.UUID) error {
+func (r *leagueRepositoryImpl) DeleteLeague(leagueId uuid.UUID) error {
 	tx := r.db.Begin()
 	if tx.Error != nil {
 		return fmt.Errorf("(Error: DeleteLeague) - failed to start transaction: %w", tx.Error)
@@ -176,7 +203,7 @@ func (r *LeagueRepository) DeleteLeague(leagueId uuid.UUID) error {
 }
 
 // gets a league with all its related data
-func (r *LeagueRepository) GetLeagueWithFullDetails(id uuid.UUID) (*models.League, error) {
+func (r *leagueRepositoryImpl) GetLeagueWithFullDetails(id uuid.UUID) (*models.League, error) {
 	var league models.League
 
 	err := r.db.Preload("CommissionerUser").
@@ -195,8 +222,8 @@ func (r *LeagueRepository) GetLeagueWithFullDetails(id uuid.UUID) (*models.Leagu
 	return &league, nil
 }
 
-// Helper to check if a user is the commissioner of a league
-func (r *LeagueRepository) IsUserCommissioner(userID, leagueID uuid.UUID) (bool, error) {
+// Public helper to check if a user is the commissioner of a league
+func (r *leagueRepositoryImpl) IsUserCommissioner(userID, leagueID uuid.UUID) (bool, error) {
 	var count int64
 	err := r.db.Model(&models.League{}).
 		Where("id = ? AND commissioner_user_id = ?", leagueID, userID).

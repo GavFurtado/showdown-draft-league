@@ -22,10 +22,10 @@ type PokemonSpeciesService interface {
 }
 
 type pokemonServiceImpl struct {
-	pokemonRepo *repositories.PokemonSpeciesRepository
+	pokemonRepo repositories.PokemonSpeciesRepository
 }
 
-func NewPokemonSpeciesService(pokemonRepo *repositories.PokemonSpeciesRepository) PokemonSpeciesService {
+func NewPokemonSpeciesService(pokemonRepo repositories.PokemonSpeciesRepository) PokemonSpeciesService {
 	return &pokemonServiceImpl{
 		pokemonRepo: pokemonRepo,
 	}

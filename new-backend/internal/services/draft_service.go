@@ -25,20 +25,20 @@ type DraftService interface {
 }
 
 type draftServiceImpl struct {
-	draftRepo          repositories.DraftRepository // turns out when implemented with interfaces you dont do pointer
-	leagueRepo         *repositories.LeagueRepository
-	playerRepo         *repositories.PlayerRepository
-	leaguePokemonRepo  *repositories.LeaguePokemonRepository
-	draftedPokemonRepo *repositories.DraftedPokemonRepository
+	draftRepo          repositories.DraftRepository
+	leagueRepo         repositories.LeagueRepository
+	playerRepo         repositories.PlayerRepository
+	leaguePokemonRepo  repositories.LeaguePokemonRepository
+	draftedPokemonRepo repositories.DraftedPokemonRepository
 	webhookService     *WebhookService
 }
 
 func NewDraftService(
-	leagueRepo *repositories.LeagueRepository,
-	leaguePokemonRepo *repositories.LeaguePokemonRepository,
+	leagueRepo repositories.LeagueRepository,
+	leaguePokemonRepo repositories.LeaguePokemonRepository,
 	draftRepo repositories.DraftRepository,
-	draftedPokemonRepo *repositories.DraftedPokemonRepository,
-	playerRepo *repositories.PlayerRepository,
+	draftedPokemonRepo repositories.DraftedPokemonRepository,
+	playerRepo repositories.PlayerRepository,
 	webhookService *WebhookService,
 ) DraftService {
 	return &draftServiceImpl{
@@ -73,7 +73,7 @@ func (s *draftServiceImpl) isUserPlayerInLeague(userID, leagueID uuid.UUID) (boo
 
 func (s *draftServiceImpl) StartDraft(currentUser *models.User, leagueID uuid.UUID) (*models.Draft, error) {
 	// Retrieve the league
-	league, err := (*s.leagueRepo).GetLeagueByID(leagueID)
+	league, err := (s.leagueRepo).GetLeagueByID(leagueID)
 	if err != nil {
 		log.Printf("(Error: DraftService.StartDraft) - Could not get league %s: %v\n", leagueID, err)
 		return nil, common.ErrLeagueNotFound

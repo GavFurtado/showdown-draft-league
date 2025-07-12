@@ -20,7 +20,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	// pokemonSpeciesRepo := repositories.NewPokemonSpeciesRepository(db)
 	leaguePokemonRepo := repositories.NewLeaguePokemonRepository(db)
 	draftedPokemonRepo := repositories.NewDraftedPokemonRepository(db)
-	// draftRepo := repositories.NewDraftRepository(db)
+	draftRepo := repositories.NewDraftRepository(db)
 	gameRepo := repositories.NewGameRepository(db)
 
 	// --- CORS Middleware ---
@@ -46,10 +46,10 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	authService := services.NewAuthService(userRepo, jwtService, discordOauthConfig)
 	userService := services.NewUserService(userRepo)
 	playerService := services.NewPlayerService(playerRepo, leagueRepo, userRepo)
-	leagueService := services.NewLeagueService(leagueRepo, playerRepo, leaguePokemonRepo, draftedPokemonRepo, gameRepo)
-	// webhookService := services.NewWebhookService()
-	// draftService := services.NewDraftService(leagueRepo, leaguePokemonRepo, draftRepo, draftedPokemonRepo, playerRepo, &webhookService)
+	// draftService := services.NewDraftService(leagueRepo, leaguePokemonRepo, draftRepo, draftedPokemonRepo, playerRepo, webhookService)
 	// draftedPokemonService := services.NewDraftedPokemonService(draftedPokemonRepo, userRepo, leagueRepo, playerRepo)
+	leagueService := services.NewLeagueService(leagueRepo, playerRepo, leaguePokemonRepo, draftedPokemonRepo, draftRepo, gameRepo)
+	// webhookService := services.NewWebhookService()
 
 	//  --- Initialize Controller  ---
 	authController := controllers.NewAuthController(authService, cfg, discordOauthConfig)
