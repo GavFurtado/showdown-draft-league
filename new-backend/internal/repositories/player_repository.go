@@ -7,16 +7,46 @@ import (
 	"gorm.io/gorm"
 )
 
-type PlayerRepository struct {
+type PlayerRepository interface {
+	CreatePlayer(player *models.Player) (*models.Player, error)
+	// gets player by ID with preloaded relationships
+	GetPlayerByID(id uuid.UUID) (*models.Player, error)
+	// gets player by user ID and league ID
+	GetPlayerByUserAndLeague(userID, leagueID uuid.UUID) (*models.Player, error)
+	// gets all players in a specific league
+	GetPlayersByLeague(leagueID uuid.UUID) ([]models.Player, error)
+	// gets all players for a specific user across all leagues
+	GetPlayersByUser(userID uuid.UUID) ([]models.Player, error)
+	UpdatePlayer(player *models.Player) (*models.Player, error)
+	// updates player's draft points (used during drafting)
+	UpdatePlayerDraftPoints(playerID uuid.UUID, newPoints int) error
+	// updates player's win/loss record
+	UpdatePlayerRecord(playerID uuid.UUID, wins, losses int) error
+	UpdatePlayerDraftPosition(playerID uuid.UUID, newPosition int) error
+	GetPlayerCountByLeague(leagueID uuid.UUID) (int64, error)
+	// soft deletes a player from a league
+	DeletePlayer(playerID uuid.UUID) error
+	// Helper: checks if a user is already a player in a specific league
+	IsUserInLeague(userID, leagueID uuid.UUID) (bool, error)
+	GetPlayerWithFullRoster(playerID uuid.UUID) (*models.Player, error)
+	// finds a player by user ID and league ID.
+	FindPlayerByUserAndLeague(userID, leagueID uuid.UUID) (*models.Player, error)
+	FindPlayerByInLeagueNameAndLeagueID(inLeagueName string, leagueID uuid.UUID) (*models.Player, error)
+	FindPlayerByTeamNameAndLeagueID(teamName string, leagueID uuid.UUID) (*models.Player, error)
+}
+
+type playerRepositoryImpl struct {
 	db *gorm.DB
 }
 
-func NewPlayerRepository(db *gorm.DB) *PlayerRepository {
-	return &PlayerRepository{db: db}
+func NewPlayerRepository(db *gorm.DB) PlayerRepository {
+	return &playerRepositoryImpl{
+		db: db,
+	}
 }
 
 // creates a new player in a league
-func (r *PlayerRepository) CreatePlayer(player *models.Player) (*models.Player, error) {
+func (r *playerRepositoryImpl) CreatePlayer(player *models.Player) (*models.Player, error) {
 	err := r.db.Create(player).Error
 	if err != nil {
 		return nil, fmt.Errorf("(Error: CreatePlayer) - failed to create player: %w", err)
@@ -25,7 +55,7 @@ func (r *PlayerRepository) CreatePlayer(player *models.Player) (*models.Player, 
 }
 
 // gets player by ID with preloaded relationships
-func (r *PlayerRepository) GetPlayerByID(id uuid.UUID) (*models.Player, error) {
+func (r *playerRepositoryImpl) GetPlayerByID(id uuid.UUID) (*models.Player, error) {
 	var player models.Player
 	err := r.db.Preload("User").
 		Preload("League").
@@ -41,7 +71,7 @@ func (r *PlayerRepository) GetPlayerByID(id uuid.UUID) (*models.Player, error) {
 }
 
 // gets player by user ID and league ID
-func (r *PlayerRepository) GetPlayerByUserAndLeague(userID, leagueID uuid.UUID) (*models.Player, error) {
+func (r *playerRepositoryImpl) GetPlayerByUserAndLeague(userID, leagueID uuid.UUID) (*models.Player, error) {
 	var player models.Player
 	err := r.db.Preload("User").
 		Preload("League").
@@ -55,7 +85,7 @@ func (r *PlayerRepository) GetPlayerByUserAndLeague(userID, leagueID uuid.UUID) 
 }
 
 // gets all players in a specific league
-func (r *PlayerRepository) GetPlayersByLeague(leagueID uuid.UUID) ([]models.Player, error) {
+func (r *playerRepositoryImpl) GetPlayersByLeague(leagueID uuid.UUID) ([]models.Player, error) {
 	var players []models.Player
 	err := r.db.Preload("User").
 		Where("league_id = ?", leagueID).
@@ -69,7 +99,7 @@ func (r *PlayerRepository) GetPlayersByLeague(leagueID uuid.UUID) ([]models.Play
 }
 
 // gets all players for a specific user across all leagues
-func (r *PlayerRepository) GetPlayersByUser(userID uuid.UUID) ([]models.Player, error) {
+func (r *playerRepositoryImpl) GetPlayersByUser(userID uuid.UUID) ([]models.Player, error) {
 	var players []models.Player
 	err := r.db.Preload("League").
 		Where("user_id = ?", userID).
@@ -82,7 +112,7 @@ func (r *PlayerRepository) GetPlayersByUser(userID uuid.UUID) ([]models.Player, 
 }
 
 // updates player information
-func (r *PlayerRepository) UpdatePlayer(player *models.Player) (*models.Player, error) {
+func (r *playerRepositoryImpl) UpdatePlayer(player *models.Player) (*models.Player, error) {
 	err := r.db.Select(
 		"in_league_name", "team_name", "wins", "losses", "draft_points",
 		"draft_position", "updated_at",
@@ -96,7 +126,7 @@ func (r *PlayerRepository) UpdatePlayer(player *models.Player) (*models.Player, 
 }
 
 // updates player's draft points (used during drafting)
-func (r *PlayerRepository) UpdatePlayerDraftPoints(playerID uuid.UUID, newPoints int) error {
+func (r *playerRepositoryImpl) UpdatePlayerDraftPoints(playerID uuid.UUID, newPoints int) error {
 	err := r.db.Model(&models.Player{}).
 		Where("id = ?", playerID).
 		Update("draft_points", newPoints).Error
@@ -108,7 +138,7 @@ func (r *PlayerRepository) UpdatePlayerDraftPoints(playerID uuid.UUID, newPoints
 }
 
 // updates player's win/loss record
-func (r *PlayerRepository) UpdatePlayerRecord(playerID uuid.UUID, wins, losses int) error {
+func (r *playerRepositoryImpl) UpdatePlayerRecord(playerID uuid.UUID, wins, losses int) error {
 	err := r.db.Model(&models.Player{}).
 		Where("id = ?", playerID).
 		Updates(map[string]any{
@@ -122,7 +152,7 @@ func (r *PlayerRepository) UpdatePlayerRecord(playerID uuid.UUID, wins, losses i
 	return nil
 }
 
-func (r *PlayerRepository) UpdatePlayerDraftPosition(playerID uuid.UUID, newPosition int) error {
+func (r *playerRepositoryImpl) UpdatePlayerDraftPosition(playerID uuid.UUID, newPosition int) error {
 	err := r.db.Model(&models.Player{}).
 		Where("id = ?", playerID).
 		Update("draft_position", newPosition).Error
@@ -134,7 +164,7 @@ func (r *PlayerRepository) UpdatePlayerDraftPosition(playerID uuid.UUID, newPosi
 }
 
 // gets player count for a specific league
-func (r *PlayerRepository) GetPlayerCountByLeague(leagueID uuid.UUID) (int64, error) {
+func (r *playerRepositoryImpl) GetPlayerCountByLeague(leagueID uuid.UUID) (int64, error) {
 	var count int64
 	err := r.db.Model(&models.Player{}).
 		Where("league_id = ?", leagueID).
@@ -147,7 +177,7 @@ func (r *PlayerRepository) GetPlayerCountByLeague(leagueID uuid.UUID) (int64, er
 }
 
 // soft deletes a player from a league
-func (r *PlayerRepository) DeletePlayer(playerID uuid.UUID) error {
+func (r *playerRepositoryImpl) DeletePlayer(playerID uuid.UUID) error {
 	tx := r.db.Begin()
 	if tx.Error != nil {
 		return fmt.Errorf("(Error: DeletePlayer) - failed to start transaction: %w", tx.Error)
@@ -176,7 +206,7 @@ func (r *PlayerRepository) DeletePlayer(playerID uuid.UUID) error {
 }
 
 // checks if a user is already a player in a specific league
-func (r *PlayerRepository) IsUserInLeague(userID, leagueID uuid.UUID) (bool, error) {
+func (r *playerRepositoryImpl) IsUserInLeague(userID, leagueID uuid.UUID) (bool, error) {
 	var count int64
 	err := r.db.Model(&models.Player{}).
 		Where("user_id = ? AND league_id = ?", userID, leagueID).
@@ -189,7 +219,7 @@ func (r *PlayerRepository) IsUserInLeague(userID, leagueID uuid.UUID) (bool, err
 }
 
 // gets player with full roster details
-func (r *PlayerRepository) GetPlayerWithFullRoster(playerID uuid.UUID) (*models.Player, error) {
+func (r *playerRepositoryImpl) GetPlayerWithFullRoster(playerID uuid.UUID) (*models.Player, error) {
 
 	var player models.Player
 	err := r.db.Preload("User").
@@ -207,7 +237,7 @@ func (r *PlayerRepository) GetPlayerWithFullRoster(playerID uuid.UUID) (*models.
 
 // finds a player by user ID and league ID.
 // Returns (player, nil) if found, (nil, nil) if not found, (nil, error) for other DB errors.
-func (r *PlayerRepository) FindPlayerByUserAndLeague(userID, leagueID uuid.UUID) (*models.Player, error) {
+func (r *playerRepositoryImpl) FindPlayerByUserAndLeague(userID, leagueID uuid.UUID) (*models.Player, error) {
 	var player models.Player
 	err := r.db.
 		Where("user_id = ? AND league_id = ?", userID, leagueID).
@@ -224,7 +254,7 @@ func (r *PlayerRepository) FindPlayerByUserAndLeague(userID, leagueID uuid.UUID)
 
 // finds a player by their in-league name and league ID.
 // Returns (player, nil) if found, (nil, nil) if not found, (nil, error) for other DB errors.
-func (r *PlayerRepository) FindPlayerByInLeagueNameAndLeagueID(inLeagueName string, leagueID uuid.UUID) (*models.Player, error) {
+func (r *playerRepositoryImpl) FindPlayerByInLeagueNameAndLeagueID(inLeagueName string, leagueID uuid.UUID) (*models.Player, error) {
 	var player models.Player
 	err := r.db.
 		Where("in_league_name = ? AND league_id = ?", inLeagueName, leagueID).
@@ -241,7 +271,7 @@ func (r *PlayerRepository) FindPlayerByInLeagueNameAndLeagueID(inLeagueName stri
 
 // finds a player by their team name and league ID.
 // Returns (player, nil) if found, (nil, nil) if not found, (nil, error) for other DB errors.
-func (r *PlayerRepository) FindPlayerByTeamNameAndLeagueID(teamName string, leagueID uuid.UUID) (*models.Player, error) {
+func (r *playerRepositoryImpl) FindPlayerByTeamNameAndLeagueID(teamName string, leagueID uuid.UUID) (*models.Player, error) {
 	var player models.Player
 	err := r.db.
 		Where("team_name = ? AND league_id = ?", teamName, leagueID).

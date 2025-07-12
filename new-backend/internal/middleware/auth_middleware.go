@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AuthMiddleware(jwtService *services.JWTService, userRepo *repositories.UserRepository) gin.HandlerFunc {
+func AuthMiddleware(jwtService *services.JWTService, userRepo repositories.UserRepository) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		authHeader := ctx.GetHeader("Authorization")
 		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer") {

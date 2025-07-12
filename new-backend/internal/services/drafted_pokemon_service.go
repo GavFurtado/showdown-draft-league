@@ -48,17 +48,17 @@ type DraftedPokemonService interface {
 }
 
 type draftedPokemonServiceImpl struct {
-	draftedPokemonRepo *repositories.DraftedPokemonRepository
-	userRepo           *repositories.UserRepository
-	leagueRepo         *repositories.LeagueRepository
-	playerRepo         *repositories.PlayerRepository
+	draftedPokemonRepo repositories.DraftedPokemonRepository
+	userRepo           repositories.UserRepository
+	leagueRepo         repositories.LeagueRepository
+	playerRepo         repositories.PlayerRepository
 }
 
 func NewDraftedPokemonService(
-	draftedPokemonRepo *repositories.DraftedPokemonRepository,
-	userRepo *repositories.UserRepository,
-	leagueRepo *repositories.LeagueRepository,
-	playerRepo *repositories.PlayerRepository,
+	draftedPokemonRepo repositories.DraftedPokemonRepository,
+	userRepo repositories.UserRepository,
+	leagueRepo repositories.LeagueRepository,
+	playerRepo repositories.PlayerRepository,
 ) DraftedPokemonService {
 	return &draftedPokemonServiceImpl{
 		draftedPokemonRepo: draftedPokemonRepo,

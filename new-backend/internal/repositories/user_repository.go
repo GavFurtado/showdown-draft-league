@@ -6,15 +6,24 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserRepository struct {
+type UserRepository interface {
+	CreateUser(user *models.User) (*models.User, error)
+	GetUserByID(id uuid.UUID) (*models.User, error)
+	GetUserByDiscordID(discordID string) (*models.User, error)
+	UpdateUser(user *models.User) (*models.User, error)
+	// fetches all Leagues that a specific user is a player in.
+	GetUserLeagues(userID uuid.UUID) ([]models.League, error)
+}
+
+type userRepositoryImpl struct {
 	db *gorm.DB
 }
 
-func NewUserRepository(db *gorm.DB) *UserRepository {
-	return &UserRepository{db: db}
+func NewUserRepository(db *gorm.DB) *userRepositoryImpl {
+	return &userRepositoryImpl{db: db}
 }
 
-func (r *UserRepository) CreateUser(user *models.User) (*models.User, error) {
+func (r *userRepositoryImpl) CreateUser(user *models.User) (*models.User, error) {
 	err := r.db.Create(user).Error
 	if err != nil {
 		return nil, err
@@ -23,7 +32,7 @@ func (r *UserRepository) CreateUser(user *models.User) (*models.User, error) {
 }
 
 // retrieves user by internal user id
-func (r *UserRepository) GetUserByID(id uuid.UUID) (*models.User, error) {
+func (r *userRepositoryImpl) GetUserByID(id uuid.UUID) (*models.User, error) {
 	var user models.User
 
 	err := r.db.First(&user, "id = ?", id).Error
@@ -34,7 +43,7 @@ func (r *UserRepository) GetUserByID(id uuid.UUID) (*models.User, error) {
 }
 
 // retrieves a user by their Discord ID
-func (r *UserRepository) GetUserByDiscordID(discordID string) (*models.User, error) {
+func (r *userRepositoryImpl) GetUserByDiscordID(discordID string) (*models.User, error) {
 	var user models.User
 	err := r.db.Where("discord_id = ?", discordID).First(&user).Error
 
@@ -44,7 +53,7 @@ func (r *UserRepository) GetUserByDiscordID(discordID string) (*models.User, err
 	return &user, nil
 }
 
-func (r *UserRepository) UpdateUser(user *models.User) (*models.User, error) {
+func (r *userRepositoryImpl) UpdateUser(user *models.User) (*models.User, error) {
 	err := r.db.Save(&user).Error
 	if err != nil {
 		return nil, err
@@ -53,7 +62,7 @@ func (r *UserRepository) UpdateUser(user *models.User) (*models.User, error) {
 }
 
 // fetches all Leagues that a specific user is a player in.
-func (r *UserRepository) GetUserLeagues(userID uuid.UUID) ([]models.League, error) {
+func (r *userRepositoryImpl) GetUserLeagues(userID uuid.UUID) ([]models.League, error) {
 	var user models.User
 
 	// Fetch the user, preloading their players and each player's associated league.
@@ -64,7 +73,7 @@ func (r *UserRepository) GetUserLeagues(userID uuid.UUID) ([]models.League, erro
 		First(&user).Error         // Fetch the user
 
 	if err != nil {
-		return nil, err // gorm.ErrRecordNotFound or other DB errors
+		return nil, err
 	}
 
 	// Extract the unique Leagues from the preloaded Players slice

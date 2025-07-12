@@ -8,16 +8,72 @@ import (
 	"gorm.io/gorm"
 )
 
-type GameRepository struct {
+type GameRepository interface {
+	// creates a new game
+	CreateGame(game *models.Game) (*models.Game, error)
+	// gets game by ID with relationships
+	GetGameByID(id uuid.UUID) (*models.Game, error)
+	// gets all games for a specific league
+	GetGamesByLeague(leagueID uuid.UUID) ([]models.Game, error)
+	// gets all games for a specific player
+	GetGamesByPlayer(playerID uuid.UUID) ([]models.Game, error)
+	// gets games by round number in a league
+	GetGamesByLeagueAndRound(leagueID uuid.UUID, roundNumber int) ([]models.Game, error)
+	// gets pending games for a league
+	GetPendingGamesByLeague(leagueID uuid.UUID) ([]models.Game, error)
+	// gets completed games for a league
+	GetCompletedGamesByLeague(leagueID uuid.UUID) ([]models.Game, error)
+	// gets disputed games for a league
+	GetDisputedGamesByLeague(leagueID uuid.UUID) ([]models.Game, error)
+	// updates game with score and potentially marks it as completed
+	UpdateGameScore(gameID uuid.UUID, player1Wins, player2Wins int) error
+	// reports game result with winner/loser and replay links
+	ReportGameResult(
+		gameID uuid.UUID,
+		winnerID, loserID, reporterID uuid.UUID,
+		player1Wins, player2Wins int,
+		replayLinks []string,
+	) error
+	// marks a game as disputed
+	DisputeGame(gameID uuid.UUID, reporterID uuid.UUID) error
+	// resolves a disputed game (commissioner action)
+	ResolveDisputedGame(
+		gameID uuid.UUID,
+		winnerID, loserID uuid.UUID,
+		player1Wins, player2Wins int,
+		replayLinks []string,
+	) error
+	// gets head-to-head record between two players
+	GetHeadToHeadRecord(player1ID, player2ID uuid.UUID) ([]models.Game, error)
+	// gets player's win-loss record in a specific league
+	GetPlayerRecordInLeague(playerID, leagueID uuid.UUID) (wins, losses int64, err error)
+	// gets current round number for a league (highest round with games)
+	GetCurrentRoundNumber(leagueID uuid.UUID) (int, error)
+	// bulk creates games for a round (useful for scheduling)
+	CreateGamesForRound(games []models.Game) error
+	// updates player records after game completion (transaction)
+	UpdatePlayerRecordsAfterGame(
+		winnerID, loserID uuid.UUID,
+		winnerNewWins, winnerNewLosses, loserNewWins, loserNewLosses int,
+	) error
+	// soft deletes a game
+	DeleteGame(gameID uuid.UUID) error
+	// gets games that need to be played by a specific player (pending games involving the player)
+	GetPendingGamesByPlayer(playerID uuid.UUID) ([]models.Game, error)
+}
+
+type gameRepositoryImpl struct {
 	db *gorm.DB
 }
 
-func NewGameRepository(db *gorm.DB) *GameRepository {
-	return &GameRepository{db: db}
+func NewGameRepository(db *gorm.DB) GameRepository {
+	return &gameRepositoryImpl{
+		db: db,
+	}
 }
 
 // creates a new game
-func (r *GameRepository) CreateGame(game *models.Game) (*models.Game, error) {
+func (r *gameRepositoryImpl) CreateGame(game *models.Game) (*models.Game, error) {
 	err := r.db.Create(game).Error
 	if err != nil {
 		return nil, fmt.Errorf("(Error: CreateGame) - failed to create game: %w", err)
@@ -26,7 +82,7 @@ func (r *GameRepository) CreateGame(game *models.Game) (*models.Game, error) {
 }
 
 // gets game by ID with relationships
-func (r *GameRepository) GetGameByID(id uuid.UUID) (*models.Game, error) {
+func (r *gameRepositoryImpl) GetGameByID(id uuid.UUID) (*models.Game, error) {
 	var game models.Game
 	err := r.db.Preload("League").
 		Preload("Player1").
@@ -47,7 +103,7 @@ func (r *GameRepository) GetGameByID(id uuid.UUID) (*models.Game, error) {
 }
 
 // gets all games for a specific league
-func (r *GameRepository) GetGamesByLeague(leagueID uuid.UUID) ([]models.Game, error) {
+func (r *gameRepositoryImpl) GetGamesByLeague(leagueID uuid.UUID) ([]models.Game, error) {
 	var games []models.Game
 	err := r.db.Preload("Player1").
 		Preload("Player1.User").
@@ -66,7 +122,7 @@ func (r *GameRepository) GetGamesByLeague(leagueID uuid.UUID) ([]models.Game, er
 }
 
 // gets all games for a specific player
-func (r *GameRepository) GetGamesByPlayer(playerID uuid.UUID) ([]models.Game, error) {
+func (r *gameRepositoryImpl) GetGamesByPlayer(playerID uuid.UUID) ([]models.Game, error) {
 	var games []models.Game
 	err := r.db.Preload("League").
 		Preload("Player1").
@@ -86,7 +142,7 @@ func (r *GameRepository) GetGamesByPlayer(playerID uuid.UUID) ([]models.Game, er
 }
 
 // gets games by round number in a league
-func (r *GameRepository) GetGamesByLeagueAndRound(leagueID uuid.UUID, roundNumber int) ([]models.Game, error) {
+func (r *gameRepositoryImpl) GetGamesByLeagueAndRound(leagueID uuid.UUID, roundNumber int) ([]models.Game, error) {
 	var games []models.Game
 	err := r.db.Preload("Player1").
 		Preload("Player1.User").
@@ -105,7 +161,7 @@ func (r *GameRepository) GetGamesByLeagueAndRound(leagueID uuid.UUID, roundNumbe
 }
 
 // gets pending games for a league
-func (r *GameRepository) GetPendingGamesByLeague(leagueID uuid.UUID) ([]models.Game, error) {
+func (r *gameRepositoryImpl) GetPendingGamesByLeague(leagueID uuid.UUID) ([]models.Game, error) {
 	var games []models.Game
 	err := r.db.Preload("Player1").
 		Preload("Player1.User").
@@ -122,7 +178,7 @@ func (r *GameRepository) GetPendingGamesByLeague(leagueID uuid.UUID) ([]models.G
 }
 
 // gets completed games for a league
-func (r *GameRepository) GetCompletedGamesByLeague(leagueID uuid.UUID) ([]models.Game, error) {
+func (r *gameRepositoryImpl) GetCompletedGamesByLeague(leagueID uuid.UUID) ([]models.Game, error) {
 	var games []models.Game
 	err := r.db.Preload("Player1").
 		Preload("Player1.User").
@@ -143,7 +199,7 @@ func (r *GameRepository) GetCompletedGamesByLeague(leagueID uuid.UUID) ([]models
 }
 
 // gets disputed games for a league
-func (r *GameRepository) GetDisputedGamesByLeague(leagueID uuid.UUID) ([]models.Game, error) {
+func (r *gameRepositoryImpl) GetDisputedGamesByLeague(leagueID uuid.UUID) ([]models.Game, error) {
 	var games []models.Game
 	err := r.db.Preload("Player1").
 		Preload("Player1.User").
@@ -161,7 +217,7 @@ func (r *GameRepository) GetDisputedGamesByLeague(leagueID uuid.UUID) ([]models.
 }
 
 // updates game with score and potentially marks it as completed
-func (r *GameRepository) UpdateGameScore(gameID uuid.UUID, player1Wins, player2Wins int) error {
+func (r *gameRepositoryImpl) UpdateGameScore(gameID uuid.UUID, player1Wins, player2Wins int) error {
 	err := r.db.Model(&models.Game{}).
 		Where("id = ?", gameID).
 		Updates(map[string]interface{}{
@@ -176,7 +232,7 @@ func (r *GameRepository) UpdateGameScore(gameID uuid.UUID, player1Wins, player2W
 }
 
 // reports game result with winner/loser and replay links
-func (r *GameRepository) ReportGameResult(
+func (r *gameRepositoryImpl) ReportGameResult(
 	gameID uuid.UUID,
 	winnerID, loserID, reporterID uuid.UUID,
 	player1Wins, player2Wins int,
@@ -203,7 +259,7 @@ func (r *GameRepository) ReportGameResult(
 }
 
 // marks a game as disputed
-func (r *GameRepository) DisputeGame(gameID uuid.UUID, reporterID uuid.UUID) error {
+func (r *gameRepositoryImpl) DisputeGame(gameID uuid.UUID, reporterID uuid.UUID) error {
 	updates := map[string]interface{}{
 		"status":              models.GameStatusDisputed,
 		"reported_by_user_id": reporterID,
@@ -220,7 +276,7 @@ func (r *GameRepository) DisputeGame(gameID uuid.UUID, reporterID uuid.UUID) err
 }
 
 // resolves a disputed game (commissioner action)
-func (r *GameRepository) ResolveDisputedGame(
+func (r *gameRepositoryImpl) ResolveDisputedGame(
 	gameID uuid.UUID,
 	winnerID, loserID uuid.UUID,
 	player1Wins, player2Wins int,
@@ -246,7 +302,7 @@ func (r *GameRepository) ResolveDisputedGame(
 }
 
 // gets head-to-head record between two players
-func (r *GameRepository) GetHeadToHeadRecord(player1ID, player2ID uuid.UUID) ([]models.Game, error) {
+func (r *gameRepositoryImpl) GetHeadToHeadRecord(player1ID, player2ID uuid.UUID) ([]models.Game, error) {
 	var games []models.Game
 	err := r.db.Preload("League").
 		Preload("Winner").
@@ -264,7 +320,7 @@ func (r *GameRepository) GetHeadToHeadRecord(player1ID, player2ID uuid.UUID) ([]
 }
 
 // gets player's win-loss record in a specific league
-func (r *GameRepository) GetPlayerRecordInLeague(playerID, leagueID uuid.UUID) (wins, losses int64, err error) {
+func (r *gameRepositoryImpl) GetPlayerRecordInLeague(playerID, leagueID uuid.UUID) (wins, losses int64, err error) {
 	// Count wins
 	err = r.db.Model(&models.Game{}).
 		Where("league_id = ? AND winner_id = ? AND status = ?", leagueID, playerID, models.GameStatusCompleted).
@@ -285,7 +341,7 @@ func (r *GameRepository) GetPlayerRecordInLeague(playerID, leagueID uuid.UUID) (
 }
 
 // gets current round number for a league (highest round with games)
-func (r *GameRepository) GetCurrentRoundNumber(leagueID uuid.UUID) (int, error) {
+func (r *gameRepositoryImpl) GetCurrentRoundNumber(leagueID uuid.UUID) (int, error) {
 	var maxRound int
 	err := r.db.Model(&models.Game{}).
 		Select("COALESCE(MAX(round_number), 0)").
@@ -299,7 +355,7 @@ func (r *GameRepository) GetCurrentRoundNumber(leagueID uuid.UUID) (int, error) 
 }
 
 // bulk creates games for a round (useful for scheduling)
-func (r *GameRepository) CreateGamesForRound(games []models.Game) error {
+func (r *gameRepositoryImpl) CreateGamesForRound(games []models.Game) error {
 	tx := r.db.Begin()
 	if tx.Error != nil {
 		return fmt.Errorf("(Error: CreateGamesForRound) - failed to start transaction: %w", tx.Error)
@@ -323,7 +379,7 @@ func (r *GameRepository) CreateGamesForRound(games []models.Game) error {
 }
 
 // updates player records after game completion (transaction)
-func (r *GameRepository) UpdatePlayerRecordsAfterGame(
+func (r *gameRepositoryImpl) UpdatePlayerRecordsAfterGame(
 	winnerID, loserID uuid.UUID,
 	winnerNewWins, winnerNewLosses, loserNewWins, loserNewLosses int,
 ) error {
@@ -365,7 +421,7 @@ func (r *GameRepository) UpdatePlayerRecordsAfterGame(
 }
 
 // soft deletes a game
-func (r *GameRepository) DeleteGame(gameID uuid.UUID) error {
+func (r *gameRepositoryImpl) DeleteGame(gameID uuid.UUID) error {
 	err := r.db.Delete(&models.Game{}, "id = ?", gameID).Error
 	if err != nil {
 		return fmt.Errorf("(Error: DeleteGame) - failed to delete game: %w", err)
@@ -374,7 +430,7 @@ func (r *GameRepository) DeleteGame(gameID uuid.UUID) error {
 }
 
 // gets games that need to be played by a specific player (pending games involving the player)
-func (r *GameRepository) GetPendingGamesByPlayer(playerID uuid.UUID) ([]models.Game, error) {
+func (r *gameRepositoryImpl) GetPendingGamesByPlayer(playerID uuid.UUID) ([]models.Game, error) {
 	var games []models.Game
 	err := r.db.Preload("League").
 		Preload("Player1").
