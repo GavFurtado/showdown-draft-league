@@ -174,34 +174,5 @@ func (s *pokemonServiceImpl) DeletePokemonSpecies(id int64) error {
 		log.Printf("(Error: PokemonSpeciesService.DeletePokemonSpecies) - Failed to delete pokemon species ID %d: %v", id, err)
 		return fmt.Errorf("failed to delete pokemon species: %w", err)
 	}
-
-	return nil
-}
-
-// updates a league pokemon record.
-func (s *pokemonServiceImpl) UpdateLeaguePokemon(leaguePokemon *models.LeaguePokemon) error {
-	if leaguePokemon == nil || leaguePokemon.ID == uuid.Nil {
-		log.Println("(Error: PokemonSpeciesService.UpdateLeaguePokemon) - Invalid input: leaguePokemon is nil or ID is empty")
-		return common.ErrInvalidInput
-	}
-
-	// Check if the league pokemon exists
-	_, err := s.leaguePokemonRepo.GetLeaguePokemonByID(leaguePokemon.ID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Printf("(Info: PokemonSpeciesService.UpdateLeaguePokemon) - League Pokemon with ID %s not found for update", leaguePokemon.ID)
-			return common.ErrLeaguePokemonNotFound
-		}
-		log.Printf("(Error: PokemonSpeciesService.UpdateLeaguePokemon) - Error checking existing league pokemon for update ID %s: %v", leaguePokemon.ID, err)
-		return fmt.Errorf("error checking existing league pokemon for update: %w", err)
-	}
-
-	// Update the league pokemon
-	_, err = s.leaguePokemonRepo.UpdateLeaguePokemon(leaguePokemon)
-	if err != nil {
-		log.Printf("(Error: PokemonSpeciesService.UpdateLeaguePokemon) - Failed to update league pokemon ID %s: %v", leaguePokemon.ID, err)
-		return fmt.Errorf("failed to update league pokemon: %w", err)
-	}
-
 	return nil
 }
