@@ -147,7 +147,7 @@ func (s *draftServiceImpl) MakePick(currentUser *models.User, league *models.Lea
 	draft, err := s.draftRepo.GetDraftByLeagueID(league.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Printf("DraftService: MakePick - draft for leagueID %d not found: %w\n", league.ID, err)
+			log.Printf("DraftService: MakePick - draft for leagueID %s not found: %w\n", league.ID, err)
 			return common.ErrDraftNotFound
 		}
 		log.Printf("DraftService: MakePick - Could not fetch draft: %w\n", err)
@@ -156,12 +156,12 @@ func (s *draftServiceImpl) MakePick(currentUser *models.User, league *models.Lea
 
 	// check league state
 	if status := league.Status; status.IsValid() && status != models.LeagueStatusDrafting {
-		log.Printf("DraftService: MakePick - user %d tried to draft when league %d not in drafting status: %v\n", currentUser.ID, league.ID, err)
+		log.Printf("DraftService: MakePick - user %s tried to draft when league %s not in drafting status: %v\n", currentUser.ID, league.ID, err)
 		return common.ErrInvalidState
 	}
 
 	if status := draft.Status; status.IsValid() && status != models.DraftStatusStarted {
-		log.Printf("DraftService: MakePick - user %d tried to draft when league %d not in drafting status (%s): %v\n", currentUser.ID, league.ID, status, err)
+		log.Printf("DraftService: MakePick - user %s tried to draft when league %s not in drafting status (%s): %v\n", currentUser.ID, league.ID, status, err)
 		return common.ErrInvalidState
 
 	}
@@ -169,7 +169,7 @@ func (s *draftServiceImpl) MakePick(currentUser *models.User, league *models.Lea
 	player, err := s.playerRepo.GetPlayerByUserAndLeague(currentUser.ID, league.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Printf("DraftService: MakePick - Player of userID %d in league %d not found: %w\n", currentUser.ID, league.ID, err)
+			log.Printf("DraftService: MakePick - Player of userID %s in league %s not found: %w\n", currentUser.ID, league.ID, err)
 			return common.ErrPlayerNotFound
 		}
 		return common.ErrInternalService
@@ -177,7 +177,7 @@ func (s *draftServiceImpl) MakePick(currentUser *models.User, league *models.Lea
 
 	// check if it's the right player's turn
 	if currentTurnPlayerID := *draft.CurrentTurnPlayerID; currentTurnPlayerID != player.ID {
-		log.Printf("DraftService: MakePick - player %d tried to draft when it isn't their turn. Current Turn: Player %d\n", currentTurnPlayerID)
+		log.Printf("DraftService: MakePick - player %s tried to draft when it isn't their turn. Current Turn: Player %s\n", currentTurnPlayerID, *draft.CurrentTurnPlayerID)
 		return common.ErrUnauthorized
 	}
 
@@ -185,33 +185,33 @@ func (s *draftServiceImpl) MakePick(currentUser *models.User, league *models.Lea
 	leaguePokemon, err := s.leaguePokemonRepo.GetLeaguePokemonByID(leaguePokemonID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Printf("DraftService: MakePick - no corresponding league pokemon %d found in league %d : %w\n", leaguePokemonID, league.ID, err)
-			return common.ErrLeagueNotFound
+			log.Printf("DraftService: MakePick - no corresponding league pokemon %s found in league %s : %w\n", leaguePokemonID, league.ID, err)
+			return common.ErrLeaguePokemonNotFound
 		}
 		return common.ErrInternalService
 	}
 
 	// if the mon isn't availble
 	if !leaguePokemon.IsAvailable {
-		log.Printf("DraftService: MakePick - League Pokemon %d is not availble\n", leaguePokemon.ID)
+		log.Printf("DraftService: MakePick - League Pokemon %s is not availble\n", leaguePokemon.ID)
 		return common.ErrConflict
 	}
 
 	// check if player has enough DraftPoints
-	if player.DraftPoints < leaguePokemon.Cost { // if they do not
+	if leaguePokemon.Cost == nil || player.DraftPoints < *leaguePokemon.Cost { // if they do not
 		return common.ErrInsufficientDraftPoints
 	}
 
 	// get next overall draft pick number to assign to the DraftedPokemon record (1-based)
 	nextOverallPickNumber, err := s.draftedPokemonRepo.GetNextDraftPickNumber(leaguePokemonID)
 	if err != nil {
-		log.Printf("DraftService: MakePick - failed to get next overall draft pick number for league %d.\n", league.ID)
+		log.Printf("DraftService: MakePick - failed to get next overall draft pick number for league %s.\n", league.ID)
 		return common.ErrInternalService
 	}
 
 	playerCount, err := s.playerRepo.GetPlayerCountByLeague(league.ID)
 	if err != nil {
-		log.Printf("DraftService: MakePick - failed to get player count for league %d.\n", league.ID)
+		log.Printf("DraftService: MakePick - failed to get player count for league %s.\n", league.ID)
 		return common.ErrInternalService
 	}
 	if playerCount == 0 { // this should never happen if the draft has started but gotta make sure
@@ -238,9 +238,9 @@ func (s *draftServiceImpl) MakePick(currentUser *models.User, league *models.Lea
 	// perform the transaction (should adjust player's points if succeeds and revert if it doesn't)
 	err = s.draftedPokemonRepo.DraftPokemonTransaction(draftedPokemon)
 	if err != nil {
-		log.Printf("DraftService: MakePick - Player %d (League %d) draft transaction for LeaguePokemon %d failed: %w\n", player.ID, league.ID, leaguePokemon.ID, err)
+		log.Printf("DraftService: MakePick - Player %s (League %s) draft transaction for LeaguePokemon %s failed: %w\n", player.ID, league.ID, leaguePokemon.ID, err)
 		if err2 := s.playerRepo.UpdatePlayerDraftPoints(player.ID, playerDraftPointsBeforeTransaction); err2 != nil {
-			log.Printf("DraftService: MakePick - Fallback Draft Points Set also failed for player %d (league %d): %w\n", player.ID, league.ID, leaguePokemon.ID, err)
+			log.Printf("DraftService: MakePick - Fallback Draft Points Set also failed for player %s (league %s): %w\n", player.ID, league.ID, leaguePokemon.ID, err)
 			log.Printf("If this was reached the whole fucking backend deserves to be nuked because holy shit. NUKE FUCKING EVERYTHING. THE BACKEND, THE DATABASE. EVERYTHING. START AGAIN.\n")
 			log.Printf("THE BACKEND SERVER DESERVES TO FUCKING DIE.\n")
 			log.Printf("WHY STOP THERE THO? you might as well sudo rm -rf --no-preserve-root\n")
@@ -252,7 +252,7 @@ func (s *draftServiceImpl) MakePick(currentUser *models.User, league *models.Lea
 	// get all players to change set the CurrentPlayer's turn for the next one
 	allPlayers, err := s.playerRepo.GetPlayersByLeague(draft.LeagueID)
 	if err != nil {
-		log.Printf("DraftService: MakePick - Could not get all players in league %d: %w\n", league.ID, err)
+		log.Printf("DraftService: MakePick - Could not get all players in league %s: %w\n", league.ID, err)
 		return common.ErrInternalService
 	}
 
@@ -279,7 +279,7 @@ func (s *draftServiceImpl) MakePick(currentUser *models.User, league *models.Lea
 	}
 
 	// check if the round is over
-	if nextPlayerIdx > int(playerCount) || nextPlayerIdx < 0 {
+	if nextPlayerIdx >= int(playerCount) || nextPlayerIdx < 0 { // Changed > to >= to handle 0-based index correctly
 		draft.CurrentRound++
 		draft.CurrentPickInRound = 1                               // reset pick order
 		if league.IsSnakeRoundDraft && draft.CurrentRound%2 == 0 { // if snake round drafting and an even round
@@ -302,7 +302,7 @@ func (s *draftServiceImpl) MakePick(currentUser *models.User, league *models.Lea
 		return fmt.Errorf("Failed to update draft state: %w", err)
 	}
 
-	// TODO: Trigger weebhook notification for the pick that just happened as well as the turn change
+	// TODO: Trigger webhook notification for the pick that just happened as well as the turn change
 
 	return nil // no errors
 

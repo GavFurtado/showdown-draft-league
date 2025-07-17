@@ -10,6 +10,7 @@ var (
 	ErrPlayerNotFound         = errors.New("player not found")
 	ErrPokemonSpeciesNotFound = errors.New("species not found")
 	ErrDraftedPokemonNotFound = errors.New("drafted pokemon instance not found")
+	ErrLeaguePokemonNotFound  = errors.New("league pokemon instance not found")
 	ErrDraftNotFound          = errors.New("drafted information not found for league")
 
 	// Player creation specific errors

@@ -1,6 +1,7 @@
 .env
 data/all_pokemon_data.json
 OpenCode.md
+AGENTS.md
 .opencode/
 docs/
 ./server

@@ -8,6 +8,7 @@ import (
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -19,15 +20,18 @@ type PokemonSpeciesService interface {
 	CreatePokemonSpecies(pokemon *models.PokemonSpecies) error
 	UpdatePokemonSpecies(pokemon *models.PokemonSpecies) error
 	DeletePokemonSpecies(id int64) error
+	UpdateLeaguePokemon(leaguePokemon *models.LeaguePokemon) error
 }
 
 type pokemonServiceImpl struct {
-	pokemonRepo repositories.PokemonSpeciesRepository
+	pokemonRepo       repositories.PokemonSpeciesRepository
+	leaguePokemonRepo repositories.LeaguePokemonRepository
 }
 
-func NewPokemonSpeciesService(pokemonRepo repositories.PokemonSpeciesRepository) PokemonSpeciesService {
+func NewPokemonSpeciesService(pokemonRepo repositories.PokemonSpeciesRepository, leaguePokemonRepo repositories.LeaguePokemonRepository) PokemonSpeciesService {
 	return &pokemonServiceImpl{
-		pokemonRepo: pokemonRepo,
+		pokemonRepo:       pokemonRepo,
+		leaguePokemonRepo: leaguePokemonRepo,
 	}
 }
 
@@ -169,6 +173,34 @@ func (s *pokemonServiceImpl) DeletePokemonSpecies(id int64) error {
 	if err != nil {
 		log.Printf("(Error: PokemonSpeciesService.DeletePokemonSpecies) - Failed to delete pokemon species ID %d: %v", id, err)
 		return fmt.Errorf("failed to delete pokemon species: %w", err)
+	}
+
+	return nil
+}
+
+// updates a league pokemon record.
+func (s *pokemonServiceImpl) UpdateLeaguePokemon(leaguePokemon *models.LeaguePokemon) error {
+	if leaguePokemon == nil || leaguePokemon.ID == uuid.Nil {
+		log.Println("(Error: PokemonSpeciesService.UpdateLeaguePokemon) - Invalid input: leaguePokemon is nil or ID is empty")
+		return common.ErrInvalidInput
+	}
+
+	// Check if the league pokemon exists
+	_, err := s.leaguePokemonRepo.GetLeaguePokemonByID(leaguePokemon.ID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Printf("(Info: PokemonSpeciesService.UpdateLeaguePokemon) - League Pokemon with ID %s not found for update", leaguePokemon.ID)
+			return common.ErrLeaguePokemonNotFound
+		}
+		log.Printf("(Error: PokemonSpeciesService.UpdateLeaguePokemon) - Error checking existing league pokemon for update ID %s: %v", leaguePokemon.ID, err)
+		return fmt.Errorf("error checking existing league pokemon for update: %w", err)
+	}
+
+	// Update the league pokemon
+	_, err = s.leaguePokemonRepo.UpdateLeaguePokemon(leaguePokemon)
+	if err != nil {
+		log.Printf("(Error: PokemonSpeciesService.UpdateLeaguePokemon) - Failed to update league pokemon ID %s: %v", leaguePokemon.ID, err)
+		return fmt.Errorf("failed to update league pokemon: %w", err)
 	}
 
 	return nil

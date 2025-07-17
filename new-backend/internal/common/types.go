@@ -51,12 +51,12 @@ type UpdatePlayerInfoRequest struct {
 type LeaguePokemonCreateRequest struct {
 	LeagueID         uuid.UUID `json:"league_id" binding:"required"`
 	PokemonSpeciesID int64     `json:"pokemon_species_id" binding:"required"`
-	Cost             int       `json:"cost" binding:"required" validate:"max=20"`
+	Cost             *int      `json:"cost" binding:"required" validate:"max=20"`
 }
 
 type LeaguePokemonUpdateRequest struct {
 	LeaguePokemonID uuid.UUID `json:"league_pokemon_id" binding:"required"`
-	Cost            int       `json:"cost,omitempty" validate:"max=20"`
+	Cost            *int      `json:"cost,omitempty" validate:"max=20"`
 	IsAvailable     bool      `json:"is_available,omitempty"`
 }
 

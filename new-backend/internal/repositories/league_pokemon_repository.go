@@ -27,7 +27,7 @@ type LeaguePokemonRepository interface {
 	// checks if a Pokemon species is available in a league's draft pool
 	IsPokemonAvailable(leagueID, pokemonSpeciesID uuid.UUID) (bool, error)
 	// gets the cost of a specific Pokemon in a league
-	GetPokemonCost(leagueID, pokemonSpeciesID uuid.UUID) (int, error)
+	GetPokemonCost(leagueID, pokemonSpeciesID uuid.UUID) (*int, error)
 	// removes a Pokemon species from a league's draft pool (soft delete)
 	DeleteLeaguePokemon(leagueID, pokemonSpeciesID uuid.UUID) error
 	// gets count of available Pokemon in a league
@@ -195,14 +195,14 @@ func (r *leaguePokemonRepositoryImpl) IsPokemonAvailable(leagueID, pokemonSpecie
 }
 
 // gets the cost of a specific Pokemon in a league
-func (r *leaguePokemonRepositoryImpl) GetPokemonCost(leagueID, pokemonSpeciesID uuid.UUID) (int, error) {
+func (r *leaguePokemonRepositoryImpl) GetPokemonCost(leagueID, pokemonSpeciesID uuid.UUID) (*int, error) {
 	var leaguePokemon models.LeaguePokemon
 	err := r.db.Select("cost").
 		Where("league_id = ? AND pokemon_species_id = ?", leagueID, pokemonSpeciesID).
 		First(&leaguePokemon).Error
 
 	if err != nil {
-		return 0, fmt.Errorf("(Error: GetPokemonCost) - failed to get pokemon cost: %w", err)
+		return nil, fmt.Errorf("(Error: GetPokemonCost) - failed to get pokemon cost: %w", err)
 	}
 	return leaguePokemon.Cost, nil
 }

@@ -1,19 +1,20 @@
 package services
 
 import (
+	"errors"
 	"fmt"
-	"log"
-
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"log"
 )
 
 type LeaguePokemonService interface {
 	CreatePokemonForLeague(currentUser *models.User, input *common.LeaguePokemonCreateRequest) (*models.LeaguePokemon, error)
 	BatchCreatePokemonForLeague(currentUser *models.User, inputs []*common.LeaguePokemonCreateRequest) ([]*models.LeaguePokemon, error)
+	UpdateLeaguePokemon(currentUser *models.User, input *common.LeaguePokemonUpdateRequest) (*models.LeaguePokemon, error)
 }
 
 type leaguePokemonServiceImpl struct {
@@ -61,11 +62,11 @@ func (s *leaguePokemonServiceImpl) getLeagueByID(leagueID, currentUserID uuid.UU
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			log.Printf("(Service: getLeagueByID) - could not find league %d. (currentUser.ID: %d)\n", leagueID, currentUserID)
+			log.Printf("(Service: getLeagueByID) - could not find league %s. (currentUser.ID: %s)\n", leagueID, currentUserID)
 			return nil, common.ErrLeagueNotFound
 		}
 		// other error
-		log.Printf("(Service: getLeagueByID) - could not retrieve league by leagueID %d (currentUser.ID: %d)\n", leagueID, currentUserID)
+		log.Printf("(Service: getLeagueByID) - could not retrieve league by leagueID %s (currentUser.ID: %s)\n", leagueID, currentUserID)
 		return nil, common.ErrInternalService
 	}
 	return league, nil
@@ -147,7 +148,7 @@ func (s *leaguePokemonServiceImpl) CreatePokemonForLeague(
 	// Create the LeaguePokemon using the repository
 	createdLeaguePokemon, err := s.leaguePokemonRepo.CreateLeaguePokemon(leaguePokemon)
 	if err != nil {
-		log.Printf("(Service: CreatePokemonForLeague) - failed to create league pokemon: %s", err.Error())
+		log.Printf("(Service: CreatePokemonForLeague) - failed to create league pokemon: %w\n", err)
 		return nil, common.ErrInternalService
 	}
 
@@ -179,7 +180,7 @@ func (s *leaguePokemonServiceImpl) BatchCreatePokemonForLeague(
 		// Create the LeaguePokemon using the repository
 		createdLeaguePokemon, err := s.leaguePokemonRepo.CreateLeaguePokemon(leaguePokemon)
 		if err != nil {
-			log.Printf("(Service: CreatePokemonForLeague) - failed to create league pokemon: %w", err)
+			log.Printf("(Service: CreatePokemonForLeague) - failed to create league pokemon: %w\n", err)
 			return nil, common.ErrInternalService
 		}
 
@@ -189,11 +190,66 @@ func (s *leaguePokemonServiceImpl) BatchCreatePokemonForLeague(
 	return batchCreatedLeaguePokemon, nil
 }
 
-// func (s *leaguePokemonServiceImpl) UpdateLeaguePokemon(
-// 	currentUser *models.User,
-// 	input *common.LeaguePokemonUpdateRequest,
-// ) (models.LeaguePokemon, error) {
-// 	s.isUserCommissioner()
-//
-// 	return nil, nil
-// }
+func (s *leaguePokemonServiceImpl) UpdateLeaguePokemon(
+	currentUser *models.User,
+	input *common.LeaguePokemonUpdateRequest,
+) (*models.LeaguePokemon, error) {
+	existingLeaguePokemon, err := s.leaguePokemonRepo.GetLeaguePokemonByID(input.LeaguePokemonID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Printf("(Service: UpdateLeaguePokemon) - league pokemon %s does not exist: %s\n", input.LeaguePokemonID, err.Error())
+			return nil, common.ErrLeaguePokemonNotFound
+		}
+		log.Printf("(Service: UpdateLeaguePokemon) - could not fetch league pokemon: %s\n", err.Error())
+		return nil, common.ErrInternalService
+	}
+
+	league, err := s.leagueRepo.GetLeagueByID(existingLeaguePokemon.LeagueID)
+	// idk how this could happen ngl
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Printf("(Service: UpdateLeaguePokemon) - league %s does not exist: %s\n", existingLeaguePokemon.LeagueID, err.Error())
+			return nil, common.ErrLeagueNotFound
+		}
+		log.Printf("(Service: UpdateLeaguePokemon) - could not fetch league %s: %s\n", existingLeaguePokemon.LeagueID, err.Error())
+		return nil, common.ErrInternalService
+	}
+
+	isUserPlayer, err := s.isUserPlayerInLeague(currentUser.ID, existingLeaguePokemon.LeagueID)
+	if err != nil {
+		return nil, err
+	}
+
+	isComm, err := s.isUserCommissioner(currentUser.ID, existingLeaguePokemon.LeagueID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isUserPlayer && !isComm && !currentUser.IsAdmin {
+		log.Printf("(Service: UpdateLeaguePokemon) - user %s is not authorized to update league pokemon in league %s.", currentUser.ID, existingLeaguePokemon.LeagueID)
+		return nil, common.ErrUnauthorized
+	}
+
+	if league.Status != models.LeagueStatusSetup && league.Status != models.LeagueStatusDrafting {
+		log.Printf("(Service: UpdateLeaguePokemon) - operation not allowed for current league status: %s for user %s", league.Status, currentUser.ID)
+		return nil, common.ErrUnauthorized
+	}
+
+	// Update fields if provided in the input
+	if input.Cost != nil && *input.Cost != *existingLeaguePokemon.Cost {
+		existingLeaguePokemon.Cost = input.Cost
+	}
+	// Check if IsAvailable was explicitly provided and different from existing
+	if input.IsAvailable != existingLeaguePokemon.IsAvailable {
+		existingLeaguePokemon.IsAvailable = input.IsAvailable
+	}
+
+	updatedLeaguePokemon, err := s.leaguePokemonRepo.UpdateLeaguePokemon(existingLeaguePokemon)
+	if err != nil {
+		log.Printf("(Service: UpdateLeaguePokemon) - failed to update league pokemon: %s\n", err.Error())
+		return nil, common.ErrInternalService
+	}
+
+	log.Printf("(Service: UpdateLeaguePokemon) - Successfully updated league pokemon %s", updatedLeaguePokemon.ID)
+	return updatedLeaguePokemon, nil
+}
