@@ -63,20 +63,20 @@ export default function Filter(props) {
     const statRef = useRef();
     useEffect(() => {
     function handleClickOutside(event) {
-        if (typeRef.current && !typeRef.current.contains(event.target)) {
-            typeRef.current.removeAttribute('open');
+            if (typeRef.current && !typeRef.current.contains(event.target)) {
+                typeRef.current.removeAttribute('open');
+            }
+            if (costRef.current && !costRef.current.contains(event.target)) {
+                costRef.current.removeAttribute('open');
+            }
+            if (statRef.current && !statRef.current.contains(event.target)) {
+                statRef.current.removeAttribute('open');
+            }
         }
-        if (costRef.current && !costRef.current.contains(event.target)) {
-            costRef.current.removeAttribute('open');
-        }
-        if (statRef.current && !statRef.current.contains(event.target)) {
-            statRef.current.removeAttribute('open');
-        }
-    }
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-}, []);
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
 
 
