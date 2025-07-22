@@ -270,7 +270,7 @@ func (r *gameRepositoryImpl) DisputeGame(gameID uuid.UUID, reporterID uuid.UUID)
 		Updates(updates).Error
 
 	if err != nil {
-		return fmt.Errorf("(Error: DisputeGame) - failed to dispute game: %w", err)
+		return fmt.Errorf("(Repository: DisputeGame) - failed to dispute game: %w", err)
 	}
 	return nil
 }

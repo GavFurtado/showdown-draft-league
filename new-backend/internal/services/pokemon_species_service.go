@@ -8,7 +8,6 @@ import (
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -20,7 +19,6 @@ type PokemonSpeciesService interface {
 	CreatePokemonSpecies(pokemon *models.PokemonSpecies) error
 	UpdatePokemonSpecies(pokemon *models.PokemonSpecies) error
 	DeletePokemonSpecies(id int64) error
-	UpdateLeaguePokemon(leaguePokemon *models.LeaguePokemon) error
 }
 
 type pokemonServiceImpl struct {
@@ -28,7 +26,10 @@ type pokemonServiceImpl struct {
 	leaguePokemonRepo repositories.LeaguePokemonRepository
 }
 
-func NewPokemonSpeciesService(pokemonRepo repositories.PokemonSpeciesRepository, leaguePokemonRepo repositories.LeaguePokemonRepository) PokemonSpeciesService {
+func NewPokemonSpeciesService(
+	pokemonRepo repositories.PokemonSpeciesRepository,
+	leaguePokemonRepo repositories.LeaguePokemonRepository,
+) PokemonSpeciesService {
 	return &pokemonServiceImpl{
 		pokemonRepo:       pokemonRepo,
 		leaguePokemonRepo: leaguePokemonRepo,

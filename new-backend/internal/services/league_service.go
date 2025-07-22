@@ -17,6 +17,10 @@ type LeagueService interface {
 	CreateLeague(userID uuid.UUID, req *common.LeagueRequest) (*models.League, error)
 	// Get league entity using leagueID
 	GetLeagueByIDForUser(userID, leagueID uuid.UUID) (*models.League, error)
+	// gets all Leagues where userID is the commissioner
+	GetLeaguesByCommissioner(userID uuid.UUID, currentUser *models.User) ([]models.League, error)
+	// fetches all Leagues where the given userID is a player.
+	GetLeaguesByUser(userID uuid.UUID, currentUser *models.User) ([]models.League, error)
 }
 
 type leagueServiceImpl struct {
@@ -100,4 +104,40 @@ func (s *leagueServiceImpl) GetLeagueByIDForUser(userID, leagueID uuid.UUID) (*m
 	}
 
 	return league, nil
+}
+
+// gets all Leagues where userID is the commissioner
+func (s *leagueServiceImpl) GetLeaguesByCommissioner(
+	userID uuid.UUID,
+	currentUser *models.User,
+) ([]models.League, error) {
+	// Authorization: Only admin or the user themselves can view their commissioner leagues
+	if !currentUser.IsAdmin && currentUser.ID != userID {
+		log.Printf("(Error: LeagueService.GetLeaguesByCommissioner) - Unauthorized access attempt by user %s to view commissioner leagues for user %s", currentUser.ID, userID)
+		return nil, errors.New("not authorized to view these leagues")
+	}
+
+	leagues, err := s.leagueRepo.GetLeaguesByCommissioner(userID)
+	if err != nil {
+		log.Printf("(Error: LeagueService.GetLeaguesByCommissioner) - Failed to get commissioner leagues for user %s: %v\n", userID, err)
+		return nil, fmt.Errorf("failed to retrieve commissioner leagues: %w", err)
+	}
+
+	return leagues, nil
+}
+
+// fetches all Leagues where the given userID is a player.
+func (s *leagueServiceImpl) GetLeaguesByUser(userID uuid.UUID, currentUser *models.User) ([]models.League, error) {
+	// Authorization: Only admin or the user themselves can view their leagues
+	if !currentUser.IsAdmin && currentUser.ID != userID {
+		log.Printf("(Error: LeagueService.GetLeaguesByUser) - Unauthorized access attempt by user %s to view leagues for user %s", currentUser.ID, userID)
+		return nil, errors.New("not authorized to view these leagues")
+	}
+
+	leagues, err := s.leagueRepo.GetLeaguesByUser(userID)
+	if err != nil {
+		log.Printf("(Error: LeagueService.GetLeaguesByUser) - Failed to get leagues for user %s: %v\n", userID, err)
+		return nil, fmt.Errorf("failed to retrieve leagues: %w", err)
+	}
+	return leagues, nil
 }
