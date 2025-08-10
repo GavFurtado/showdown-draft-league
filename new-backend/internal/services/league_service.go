@@ -7,6 +7,7 @@ import (
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 	"github.com/google/uuid"
 )
@@ -45,6 +46,7 @@ func NewLeagueService(
 		playerRepo:         playerRepo,
 		leaguePokemonRepo:  leaguePokemonRepo,
 		draftedPokemonRepo: draftedPokemonRepo,
+		draftRepo:          draftRepo,
 		gameRepo:           gameRepo,
 	}
 }
@@ -53,7 +55,8 @@ func NewLeagueService(
 func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueRequest) (*models.League, error) {
 	const maxLeaguesCommisionable = 2
 
-	count, err := s.leagueRepo.GetLeaguesCountByCommissioner(userID)
+	// check if user already has two owned leagues
+	count, err := s.leagueRepo.GetLeaguesCountWhereOwner(userID)
 	if err != nil {
 		log.Printf("(Error: LeagueService.CreateLeague) - Could not get commissioner league count for user %s: %v\n", userID, err)
 		return nil, fmt.Errorf("failed to check commissioner league count: %w", err)
@@ -64,20 +67,47 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueR
 	}
 
 	league := &models.League{
-		Name:                  input.Name,
-		CommissionerUserID:    userID,
-		RulesetID:             input.RulesetID,
-		MaxPokemonPerPlayer:   input.MaxPokemonPerPlayer,
-		StartingDraftPoints:   int(input.StartingDraftPoints),
-		AllowWeeklyFreeAgents: input.AllowWeeklyFreeAgents,
-		StartDate:             input.StartDate,
-		EndDate:               input.EndDate,
+		Name:                input.Name,
+		RulesetDescription:  input.RulesetDescription,
+		MaxPokemonPerPlayer: input.MaxPokemonPerPlayer,
+		StartingDraftPoints: input.StartingDraftPoints,
+		StartDate:           input.StartDate,
+		EndDate:             input.EndDate,
+		Format: models.LeagueFormat{
+			SeasonType:              input.Format.SeasonType,
+			GroupCount:              input.Format.GroupCount,
+			GamesPerOpponent:        input.Format.GamesPerOpponent,
+			PlayoffType:             input.Format.PlayoffType,
+			PlayoffTeams:            input.Format.PlayoffTeams,
+			PlayoffByes:             input.Format.PlayoffByes,
+			PlayoffSeedingType:      input.Format.PlayoffSeedingType,
+			IsSnakeRoundDraft:       input.Format.IsSnakeRoundDraft,
+			AllowTrading:            input.Format.AllowTrading,
+			AllowTransferCredits:    input.Format.AllowTransferCredits,
+			TransferCreditsPerRound: input.Format.TransferCreditsPerRound,
+		},
 	}
 
 	createdLeague, err := s.leagueRepo.CreateLeague(league)
 	if err != nil {
 		log.Printf("(Error: LeagueService.CreateLeague) - Failed to create league for user %s: %v\n", userID, err)
 		return nil, fmt.Errorf("failed to create league: %w", err)
+	}
+
+	ownerPlayer := &models.Player{
+		UserID:       userID,
+		LeagueID:     createdLeague.ID,
+		InLeagueName: "League Owner",                       // Default, can be updated later
+		TeamName:     fmt.Sprintf("%s's Team", input.Name), // Default, can be updated later
+		DraftPoints:  int(createdLeague.StartingDraftPoints),
+		Role:         rbac.PlayerRoleOwner,
+	}
+
+	_, err = s.playerRepo.CreatePlayer(ownerPlayer)
+	if err != nil {
+		log.Printf("(Error: LeagueService.CreateLeague) - Failed to create owner player for league %s: %v\n", createdLeague.ID, err)
+		// TODO: Consider rolling back league creation if player creation fails
+		return nil, fmt.Errorf("failed to create league owner player: %w", err)
 	}
 
 	return createdLeague, nil
@@ -112,12 +142,12 @@ func (s *leagueServiceImpl) GetLeaguesByCommissioner(
 	currentUser *models.User,
 ) ([]models.League, error) {
 	// Authorization: Only admin or the user themselves can view their commissioner leagues
-	if !currentUser.IsAdmin && currentUser.ID != userID {
+	if currentUser.Role != "admin" && currentUser.ID != userID {
 		log.Printf("(Error: LeagueService.GetLeaguesByCommissioner) - Unauthorized access attempt by user %s to view commissioner leagues for user %s", currentUser.ID, userID)
 		return nil, errors.New("not authorized to view these leagues")
 	}
 
-	leagues, err := s.leagueRepo.GetLeaguesByCommissioner(userID)
+	leagues, err := s.leagueRepo.GetLeaguesByOwner(userID)
 	if err != nil {
 		log.Printf("(Error: LeagueService.GetLeaguesByCommissioner) - Failed to get commissioner leagues for user %s: %v\n", userID, err)
 		return nil, fmt.Errorf("failed to retrieve commissioner leagues: %w", err)
@@ -129,7 +159,7 @@ func (s *leagueServiceImpl) GetLeaguesByCommissioner(
 // fetches all Leagues where the given userID is a player.
 func (s *leagueServiceImpl) GetLeaguesByUser(userID uuid.UUID, currentUser *models.User) ([]models.League, error) {
 	// Authorization: Only admin or the user themselves can view their leagues
-	if !currentUser.IsAdmin && currentUser.ID != userID {
+	if currentUser.Role != "admin" && currentUser.ID != userID {
 		log.Printf("(Error: LeagueService.GetLeaguesByUser) - Unauthorized access attempt by user %s to view leagues for user %s", currentUser.ID, userID)
 		return nil, errors.New("not authorized to view these leagues")
 	}

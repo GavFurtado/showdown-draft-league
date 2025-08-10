@@ -39,17 +39,7 @@ func NewLeaguePokemonService(
 }
 
 // -- Private Helpers --
-func (s *leaguePokemonServiceImpl) isUserCommissioner(userID, leagueID uuid.UUID) (bool, error) {
-	isComm, err := s.leagueRepo.IsUserCommissioner(userID, leagueID)
-	if err != nil {
-		log.Printf("(Service: isUserCommissioner) - Failed to check commissioner status for user %s in league %s: %v", userID, leagueID, err)
-		return false, fmt.Errorf("failed to check commissioner status: %w", err)
-	}
-	return isComm, nil
-}
-
 func (s *leaguePokemonServiceImpl) isUserPlayerInLeague(userID, leagueID uuid.UUID) (bool, error) {
-
 	isPlayer, err := s.leagueRepo.IsUserPlayerInLeague(userID, leagueID)
 	if err != nil {
 		log.Printf("(Service: isUserPlayerInLeague) - Failed to check player status for user %s in league %s: %v", userID, leagueID, err)
@@ -76,7 +66,7 @@ func (s *leaguePokemonServiceImpl) getPokemonSpeciesByID(pokemonSpeciesID int64)
 	pokemon, err := s.pokemonSpeciesRepo.GetPokemonSpeciesByID(pokemonSpeciesID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			log.Printf("(Service: getPokemonSpeciesByID) - pokemon %d species not found: %w\n", pokemonSpeciesID, err)
+			log.Printf("(Service: getPokemonSpeciesByID) - pokemon %d species not found: %v\n", pokemonSpeciesID, err)
 			return nil, common.ErrPokemonSpeciesNotFound
 		}
 		log.Printf("(Service: getPokemonSpeciesByID) - could not retrieve pokemon species %d.\n", pokemonSpeciesID)
@@ -96,22 +86,23 @@ func (s *leaguePokemonServiceImpl) validateAndFetchResourcesToCreatePokemon(
 		return nil, nil, err
 	}
 	// check if user has a player in league or if user is an admin using helper
-	if inLeague, err := s.isUserPlayerInLeague(currentUser.ID, league.ID); !inLeague && !currentUser.IsAdmin {
+	if inLeague, err := s.isUserPlayerInLeague(currentUser.ID, league.ID); !inLeague && currentUser.Role != "admin" {
 		if err != nil {
 			return nil, nil, err
 		}
 		log.Printf("(Service: validateAndFetchResources) - user %s does not have a player in the league %s.", currentUser.ID, league.ID)
 		return nil, nil, common.ErrUnauthorized
 	}
-	// check if commissioner or an admin using helper
-	if isComm, err := s.isUserCommissioner(currentUser.ID, league.ID); !isComm && !currentUser.IsAdmin {
-		if err != nil {
-			return nil, nil, err
-		}
-		log.Printf("(Service: validateAndFetchResources) - user %s is not a commissioner for the league %s.", currentUser.ID, league.ID)
+	// check if owner or an admin using helper
+	isOwner, err := s.leagueRepo.IsUserOwner(currentUser.ID, league.ID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !isOwner && currentUser.Role != "admin" {
+		log.Printf("(Service: validateAndFetchResources) - user %s is not an owner for the league %s.", currentUser.ID, league.ID)
 		return nil, nil, common.ErrUnauthorized
 	}
-	// user is a commissioner player in the league which exists
+	// user is an owner player in the league which exists
 	// check league status
 	if league.Status != models.LeagueStatusSetup {
 		log.Printf("(Service: validateAndFetchResources) - unauthorized: league %s status is not SETUP for user %s", league.ID, currentUser.ID)
@@ -148,7 +139,7 @@ func (s *leaguePokemonServiceImpl) CreatePokemonForLeague(
 	// Create the LeaguePokemon using the repository
 	createdLeaguePokemon, err := s.leaguePokemonRepo.CreateLeaguePokemon(leaguePokemon)
 	if err != nil {
-		log.Printf("(Service: CreatePokemonForLeague) - failed to create league pokemon: %w\n", err)
+		log.Printf("(Service: CreatePokemonForLeague) - failed to create league pokemon: %v\n", err)
 		return nil, common.ErrInternalService
 	}
 
@@ -180,7 +171,7 @@ func (s *leaguePokemonServiceImpl) BatchCreatePokemonForLeague(
 		// Create the LeaguePokemon using the repository
 		createdLeaguePokemon, err := s.leaguePokemonRepo.CreateLeaguePokemon(leaguePokemon)
 		if err != nil {
-			log.Printf("(Service: CreatePokemonForLeague) - failed to create league pokemon: %w\n", err)
+			log.Printf("(Service: CreatePokemonForLeague) - failed to create league pokemon: %v\n", err)
 			return nil, common.ErrInternalService
 		}
 
@@ -197,7 +188,7 @@ func (s *leaguePokemonServiceImpl) UpdateLeaguePokemon(
 	existingLeaguePokemon, err := s.leaguePokemonRepo.GetLeaguePokemonByID(input.LeaguePokemonID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Printf("(Service: UpdateLeaguePokemon) - league pokemon %s does not exist: %s\n", input.LeaguePokemonID, err.Error())
+			log.Printf("(Service: UpdateLeaguePokemon) - league pokemon %s does not exist: %v\n", input.LeaguePokemonID, err)
 			return nil, common.ErrLeaguePokemonNotFound
 		}
 		log.Printf("(Service: UpdateLeaguePokemon) - could not fetch league pokemon: %s\n", err.Error())
@@ -211,7 +202,7 @@ func (s *leaguePokemonServiceImpl) UpdateLeaguePokemon(
 			log.Printf("(Service: UpdateLeaguePokemon) - league %s does not exist: %s\n", existingLeaguePokemon.LeagueID, err.Error())
 			return nil, common.ErrLeagueNotFound
 		}
-		log.Printf("(Service: UpdateLeaguePokemon) - could not fetch league %s: %s\n", existingLeaguePokemon.LeagueID, err.Error())
+		log.Printf("(Service: UpdateLeaguePokemon) - could not fetch league %s: %v\n", existingLeaguePokemon.LeagueID, err)
 		return nil, common.ErrInternalService
 	}
 
@@ -220,13 +211,13 @@ func (s *leaguePokemonServiceImpl) UpdateLeaguePokemon(
 		return nil, err
 	}
 
-	isComm, err := s.isUserCommissioner(currentUser.ID, existingLeaguePokemon.LeagueID)
+	isOwner, err := s.leagueRepo.IsUserOwner(currentUser.ID, existingLeaguePokemon.LeagueID)
 	if err != nil {
 		return nil, err
 	}
 
-	if !isUserPlayer && !isComm && !currentUser.IsAdmin {
-		log.Printf("(Service: UpdateLeaguePokemon) - user %s is not authorized to update league pokemon in league %s.", currentUser.ID, existingLeaguePokemon.LeagueID)
+	if !isUserPlayer && !isOwner && currentUser.Role != "admin" {
+		log.Printf("(Service: UpdateLeaguePokemon) - user %s is not authorized to update league pokemon in league %s.\n", currentUser.ID, existingLeaguePokemon.LeagueID)
 		return nil, common.ErrUnauthorized
 	}
 
