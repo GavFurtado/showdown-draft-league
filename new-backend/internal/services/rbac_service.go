@@ -43,5 +43,6 @@ func (s *RBACServiceImpl) CanAccess(userID uuid.UUID, leagueID uuid.UUID, requir
 		return false, common.ErrInternalService
 	}
 
-	return player.Can(rbac.Permission(requiredPermission)), nil
+	// check if the role matches the permission required
+	return player.Can(requiredPermission), nil
 }

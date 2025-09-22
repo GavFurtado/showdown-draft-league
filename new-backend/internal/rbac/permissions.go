@@ -6,54 +6,54 @@ type Permission string
 // Define permission constants
 const (
 	// League Permissions
-	CreateLeague Permission = "create:league"
-	ReadLeague   Permission = "read:league"
-	UpdateLeague Permission = "update:league"
-	DeleteLeague Permission = "delete:league"
+	PermissionCreateLeague Permission = "create:league"
+	PermissionReadLeague   Permission = "read:league"
+	PermissionUpdateLeague Permission = "update:league"
+	PermissionDeleteLeague Permission = "delete:league"
 
 	// Player Permissions
-	CreatePlayer Permission = "create:player"
-	ReadPlayer   Permission = "read:player"
-	UpdatePlayer Permission = "update:player"
-	DeletePlayer Permission = "delete:player"
+	PermissionCreatePlayer Permission = "create:player"
+	PermissionReadPlayer   Permission = "read:player"
+	PermissionUpdatePlayer Permission = "update:player"
+	PermissionDeletePlayer Permission = "delete:player"
 
 	// Draft Permissions
-	CreateDraft Permission = "create:draft"
-	ReadDraft   Permission = "read:draft"
-	UpdateDraft Permission = "update:draft"
-	DeleteDraft Permission = "delete:draft"
+	PermissionCreateDraft Permission = "create:draft"
+	PermissionReadDraft   Permission = "read:draft"
+	PermissionUpdateDraft Permission = "update:draft"
+	PermissionDeleteDraft Permission = "delete:draft"
 
 	// LeaguePokemon Permissions
-	CreateLeaguePokemon Permission = "create:league_pokemon"
-	ReadLeaguePokemon   Permission = "read:league_pokemon"
-	UpdateLeaguePokemon Permission = "update:league_pokemon"
-	DeleteLeaguePokemon Permission = "delete:league_pokemon"
+	PermissionCreateLeaguePokemon Permission = "create:league_pokemon"
+	PermissionReadLeaguePokemon   Permission = "read:league_pokemon"
+	PermissionUpdateLeaguePokemon Permission = "update:league_pokemon"
+	PermissionDeleteLeaguePokemon Permission = "delete:league_pokemon"
 
 	// DraftedPokemon Permissions
-	CreateDraftedPokemon Permission = "create:drafted_pokemon"
-	ReadDraftedPokemon   Permission = "read:drafted_pokemon"
-	UpdateDraftedPokemon Permission = "update:drafted_pokemon"
-	DeleteDraftedPokemon Permission = "delete:drafted_pokemon"
+	PermissionCreateDraftedPokemon Permission = "create:drafted_pokemon"
+	PermissionReadDraftedPokemon   Permission = "read:drafted_pokemon"
+	PermissionUpdateDraftedPokemon Permission = "update:drafted_pokemon"
+	PermissionDeleteDraftedPokemon Permission = "delete:drafted_pokemon"
 
 	// Game Permissions
-	CreateGame Permission = "create:game"
-	ReadGame   Permission = "read:game"
-	UpdateGame Permission = "update:game"
-	DeleteGame Permission = "delete:game"
+	PermissionCreateGame Permission = "create:game"
+	PermissionReadGame   Permission = "read:game"
+	PermissionUpdateGame Permission = "update:game"
+	PermissionDeleteGame Permission = "delete:game"
 
 	// User Permissions (for admin-like actions on users)
-	ReadUser   Permission = "read:user"
-	UpdateUser Permission = "update:user"
-	DeleteUser Permission = "delete:user"
+	PermissionReadUser   Permission = "read:user"
+	PermissionUpdateUser Permission = "update:user"
+	PermissionDeleteUser Permission = "delete:user"
 
 	// PlayerRoster Permissions
-	CreatePlayerRoster Permission = "create:player_roster"
-	ReadPlayerRoster   Permission = "read:player_roster"
-	UpdatePlayerRoster Permission = "update:player_roster"
-	DeletePlayerRoster Permission = "delete:player_roster"
+	PermissionCreatePlayerRoster Permission = "create:player_roster"
+	PermissionReadPlayerRoster   Permission = "read:player_roster"
+	PermissionUpdatePlayerRoster Permission = "update:player_roster"
+	PermissionDeletePlayerRoster Permission = "delete:player_roster"
 
 	// PokemonSpecies Permissions (likely read-only for most roles)
-	ReadPokemonSpecies Permission = "read:pokemon_species"
+	PermissionReadPokemonSpecies Permission = "read:pokemon_species"
 )
 
 // rolePermissions maps each PlayerRole to a set of permissions it possesses.
@@ -62,54 +62,54 @@ var rolePermissions = make(map[PlayerRole]map[Permission]bool)
 
 func init() {
 	// Initialize permissions for each role
-	rolePermissions[Member] = make(map[Permission]bool)
-	rolePermissions[Moderator] = make(map[Permission]bool)
-	rolePermissions[Owner] = make(map[Permission]bool)
+	rolePermissions[PRoleMember] = make(map[Permission]bool)
+	rolePermissions[PRoleModerator] = make(map[Permission]bool)
+	rolePermissions[PRoleOwner] = make(map[Permission]bool)
 
 	// Member permissions
-	setPermissions(Member,
-		ReadLeague,
-		ReadPlayer,
-		ReadDraft,
-		ReadLeaguePokemon,
-		ReadDraftedPokemon,
-		ReadGame,
-		ReadUser,
-		ReadPlayerRoster,
-		ReadPokemonSpecies,
+	setPermissions(PRoleMember,
+		PermissionReadLeague,
+		PermissionReadPlayer,
+		PermissionReadDraft,
+		PermissionReadLeaguePokemon,
+		PermissionReadDraftedPokemon,
+		PermissionReadGame,
+		PermissionReadUser,
+		PermissionReadPlayerRoster,
+		PermissionReadPokemonSpecies,
 	)
 
 	// Moderator permissions inherit from Member and add more
-	inheritPermissions(Moderator, Member)
-	setPermissions(Moderator,
-		UpdateLeague,
-		UpdatePlayer,
-		UpdateDraft,
-		UpdateLeaguePokemon,
-		UpdateDraftedPokemon,
-		UpdateGame,
-		CreatePlayer,
-		CreateDraftedPokemon,
-		CreateGame,
-		DeleteGame,
+	inheritPermissions(PRoleModerator, PRoleMember)
+	setPermissions(PRoleModerator,
+		PermissionUpdateLeague,
+		PermissionUpdatePlayer,
+		PermissionUpdateDraft,
+		PermissionUpdateLeaguePokemon,
+		PermissionUpdateDraftedPokemon,
+		PermissionUpdateGame,
+		PermissionCreatePlayer,
+		PermissionCreateDraftedPokemon,
+		PermissionCreateGame,
+		PermissionDeleteGame,
 	)
 
 	// Owner permissions inherit from Moderator and add more
-	inheritPermissions(Owner, Moderator)
-	setPermissions(Owner,
-		CreateLeague,
-		DeleteLeague,
-		DeletePlayer,
-		DeleteDraft,
-		DeleteLeaguePokemon,
-		DeleteDraftedPokemon,
-		UpdateUser,
-		DeleteUser,
-		CreateLeaguePokemon,
-		CreateDraft,
-		CreatePlayerRoster,
-		DeletePlayerRoster,
-		UpdatePlayerRoster,
+	inheritPermissions(PRoleOwner, PRoleModerator)
+	setPermissions(PRoleOwner,
+		PermissionCreateLeague,
+		PermissionDeleteLeague,
+		PermissionDeletePlayer,
+		PermissionDeleteDraft,
+		PermissionDeleteLeaguePokemon,
+		PermissionDeleteDraftedPokemon,
+		PermissionUpdateUser,
+		PermissionDeleteUser,
+		PermissionCreateLeaguePokemon,
+		PermissionCreateDraft,
+		PermissionCreatePlayerRoster,
+		PermissionDeletePlayerRoster,
+		PermissionUpdatePlayerRoster,
 	)
 }
 

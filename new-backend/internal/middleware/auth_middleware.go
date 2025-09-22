@@ -14,7 +14,19 @@ import (
 	uuid "github.com/google/uuid"
 )
 
-func AuthMiddleware(jwtService *services.JWTService, userRepo repositories.UserRepository, leagueService services.LeagueService, rbacService *services.RBACService) gin.HandlerFunc {
+type AuthMiddlewareDependencies struct {
+	UserRepo    repositories.UserRepository
+	JWTService  *services.JWTService
+	RBACService services.RBACService
+}
+type LeagueRBACDependencies struct {
+	UserRepo    repositories.UserRepository
+	RBACService services.RBACService
+}
+
+func AuthMiddleware(
+	deps AuthMiddlewareDependencies,
+) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		authHeader := ctx.GetHeader("Authorization")
 		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer") {
@@ -24,14 +36,14 @@ func AuthMiddleware(jwtService *services.JWTService, userRepo repositories.UserR
 		token := strings.TrimPrefix(authHeader, "Bearer ")
 
 		// validate token
-		userID, err := jwtService.ValidateToken(token)
+		userID, err := deps.JWTService.ValidateToken(token)
 		if err != nil {
 			log.Printf("(Error: AuthMiddleware): Invalid token")
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			return
 		}
 
-		user, err := userRepo.GetUserByID(userID)
+		user, err := deps.UserRepo.GetUserByID(userID)
 		if err != nil {
 			if err.Error() == "record not found" {
 				log.Printf("(Error: AuthMiddleware): User ID %s not found in DB: %v", userID, err)
@@ -46,6 +58,7 @@ func AuthMiddleware(jwtService *services.JWTService, userRepo repositories.UserR
 
 		ctx.Set("currentUser", user)
 		ctx.Set("currentUserID", userID)
+		ctx.Set("role", user.Role)
 
 		ctx.Next()
 	}
@@ -53,9 +66,7 @@ func AuthMiddleware(jwtService *services.JWTService, userRepo repositories.UserR
 
 // LeagueRBACMiddleware checks for league-specific permissions.
 func LeagueRBACMiddleware(
-	leagueService services.LeagueService,
-	userRepo repositories.UserRepository,
-	rbacService services.RBACService,
+	deps LeagueRBACDependencies,
 	requiredPermission rbac.Permission,
 ) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
@@ -65,7 +76,12 @@ func LeagueRBACMiddleware(
 			return
 		}
 
-		leagueIDStr := ctx.Param("id")
+		// bypass checks if user is an Admin
+		if currentUser.Role == "Admin" {
+			ctx.Next()
+		}
+
+		leagueIDStr := ctx.Param("leagueId")
 		leagueID, err := uuid.Parse(leagueIDStr)
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid league ID format"})
@@ -73,7 +89,8 @@ func LeagueRBACMiddleware(
 		}
 
 		// Check if the user has the required permission for the league
-		if ok, err := rbacService.CanAccess(currentUser.ID, leagueID, requiredPermission); !ok {
+		// requires the right permission and have a valid player in the league
+		if ok, err := deps.RBACService.CanAccess(currentUser.ID, leagueID, requiredPermission); !ok {
 			if err != nil {
 				if err == common.ErrInternalService {
 					ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})

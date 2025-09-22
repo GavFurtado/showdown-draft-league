@@ -101,7 +101,7 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueR
 		TeamName:        fmt.Sprintf("%s's Team", input.Name), // Default, can be updated later
 		IsParticipating: false,
 		DraftPoints:     int(createdLeague.StartingDraftPoints),
-		Role:            rbac.Owner,
+		Role:            rbac.PRoleOwner,
 	}
 
 	_, err = s.playerRepo.CreatePlayer(ownerPlayer)

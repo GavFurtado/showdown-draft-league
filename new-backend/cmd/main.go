@@ -78,8 +78,11 @@ func main() {
 	routes.RegisterRoutes(server, db, cfg, appRepositories, appServices, appControllers)
 
 	// Run server
-	log.Printf("Server starting on :%s", port) // Use :port for Gin.Run
+	log.Printf("Server starting...\n")
 	if err := server.Run(":" + port); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
+
+	log.Printf("Server running on :%s\n", port)
+
 }

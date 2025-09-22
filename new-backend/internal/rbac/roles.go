@@ -6,15 +6,15 @@ import "strings"
 type PlayerRole string
 
 const (
-	Owner     PlayerRole = "owner"
-	Moderator PlayerRole = "moderator"
-	Member    PlayerRole = "member"
+	PRoleOwner     PlayerRole = "owner"
+	PRoleModerator PlayerRole = "moderator"
+	PRoleMember    PlayerRole = "member"
 )
 
 // IsValid checks if the PlayerRole is one of the defined roles.
 func (pr PlayerRole) IsValid() bool {
 	switch pr {
-	case Owner, Moderator, Member:
+	case PRoleOwner, PRoleModerator, PRoleMember:
 		return true
 	}
 	return false
@@ -30,28 +30,28 @@ func (pr PlayerRole) HasPermission(permission Permission) bool {
 
 // IsOwner checks if the player role is Owner.
 func (pr PlayerRole) IsOwner() bool {
-	return pr == Owner
+	return pr == PRoleOwner
 }
 
 // IsModerator checks if the player role is Moderator (or Owner, as Owner implies Moderator).
 func (pr PlayerRole) IsModerator() bool {
-	return pr == Moderator || pr == Owner
+	return pr == PRoleModerator || pr == PRoleOwner
 }
 
 // IsMember checks if the player role is Member (or Moderator/Owner, as they imply Member).
 func (pr PlayerRole) IsMember() bool {
-	return pr == Member || pr == Moderator || pr == Owner
+	return pr == PRoleMember || pr == PRoleModerator || pr == PRoleOwner
 }
 
 // ParsePlayerRole parses a string into a PlayerRole, case-insensitively.
 func ParsePlayerRole(roleStr string) (PlayerRole, bool) {
 	switch strings.ToLower(roleStr) {
 	case "owner":
-		return Owner, true
+		return PRoleOwner, true
 	case "moderator":
-		return Moderator, true
+		return PRoleModerator, true
 	case "member":
-		return Member, true
+		return PRoleMember, true
 	default:
 		return "", false
 	}
