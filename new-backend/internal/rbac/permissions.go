@@ -1,111 +1,130 @@
 package rbac
 
-// Permission constants
+// Permission represents a granular action:resource permission.
+type Permission string
+
+// Define permission constants
 const (
-	// League permissions
-	ActionCreateLeague       = "create:league"
-	ActionReadLeague         = "read:league"
-	ActionUpdateLeague       = "update:league"
-	ActionDeleteLeague       = "delete:league"
-	ActionManageStatusLeague = "manage_status:league"
+	// League Permissions
+	CreateLeague Permission = "create:league"
+	ReadLeague   Permission = "read:league"
+	UpdateLeague Permission = "update:league"
+	DeleteLeague Permission = "delete:league"
 
-	// Player permissions
-	ActionCreatePlayer      = "create:player"
-	ActionReadPlayer        = "read:player"
-	ActionUpdatePlayer      = "update:player"
-	ActionDeletePlayer      = "delete:player"
-	ActionAssignRolePlayer  = "assign_role:player"
-	ActionUpdateStatsPlayer = "update_stats:player" // For wins/losses, draft points, position
+	// Player Permissions
+	CreatePlayer Permission = "create:player"
+	ReadPlayer   Permission = "read:player"
+	UpdatePlayer Permission = "update:player"
+	DeletePlayer Permission = "delete:player"
 
-	// Draft permissions
-	ActionStartDraft         = "start:draft"
-	ActionMakePickDraft      = "make_pick:draft"
-	ActionSkipTurnDraft      = "skip_turn:draft"
-	ActionManagePeriodsDraft = "manage_periods:draft" // For starting/ending trading/free agency
-	ActionReadDraft          = "read:draft"           // For viewing draft status/history
+	// Draft Permissions
+	CreateDraft Permission = "create:draft"
+	ReadDraft   Permission = "read:draft"
+	UpdateDraft Permission = "update:draft"
+	DeleteDraft Permission = "delete:draft"
 
-	// Game permissions
-	ActionCreateGame       = "create:game"
-	ActionReadGame         = "read:game"
-	ActionUpdateGame       = "update:game"
-	ActionDeleteGame       = "delete:game"
-	ActionReportResultGame = "report_result:game"
+	// LeaguePokemon Permissions
+	CreateLeaguePokemon Permission = "create:league_pokemon"
+	ReadLeaguePokemon   Permission = "read:league_pokemon"
+	UpdateLeaguePokemon Permission = "update:league_pokemon"
+	DeleteLeaguePokemon Permission = "delete:league_pokemon"
 
-	// League Pokemon (draft pool) permissions
-	ActionCreateLeaguePokemon = "create:league_pokemon"
-	ActionReadLeaguePokemon   = "read:league_pokemon"
-	ActionUpdateLeaguePokemon = "update:league_pokemon" // For cost, availability
-	ActionDeleteLeaguePokemon = "delete:league_pokemon"
+	// DraftedPokemon Permissions
+	CreateDraftedPokemon Permission = "create:drafted_pokemon"
+	ReadDraftedPokemon   Permission = "read:drafted_pokemon"
+	UpdateDraftedPokemon Permission = "update:drafted_pokemon"
+	DeleteDraftedPokemon Permission = "delete:drafted_pokemon"
 
-	// Drafted Pokemon (player's pokemon) permissions
-	ActionReadDraftedPokemon    = "read:drafted_pokemon"
-	ActionReleaseDraftedPokemon = "release:drafted_pokemon" // Releasing own pokemon
-	ActionTradeDraftedPokemon   = "trade:drafted_pokemon"
-	ActionDeleteDraftedPokemon  = "delete:drafted_pokemon" // Soft delete
+	// Game Permissions
+	CreateGame Permission = "create:game"
+	ReadGame   Permission = "read:game"
+	UpdateGame Permission = "update:game"
+	DeleteGame Permission = "delete:game"
+
+	// User Permissions (for admin-like actions on users)
+	ReadUser   Permission = "read:user"
+	UpdateUser Permission = "update:user"
+	DeleteUser Permission = "delete:user"
+
+	// PlayerRoster Permissions
+	CreatePlayerRoster Permission = "create:player_roster"
+	ReadPlayerRoster   Permission = "read:player_roster"
+	UpdatePlayerRoster Permission = "update:player_roster"
+	DeletePlayerRoster Permission = "delete:player_roster"
+
+	// PokemonSpecies Permissions (likely read-only for most roles)
+	ReadPokemonSpecies Permission = "read:pokemon_species"
 )
 
-// rolePermissions defines the permissions for each PlayerRole.
-// This map is initialized once at program startup using the init() function.
-var rolePermissions = map[PlayerRole]map[string]bool{}
+// rolePermissions maps each PlayerRole to a set of permissions it possesses.
+// This map is initialized in the init() function to handle inheritance.
+var rolePermissions = make(map[PlayerRole]map[Permission]bool)
 
 func init() {
-	// Define Member permissions
-	memberPermissions := []string{
-		ActionReadLeague,
-		ActionReadPlayer,
-		ActionMakePickDraft,
-		ActionReadDraft,
-		ActionReadGame,
-		ActionReportResultGame,
-		ActionReadLeaguePokemon,
-		ActionReadDraftedPokemon,
-		ActionReleaseDraftedPokemon,
-	}
-	rolePermissions[PlayerRoleMember] = make(map[string]bool)
-	for _, perm := range memberPermissions {
-		rolePermissions[PlayerRoleMember][perm] = true
-	}
+	// Initialize permissions for each role
+	rolePermissions[Member] = make(map[Permission]bool)
+	rolePermissions[Moderator] = make(map[Permission]bool)
+	rolePermissions[Owner] = make(map[Permission]bool)
 
-	// copy Member permissions
-	rolePermissions[PlayerRoleModerator] = make(map[string]bool)
-	for perm := range rolePermissions[PlayerRoleMember] {
-		rolePermissions[PlayerRoleModerator][perm] = true
-	}
-	// Add Moderator-specific permissions
-	moderatorPermissions := []string{
-		ActionUpdateLeague,
-		ActionManageStatusLeague,
-		ActionCreatePlayer,
-		ActionUpdatePlayer,
-		ActionDeletePlayer,
-		ActionUpdateStatsPlayer,
-		ActionStartDraft,
-		ActionSkipTurnDraft,
-		ActionManagePeriodsDraft,
-		ActionCreateGame,
-		ActionUpdateGame,
-		ActionDeleteGame,
-		ActionCreateLeaguePokemon,
-		ActionUpdateLeaguePokemon,
-		ActionDeleteLeaguePokemon,
-		ActionTradeDraftedPokemon,
-		ActionDeleteDraftedPokemon,
-	}
-	for _, perm := range moderatorPermissions {
-		rolePermissions[PlayerRoleModerator][perm] = true
-	}
+	// Member permissions
+	setPermissions(Member,
+		ReadLeague,
+		ReadPlayer,
+		ReadDraft,
+		ReadLeaguePokemon,
+		ReadDraftedPokemon,
+		ReadGame,
+		ReadUser,
+		ReadPlayerRoster,
+		ReadPokemonSpecies,
+	)
 
-	// copy Moderator permissions to owner
-	rolePermissions[PlayerRoleOwner] = make(map[string]bool)
-	for perm := range rolePermissions[PlayerRoleModerator] {
-		rolePermissions[PlayerRoleOwner][perm] = true
+	// Moderator permissions inherit from Member and add more
+	inheritPermissions(Moderator, Member)
+	setPermissions(Moderator,
+		UpdateLeague,
+		UpdatePlayer,
+		UpdateDraft,
+		UpdateLeaguePokemon,
+		UpdateDraftedPokemon,
+		UpdateGame,
+		CreatePlayer,
+		CreateDraftedPokemon,
+		CreateGame,
+		DeleteGame,
+	)
+
+	// Owner permissions inherit from Moderator and add more
+	inheritPermissions(Owner, Moderator)
+	setPermissions(Owner,
+		CreateLeague,
+		DeleteLeague,
+		DeletePlayer,
+		DeleteDraft,
+		DeleteLeaguePokemon,
+		DeleteDraftedPokemon,
+		UpdateUser,
+		DeleteUser,
+		CreateLeaguePokemon,
+		CreateDraft,
+		CreatePlayerRoster,
+		DeletePlayerRoster,
+		UpdatePlayerRoster,
+	)
+}
+
+// setPermissions is a helper to assign multiple permissions to a role.
+func setPermissions(role PlayerRole, perms ...Permission) {
+	for _, perm := range perms {
+		rolePermissions[role][perm] = true
 	}
-	// Add Owner-specific permissions
-	ownerPermissions := []string{
-		ActionDeleteLeague,
-		ActionAssignRolePlayer,
-	}
-	for _, perm := range ownerPermissions {
-		rolePermissions[PlayerRoleOwner][perm] = true
+}
+
+// inheritPermissions copies all permissions from a parent role to a child role.
+func inheritPermissions(child, parent PlayerRole) {
+	for perm, has := range rolePermissions[parent] {
+		if has {
+			rolePermissions[child][perm] = true
+		}
 	}
 }

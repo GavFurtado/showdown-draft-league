@@ -9,19 +9,20 @@ import (
 )
 
 type Player struct {
-	ID            uuid.UUID       `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	UserID        uuid.UUID       `gorm:"type:uuid;not null" json:"user_id"`
-	LeagueID      uuid.UUID       `gorm:"type:uuid;not null" json:"league_id"`
-	InLeagueName  string          `json:"in_league_name"`
-	TeamName      string          `gorm:"not null" json:"team_name"`
-	Wins          int             `gorm:"default:0;not null" json:"wins"`
-	Losses        int             `gorm:"default:0;not null" json:"losses"`
-	DraftPoints   int             `gorm:"default:140;not null" json:"points"`
-	DraftPosition int             `json:"draft_position"` // turn order of player pick (possibly/probably randomized)
-	Role          rbac.PlayerRole `gorm:"type:varchar(20);not null;default:'member'" json:"role"`
-	CreatedAt     time.Time       `json:"created_at"`
-	UpdatedAt     time.Time       `json:"updated_at"`
-	DeletedAt     gorm.DeletedAt  `gorm:"index" json:"-"`
+	ID              uuid.UUID       `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	UserID          uuid.UUID       `gorm:"type:uuid;not null" json:"user_id"`
+	LeagueID        uuid.UUID       `gorm:"type:uuid;not null" json:"league_id"`
+	InLeagueName    string          `json:"in_league_name"`
+	TeamName        string          `gorm:"not null" json:"team_name"`
+	Wins            int             `gorm:"default:0;not null" json:"wins"`
+	Losses          int             `gorm:"default:0;not null" json:"losses"`
+	DraftPoints     int             `gorm:"default:140;not null" json:"points"`
+	DraftPosition   int             `json:"draft_position"` // turn order of player pick (possibly randomized)
+	Role            rbac.PlayerRole `gorm:"type:varchar(20);not null;default:'member'" json:"role"`
+	IsParticipating bool
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relationships
 	User   User           `gorm:"foreignKey:UserID;references:ID"`
@@ -29,17 +30,17 @@ type Player struct {
 	Roster []PlayerRoster `gorm:"foreignKey:PlayerID;references:ID;inverseOf:Player"`
 }
 
-// checks if the player has the LeagueOwner role.
+// IsLeagueOwner checks if the player has the LeagueOwner role.
 func (p *Player) IsLeagueOwner() bool {
-	return p.Role == rbac.PlayerRoleOwner
+	return p.Role.IsOwner()
 }
 
-// checks if the player has the LeagueModerator role.
+// IsLeagueModerator checks if the player has the LeagueModerator role.
 func (p *Player) IsLeagueModerator() bool {
-	return p.Role == rbac.PlayerRoleModerator
+	return p.Role.IsModerator()
 }
 
 // Can checks if the player's role has a specific permission.
-func (p *Player) Can(permission string) bool {
+func (p *Player) Can(permission rbac.Permission) bool {
 	return p.Role.HasPermission(permission)
 }

@@ -1,28 +1,47 @@
 package services
 
 import (
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
+	"errors"
+	"log"
+
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
-type RBACService struct {
+// defines the interface for Role-Based Access Control operations.
+type RBACService interface {
+	CanAccess(userID uuid.UUID, leagueID uuid.UUID, requiredPermission rbac.Permission) (bool, error)
 }
 
-func NewRBACService() *RBACService {
-	return &RBACService{}
+type RBACServiceImpl struct {
+	leagueRepo repositories.LeagueRepository
+	userRepo   repositories.UserRepository
+	playerRepo repositories.PlayerRepository
 }
 
-// CanAccess checks if a user has the required permission for a specific action.
-// This function will need to be expanded to consider league-specific roles.
-func (s *RBACService) CanAccess(user *models.User, requiredPermission string) bool {
-	// Global admin bypasses all RBAC checks
-	if user.IsAdmin {
-		return true
+// NewRBACService creates a new instance of RBACService.
+func NewRBACService(leagueRepo repositories.LeagueRepository, userRepo repositories.UserRepository, playerRepo repositories.PlayerRepository) RBACService {
+	return &RBACServiceImpl{
+		leagueRepo: leagueRepo,
+		userRepo:   userRepo,
+		playerRepo: playerRepo,
+	}
+}
+
+// checks if a user has the required permission for a specific action.
+func (s *RBACServiceImpl) CanAccess(userID uuid.UUID, leagueID uuid.UUID, requiredPermission rbac.Permission) (bool, error) {
+	player, err := s.playerRepo.GetPlayerByUserAndLeague(userID, leagueID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Printf("(Service: CanAccess) - Player (User ID: %s) not found (likely not part of league or league doesn't exist).\n", userID)
+			return false, common.ErrLeagueNotFound
+		}
+		log.Printf("(Service: CanAccess) - failed to retrieve player (userID: %s; leagueID: %s\n", userID, leagueID)
+		return false, common.ErrInternalService
 	}
 
-	// TODO: Implement league-specific role check here.
-	// This will likely require passing a league ID or a league object
-	// to determine the user's role within that specific league.
-	// For now, this is a placeholder.
-
-	return false // Default to false if no specific permission is granted
+	return player.Can(rbac.Permission(requiredPermission)), nil
 }

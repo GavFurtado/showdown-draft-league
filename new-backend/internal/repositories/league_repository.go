@@ -88,9 +88,9 @@ func (r *leagueRepositoryImpl) GetLeaguesByOwner(userID uuid.UUID) ([]models.Lea
 	var leagues []models.League
 
 	err := r.db.
-		Joins("JOIN players ON players.league_id = leagues.id").                         // Join with the players table
-		Where("players.user_id = ? AND players.role = ?", userID, rbac.PlayerRoleOwner). // Filter by user_id and role
-		Preload("Players").                                                              // Keep preloading players if needed
+		Joins("JOIN players ON players.league_id = leagues.id").               // Join with the players table
+		Where("players.user_id = ? AND players.role = ?", userID, rbac.Owner). // Filter by user_id and role
+		Preload("Players").                                                    // Keep preloading players if needed
 		Find(&leagues).Error
 	if err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func (r *leagueRepositoryImpl) GetLeaguesByOwner(userID uuid.UUID) ([]models.Lea
 func (r *leagueRepositoryImpl) GetLeaguesCountWhereOwner(userID uuid.UUID) (int64, error) {
 	var count int64
 	err := r.db.Model(&models.Player{}). // Change model to Player
-						Where("user_id = ? AND role = ?", userID, rbac.PlayerRoleOwner). // Filter by user_id and role
+						Where("user_id = ? AND role = ?", userID, rbac.Owner). // Filter by user_id and role
 						Count(&count).Error
 	if err != nil {
 		return 0, err
@@ -196,7 +196,7 @@ func (r *leagueRepositoryImpl) GetLeagueWithFullDetails(id uuid.UUID) (*models.L
 func (r *leagueRepositoryImpl) IsUserOwner(userID, leagueID uuid.UUID) (bool, error) {
 	var count int64
 	err := r.db.Model(&models.Player{}). // Query the Player model
-						Where("user_id = ? AND league_id = ? AND role = ?", userID, leagueID, rbac.PlayerRoleOwner). // Check for owner role
+						Where("user_id = ? AND league_id = ? AND role = ?", userID, leagueID, rbac.Owner). // Check for owner role
 						Count(&count).Error
 
 	return count > 0, err

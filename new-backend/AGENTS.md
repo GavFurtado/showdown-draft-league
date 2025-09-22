@@ -176,7 +176,7 @@ No `.cursor/rules/`, `.cursorrules`, or `.github/copilot-instructions.md` found.
 #### 9. `Game` Model (`game.go`)
 
 * **Description:** The `Game` model represents a single best-of-X series played between two `Player`s in a `League`.
-* **Purpose:** To track individual match outcomes, scores, and associated replay links within a league's competitive season.
+* **Purpose:** To track individual match outcomes, scores, and associated replay links within a league\'s competitive season.
 * **Key Fields:**
     * `ID`: Unique identifier (UUID).
     * `LeagueID`: The `League` the game took place in.
@@ -193,3 +193,33 @@ No `.cursor/rules/`, `.cursorrules`, or `.github/copilot-instructions.md` found.
     * **`Winner Player`**, **`Loser Player`**: The winning and losing players (`WinnerID`, `LoserID` point to `PlayerID`).
     * **`Reporter User`**: The user who reported the game (`ReportedByUserID` points to `UserID`).
 * **Ties things together:** The `Game` model links `League`s, `Player`s, and `User`s to record and manage competitive matches, directly contributing to `Player` win/loss records.
+
+#### 10. RBAC Components (`internal/rbac`)
+
+*   **Description:** This package implements the Role-Based Access Control system, defining player roles and granular permissions. It centralizes authorization logic to reduce boilerplate and improve maintainability.
+*   **Current Status:** The `internal/rbac` directory and its core files (`roles.go`, `permissions.go`) have been created.
+*   **Key Components:**
+    *   **`PlayerRole` (`roles.go`):** An enum-like type representing roles within a league (e.g., `Owner`, `Moderator`, `Member`). Includes methods like `IsValid()`, `IsOwner()`, `IsModerator()`, `IsMember()`, and `HasPermission()`).
+    *   **`Permission` (`permissions.go`):** A type representing granular `action:resource` permissions (e.g., `create:league`, `read:player`).
+    *   **`rolePermissions` map (`permissions.go`):** A centralized map that explicitly defines which `Permission`s each `PlayerRole` possesses. It uses an `init()` function for programmatic role inheritance (Member -> Moderator -> Owner).
+*   **Integration:**
+    *   The `models.Player` struct now includes a `Role rbac.PlayerRole` field.
+    *   The `models.Player` struct has a `Can(permission rbac.Permission) bool` method that delegates to `p.Role.HasPermission(permission)`.
+    *   Services and controllers will utilize these RBAC components for authorization checks, moving away from direct `currentUser.Role == "admin"` or `IsUserOwner` checks for league-specific actions.
+*   **Ties things together:** The RBAC package provides the foundational authorization layer, allowing the system to control what actions a `Player` (with a specific `PlayerRole` in a `League`) can perform on various resources.
+*   **Note:** Integration with existing models and services is in progress, and there are currently compilation errors related to type mismatches and undefined constants that need to be resolved.
+
+
+#### 10. RBAC Components (`internal/rbac`)
+
+*   **Description:** This package implements the Role-Based Access Control system, defining player roles and granular permissions. It centralizes authorization logic to reduce boilerplate and improve maintainability.
+*   **Key Components:**
+    *   **`PlayerRole` (`roles.go`):** An enum-like type representing roles within a league (e.g., `Owner`, `Moderator`, `Member`). Includes methods like `IsValid()`, `IsOwner()`, `IsModerator()`, `IsMember()`, and `HasPermission()`.
+    *   **`Permission` (`permissions.go`):** A type representing granular `action:resource` permissions (e.g., `create:league`, `read:player`).
+    *   **`rolePermissions` map (`permissions.go`):** A centralized map that explicitly defines which `Permission`s each `PlayerRole` possesses. It uses an `init()` function for programmatic role inheritance (Member -> Moderator -> Owner).
+*   **Integration:**
+    *   The `models.Player` struct now includes a `Role rbac.PlayerRole` field.
+    *   The `models.Player` struct has a `Can(permission rbac.Permission) bool` method that delegates to `p.Role.HasPermission(permission)`.
+    *   Services and controllers will utilize these RBAC components for authorization checks, moving away from direct `currentUser.Role == "admin"` or `IsUserOwner` checks for league-specific actions.
+*   **Ties things together:** The RBAC package provides the foundational authorization layer, allowing the system to control what actions a `Player` (with a specific `PlayerRole` in a `League`) can perform on various resources.
+

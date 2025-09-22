@@ -121,7 +121,7 @@ func (s *playerServiceImpl) CreatePlayerHandler(input *common.PlayerCreateReques
 		// derived values
 		Wins:   0,
 		Losses: 0,
-		Role:   rbac.PlayerRoleMember, // Default role for new players
+		Role:   rbac.Member, // Default role for new players
 	}
 
 	createdPlayer, err := s.playerRepo.CreatePlayer(&player)

@@ -95,12 +95,13 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueR
 	}
 
 	ownerPlayer := &models.Player{
-		UserID:       userID,
-		LeagueID:     createdLeague.ID,
-		InLeagueName: "League Owner",                       // Default, can be updated later
-		TeamName:     fmt.Sprintf("%s's Team", input.Name), // Default, can be updated later
-		DraftPoints:  int(createdLeague.StartingDraftPoints),
-		Role:         rbac.PlayerRoleOwner,
+		UserID:          userID,
+		LeagueID:        createdLeague.ID,
+		InLeagueName:    "League Owner",                       // Default, can be updated later
+		TeamName:        fmt.Sprintf("%s's Team", input.Name), // Default, can be updated later
+		IsParticipating: false,
+		DraftPoints:     int(createdLeague.StartingDraftPoints),
+		Role:            rbac.Owner,
 	}
 
 	_, err = s.playerRepo.CreatePlayer(ownerPlayer)
