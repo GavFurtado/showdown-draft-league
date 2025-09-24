@@ -2,7 +2,7 @@ import NavBar from "../componenets/navbar"
 import DraftCard from "../componenets/draftCards"
 import pokemonData from "../assets/pokemons.json"
 import Filter from "../componenets/filter"
-import {useState} from "react"
+import {useState, useEffect} from "react"
 
 const defaultFilters = {
         selectedTypes: [],
@@ -14,39 +14,51 @@ const defaultFilters = {
 export default function Draftboard(){
     const [cards,setCards] = useState(pokemonData);
     const [filters, setFilters] = useState(defaultFilters);
+    const [searchTerm, setSearchTerm] = useState('');
 
-    function updateFilter(key,value){
-        const newFilter = {...filters,[key]:value}
-        setFilters(newFilter)
-
+    function applyFilter(){
         let update = [...pokemonData]
-        if(newFilter.selectedTypes.length>0){
+
+        if (searchTerm.trim() !== '') {
+            update = update.filter(card =>
+                card.name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
+        if(filters.selectedTypes.length>0){
             update=update.filter(card=>
-                newFilter.selectedTypes.some(type =>
+                filters.selectedTypes.some(type =>
                 card.types.includes(type)
                 )
             );
         }
-        if(newFilter.selectedCost){
-            update=update.filter(card=>card.cost === newFilter.selectedCost)
+        
+        if(filters.selectedCost){
+            update=update.filter(card=>card.cost === filters.selectedCost)
         }
-        if (newFilter.sortByStat) {
-            console.log(newFilter.sortByStat)
+        if (filters.sortByStat) {
             update=update.sort((a, b) => {
-                const statA = a.stats[newFilter.sortByStat];
-                const statB = b.stats[newFilter.sortByStat];
+                const statA = a.stats[filters.sortByStat];
+                const statB = b.stats[filters.sortByStat];
 
-                return newFilter.sortOrder === 'asc' ? statA - statB : statB - statA;
+                return filters.sortOrder === 'asc' ? statA - statB : statB - statA;
             });
         }
 
-
-        setCards(update)            
+        setCards(update) 
     }
-    
+    function updateFilter(key,value){
+        setFilters(prev=>({...prev, [key]:value}))           
+    }
     const resetAllFilters = () => {
         setFilters(defaultFilters)
     };
+    useEffect(() => {
+        applyFilter();
+    }, [filters]);
+    useEffect(() => {
+        applyFilter();
+    }, [filters, searchTerm]);
     const cardsToDisplay = cards.map(pokemon=>{
         const name = pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1)
         return <DraftCard key={pokemon.id}
@@ -66,7 +78,7 @@ export default function Draftboard(){
     })
     return(
         <>
-        <div className="h-full bg-[#BFC0C0]  ">
+        <div className="min-h-screen bg-[#BFC0C0] ">
             <NavBar page="Draftboard"/>
             
             <div className="flex flex-row">
@@ -80,7 +92,10 @@ export default function Draftboard(){
                                 placeholder="Search"
                                 aria-label="Search"
                                 id="exampleFormControlInput2"
-                                aria-describedby="button-addon2" />
+                                aria-describedby="button-addon2" 
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                />
                             <span
                                 className="flex items-center whitespace-nowrap px-3 py-[0.25rem] text-surface dark:border-neutral-400 dark:text-white [&>svg]:h-5 [&>svg]:w-5"
                                 id="button-addon2">
@@ -99,7 +114,7 @@ export default function Draftboard(){
                         </div>
                         <Filter updateFilter={updateFilter} filters={filters} resetAllFilters={resetAllFilters} />
                     </div>
-                    <div className="grid grid-cols-5 gap-4 m-4 p-6 mt-0 pt-0 pr-8 overflow-scroll h-screen rounded-2xl">
+                    <div className="grid grid-cols-5 gap-4 m-4 p-6 mt-0 pt-0 pr-8 overflow-scroll h-auto max-h-screen rounded-2xl">
                         {cardsToDisplay}
                     </div>
                 </div>

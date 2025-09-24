@@ -26,7 +26,6 @@ type PlayerService interface {
 	UpdatePlayerRecord(currentUser *models.User, playerID uuid.UUID, wins int, losses int) (*models.Player, error)
 	UpdatePlayerDraftPosition(currentUser *models.User, playerID uuid.UUID, draftPosition int) (*models.Player, error)
 	UpdatePlayerRole(currentUserID, playerID uuid.UUID, newPlayerRole rbac.PlayerRole) (*models.Player, error)
-
 	// (s *playerServiceImpl) LeaveLeague(playerID uuid.UUID) error
 }
 

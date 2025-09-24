@@ -56,7 +56,7 @@ func (s *pokemonServiceImpl) GetPokemonSpeciesByID(id int64) (*models.PokemonSpe
 	pokemon, err := s.pokemonRepo.GetPokemonSpeciesByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Printf("(Info: PokemonSpeciesService.GetPokemonSpeciesByID) - Pokemon species with ID %d not found", id)
+			log.Printf("(Error: PokemonSpeciesService.GetPokemonSpeciesByID) - Pokemon species with ID %d not found", id)
 			return nil, common.ErrPokemonSpeciesNotFound
 		}
 		log.Printf("(Error: PokemonSpeciesService.GetPokemonSpeciesByID) - Failed to get pokemon species by ID %d: %v", id, err)

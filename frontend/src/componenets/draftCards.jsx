@@ -35,27 +35,38 @@ export default function PokemonCard(pokemon) {
             {/* Front Face of the Card */}
             <div className="absolute inset-0 bg-white rounded-lg p-4 flex flex-col items-center justify-center [backface-visibility:hidden]">
                 {/* Pokémon Image */}
-                <img
-                    src={pokemon.pic}
-                    alt={pokemon.name}
-                    onError={handleImageError}
-                    className="w-[100%] h-[100%] object-contain mb-4 bg-gray-100 p-2"
-                />
-                <div className='flex w-[100%] justify-between'>
-                    {/* Pokémon Name */}
-                    <div>
-                        <h3 className="text-lg pb-0 mb-0 font-bold text-gray-800 text-left">
-                            {pokemon.name}
-                        </h3>
-                        <p className='p-0 m-0 text-left text-sm text-gray-600'>{types}</p>
-                    </div>
-
+                <div className="relative w-full h-[100%]">
+                    <img
+                        src={pokemon.pic}
+                        alt={pokemon.name}
+                        onError={handleImageError}
+                        className="w-[100%] h-[100%] object-contain mb-4 bg-gray-100 p-2"
+                    />
                     {/* Pokémon Cost */}
-                    <p className="text-lg font-semibold text-right">
-                        {pokemon.cost}
+                    <p className="text-lg font-semibold absolute  bottom-2 right-2 ">
+                            {pokemon.cost}
                     </p>
                 </div>
-                
+                    <div className='flex w-[100%] justify-between'>
+                        {/* Pokémon Name */}
+                        <div>
+                            <h3 className="text-lg pb-0 mb-0 font-bold text-gray-800 text-left">
+                                {pokemon.name}
+                            </h3>
+                            <p className='p-0 m-0 text-left text-sm text-gray-600'>{types}</p>
+                        </div>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                            }}
+                            className="relative flex items-center align-center justify-center mt-4 h-7.5 w-7.5 rounded-full p-0 hover:border-2 hover: transition-colors">
+                            <img
+                                src="https://upload.wikimedia.org/wikipedia/commons/5/53/Poké_Ball_icon.svg"
+                                className='h-7.5 w-7.5'
+                            />
+                        </button>
+                    </div>
+                    
             </div>
 
             {/* Back Face of the Card */}

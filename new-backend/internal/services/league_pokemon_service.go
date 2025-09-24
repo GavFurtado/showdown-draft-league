@@ -54,6 +54,7 @@ func (s *leaguePokemonServiceImpl) getLeagueByID(leagueID, currentUserID uuid.UU
 
 func (s *leaguePokemonServiceImpl) getPokemonSpeciesByID(pokemonSpeciesID int64) (*models.PokemonSpecies, error) {
 	pokemon, err := s.pokemonSpeciesRepo.GetPokemonSpeciesByID(pokemonSpeciesID)
+
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("(Service: getPokemonSpeciesByID) - pokemon %d species not found: %v\n", pokemonSpeciesID, err)
@@ -78,7 +79,7 @@ func (s *leaguePokemonServiceImpl) CreatePokemonForLeague(
 
 	// League must be in Setup status to add new pokemon
 	if league.Status != models.LeagueStatusSetup {
-		log.Printf("(Service: CreatePokemonForLeague) - operation not allowed for current league status: %s for user %s", league.Status, currentUser.ID)
+        log.Printf("LOG: (Service: CreatePokemonForLeague) - operation not allowed for current league status: %s for user %s", league.Status, currentUser.ID)
 		return nil, common.ErrInvalidState
 	}
 	// Ensure PokemonSpeciesID is valid
@@ -118,7 +119,7 @@ func (s *leaguePokemonServiceImpl) BatchCreatePokemonForLeague(
 		}
 		// League must be in Setup status to add new pokemon
 		if league.Status != models.LeagueStatusSetup {
-			log.Printf("(Service: BatchCreatePokemonForLeague) - operation not allowed for current league status: %s for user %s", league.Status, currentUser.ID)
+            log.Printf("LOG: (Service: BatchCreatePokemonForLeague) - operation not allowed for current league status: %s for user %s", league.Status, currentUser.ID)
 			return nil, common.ErrInvalidState
 		}
 		// Ensure PokemonSpeciesID is valid
@@ -143,11 +144,12 @@ func (s *leaguePokemonServiceImpl) BatchCreatePokemonForLeague(
 		log.Printf("(Service: BatchCreatePokemonForLeague) - Successfully created league pokemon for league %s, species %d", input.LeagueID, input.PokemonSpeciesID)
 		batchCreatedLeaguePokemon = append(batchCreatedLeaguePokemon, createdLeaguePokemon)
 	}
+    // missing line that makes the db transaction using repository method
 	return batchCreatedLeaguePokemon, nil
 }
 
 // UpdateLeaguePokemon handles updating an existing LeaguePokemon entry.
-// Player Permission required: rbac.PermissionUpdateLeaguePokemon (handled by middleware)
+// Player Permission required: rbac.PermissionUpdateLeaguePokemon
 func (s *leaguePokemonServiceImpl) UpdateLeaguePokemon(
 	currentUser *models.User,
 	input *common.LeaguePokemonUpdateRequest,

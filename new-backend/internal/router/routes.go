@@ -26,7 +26,6 @@ func RegisterRoutes(
 		UserRepo:    repositories.UserRepository,
 		RBACService: services.RBACService,
 	}
-
 	// ---- Public Routes ---
 	// These do not require any authorization
 	r.GET("/", HomeHandler) // eventually a landing page
