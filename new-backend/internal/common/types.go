@@ -3,6 +3,7 @@ package common
 import (
 	"time"
 
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/google/uuid"
 )
 
@@ -17,13 +18,13 @@ type DiscordUser struct {
 
 // Request Structs
 type LeagueRequest struct {
-	Name                  string     `json:"name" binding:"required"`
-	RulesetID             *uuid.UUID `json:"ruleset_id"`
-	MaxPokemonPerPlayer   uint       `json:"max_pokemon_per_player" binding:"gte=1,max=12"`
-	StartingDraftPoints   uint       `json:"starting_draft_points" binding:"gte=20,max=150"`
-	AllowWeeklyFreeAgents bool       `json:"allow_free_agents"`
-	StartDate             time.Time  `json:"start_date" binding:"required"`
-	EndDate               *time.Time `json:"end_date" binding:"omitempty"`
+	Name                string              `json:"name" binding:"required"`
+	RulesetDescription  string              `json:"ruleset_description"`
+	MaxPokemonPerPlayer int                 `json:"max_pokemon_per_player" binding:"gte=1,max=12"`
+	StartingDraftPoints int                 `json:"starting_draft_points" binding:"gte=20,max=150"`
+	StartDate           time.Time           `json:"start_date" binding:"required"`
+	EndDate             *time.Time          `json:"end_date" binding:"omitempty"`
+	Format              models.LeagueFormat `json:"format"`
 }
 
 type UpdateProfileRequest struct {
@@ -51,12 +52,12 @@ type UpdatePlayerInfoRequest struct {
 type LeaguePokemonCreateRequest struct {
 	LeagueID         uuid.UUID `json:"league_id" binding:"required"`
 	PokemonSpeciesID int64     `json:"pokemon_species_id" binding:"required"`
-	Cost             int       `json:"cost" binding:"required" validate:"max=20"`
+	Cost             *int      `json:"cost" binding:"required" validate:"max=20"`
 }
 
 type LeaguePokemonUpdateRequest struct {
 	LeaguePokemonID uuid.UUID `json:"league_pokemon_id" binding:"required"`
-	Cost            int       `json:"cost,omitempty" validate:"max=20"`
+	Cost            *int      `json:"cost,omitempty" validate:"max=20"`
 	IsAvailable     bool      `json:"is_available,omitempty"`
 }
 

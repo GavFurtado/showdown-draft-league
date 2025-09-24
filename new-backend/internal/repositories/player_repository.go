@@ -2,7 +2,9 @@ package repositories
 
 import (
 	"fmt"
+
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -23,6 +25,7 @@ type PlayerRepository interface {
 	// updates player's win/loss record
 	UpdatePlayerRecord(playerID uuid.UUID, wins, losses int) error
 	UpdatePlayerDraftPosition(playerID uuid.UUID, newPosition int) error
+	UpdatePlayerRole(playerID uuid.UUID, playerRole rbac.PlayerRole) error
 	GetPlayerCountByLeague(leagueID uuid.UUID) (int64, error)
 	// soft deletes a player from a league
 	DeletePlayer(playerID uuid.UUID) error
@@ -160,6 +163,18 @@ func (r *playerRepositoryImpl) UpdatePlayerDraftPosition(playerID uuid.UUID, new
 	if err != nil {
 		return fmt.Errorf("(Error: UpdatePlayerDraftPosition) - failed to update draft position: %w", err)
 	}
+	return nil
+}
+
+func (r *playerRepositoryImpl) UpdatePlayerRole(playerID uuid.UUID, playerRole rbac.PlayerRole) error {
+	err := r.db.Model(&models.Player{}).
+		Where("id = ?", playerID).
+		Update("role", playerRole).Error
+
+	if err != nil {
+		return fmt.Errorf("(Repository: UpdatePlayerRole) - failed to update player role: %w", err)
+	}
+
 	return nil
 }
 

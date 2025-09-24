@@ -275,13 +275,13 @@ func (r *draftedPokemonRepositoryImpl) DraftPokemonTransaction(draftedPokemon *m
 	}
 
 	// Ensure player has enough points (this check should ideally also be done in service)
-	if player.DraftPoints < leaguePokemon.Cost {
+	if leaguePokemon.Cost == nil || player.DraftPoints < *leaguePokemon.Cost {
 		tx.Rollback()
 		// Return a specific error for insufficient points
 		return fmt.Errorf("(Error: DraftPokemonTransaction) - insufficient draft points for player %s", player.ID)
 	}
 
-	player.DraftPoints -= leaguePokemon.Cost
+	player.DraftPoints -= *leaguePokemon.Cost
 	if err := tx.Save(&player).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("(Error: DraftPokemonTransaction) - failed to update player points: %w", err)

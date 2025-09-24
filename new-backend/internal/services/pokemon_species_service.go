@@ -22,12 +22,17 @@ type PokemonSpeciesService interface {
 }
 
 type pokemonServiceImpl struct {
-	pokemonRepo repositories.PokemonSpeciesRepository
+	pokemonRepo       repositories.PokemonSpeciesRepository
+	leaguePokemonRepo repositories.LeaguePokemonRepository
 }
 
-func NewPokemonSpeciesService(pokemonRepo repositories.PokemonSpeciesRepository) PokemonSpeciesService {
+func NewPokemonSpeciesService(
+	pokemonRepo repositories.PokemonSpeciesRepository,
+	leaguePokemonRepo repositories.LeaguePokemonRepository,
+) PokemonSpeciesService {
 	return &pokemonServiceImpl{
-		pokemonRepo: pokemonRepo,
+		pokemonRepo:       pokemonRepo,
+		leaguePokemonRepo: leaguePokemonRepo,
 	}
 }
 
@@ -51,7 +56,7 @@ func (s *pokemonServiceImpl) GetPokemonSpeciesByID(id int64) (*models.PokemonSpe
 	pokemon, err := s.pokemonRepo.GetPokemonSpeciesByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Printf("(Info: PokemonSpeciesService.GetPokemonSpeciesByID) - Pokemon species with ID %d not found", id)
+			log.Printf("(Error: PokemonSpeciesService.GetPokemonSpeciesByID) - Pokemon species with ID %d not found", id)
 			return nil, common.ErrPokemonSpeciesNotFound
 		}
 		log.Printf("(Error: PokemonSpeciesService.GetPokemonSpeciesByID) - Failed to get pokemon species by ID %d: %v", id, err)
@@ -170,6 +175,5 @@ func (s *pokemonServiceImpl) DeletePokemonSpecies(id int64) error {
 		log.Printf("(Error: PokemonSpeciesService.DeletePokemonSpecies) - Failed to delete pokemon species ID %d: %v", id, err)
 		return fmt.Errorf("failed to delete pokemon species: %w", err)
 	}
-
 	return nil
 }

@@ -22,22 +22,21 @@ type Game struct {
 	Player2Wins         int            `gorm:"default:0;not null" json:"player_2_wins"`
 	RoundNumber         int            `gorm:"not null" json:"round_number"`
 	Status              GameStatus     `gorm:"type:varchar(50);not null;default:'pending'" json:"status"`
-	ReportedByUserID    *uuid.UUID     `gorm:"type:uuid" json:"reported_by_user_id"`
+	ReportingPlayerID   uuid.UUID      `gorm:"type:uuid;not null" json:"reporting_player_id"`
 	ShowdownReplayLinks []string       `gorm:"type:jsonb" binding:"url" json:"replay_links"`
 	CreatedAt           time.Time      `json:"created_at"`
 	UpdatedAt           time.Time      `json:"updated_at"`
 	DeletedAt           gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relationships
-	League   League `gorm:"foreignKey:LeagueID;references:ID"`
-	Player1  Player `gorm:"foreignKey:Player1ID;references:ID"`
-	Player2  Player `gorm:"foreignKey:Player2ID;references:ID"`
-	Winner   Player `gorm:"foreignKey:WinnerID;references:ID"`
-	Loser    Player `gorm:"foreignKey:LoserID;references:ID"`
-	Reporter User   `gorm:"foreignKey:ReportedByUserID;references:ID"`
+	League          League `gorm:"foreignKey:LeagueID;references:ID"`
+	Player1         Player `gorm:"foreignKey:Player1ID;references:ID"`
+	Player2         Player `gorm:"foreignKey:Player2ID;references:ID"`
+	Winner          Player `gorm:"foreignKey:WinnerID;references:ID"`
+	Loser           Player `gorm:"foreignKey:LoserID;references:ID"`
+	ReportingPlayer Player `gorm:"foreignKey:ReportingPlayerID;references:ID"`
 }
 
-// GameStatus defines the possible states of a game.
 type GameStatus string
 
 const (
@@ -46,7 +45,6 @@ const (
 	GameStatusDisputed  GameStatus = "disputed"
 )
 
-// List of all valid GameStatuses for validation
 var gameStatuses = []GameStatus{
 	GameStatusPending,
 	GameStatusCompleted,

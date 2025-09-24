@@ -105,12 +105,12 @@ func (ctrl *UserController) GetMyLeagues(ctx *gin.Context) {
 
 	leagues, err := ctrl.userService.GetMyLeaguesHandler(currentUser.ID)
 	if err != nil {
-		if err.Error() == fmt.Sprintf("user not found: %w", err) { // should be unreachable code
-			log.Printf("(Error: GetMyLeagues) - user not found %w\n", err)
+		if err.Error() == fmt.Sprintf("user not found: %v", err) { // should be unreachable code
+			log.Printf("(Error: GetMyLeagues) - user not found %v\n", err)
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		log.Printf("(Error: GetMyLeagues) - Other Database error occurred %w\n", err)
+		log.Printf("(Error: GetMyLeagues) - Other Database error occurred %v\n", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 		return
 	}

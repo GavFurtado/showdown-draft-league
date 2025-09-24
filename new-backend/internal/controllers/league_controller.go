@@ -72,7 +72,7 @@ func (ctrl *leagueControllerImpl) GetLeague(ctx *gin.Context) {
 		return
 	}
 
-	leagueIDStr := ctx.Param("id")
+	leagueIDStr := ctx.Param("leagueId")
 
 	leagueID, err := uuid.Parse(leagueIDStr)
 	if err != nil {

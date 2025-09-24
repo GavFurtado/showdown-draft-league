@@ -11,31 +11,43 @@ import (
 )
 
 type League struct {
-	ID                       uuid.UUID      `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	Name                     string         `gorm:"not null" json:"name"`
-	StartDate                time.Time      `gorm:"not null" json:"start_date"`
-	EndDate                  *time.Time     `json:"end_date"`
-	RulesetID                *uuid.UUID     `gorm:"type:uuid;" json:"ruleset_id"`
-	Status                   LeagueStatus   `gorm:"type:varchar(50);not null;default:'pending'" json:"status"`
-	MaxPokemonPerPlayer      uint           `gorm:"not null;default:0" json:"max_pokemon_per_player"`
-	AllowWeeklyFreeAgents    bool           `gorm:"not null;default:false" json:"allow_free_agents"` // in case this gets more complex
-	FreeAgencyPointsPerRound int            `gorm:"not null;default:1" json:"free_agency_points_per_round"`
-	AllowTrading             bool           `gorm:"not null;default:false" json:"allow_trading"`
-	StartingDraftPoints      int            `gorm:"not null;default:140" json:"starting_draft_points"`
-	IsSnakeRoundDraft        bool           `gorm:"not null;default:true" json:"is_snake_round_draft"`
-	CreatedAt                time.Time      `json:"created_at"`
-	UpdatedAt                time.Time      `json:"updated_at"`
-	DeletedAt                gorm.DeletedAt `gorm:"index" json:"-"`
-	DiscordWebhookURL        *string        `json:"discord_webhoook_url"`
+	ID                  uuid.UUID      `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	Name                string         `gorm:"not null" json:"name"`
+	StartDate           time.Time      `gorm:"not null" json:"start_date"`
+	EndDate             *time.Time     `json:"end_date"`
+	RulesetDescription  string         `gorm:"type:text" json:"ruleset_description"`
+	Status              LeagueStatus   `gorm:"type:varchar(50);not null;default:'pending'" json:"status"`
+	MaxPokemonPerPlayer int            `gorm:"not null;default:0" json:"max_pokemon_per_player"`
+	StartingDraftPoints int            `gorm:"not null;default:140" json:"starting_draft_points"`
+	Format              LeagueFormat   `gorm:"type:jsonb" json:"format"`
+	CreatedAt           time.Time      `json:"created_at"`
+	UpdatedAt           time.Time      `json:"updated_at"`
+	DeletedAt           gorm.DeletedAt `gorm:"index" json:"-"`
+	DiscordWebhookURL   *string        `json:"discord_webhoook_url"`
 
 	// Relationships
-	CommissionerUserID uuid.UUID `gorm:"type:uuid;not null" json:"commissioner_id"`
-	CommissionerUser   User      `gorm:"foreignKey:CommissionerUserID;references:ID;inverseOf:LeaguesCreated"`
-	Players            []Player  `gorm:"foreignKey:LeagueID"`
+	Players []Player `gorm:"foreignKey:LeagueID"`
 	// League has many LeaguePokemon (its defined draft pool)
 	DefinedPokemon []LeaguePokemon `gorm:"foreignKey:LeagueID" json:"-"`
 	// League has many DraftedPokemon (all Pokemon drafted in this league)
-	AllDraftedPokemon []DraftedPokemon `gorm:"foreignKey:LeagueID" json:"-"` // Useful for checking global draft status
+	AllDraftedPokemon []DraftedPokemon `gorm:"foreignKey:LeagueID" json:"-"`
+}
+
+// defines the structure for various optional league settings.
+type LeagueFormat struct {
+	SeasonType       string `json:"season_type"`        // "ROUND_ROBIN", "GROUPS", "CUSTOM"
+	GroupCount       int    `json:"group_count"`        // Relevant if SeasonType is "GROUPS"
+	GamesPerOpponent int    `json:"games_per_opponent"` // For round-robin or group stages
+
+	PlayoffType        string `json:"playoff_type"`         // "NONE", "SINGLE_ELIMINATION", "DOUBLE_ELIMINATION"
+	PlayoffTeams       int    `json:"playoff_teams"`        // Number of teams that make playoffs
+	PlayoffByes        int    `json:"playoff_byes"`         // Number of teams getting a bye in playoffs
+	PlayoffSeedingType string `json:"playoff_seeding_type"` // "STANDARD", "SNAKE", "CUSTOM"
+
+	IsSnakeRoundDraft       bool `json:"is_snake_round_draft"`
+	AllowTrading            bool `json:"allow_trading"`
+	AllowTransferCredits    bool `json:"allow_transfer_credits"`
+	TransferCreditsPerRound int  `json:"transfer_credits_per_round"`
 }
 
 // this might be breaking convention by having functions in the models but idgaf

@@ -1,108 +1,93 @@
 package routes
 
 import (
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/app"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/config"
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/controllers"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/middleware"
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
-	"github.com/gin-contrib/cors"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/oauth2"
 	"gorm.io/gorm"
 )
 
-func RegisterRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config) {
-	// --- Initialize Repositories ---
-	userRepo := repositories.NewUserRepository(db)
-	playerRepo := repositories.NewPlayerRepository(db)
-	leagueRepo := repositories.NewLeagueRepository(db)
-	// pokemonSpeciesRepo := repositories.NewPokemonSpeciesRepository(db)
-	leaguePokemonRepo := repositories.NewLeaguePokemonRepository(db)
-	draftedPokemonRepo := repositories.NewDraftedPokemonRepository(db)
-	draftRepo := repositories.NewDraftRepository(db)
-	gameRepo := repositories.NewGameRepository(db)
-
-	// --- CORS Middleware ---
-	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowOrigins = []string{cfg.AppBaseURL}
-	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
-	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
-	r.Use(cors.New(corsConfig))
-
-	//  --- Initialize Services ---
-	discordOauthConfig := &oauth2.Config{
-		ClientID:     cfg.DiscordClientID,
-		ClientSecret: cfg.DiscordClientSecret,
-		RedirectURL:  cfg.DiscordRedirectURI,
-		Endpoint: oauth2.Endpoint{
-			AuthURL:  "https://discord.com/api/oauth2/authorize",
-			TokenURL: "https://discord.com/api/oauth2/token",
-		},
-		Scopes: []string{"identify"},
+func RegisterRoutes(
+	r *gin.Engine,
+	db *gorm.DB,
+	cfg *config.Config,
+	repositories *app.Repositories,
+	services *app.Services,
+	controllers *app.Controllers,
+) {
+	authMiddlewareDeps := middleware.AuthMiddlewareDependencies{
+		UserRepo:    repositories.UserRepository,
+		JWTService:  &services.JWTService,
+		RBACService: services.RBACService,
 	}
-
-	jwtService := services.NewJWTService(cfg.JWTSecret)
-	authService := services.NewAuthService(userRepo, jwtService, discordOauthConfig)
-	userService := services.NewUserService(userRepo)
-	playerService := services.NewPlayerService(playerRepo, leagueRepo, userRepo)
-	// draftService := services.NewDraftService(leagueRepo, leaguePokemonRepo, draftRepo, draftedPokemonRepo, playerRepo, webhookService)
-	// draftedPokemonService := services.NewDraftedPokemonService(draftedPokemonRepo, userRepo, leagueRepo, playerRepo)
-	leagueService := services.NewLeagueService(leagueRepo, playerRepo, leaguePokemonRepo, draftedPokemonRepo, draftRepo, gameRepo)
-	// webhookService := services.NewWebhookService()
-
-	//  --- Initialize Controller  ---
-	authController := controllers.NewAuthController(authService, cfg, discordOauthConfig)
-	userController := controllers.NewUserController(userService)
-	leagueController := controllers.NewLeagueController(leagueService)
-	playerController := controllers.NewPlayerController(playerService)
-
+	leagueMiddlewareDeps := middleware.LeagueRBACDependencies{
+		UserRepo:    repositories.UserRepository,
+		RBACService: services.RBACService,
+	}
 	// ---- Public Routes ---
 	// These do not require any authorization
-	r.GET("/", HomeHandler)
+	r.GET("/", HomeHandler) // eventually a landing page
 
 	// ---- Auth Related Routes ---
 	// These are routes related to Discord OAuth
 	authGroup := r.Group("/auth")
 	{
-		authGroup.GET("/discord/login", authController.Login)
-		authGroup.GET("/discord/callback", authController.DiscCallback)
+		authGroup.GET("/discord/login", controllers.AuthController.Login)
+		authGroup.GET("/discord/callback", controllers.AuthController.DiscCallback)
 	}
 
 	// --- Protected Routes ---
 	// These require authorization
 	api := r.Group("/api")
-	api.Use(middleware.AuthMiddleware(jwtService, userRepo))
+	api.Use(middleware.AuthMiddleware(authMiddlewareDeps)) // top level logged in check
 	{
-		api.GET("/profile", userController.GetMyProfile)
-
+		api.GET("/profile", controllers.UserController.GetMyProfile)
 		leagues := api.Group("/leagues")
 		{
-			leagues.POST("/", leagueController.CreateLeague)
-			leagues.GET("/:id", leagueController.GetLeague)
-			leagues.GET("/:id/players", playerController.GetPlayersByLeague)
-			leagues.POST("/:id/join", playerController.JoinLeague)
+			leagues.POST(
+				"/",
+				controllers.LeagueController.CreateLeague)
+			leagues.GET(
+				"/:leagueId",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadLeague),
+				controllers.LeagueController.GetLeague)
+			leagues.GET(
+				"/:leagueId/players",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
+				controllers.PlayerController.GetPlayersByLeague)
+			leagues.POST("/:leagueId/join", controllers.PlayerController.JoinLeague)
+
 			// not implmented yet
 			// leagues.DELETE("/:id/leave", playerController.LeaveLeague)
 		}
 
 		users := api.Group("/users")
 		{
-			users.GET("/me", userController.GetMyProfile)
-			users.GET("/me/discord", userController.GetMyDiscordDetails)
-			users.GET("/me/leagues", userController.GetMyLeagues)
-			users.PUT("/profile", userController.UpdateProfile)
-			users.GET("/:id/players", playerController.GetPlayersByUser)
+			users.GET("/me", controllers.UserController.GetMyProfile) // same as /api/profile
+			users.GET("/me/discord", controllers.UserController.GetMyDiscordDetails)
+			users.GET("/me/leagues", controllers.UserController.GetMyLeagues)
+			users.PUT("/profile", controllers.UserController.UpdateProfile)
+			users.GET("/:id/players", controllers.PlayerController.GetPlayersByUser)
 		}
 
-		players := api.Group("/players")
+		players := api.Group("/leagues/:leagueId/players")
 		{
-			players.GET("/:id", playerController.GetPlayerByID)
-			players.GET("/:id/roster", playerController.GetPlayerWithFullRoster)
-			players.PUT("/:id/profile", playerController.UpdatePlayerProfile)
+			players.GET(
+				"/:id",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
+				controllers.PlayerController.GetPlayerByID)
+			players.GET(
+				"/:id/roster",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayerRoster),
+				controllers.PlayerController.GetPlayerWithFullRoster)
+			players.PUT(
+				"/:id/profile",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdatePlayer),
+				controllers.PlayerController.UpdatePlayerProfile)
 		}
 	}
-
 }
 
 // this is temporary
