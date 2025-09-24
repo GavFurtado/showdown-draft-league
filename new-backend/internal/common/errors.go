@@ -29,6 +29,7 @@ var (
 	ErrConflict                      = errors.New("record already exists. cannot make a duplicate")
 	ErrInvalidState                  = errors.New("invalid state for this operation")
 	ErrInsufficientDraftPoints       = errors.New("insufficient draft points to complete this operation")
+	ErrNoPlayerForDraft              = errors.New("not enough players to start draft")
 
 	// Internal Service Errors
 	ErrInternalService = errors.New("internal service error")

@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"fmt"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
@@ -39,19 +38,10 @@ func NewLeaguePokemonService(
 }
 
 // -- Private Helpers --
-func (s *leaguePokemonServiceImpl) isUserPlayerInLeague(userID, leagueID uuid.UUID) (bool, error) {
-	isPlayer, err := s.leagueRepo.IsUserPlayerInLeague(userID, leagueID)
-	if err != nil {
-		log.Printf("(Service: isUserPlayerInLeague) - Failed to check player status for user %s in league %s: %v", userID, leagueID, err)
-		return false, fmt.Errorf("failed to check player status: %w", err)
-	}
-	return isPlayer, nil
-}
-
 func (s *leaguePokemonServiceImpl) getLeagueByID(leagueID, currentUserID uuid.UUID) (*models.League, error) {
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("(Service: getLeagueByID) - could not find league %s. (currentUser.ID: %s)\n", leagueID, currentUserID)
 			return nil, common.ErrLeagueNotFound
 		}
@@ -65,7 +55,7 @@ func (s *leaguePokemonServiceImpl) getLeagueByID(leagueID, currentUserID uuid.UU
 func (s *leaguePokemonServiceImpl) getPokemonSpeciesByID(pokemonSpeciesID int64) (*models.PokemonSpecies, error) {
 	pokemon, err := s.pokemonSpeciesRepo.GetPokemonSpeciesByID(pokemonSpeciesID)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("(Service: getPokemonSpeciesByID) - pokemon %d species not found: %v\n", pokemonSpeciesID, err)
 			return nil, common.ErrPokemonSpeciesNotFound
 		}
@@ -75,60 +65,28 @@ func (s *leaguePokemonServiceImpl) getPokemonSpeciesByID(pokemonSpeciesID int64)
 	return pokemon, nil
 }
 
-// -- Validation and Resource Fetching Helper --
-// This helper consolidates the initial checks and resource fetching for creating pokemon
-func (s *leaguePokemonServiceImpl) validateAndFetchResourcesToCreatePokemon(
-	currentUser *models.User,
-	input *common.LeaguePokemonCreateRequest,
-) (*models.League, *models.PokemonSpecies, error) {
-	league, err := s.getLeagueByID(input.LeagueID, currentUser.ID)
-	if err != nil {
-		return nil, nil, err
-	}
-	// check if user has a player in league or if user is an admin using helper
-	if inLeague, err := s.isUserPlayerInLeague(currentUser.ID, league.ID); !inLeague && currentUser.Role != "admin" {
-		if err != nil {
-			return nil, nil, err
-		}
-		log.Printf("(Service: validateAndFetchResources) - user %s does not have a player in the league %s.", currentUser.ID, league.ID)
-		return nil, nil, common.ErrUnauthorized
-	}
-	// check if owner or an admin using helper
-	isOwner, err := s.leagueRepo.IsUserOwner(currentUser.ID, league.ID)
-	if err != nil {
-		return nil, nil, err
-	}
-	if !isOwner && currentUser.Role != "admin" {
-		log.Printf("(Service: validateAndFetchResources) - user %s is not an owner for the league %s.", currentUser.ID, league.ID)
-		return nil, nil, common.ErrUnauthorized
-	}
-	// user is an owner player in the league which exists
-	// check league status
-	if league.Status != models.LeagueStatusSetup {
-		log.Printf("(Service: validateAndFetchResources) - unauthorized: league %s status is not SETUP for user %s", league.ID, currentUser.ID)
-		return nil, nil, common.ErrUnauthorized
-	}
-	// fetch pokemon species using helper
-	pokemon, err := s.getPokemonSpeciesByID(input.PokemonSpeciesID)
-	if err != nil {
-		return nil, nil, err
-	}
-	return league, pokemon, nil
-}
-
-// CreatePokemonForLeague now uses the helper function
+// handles creating a single LeaguePokemon entry.
+// Player Permission required: rbac.PermissionCreateLeaguePokemon
 func (s *leaguePokemonServiceImpl) CreatePokemonForLeague(
 	currentUser *models.User,
 	input *common.LeaguePokemonCreateRequest,
 ) (*models.LeaguePokemon, error) {
-	// Validate input and fetch necessary resources using the helper
-	_, _, err := s.validateAndFetchResourcesToCreatePokemon(currentUser, input)
+	league, err := s.getLeagueByID(input.LeagueID, currentUser.ID)
 	if err != nil {
-		log.Printf("(Service: CreatePokemonForLeague) - Validation and resource fetching failed: %v", err)
 		return nil, err
 	}
 
-	// If helper succeeded, proceed to create the LeaguePokemon model
+	// League must be in Setup status to add new pokemon
+	if league.Status != models.LeagueStatusSetup {
+		log.Printf("(Service: CreatePokemonForLeague) - operation not allowed for current league status: %s for user %s", league.Status, currentUser.ID)
+		return nil, common.ErrInvalidState
+	}
+	// Ensure PokemonSpeciesID is valid
+	_, err = s.getPokemonSpeciesByID(input.PokemonSpeciesID)
+	if err != nil {
+		return nil, err
+	}
+
 	leaguePokemon := &models.LeaguePokemon{
 		LeagueID:         input.LeagueID,
 		PokemonSpeciesID: input.PokemonSpeciesID,
@@ -136,31 +94,39 @@ func (s *leaguePokemonServiceImpl) CreatePokemonForLeague(
 		IsAvailable:      true,
 	}
 
-	// Create the LeaguePokemon using the repository
 	createdLeaguePokemon, err := s.leaguePokemonRepo.CreateLeaguePokemon(leaguePokemon)
 	if err != nil {
-		log.Printf("(Service: CreatePokemonForLeague) - failed to create league pokemon: %v\n", err)
+		log.Printf("LOG: (Service: CreatePokemonForLeague) - failed to create league pokemon: %v\n", err)
 		return nil, common.ErrInternalService
 	}
 
-	log.Printf("(Service: CreatePokemonForLeague) - Successfully created league pokemon for league %s, species %d", input.LeagueID, input.PokemonSpeciesID)
+	log.Printf("LOG: (Service: CreatePokemonForLeague) - Successfully created league pokemon for league %s, species %d", input.LeagueID, input.PokemonSpeciesID)
 	return createdLeaguePokemon, nil
 }
 
+// handles creating multiple LeaguePokemon entries.
+// Player Permission required: rbac.PermissionCreateLeaguePokemon
 func (s *leaguePokemonServiceImpl) BatchCreatePokemonForLeague(
 	currentUser *models.User,
 	inputs []*common.LeaguePokemonCreateRequest,
 ) ([]*models.LeaguePokemon, error) {
 	var batchCreatedLeaguePokemon []*models.LeaguePokemon
 	for _, input := range inputs {
-		// Validate input and fetch necessary resources using the helper
-		_, _, err := s.validateAndFetchResourcesToCreatePokemon(currentUser, input)
+		league, err := s.getLeagueByID(input.LeagueID, currentUser.ID)
 		if err != nil {
-			log.Printf("(Service: CreatePokemonForLeague) - Validation and resource fetching failed: %v", err)
+			return nil, err
+		}
+		// League must be in Setup status to add new pokemon
+		if league.Status != models.LeagueStatusSetup {
+			log.Printf("(Service: BatchCreatePokemonForLeague) - operation not allowed for current league status: %s for user %s", league.Status, currentUser.ID)
+			return nil, common.ErrInvalidState
+		}
+		// Ensure PokemonSpeciesID is valid
+		_, err = s.getPokemonSpeciesByID(input.PokemonSpeciesID)
+		if err != nil {
 			return nil, err
 		}
 
-		// If helper succeeded, proceed to create the LeaguePokemon model
 		leaguePokemon := &models.LeaguePokemon{
 			LeagueID:         input.LeagueID,
 			PokemonSpeciesID: input.PokemonSpeciesID,
@@ -168,19 +134,20 @@ func (s *leaguePokemonServiceImpl) BatchCreatePokemonForLeague(
 			IsAvailable:      true,
 		}
 
-		// Create the LeaguePokemon using the repository
 		createdLeaguePokemon, err := s.leaguePokemonRepo.CreateLeaguePokemon(leaguePokemon)
 		if err != nil {
-			log.Printf("(Service: CreatePokemonForLeague) - failed to create league pokemon: %v\n", err)
+			log.Printf("(Service: BatchCreatePokemonForLeague) - failed to create league pokemon: %v\n", err)
 			return nil, common.ErrInternalService
 		}
 
-		log.Printf("(Service: CreatePokemonForLeague) - Successfully created league pokemon for league %s, species %d", input.LeagueID, input.PokemonSpeciesID)
+		log.Printf("(Service: BatchCreatePokemonForLeague) - Successfully created league pokemon for league %s, species %d", input.LeagueID, input.PokemonSpeciesID)
 		batchCreatedLeaguePokemon = append(batchCreatedLeaguePokemon, createdLeaguePokemon)
 	}
 	return batchCreatedLeaguePokemon, nil
 }
 
+// UpdateLeaguePokemon handles updating an existing LeaguePokemon entry.
+// Player Permission required: rbac.PermissionUpdateLeaguePokemon (handled by middleware)
 func (s *leaguePokemonServiceImpl) UpdateLeaguePokemon(
 	currentUser *models.User,
 	input *common.LeaguePokemonUpdateRequest,
@@ -196,9 +163,8 @@ func (s *leaguePokemonServiceImpl) UpdateLeaguePokemon(
 	}
 
 	league, err := s.leagueRepo.GetLeagueByID(existingLeaguePokemon.LeagueID)
-	// idk how this could happen ngl
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, gorm.ErrRecordNotFound) { // unreachable code (right??)
 			log.Printf("(Service: UpdateLeaguePokemon) - league %s does not exist: %s\n", existingLeaguePokemon.LeagueID, err.Error())
 			return nil, common.ErrLeagueNotFound
 		}
@@ -206,24 +172,10 @@ func (s *leaguePokemonServiceImpl) UpdateLeaguePokemon(
 		return nil, common.ErrInternalService
 	}
 
-	isUserPlayer, err := s.isUserPlayerInLeague(currentUser.ID, existingLeaguePokemon.LeagueID)
-	if err != nil {
-		return nil, err
-	}
-
-	isOwner, err := s.leagueRepo.IsUserOwner(currentUser.ID, existingLeaguePokemon.LeagueID)
-	if err != nil {
-		return nil, err
-	}
-
-	if !isUserPlayer && !isOwner && currentUser.Role != "admin" {
-		log.Printf("(Service: UpdateLeaguePokemon) - user %s is not authorized to update league pokemon in league %s.\n", currentUser.ID, existingLeaguePokemon.LeagueID)
-		return nil, common.ErrUnauthorized
-	}
-
+	// Operation allowed only during Setup or Drafting status
 	if league.Status != models.LeagueStatusSetup && league.Status != models.LeagueStatusDrafting {
 		log.Printf("(Service: UpdateLeaguePokemon) - operation not allowed for current league status: %s for user %s", league.Status, currentUser.ID)
-		return nil, common.ErrUnauthorized
+		return nil, common.ErrInvalidState
 	}
 
 	// Update fields if provided in the input

@@ -146,7 +146,7 @@ func (c *playerControllerImpl) GetPlayersByLeague(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
 	}
 
-	players, err := c.playerService.GetPlayersByLeagueHandler(leagueID, currentUser.ID, currentUser.Role == "admin")
+	players, err := c.playerService.GetPlayersByLeagueHandler(leagueID, currentUser.ID)
 	if err != nil {
 		log.Printf("PlayerController: GetPlayersByLeague - Error occured in the Service Method")
 		switch err {
@@ -183,7 +183,7 @@ func (c playerControllerImpl) GetPlayersByUser(ctx *gin.Context) {
 		return
 	}
 
-	players, err := c.playerService.GetPlayersByUserHandler(userID, currentUser.ID, currentUser.Role == "admin")
+	players, err := c.playerService.GetPlayersByUserHandler(userID, currentUser.ID)
 	if err != nil {
 		log.Printf("PlayerController: GetPlayersByUser - Error occured in the Service Method")
 		switch err {
@@ -216,12 +216,12 @@ func (c *playerControllerImpl) GetPlayerWithFullRoster(ctx *gin.Context) {
 	// get param
 	playerIDStr := ctx.Param("id")
 	playerID, err := uuid.Parse(playerIDStr)
-	if err != nil { // if the str was "" (which btw idk how that happens) it's still handled here
+	if err != nil { // if the str was "" (which btw idk how that happens), it's still handled here
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
 		return
 	}
 
-	player, err := c.playerService.GetPlayerWithFullRosterHandler(playerID, currentUser.ID, currentUser.Role == "admin")
+	player, err := c.playerService.GetPlayerWithFullRosterHandler(playerID, currentUser.ID)
 	if err != nil {
 		log.Printf("PlayerController: GetPlayersWithFullRoster - Error occured in the Service Method")
 		switch err {

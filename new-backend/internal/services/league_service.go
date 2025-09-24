@@ -1,7 +1,6 @@
 package services
 
 import (
-	"errors"
 	"fmt"
 	"log"
 
@@ -94,6 +93,7 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueR
 		return nil, fmt.Errorf("failed to create league: %w", err)
 	}
 
+	// TODO: this should maybe not be done
 	ownerPlayer := &models.Player{
 		UserID:          userID,
 		LeagueID:        createdLeague.ID,
@@ -116,37 +116,24 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueR
 
 // Get league entity using leagueID
 func (s *leagueServiceImpl) GetLeagueByIDForUser(userID, leagueID uuid.UUID) (*models.League, error) {
-	// Check if user is a player in the league (or commissioner)
-	isPlayer, err := s.leagueRepo.IsUserPlayerInLeague(userID, leagueID)
-	if err != nil {
-		log.Printf("(Error: LeagueService.GetLeagueByIDForUser) - User in league check failed for user %s, league %s: %v\n", userID, leagueID, err)
-		return nil, fmt.Errorf("failed to verify user's league membership: %w", err)
-	}
-
-	if !isPlayer {
-		return nil, errors.New("not authorized to view this league")
-	}
+	// User in league checks done at middleware
 
 	// Retrieve the league
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
-		log.Printf("(Error: LeagueService.GetLeagueByIDForUser) - Could not get league %s: %v\n", leagueID, err)
+		log.Printf("(Error: LeagueService.GetLeagueByIDForUser) - Could not get league %s for user %d: %v\n", leagueID, userID, err)
 		return nil, fmt.Errorf("failed to retrieve league: %w", err)
 	}
 
 	return league, nil
 }
 
+// TODO: rename to Owner
 // gets all Leagues where userID is the commissioner
 func (s *leagueServiceImpl) GetLeaguesByCommissioner(
 	userID uuid.UUID,
 	currentUser *models.User,
 ) ([]models.League, error) {
-	// Authorization: Only admin or the user themselves can view their commissioner leagues
-	if currentUser.Role != "admin" && currentUser.ID != userID {
-		log.Printf("(Error: LeagueService.GetLeaguesByCommissioner) - Unauthorized access attempt by user %s to view commissioner leagues for user %s", currentUser.ID, userID)
-		return nil, errors.New("not authorized to view these leagues")
-	}
 
 	leagues, err := s.leagueRepo.GetLeaguesByOwner(userID)
 	if err != nil {
@@ -159,11 +146,6 @@ func (s *leagueServiceImpl) GetLeaguesByCommissioner(
 
 // fetches all Leagues where the given userID is a player.
 func (s *leagueServiceImpl) GetLeaguesByUser(userID uuid.UUID, currentUser *models.User) ([]models.League, error) {
-	// Authorization: Only admin or the user themselves can view their leagues
-	if currentUser.Role != "admin" && currentUser.ID != userID {
-		log.Printf("(Error: LeagueService.GetLeaguesByUser) - Unauthorized access attempt by user %s to view leagues for user %s", currentUser.ID, userID)
-		return nil, errors.New("not authorized to view these leagues")
-	}
 
 	leagues, err := s.leagueRepo.GetLeaguesByUser(userID)
 	if err != nil {

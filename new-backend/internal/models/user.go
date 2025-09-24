@@ -13,7 +13,7 @@ type User struct {
 	DiscordUsername  string    `gorm:"not null" json:"discord_username"`
 	DiscordAvatarURL string    `json:"discord_avatar_url"`
 	ShowdownUsername string    `gorm:"not null; unique" json:"showdown_username"`
-	Role             string    `gorm:"default:'member';not null" json:"role"`
+	Role             string    `gorm:"default:'user';not null" json:"role"`
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`

@@ -36,10 +36,10 @@ func (s *RBACServiceImpl) CanAccess(userID uuid.UUID, leagueID uuid.UUID, requir
 	player, err := s.playerRepo.GetPlayerByUserAndLeague(userID, leagueID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Printf("(Service: CanAccess) - Player (User ID: %s) not found (likely not part of league or league doesn't exist).\n", userID)
+			log.Printf("LOG: (Service: CanAccess) - Player (User ID: %s) not found (likely not part of league or league doesn't exist).\n", userID)
 			return false, common.ErrLeagueNotFound
 		}
-		log.Printf("(Service: CanAccess) - failed to retrieve player (userID: %s; leagueID: %s\n", userID, leagueID)
+		log.Printf("LOG: (Service: CanAccess) - failed to retrieve player (userID: %s; leagueID: %s\n", userID, leagueID)
 		return false, common.ErrInternalService
 	}
 

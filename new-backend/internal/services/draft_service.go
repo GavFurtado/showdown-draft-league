@@ -51,40 +51,25 @@ func NewDraftService(
 	}
 }
 
+// Requires player permission rbac.PermissionCreateDraft
 func (s *draftServiceImpl) StartDraft(currentUser *models.User, leagueID uuid.UUID) (*models.Draft, error) {
 	// Retrieve the league
 	league, err := (s.leagueRepo).GetLeagueByID(leagueID)
-	if err != nil {
-		log.Printf("(Error: DraftService.StartDraft) - Could not get league %s: %v\n", leagueID, err)
+	if err != nil || league == nil {
+		log.Printf("LOG: (Error: DraftService.StartDraft) - Could not get league %s: %v\n", leagueID, err)
 		return nil, common.ErrLeagueNotFound
-	}
-
-	if league == nil {
-		return nil, common.ErrLeagueNotFound
-	}
-
-	// Check if currentUser is the owner of the league
-	isOwner, err := s.leagueRepo.IsUserOwner(currentUser.ID, leagueID)
-	if err != nil {
-		log.Printf("(Error: DraftService.StartDraft) - Failed to check owner status for user %s in league %s: %v\n", currentUser.ID, leagueID, err)
-		return nil, fmt.Errorf("failed to check owner status: %w", err)
-	}
-
-	if currentUser.Role != "admin" && !isOwner {
-		log.Printf("(Error: DraftService.StartDraft) - User %s is not authorized to start draft for league %s\n", currentUser.ID, leagueID)
-		return nil, common.ErrUnauthorized
 	}
 
 	// Retrieve players in the league, sorted by draft position
 	players, err := s.playerRepo.GetPlayersByLeague(leagueID)
 	if err != nil {
-		log.Printf("(Error: DraftService.StartDraft) - Could not get players for league %s: %v\n", leagueID, err)
+		log.Printf("LOG: (Error: DraftService.StartDraft) - Could not get players for league %s: %v\n", leagueID, err)
 		return nil, common.ErrInternalService
 	}
 
 	if len(players) == 0 {
-		log.Printf("(Error: DraftService.StartDraft) - No players found for league %s\n", leagueID)
-		return nil, errors.New("cannot start draft with no players") // Consider a more specific error
+		log.Printf("LOG: (Error: DraftService.StartDraft) - No players found for league %s\n", leagueID)
+		return nil, common.ErrNoPlayerForDraft
 	}
 
 	// Initialize the Draft model
@@ -126,8 +111,12 @@ func (s *draftServiceImpl) StartDraft(currentUser *models.User, leagueID uuid.UU
 	return draft, nil
 }
 
-// assuming the controller fetches the draft to send it here
 // only used for the initial draft (not free agent transactions)
+
+// NOTE: this stuff could possibly need a rework so it wasn't touched in the rbac refactor.
+// current problem is that AccumulatedPicks isn't being used in the pick logic
+// would require a change to the request. request would now send the requestedDraftPickNumber and that would need to be validated.
+
 func (s *draftServiceImpl) MakePick(currentUser *models.User, league *models.League, leaguePokemonID uuid.UUID) error {
 	// fetch draft from league
 	draft, err := s.draftRepo.GetDraftByLeagueID(league.ID)
@@ -228,7 +217,6 @@ func (s *draftServiceImpl) MakePick(currentUser *models.User, league *models.Lea
 		if err2 := s.playerRepo.UpdatePlayerDraftPoints(player.ID, playerDraftPointsBeforeTransaction); err2 != nil {
 			log.Printf("DraftService: MakePick - Fallback Draft Points Set also failed for player %s (league %s): %v\n", player.ID, league.ID, err)
 			log.Printf("If this was reached the whole fucking backend deserves to be nuked because holy shit. NUKE FUCKING EVERYTHING. THE BACKEND, THE DATABASE. EVERYTHING. START AGAIN.\n")
-			log.Printf("THE BACKEND SERVER DESERVES TO FUCKING DIE.\n")
 			log.Printf("WHY STOP THERE THO? you might as well sudo rm -rf --no-preserve-root\n")
 		}
 		return common.ErrInternalService

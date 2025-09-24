@@ -77,9 +77,9 @@ func (aCtrl *AuthController) DiscCallback(ctx *gin.Context) {
 	}
 
 	// Set JWT as an HTTP-only cookie
-	const sessionTokenPeriod = int((time.Hour * 24 * 7 * 30 / time.Second)) // 30 days
+	const sessionTokenPeriod = int((time.Hour * 24 * 3 * 30 / time.Second)) // 90 days
 	ctx.SetCookie("token", jwtToken, sessionTokenPeriod, "/", aCtrl.cfg.AppBaseURL, false, true)
-	ctx.Header("Authorization", fmt.Sprintf("Bearer %s", jwtToken)) // this is just extra but it's fine i think
+	ctx.Header("Authorization", fmt.Sprintf("Bearer %s", jwtToken))
 
 	// Redirect to dashboard
 	ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/dashboard", aCtrl.cfg.AppBaseURL))

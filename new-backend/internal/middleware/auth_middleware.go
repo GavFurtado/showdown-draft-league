@@ -30,6 +30,7 @@ func AuthMiddleware(
 	return func(ctx *gin.Context) {
 		authHeader := ctx.GetHeader("Authorization")
 		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer") {
+			log.Printf("(Middleware: AuthMiddleware) Missing token\n")
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Missing or invalid token"})
 			return
 		}
@@ -76,8 +77,9 @@ func LeagueRBACMiddleware(
 			return
 		}
 
-		// bypass checks if user is an Admin
-		if currentUser.Role == "Admin" {
+		// bypass checks if user is an admin
+		if currentUser.Role == "admin" {
+			log.Printf("LOG: [BYPASS: RBAC Middleware]: Skipped check for admin user %s (%s)\n", currentUser.DiscordUsername, currentUser.ID)
 			ctx.Next()
 		}
 

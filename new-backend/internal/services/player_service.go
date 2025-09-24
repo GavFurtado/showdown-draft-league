@@ -17,17 +17,16 @@ type PlayerService interface {
 	CreatePlayerHandler(input *common.PlayerCreateRequest) (*models.Player, error)
 
 	GetPlayerByIDHandler(playerID uuid.UUID, currentUser *models.User) (*models.Player, error)
-	GetPlayersByLeagueHandler(leagueID, userID uuid.UUID, isUserAnAdmin bool) ([]models.Player, error)
-	GetPlayersByUserHandler(userID, currentUserID uuid.UUID, isCurrentUserAnAdmin bool) ([]models.Player, error)
-	GetPlayerWithFullRosterHandler(playerID, currentUserID uuid.UUID, isCurrentUserAnAdmin bool) (*models.Player, error)
+	GetPlayersByLeagueHandler(leagueID, userID uuid.UUID) ([]models.Player, error)
+	GetPlayersByUserHandler(userID, currentUserID uuid.UUID) ([]models.Player, error)
+	GetPlayerWithFullRosterHandler(playerID, currentUserID uuid.UUID) (*models.Player, error)
 
 	UpdatePlayerProfile(currentUser *models.User, playerID uuid.UUID, inLeagueName *string, teamName *string) (*models.Player, error)
 	UpdatePlayerDraftPoints(currentUser *models.User, playerID uuid.UUID, draftPoints *int) (*models.Player, error)
 	UpdatePlayerRecord(currentUser *models.User, playerID uuid.UUID, wins int, losses int) (*models.Player, error)
 	UpdatePlayerDraftPosition(currentUser *models.User, playerID uuid.UUID, draftPosition int) (*models.Player, error)
+	UpdatePlayerRole(currentUserID, playerID uuid.UUID, newPlayerRole rbac.PlayerRole) (*models.Player, error)
 
-	// can't be implemented currently, see "definition" of this function for more information
-	// SetCommissionerStatus(playerID uuid.UUID, isCommissioner bool, currentUser *models.User) error
 	// (s *playerServiceImpl) LeaveLeague(playerID uuid.UUID) error
 }
 
@@ -135,7 +134,6 @@ func (s *playerServiceImpl) CreatePlayerHandler(input *common.PlayerCreateReques
 }
 
 func (s *playerServiceImpl) GetPlayerByIDHandler(playerID uuid.UUID, currentUser *models.User) (*models.Player, error) {
-	// controller needs to ensure currentUser is not nil
 
 	player, err := s.playerRepo.GetPlayerByID(playerID)
 	if err != nil {
@@ -147,63 +145,21 @@ func (s *playerServiceImpl) GetPlayerByIDHandler(playerID uuid.UUID, currentUser
 		return nil, fmt.Errorf("%w: failed to retrieve player data", common.ErrInternalService)
 	}
 
-	// Authorization checks
-	if currentUser.Role == "admin" {
-		log.Printf("Service: GetPlayerByIDHandler - Skipped authorization checks for admin user %s.", currentUser.ID)
-		return player, nil
-	}
-
-	if player.UserID == currentUser.ID { // User is viewing their own profile.
-		log.Printf("Service: GetPlayerByIDHandler - User %s viewing their own player profile %s.", currentUser.ID, playerID)
-		return player, nil
-	}
-
-	isCurrentUserInLeague, err := s.leagueRepo.IsUserPlayerInLeague(currentUser.ID, player.LeagueID)
-	if err != nil {
-		log.Printf("Service: GetPlayerByIDHandler - Error checking current user %s's league membership in league %s: %v", currentUser.ID, player.LeagueID, err)
-		return nil, fmt.Errorf("%w: failed to perform league membership authorization check", common.ErrInternalService)
-	}
-
-	if isCurrentUserInLeague { // if currentUser is a player in the same league as the player being viewed, allow access.
-		log.Printf("Service: GetPlayerByIDHandler - User %s is a player in the same league as player %s. Access granted.", currentUser.ID, playerID)
-		return player, nil
-	}
-
-	log.Printf("Service: GetPlayerByIDHandler - Unauthorized access attempt by user %s to player %s.", currentUser.ID, playerID)
-	return nil, common.ErrUnauthorized
+	return player, nil
 }
 
-func (s *playerServiceImpl) GetPlayersByLeagueHandler(leagueID, userID uuid.UUID, isUserAnAdmin bool) ([]models.Player, error) {
+func (s *playerServiceImpl) GetPlayersByLeagueHandler(leagueID, userID uuid.UUID) ([]models.Player, error) {
 	players, err := s.playerRepo.GetPlayersByLeague(leagueID)
 	if err != nil {
 		log.Printf("Service: GetPlayersByLeagueHandler - Failed to retrieve players for league %s: %v", leagueID, err)
 		return nil, fmt.Errorf("%w: failed to retrieve players data", common.ErrInternalService)
 	}
 
-	if isUserAnAdmin {
-		log.Printf("Service: GetPlayersByLeagueHandler - Skipped authorization checks for admin user %s.", userID)
-		return players, nil
-	}
-
-	// check if the currentUser (not admin) is a player in that league
-	isCurrentUserInLeague, err := s.leagueRepo.IsUserPlayerInLeague(userID, leagueID)
-	if err != nil {
-		log.Printf("Service: GetPlayersByLeagueHandler - Error checking current user %s's league membership in league %s: %v", userID, leagueID, err)
-		return nil, fmt.Errorf("%w: failed to perform league membership authorization check", common.ErrInternalService)
-	}
-
-	if isCurrentUserInLeague {
-		log.Printf("Service: GetPlayersByLeagueHandler - User %s is a player in league %s. Access granted.", userID, leagueID)
-		return players, nil
-	}
-
-	log.Printf("Service: GetPlayersByLeagueHandler - Unauthorized access attempt by user %s to league %s players.", userID, leagueID)
-	return nil, common.ErrUnauthorized
+	return players, nil
 }
 
 func (s *playerServiceImpl) GetPlayersByUserHandler(
 	userID, currentUserID uuid.UUID,
-	isCurrentUserAnAdmin bool,
 ) ([]models.Player, error) {
 
 	players, err := s.playerRepo.GetPlayersByUser(userID)
@@ -212,18 +168,10 @@ func (s *playerServiceImpl) GetPlayersByUserHandler(
 		return nil, fmt.Errorf("%w: failed to retrieve player data", common.ErrInternalService)
 	}
 
-	// is currentUser an admin or is requesting their own player
-	if isCurrentUserAnAdmin || currentUserID == userID {
-		log.Printf("Service: GetPlayersByUserHandler - User %s (admin or self) accessing players for user %s.", currentUserID, userID)
-		return players, nil
-	}
-
-	log.Printf("Service: GetPlayersByUserHandler - Unauthorized access attempt by user %s to view players for user %s.", currentUserID, userID)
-	return nil, common.ErrUnauthorized
+	return players, nil
 }
 
-func (s *playerServiceImpl) GetPlayerWithFullRosterHandler(playerID, currentUserID uuid.UUID, isCurrentUserAnAdmin bool) (*models.Player, error) {
-
+func (s *playerServiceImpl) GetPlayerWithFullRosterHandler(playerID, currentUserID uuid.UUID) (*models.Player, error) {
 	player, err := s.playerRepo.GetPlayerWithFullRoster(playerID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -234,28 +182,7 @@ func (s *playerServiceImpl) GetPlayerWithFullRosterHandler(playerID, currentUser
 		return nil, fmt.Errorf("%w: failed to retrieve player data", common.ErrInternalService)
 	}
 
-	if isCurrentUserAnAdmin {
-		log.Printf("Service: GetPlayerWithFullRosterHandler - Skipped authorization for admin user %s.", currentUserID)
-		return player, nil
-	}
-	if player.UserID == currentUserID {
-		log.Printf("Service: GetPlayerWithFullRosterHandler - User %s viewing their own player roster for player %s.", currentUserID, playerID)
-		return player, nil // User is viewing their own player profile.
-	}
-
-	isCurrentUserInLeague, err := s.leagueRepo.IsUserPlayerInLeague(currentUserID, player.LeagueID)
-	if err != nil {
-		log.Printf("Service: GetPlayerWithFullRosterHandler - Error checking current user %s's league membership in league %s: %v", currentUserID, player.LeagueID, err)
-		return nil, fmt.Errorf("%w: failed to perform league membership authorization check", common.ErrInternalService)
-	}
-
-	if isCurrentUserInLeague { // if currentUser is a player in the same league as the player being viewed, allow access.
-		log.Printf("Service: GetPlayerWithFullRosterHandler - User %s is a player in the same league as player %s. Access granted to roster.", currentUserID, playerID)
-		return player, nil
-	}
-
-	log.Printf("Service: GetPlayerWithFullRosterHandler - Unauthorized access attempt by user %s to player %s's roster.", currentUserID, playerID)
-	return nil, common.ErrUnauthorized
+	return player, nil
 }
 
 func (s *playerServiceImpl) UpdatePlayerProfile(
@@ -274,6 +201,11 @@ func (s *playerServiceImpl) UpdatePlayerProfile(
 		log.Printf("Service: UpdatePlayerProfile - Failed to fetch player %s: %v", playerID, err)
 		return nil, fmt.Errorf("%w: failed to retrieve player for update", common.ErrInternalService)
 	}
+
+	// TODO: with the new rbac middleware there's extra checks here that i'm not touching because
+	// intended working: user can update their own player profile. Admins or League Moderators and Owners can update anyone's
+	// other players/users cannot update another player's profile.
+	// fix at some point
 
 	// Authorization: Admin, or the player themselves, or a LeagueOwner/Moderator
 	if currentUser.Role != "admin" && currentUser.ID != existingPlayer.UserID {
@@ -337,6 +269,7 @@ func (s *playerServiceImpl) UpdatePlayerProfile(
 }
 
 // UpdatePlayerDraftPoints allows a LeagueOwner/Moderator to update a player's draft points.
+// Intended for manual updates (like an override). It sets the points.
 func (s *playerServiceImpl) UpdatePlayerDraftPoints(
 	currentUser *models.User,
 	playerID uuid.UUID,
@@ -353,6 +286,8 @@ func (s *playerServiceImpl) UpdatePlayerDraftPoints(
 		log.Printf("Service: UpdatePlayerDraftPoints - Failed to fetch player %s: %v", playerID, err)
 		return nil, fmt.Errorf("%w: failed to retrieve player for draft points update", common.ErrInternalService)
 	}
+
+	// TODO: not touching authorization here for now. please come back to this
 
 	// Authorization: Only Admin or LeagueOwner/Moderator can update draft points
 	if currentUser.Role != "admin" {
@@ -408,6 +343,8 @@ func (s *playerServiceImpl) UpdatePlayerRecord(
 		return nil, fmt.Errorf("%w: failed to retrieve player for record update", common.ErrInternalService)
 	}
 
+	// TODO: not touching authorization for this rn. come back to this
+
 	// Authorization: Only Admin or LeagueOwner/Moderator can update win/loss record
 	if currentUser.Role != "admin" {
 		requesterPlayer, err := s.playerRepo.GetPlayerByUserAndLeague(currentUser.ID, existingPlayer.LeagueID)
@@ -456,6 +393,8 @@ func (s *playerServiceImpl) UpdatePlayerDraftPosition(
 		return nil, fmt.Errorf("%w: failed to retrieve player for draft position update", common.ErrInternalService)
 	}
 
+	// TODO: not touching this rn. fix later
+
 	// Authorization: Only Admin or LeagueOwner/Moderator can update draft position
 	if currentUser.Role != "admin" {
 		requesterPlayer, err := s.playerRepo.GetPlayerByUserAndLeague(currentUser.ID, existingPlayer.LeagueID)
@@ -487,10 +426,26 @@ func (s *playerServiceImpl) UpdatePlayerDraftPosition(
 	return updatedPlayer, nil
 }
 
-// NOTE: cannot implement this at this moment due to limitations in our league model. cba so saving for a future refactor
-// future work is to have better RBAC inside of a league, which would allow this to be properly implemented
-// TODO: define this function this when RBAC has been properly implemented.
-// func (s *playerServiceImpl) SetCommissionerStatus(playerID uuid.UUID, isCommissioner bool, currentUser *models.User) error
+func (s *playerServiceImpl) UpdatePlayerRole(currentUserID, playerID uuid.UUID, newPlayerRole rbac.PlayerRole) (*models.Player, error) {
+	err := s.playerRepo.UpdatePlayerRole(playerID, newPlayerRole)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			log.Printf("Service: UpdatePlayerRole - player %s not found to update role (Requesting user: %s): %v\n", playerID, currentUserID, err)
+			return nil, common.ErrPlayerNotFound
+		}
+		log.Printf("Service: UpdatePlayerRole - Failed to update role (Requesting user: %s) for player %s: %v\n", currentUserID, playerID, err)
+		return nil, common.ErrInternalService
+	}
+
+	updatedPlayer, err := s.playerRepo.GetPlayerByID(playerID)
+	if err != nil {
+		// should be impossible for this to be a record not found again
+		log.Printf("Service: UpdatePlayerDraftPosition - Failed to re-fetch (Requesting user: %s) player %s after update: %v\n", currentUserID, playerID, err)
+		return nil, common.ErrInternalService
+	}
+
+	return updatedPlayer, nil
+}
 
 // not implemented for initial use case
 // TODO: do this at some point

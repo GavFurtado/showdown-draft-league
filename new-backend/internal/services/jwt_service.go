@@ -19,7 +19,7 @@ func NewJWTService(secret string) *JWTService {
 }
 
 func (s *JWTService) GenerateToken(userID uuid.UUID) (string, error) {
-	const sessionTokenPeriod = (time.Hour * 24 * 7 * 30) // 30 days
+	const sessionTokenPeriod = (time.Hour * 24 * 3 * 30) // 90 days
 	claims := jwt.MapClaims{
 		"user_id": userID.String(),
 		"expiry":  time.Now().Add(sessionTokenPeriod).Unix(),

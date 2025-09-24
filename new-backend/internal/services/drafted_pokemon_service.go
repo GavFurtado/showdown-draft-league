@@ -7,6 +7,7 @@ import (
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -29,8 +30,6 @@ type DraftedPokemonService interface {
 	GetNextDraftPickNumber(currentUser *models.User, leagueID uuid.UUID) (int, error)
 	// releases a Pokemon back to free agents.
 	ReleasePokemon(currentUser *models.User, draftedPokemonID uuid.UUID) error
-	// // re-drafts a released Pokemon (from free agents) to a new player.
-	// ReDraftPokemon(currentUser *models.User, draftedPokemonID, newPlayerID uuid.UUID, newPickNumber int) error
 	// gets count of actively drafted Pokemon by a player.
 	GetDraftedPokemonCountByPlayer(currentUser *models.User, playerID uuid.UUID) (int64, error)
 	// gets draft history for a league (all picks in order, including released).
@@ -68,8 +67,6 @@ func NewDraftedPokemonService(
 	}
 }
 
-// --- Service Methods ---
-
 // gets drafted Pokemon by ID with relationships.
 func (s *draftedPokemonServiceImpl) GetDraftedPokemonByID(currentUser *models.User, id uuid.UUID) (*models.DraftedPokemon, error) {
 	pokemon, err := s.draftedPokemonRepo.GetDraftedPokemonByID(id)
@@ -77,19 +74,8 @@ func (s *draftedPokemonServiceImpl) GetDraftedPokemonByID(currentUser *models.Us
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, common.ErrPokemonSpeciesNotFound
 		}
-		log.Printf("(Error: DraftedPokemonService.GetDraftedPokemonByID) - Failed to get drafted pokemon by ID %s: %v", id, err)
+		log.Printf("LOG: (Error: DraftedPokemonService.GetDraftedPokemonByID) - Failed to get drafted pokemon by ID %s: %v", id, err)
 		return nil, common.ErrInternalService
-	}
-
-	// Authorization check: User must be admin or a player in the league the pokemon belongs to.
-	isPlayerInLeague, err := s.leagueRepo.IsUserPlayerInLeague(currentUser.ID, pokemon.LeagueID)
-	if err != nil {
-		return nil, err // Error already logged in helper
-	}
-
-	if currentUser.Role != "admin" && !isPlayerInLeague { // if player is not in the league and is not an admin
-		log.Printf("(Error: DraftedPokemonService.GetDraftedPokemonByID) - Unauthorized access to drafted pokemon %s by user %s", id, currentUser.ID)
-		return nil, common.ErrUnauthorized
 	}
 
 	return pokemon, nil
@@ -97,33 +83,18 @@ func (s *draftedPokemonServiceImpl) GetDraftedPokemonByID(currentUser *models.Us
 
 // gets all Pokemon drafted by a specific player.
 func (s *draftedPokemonServiceImpl) GetDraftedPokemonByPlayer(currentUser *models.User, playerID uuid.UUID) ([]models.DraftedPokemon, error) {
-	// First, get the target player to check their UserID and LeagueID.
 	targetPlayer, err := s.playerRepo.GetPlayerByID(playerID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, common.ErrPlayerNotFound
 		}
-		log.Printf("(Error: DraftedPokemonService.GetDraftedPokemonByPlayer) - Failed to get target player %s: %v", playerID, err)
+		log.Printf("LOG: (Error: DraftedPokemonService.GetDraftedPokemonByPlayer) - Failed to get target player %s: %v", playerID, err)
 		return nil, common.ErrInternalService
 	}
 
-	// Authorization: Admin, or the player themselves, or a player in the same league.
-	if currentUser.Role != "admin" {
-		if currentUser.ID != targetPlayer.UserID { // Not admin and not viewing self
-			isCurrentUserInTargetLeague, err := s.leagueRepo.IsUserPlayerInLeague(currentUser.ID, targetPlayer.LeagueID)
-			if err != nil {
-				return nil, err
-			}
-			if !isCurrentUserInTargetLeague {
-				log.Printf("(Error: DraftedPokemonService.GetDraftedPokemonByPlayer) - Unauthorized access to player %s's drafted pokemon by user %s", playerID, currentUser.ID)
-				return nil, common.ErrUnauthorized
-			}
-		}
-	}
-
-	pokemon, err := s.draftedPokemonRepo.GetDraftedPokemonByPlayer(playerID)
+	pokemon, err := s.draftedPokemonRepo.GetDraftedPokemonByPlayer(targetPlayer.ID)
 	if err != nil {
-		log.Printf("(Error: DraftedPokemonService.GetDraftedPokemonByPlayer) - Failed to get drafted pokemon by player %s: %v", playerID, err)
+		log.Printf("LOG: (Error: DraftedPokemonService.GetDraftedPokemonByPlayer) - Failed to get drafted pokemon by player %s: %v", playerID, err)
 		return nil, common.ErrInternalService
 	}
 
@@ -132,17 +103,6 @@ func (s *draftedPokemonServiceImpl) GetDraftedPokemonByPlayer(currentUser *model
 
 // gets all Pokemon drafted in a specific league.
 func (s *draftedPokemonServiceImpl) GetDraftedPokemonByLeague(currentUser *models.User, leagueID uuid.UUID) ([]models.DraftedPokemon, error) {
-	// Authorization check: Admin or a player in the league.
-	isPlayerInLeague, err := s.leagueRepo.IsUserPlayerInLeague(currentUser.ID, leagueID)
-	if err != nil {
-		return nil, err
-	}
-
-	if currentUser.Role != "admin" && !isPlayerInLeague {
-		log.Printf("(Error: DraftedPokemonService.GetDraftedPokemonByLeague) - Unauthorized attempt by user %s for league %s", currentUser.ID, leagueID)
-		return nil, common.ErrUnauthorized
-	}
-
 	pokemon, err := s.draftedPokemonRepo.GetDraftedPokemonByLeague(leagueID)
 	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.GetDraftedPokemonByLeague) - Failed to get drafted pokemon by league %s: %v", leagueID, err)
@@ -154,17 +114,6 @@ func (s *draftedPokemonServiceImpl) GetDraftedPokemonByLeague(currentUser *model
 
 // gets all active (non-released) Pokemon drafted in a league.
 func (s *draftedPokemonServiceImpl) GetActiveDraftedPokemonByLeague(currentUser *models.User, leagueID uuid.UUID) ([]models.DraftedPokemon, error) {
-	// Authorization check: Admin or a player in the league.
-	isPlayerInLeague, err := s.leagueRepo.IsUserPlayerInLeague(currentUser.ID, leagueID)
-	if err != nil {
-		return nil, err
-	}
-
-	if currentUser.Role != "admin" && !isPlayerInLeague {
-		log.Printf("(Error: DraftedPokemonService.GetActiveDraftedPokemonByLeague) - Unauthorized attempt by user %s for league %s", currentUser.ID, leagueID)
-		return nil, common.ErrUnauthorized
-	}
-
 	pokemon, err := s.draftedPokemonRepo.GetActiveDraftedPokemonByLeague(leagueID)
 	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.GetActiveDraftedPokemonByLeague) - Failed to get active drafted pokemon by league %s: %v", leagueID, err)
@@ -174,19 +123,8 @@ func (s *draftedPokemonServiceImpl) GetActiveDraftedPokemonByLeague(currentUser 
 	return pokemon, nil
 }
 
-// gets all released Pokemon (free agents) in a league.
+// gets all released Pokemon in a league.
 func (s *draftedPokemonServiceImpl) GetReleasedPokemonByLeague(currentUser *models.User, leagueID uuid.UUID) ([]models.DraftedPokemon, error) {
-	// Authorization check: Admin or a player in the league.
-	isPlayerInLeague, err := s.leagueRepo.IsUserPlayerInLeague(currentUser.ID, leagueID)
-	if err != nil {
-		return nil, err // Error already logged in helper
-	}
-
-	if currentUser.Role != "admin" && !isPlayerInLeague {
-		log.Printf("(Error: DraftedPokemonService.GetReleasedPokemonByLeague) - Unauthorized attempt by user %s for league %s", currentUser.ID, leagueID)
-		return nil, common.ErrUnauthorized
-	}
-
 	pokemon, err := s.draftedPokemonRepo.GetReleasedPokemonByLeague(leagueID)
 	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.GetReleasedPokemonByLeague) - Failed to get released pokemon by league %s: %v", leagueID, err)
@@ -198,17 +136,6 @@ func (s *draftedPokemonServiceImpl) GetReleasedPokemonByLeague(currentUser *mode
 
 // checks if a Pokemon species has been drafted in a league and is not released.
 func (s *draftedPokemonServiceImpl) IsPokemonDrafted(currentUser *models.User, leagueID, pokemonSpeciesID uuid.UUID) (bool, error) {
-	// Authorization check: Admin or a player in the league.
-	isPlayerInLeague, err := s.leagueRepo.IsUserPlayerInLeague(currentUser.ID, leagueID)
-	if err != nil {
-		return false, err
-	}
-
-	if currentUser.Role != "admin" && !isPlayerInLeague {
-		log.Printf("(Error: DraftedPokemonService.IsPokemonDrafted) - Unauthorized attempt by user %s for league %s", currentUser.ID, leagueID)
-		return false, common.ErrUnauthorized
-	}
-
 	isDrafted, err := s.draftedPokemonRepo.IsPokemonDrafted(leagueID, pokemonSpeciesID)
 	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.IsPokemonDrafted) - Failed to check if pokemon is drafted for league %s and species %s: %v", leagueID, pokemonSpeciesID, err)
@@ -220,17 +147,6 @@ func (s *draftedPokemonServiceImpl) IsPokemonDrafted(currentUser *models.User, l
 
 // gets the next draft pick number for a league.
 func (s *draftedPokemonServiceImpl) GetNextDraftPickNumber(currentUser *models.User, leagueID uuid.UUID) (int, error) {
-	// Authorization check: Admin or a player in the league.
-	isPlayerInLeague, err := s.leagueRepo.IsUserPlayerInLeague(currentUser.ID, leagueID)
-	if err != nil {
-		return 0, err
-	}
-
-	if currentUser.Role != "admin" && !isPlayerInLeague {
-		log.Printf("(Error: DraftedPokemonService.GetNextDraftPickNumber) - Unauthorized attempt by user %s for league %s", currentUser.ID, leagueID)
-		return 0, common.ErrUnauthorized
-	}
-
 	nextPick, err := s.draftedPokemonRepo.GetNextDraftPickNumber(leagueID)
 	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.GetNextDraftPickNumber) - Failed to get next draft pick number for league %s: %v", leagueID, err)
@@ -251,26 +167,33 @@ func (s *draftedPokemonServiceImpl) ReleasePokemon(currentUser *models.User, dra
 		return common.ErrInternalService
 	}
 
+	if draftedPokemon.IsReleased {
+		return errors.New("pokemon is already released")
+	}
+
 	// Get the player who owns this pokemon to check authorization
-	ownerPlayer, err := s.playerRepo.GetPlayerByID(draftedPokemon.PlayerID)
+	// otPlayer = Original Trainer Player. renamed from ownerPlayer to prevent confusion with player role owner
+	otPlayer, err := s.playerRepo.GetPlayerByID(draftedPokemon.PlayerID)
 	if err != nil {
-		log.Printf("(Error: DraftedPokemonService.ReleasePokemon) - Error getting owner player %s for drafted pokemon %s: %v", draftedPokemon.PlayerID, draftedPokemonID, err)
+		log.Printf("LOG: (Error: DraftedPokemonService.ReleasePokemon) - Error getting owner player %s for drafted pokemon %s: %v", draftedPokemon.PlayerID, draftedPokemonID, err)
 		return common.ErrInternalService
 	}
 
-	// Authorization: Admin, Owner of the league, or the player who owns the Pokemon.
-	isOwner, err := s.leagueRepo.IsUserOwner(currentUser.ID, draftedPokemon.LeagueID)
-	if err != nil {
-		return err
-	}
+	if currentUser.Role != "admin" {
+		currentPlayer, err := s.playerRepo.GetPlayerByUserAndLeague(currentUser.ID, draftedPokemon.LeagueID)
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				log.Printf("LOG: (Error: DraftedPokemonService.ReleasePokemon) - No player found for user %s in league %s: %v\n", currentUser.ID, draftedPokemon.LeagueID, err)
+				return common.ErrPlayerNotFound
+			}
+			log.Printf("LOG: (Error: DraftedPokemonService.ReleasePokemon) - Error fetching current player (league: %d) of user %s: %v\n", draftedPokemon.LeagueID, currentUser.ID, err)
+			return common.ErrInternalService
+		}
 
-	if currentUser.Role != "admin" && !isOwner && currentUser.ID != ownerPlayer.UserID {
-		log.Printf("(Error: DraftedPokemonService.ReleasePokemon) - Unauthorized attempt by user %s to release pokemon %s", currentUser.ID, draftedPokemonID)
-		return common.ErrUnauthorized
-	}
-
-	if draftedPokemon.IsReleased {
-		return errors.New("pokemon is already released")
+		if currentUser.ID != otPlayer.UserID && currentPlayer.Role == rbac.PRoleMember {
+			log.Printf("(Error: DraftedPokemonService.ReleasePokemon) - Unauthorized attempt by user %s to release pokemon %s", currentUser.ID, draftedPokemonID)
+			return common.ErrUnauthorized
+		}
 	}
 
 	err = s.draftedPokemonRepo.ReleasePokemon(draftedPokemonID)
@@ -278,89 +201,14 @@ func (s *draftedPokemonServiceImpl) ReleasePokemon(currentUser *models.User, dra
 		log.Printf("(Error: DraftedPokemonService.ReleasePokemon) - Failed to release pokemon with ID %s: %v", draftedPokemonID, err)
 		return common.ErrInternalService
 	}
-
 	return nil
 }
 
-// // re-drafts a released Pokemon (from free agents) to a new player.
-// // this might be useless or just plain wrong
-// func (s *draftedPokemonServiceImpl) ReDraftPokemon(currentUser *models.User, draftedPokemonID, newPlayerID uuid.UUID, newPickNumber int) error {
-// 	// Authorization: Only Admin or Owner can redraft.
-// 	isOwner, err := s.leagueRepo.IsUserOwner(currentUser.ID, draftedPokemonID)
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	if currentUser.Role != "admin" && !isOwner {
-// 		log.Printf("(Error: DraftedPokemonService.ReDraftPokemon) - Unauthorized attempt by user %s to redraft pokemon %s", currentUser.ID, draftedPokemonID)
-// 		return common.ErrUnauthorized
-// 	}
-//
-// 	// Additional checks:
-// 	// 1. Ensure the draftedPokemonID exists and is currently released.
-// 	draftedPokemon, err := s.draftedPokemonRepo.GetDraftedPokemonByID(draftedPokemonID)
-// 	if err != nil {
-// 		if errors.Is(err, gorm.ErrRecordNotFound) {
-// 			return common.ErrDraftedPokemonNotFound
-// 		}
-// 		log.Printf("(Error: DraftedPokemonService.ReDraftPokemon) - Failed to get drafted pokemon %s: %v", draftedPokemonID, err)
-// 		return fmt.Errorf("failed to get drafted pokemon: %w", err)
-// 	}
-// 	if !draftedPokemon.IsReleased {
-// 		return errors.New("pokemon is not released and cannot be re-drafted")
-// 	}
-//
-// 	// 2. Ensure newPlayerID exists and is a valid player in the same league.
-// 	newPlayer, err := s.playerRepo.GetPlayerByID(newPlayerID)
-// 	if err != nil {
-// 		if errors.Is(err, gorm.ErrRecordNotFound) {
-// 			return errors.New("new player not found")
-// 		}
-// 		log.Printf("(Error: ReDraftPokemon) - Failed to get new player %s: %v", newPlayerID, err)
-// 		return fmt.Errorf("failed to get new player: %w", err)
-// 	}
-// 	if newPlayer.LeagueID != draftedPokemon.LeagueID {
-// 		return errors.New("new player is not in the same league as the pokemon")
-// 	}
-//
-// 	err = s.draftedPokemonRepo.ReDraftPokemon(draftedPokemonID, newPlayerID, newPickNumber)
-// 	if err != nil {
-// 		log.Printf("(Error: DraftedPokemonService.ReDraftPokemon) - Failed to re-draft pokemon with ID %s to player %s: %v", draftedPokemonID, newPlayerID, err)
-// 		return fmt.Errorf("failed to re-draft pokemon: %w", err)
-// 	}
-//
-// 	return nil
-// }
-
 // gets count of actively drafted Pokemon by a player.
 func (s *draftedPokemonServiceImpl) GetDraftedPokemonCountByPlayer(currentUser *models.User, playerID uuid.UUID) (int64, error) {
-	// First, get the target player to check their UserID and LeagueID.
-	targetPlayer, err := s.playerRepo.GetPlayerByID(playerID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return 0, common.ErrPlayerNotFound
-		}
-		log.Printf("(Error: GetDraftedPokemonCountByPlayer) - Failed to get target player %s: %v", playerID, err)
-		return 0, common.ErrInternalService
-	}
-
-	// Authorization: Admin, or the player themselves, or a player in the same league.
-	if currentUser.Role != "admin" {
-		if currentUser.ID != targetPlayer.UserID { // Not admin and not viewing self
-			isCurrentUserInTargetLeague, err := s.leagueRepo.IsUserPlayerInLeague(currentUser.ID, targetPlayer.LeagueID)
-			if err != nil {
-				return 0, err
-			}
-			if !isCurrentUserInTargetLeague {
-				log.Printf("(Error: DraftedPokemonService.GetDraftedPokemonCountByPlayer) - Unauthorized access to player %s's drafted pokemon count by user %s", playerID, currentUser.ID)
-				return 0, common.ErrUnauthorized
-			}
-		}
-	}
-
 	count, err := s.draftedPokemonRepo.GetDraftedPokemonCountByPlayer(playerID)
 	if err != nil {
-		log.Printf("(Error: DraftedPokemonService.GetDraftedPokemonCountByPlayer) - Failed to get drafted pokemon count for player %s: %v", playerID, err)
+		log.Printf("LOG: (Error: DraftedPokemonService.GetDraftedPokemonCountByPlayer) - (user %s) Failed to get drafted pokemon count for player %s: %v", currentUser.ID, playerID, err)
 		return 0, common.ErrInternalService
 	}
 
@@ -369,17 +217,6 @@ func (s *draftedPokemonServiceImpl) GetDraftedPokemonCountByPlayer(currentUser *
 
 // gets draft history for a league (all picks in order, including released).
 func (s *draftedPokemonServiceImpl) GetDraftHistory(currentUser *models.User, leagueID uuid.UUID) ([]models.DraftedPokemon, error) {
-	// Authorization check: Admin or a player in the league.
-	isPlayerInLeague, err := s.leagueRepo.IsUserPlayerInLeague(currentUser.ID, leagueID)
-	if err != nil {
-		return nil, err
-	}
-
-	if currentUser.Role != "admin" && !isPlayerInLeague {
-		log.Printf("(Error: DraftedPokemonService.GetDraftHistory) - Unauthorized attempt by user %s for league %s", currentUser.ID, leagueID)
-		return nil, common.ErrUnauthorized
-	}
-
 	history, err := s.draftedPokemonRepo.GetDraftHistory(leagueID)
 	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.GetDraftHistory) - Failed to get draft history for league %s: %v", leagueID, err)
@@ -389,7 +226,7 @@ func (s *draftedPokemonServiceImpl) GetDraftHistory(currentUser *models.User, le
 	return history, nil
 }
 
-// TODO: this is very basic for now. what we want is a full blown trade offer system.
+// TODO: this is very basic for now. what we want is a full blown trade offer system. (not planned for anytime soon)
 // trades a Pokemon from one player to another.
 func (s *draftedPokemonServiceImpl) TradePokemon(currentUser *models.User, draftedPokemonID, newPlayerID uuid.UUID) error {
 	// 1. Get the drafted Pokemon details for authorization and validation
@@ -502,30 +339,14 @@ func (s *draftedPokemonServiceImpl) DraftPokemonTransaction(
 }
 
 // soft deletes a drafted Pokemon entry.
+// Player permission required: rbac.PermissionDeleteDraftedPokemon
 func (s *draftedPokemonServiceImpl) DeleteDraftedPokemon(currentUser *models.User, draftedPokemonID uuid.UUID) error {
-	// Get the drafted Pokemon to determine its league.
-	draftedPokemon, err := s.draftedPokemonRepo.GetDraftedPokemonByID(draftedPokemonID)
+	err := s.draftedPokemonRepo.DeleteDraftedPokemon(draftedPokemonID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if err == gorm.ErrRecordNotFound {
+			log.Printf("LOG: (Error: DraftedPokemonService.DeleteDraftedPokemon) - drafted pokemon %s not found: %v", draftedPokemonID, err)
 			return common.ErrDraftedPokemonNotFound
 		}
-		log.Printf("(Error: DeleteDraftedPokemon) - Error getting drafted pokemon %s for deletion: %v", draftedPokemonID, err)
-		return common.ErrInternalService
-	}
-
-	// Authorization: Only Admin or Owner of the league can delete.
-	isOwner, err := s.leagueRepo.IsUserOwner(currentUser.ID, draftedPokemon.LeagueID)
-	if err != nil {
-		return err
-	}
-
-	if currentUser.Role != "admin" && !isOwner {
-		log.Printf("(Error: DraftedPokemonService.DeleteDraftedPokemon) - Unauthorized attempt by user %s to delete pokemon %s", currentUser.ID, draftedPokemonID)
-		return common.ErrUnauthorized
-	}
-
-	err = s.draftedPokemonRepo.DeleteDraftedPokemon(draftedPokemonID)
-	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.DeleteDraftedPokemon) - Failed to delete drafted pokemon with ID %s: %v", draftedPokemonID, err)
 		return common.ErrInternalService
 	}
