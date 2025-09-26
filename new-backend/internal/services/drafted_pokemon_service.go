@@ -163,7 +163,7 @@ func (s *draftedPokemonServiceImpl) ReleasePokemon(currentUser *models.User, dra
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return common.ErrDraftedPokemonNotFound
 		}
-		log.Printf("(Error: DraftedPokemonService.ReleasePokemon) - Error getting drafted pokemon %s for release: %v", draftedPokemonID, err)
+		log.Printf("LOG: (Error: DraftedPokemonService.ReleasePokemon) - Error getting drafted pokemon %s for release: %v", draftedPokemonID, err)
 		return common.ErrInternalService
 	}
 
@@ -191,14 +191,15 @@ func (s *draftedPokemonServiceImpl) ReleasePokemon(currentUser *models.User, dra
 		}
 
 		if currentUser.ID != otPlayer.UserID && currentPlayer.Role == rbac.PRoleMember {
-			log.Printf("(Error: DraftedPokemonService.ReleasePokemon) - Unauthorized attempt by user %s to release pokemon %s", currentUser.ID, draftedPokemonID)
+			log.Printf("LOG: (Error: DraftedPokemonService.ReleasePokemon) - Unauthorized attempt by user %s to release pokemon %s", currentUser.ID, draftedPokemonID)
 			return common.ErrUnauthorized
 		}
 	}
 
+	// If we reach this point, the user is authorized to release the pokemon.
 	err = s.draftedPokemonRepo.ReleasePokemon(draftedPokemonID)
 	if err != nil {
-		log.Printf("(Error: DraftedPokemonService.ReleasePokemon) - Failed to release pokemon with ID %s: %v", draftedPokemonID, err)
+		log.Printf("LOG: (Error: DraftedPokemonService.ReleasePokemon) - Failed to release pokemon with ID %s: %v", draftedPokemonID, err)
 		return common.ErrInternalService
 	}
 	return nil
@@ -353,3 +354,4 @@ func (s *draftedPokemonServiceImpl) DeleteDraftedPokemon(currentUser *models.Use
 
 	return nil
 }
+

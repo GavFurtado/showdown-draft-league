@@ -8,6 +8,7 @@ WORKDIR /app
 RUN go install github.com/githubnemo/CompileDaemon@latest
 
 ENV PATH=$PATH:/go/bin
+ENV TZ=Asia/Kolkata
 
 # Copy the go.mod and go.sum files to download dependencies
 

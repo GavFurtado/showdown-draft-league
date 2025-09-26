@@ -37,6 +37,8 @@ func main() {
 		Scopes: []string{"identify"},
 	}
 
+	log.SetFlags(0) // no date/time.
+
 	// Connect to PostgreSQL database
 	db, err := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
 	if err != nil {
