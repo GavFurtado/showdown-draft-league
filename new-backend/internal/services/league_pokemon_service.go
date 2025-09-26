@@ -79,7 +79,7 @@ func (s *leaguePokemonServiceImpl) CreatePokemonForLeague(
 
 	// League must be in Setup status to add new pokemon
 	if league.Status != models.LeagueStatusSetup {
-        log.Printf("LOG: (Service: CreatePokemonForLeague) - operation not allowed for current league status: %s for user %s", league.Status, currentUser.ID)
+		log.Printf("LOG: (Service: CreatePokemonForLeague) - operation not allowed for current league status: %s for user %s", league.Status, currentUser.ID)
 		return nil, common.ErrInvalidState
 	}
 	// Ensure PokemonSpeciesID is valid
@@ -105,47 +105,68 @@ func (s *leaguePokemonServiceImpl) CreatePokemonForLeague(
 	return createdLeaguePokemon, nil
 }
 
-// handles creating multiple LeaguePokemon entries.
+// BatchCreatePokemonForLeague handles creating multiple LeaguePokemon entries.
 // Player Permission required: rbac.PermissionCreateLeaguePokemon
 func (s *leaguePokemonServiceImpl) BatchCreatePokemonForLeague(
 	currentUser *models.User,
 	inputs []*common.LeaguePokemonCreateRequest,
 ) ([]*models.LeaguePokemon, error) {
-	var batchCreatedLeaguePokemon []*models.LeaguePokemon
+	if len(inputs) == 0 {
+		return []*models.LeaguePokemon{}, nil
+	}
+
+	// Pre-validate all inputs before making any database changes
+	leagueCache := make(map[uuid.UUID]*models.League)
+	var leaguePokemonToCreate []models.LeaguePokemon
+
 	for _, input := range inputs {
-		league, err := s.getLeagueByID(input.LeagueID, currentUser.ID)
-		if err != nil {
-			return nil, err
+		// Check if we've already validated this league
+		league, exists := leagueCache[input.LeagueID]
+		if !exists {
+			var err error
+			league, err = s.getLeagueByID(input.LeagueID, currentUser.ID)
+			if err != nil {
+				return nil, err
+			}
+			leagueCache[input.LeagueID] = league
 		}
+
 		// League must be in Setup status to add new pokemon
 		if league.Status != models.LeagueStatusSetup {
-            log.Printf("LOG: (Service: BatchCreatePokemonForLeague) - operation not allowed for current league status: %s for user %s", league.Status, currentUser.ID)
+			log.Printf("LOG: (Service: BatchCreatePokemonForLeague) - operation not allowed for current league status: %s for user %s", league.Status, currentUser.ID)
 			return nil, common.ErrInvalidState
 		}
+
 		// Ensure PokemonSpeciesID is valid
-		_, err = s.getPokemonSpeciesByID(input.PokemonSpeciesID)
+		_, err := s.getPokemonSpeciesByID(input.PokemonSpeciesID)
 		if err != nil {
 			return nil, err
 		}
 
-		leaguePokemon := &models.LeaguePokemon{
+		leaguePokemon := models.LeaguePokemon{
 			LeagueID:         input.LeagueID,
 			PokemonSpeciesID: input.PokemonSpeciesID,
 			Cost:             input.Cost,
 			IsAvailable:      true,
 		}
-
-		createdLeaguePokemon, err := s.leaguePokemonRepo.CreateLeaguePokemon(leaguePokemon)
-		if err != nil {
-			log.Printf("(Service: BatchCreatePokemonForLeague) - failed to create league pokemon: %v\n", err)
-			return nil, common.ErrInternalService
-		}
-
-		log.Printf("(Service: BatchCreatePokemonForLeague) - Successfully created league pokemon for league %s, species %d", input.LeagueID, input.PokemonSpeciesID)
-		batchCreatedLeaguePokemon = append(batchCreatedLeaguePokemon, createdLeaguePokemon)
+		leaguePokemonToCreate = append(leaguePokemonToCreate, leaguePokemon)
 	}
-    // missing line that makes the db transaction using repository method
-	return batchCreatedLeaguePokemon, nil
+
+	// All validations passed, now perform the batch creation
+	err := s.leaguePokemonRepo.CreateLeaguePokemonBatch(leaguePokemonToCreate)
+	if err != nil {
+		log.Printf("LOG: (Service: BatchCreatePokemonForLeague) - failed to batch create league pokemon: %v\n", err)
+		return nil, common.ErrInternalService
+	}
+
+	// Convert to pointers for return
+	var result []*models.LeaguePokemon
+	for i := range leaguePokemonToCreate {
+		result = append(result, &leaguePokemonToCreate[i])
+	}
+
+	log.Printf("LOG: (Service: BatchCreatePokemonForLeague) - Successfully batch created %d league pokemon", len(result))
+	return result, nil
 }
 
 // UpdateLeaguePokemon handles updating an existing LeaguePokemon entry.
