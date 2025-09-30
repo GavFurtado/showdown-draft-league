@@ -8,7 +8,6 @@ import (
 )
 
 // TODO: fix the fact that some of these fields are uncessarily pointers (i misunderstood omitempty)
-
 type DiscordUser struct {
 	ID            string `json:"id"`
 	Username      string `json:"username"`

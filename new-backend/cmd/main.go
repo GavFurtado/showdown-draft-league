@@ -81,10 +81,9 @@ func main() {
 
 	// Run server
 	log.Printf("Server starting...\n")
+	log.Printf("Server running on: %s\n", port)
 	if err := server.Run(":" + port); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
-
-	log.Printf("Server running on :%s\n", port)
 
 }

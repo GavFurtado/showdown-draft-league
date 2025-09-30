@@ -255,7 +255,7 @@ func (s *draftServiceImpl) MakePick(currentUser *models.User, league *models.Lea
 	}
 
 	// check if the round is over
-	if nextPlayerIdx >= int(playerCount) || nextPlayerIdx < 0 { // Changed > to >= to handle 0-based index correctly
+	if nextPlayerIdx >= int(playerCount) || nextPlayerIdx < 0 {
 		draft.CurrentRound++
 		draft.CurrentPickInRound = 1                                      // reset pick order
 		if league.Format.IsSnakeRoundDraft && draft.CurrentRound%2 == 0 { // if snake round drafting and an even round
@@ -270,7 +270,7 @@ func (s *draftServiceImpl) MakePick(currentUser *models.User, league *models.Lea
 	// finally set the next turn of player
 	nextTurnPlayer := allPlayers[nextPlayerIdx]
 	draft.CurrentTurnPlayerID = &nextTurnPlayer.ID
-	draft.CurrentTurnStartTime = func() *time.Time { t := time.Now(); return &t }() // done with a lambda because it  expects a pointer due to it being null
+	draft.CurrentTurnStartTime = func() *time.Time { t := time.Now(); return &t }() // done using a lambda because it  expects a pointer due to it being null
 
 	if err := s.draftRepo.UpdateDraft(draft); err != nil {
 		log.Printf("DraftService: MakePick - Failed to update draft: %v\n", err)

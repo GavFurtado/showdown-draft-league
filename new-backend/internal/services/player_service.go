@@ -184,6 +184,8 @@ func (s *playerServiceImpl) GetPlayerWithFullRosterHandler(playerID, currentUser
 	return player, nil
 }
 
+// fails tests.. needs urgent rework
+// TODO: fix this
 func (s *playerServiceImpl) UpdatePlayerProfile(
 	currentUser *models.User,
 	playerID uuid.UUID,
@@ -269,6 +271,8 @@ func (s *playerServiceImpl) UpdatePlayerProfile(
 
 // UpdatePlayerDraftPoints allows a LeagueOwner/Moderator to update a player's draft points.
 // Intended for manual updates (like an override). It sets the points.
+// fails tests.. needs urgent rework
+// TODO: fix this
 func (s *playerServiceImpl) UpdatePlayerDraftPoints(
 	currentUser *models.User,
 	playerID uuid.UUID,
@@ -325,6 +329,8 @@ func (s *playerServiceImpl) UpdatePlayerDraftPoints(
 }
 
 // UpdatePlayerRecord allows a LeagueOwner/Moderator to update a player's win/loss record.
+// fails tests.. needs urgent rework
+// TODO: fix this
 func (s *playerServiceImpl) UpdatePlayerRecord(
 	currentUser *models.User,
 	playerID uuid.UUID,
