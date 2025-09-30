@@ -7,6 +7,7 @@ import (
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -39,7 +40,7 @@ func TestLeaguePokemonService_CreatePokemonForLeague(t *testing.T) {
 	}
 
 	t.Run("Successfully creates a single league pokemon", func(t *testing.T) {
-		league := &models.League{ID: testLeagueID, Status: models.LeagueStatusSetup}
+		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusSetup}
 		pokemonSpecies := &models.PokemonSpecies{ID: testPokemonSpeciesID, Name: "Pikachu"}
 		expectedLeaguePokemon := &models.LeaguePokemon{
 			LeagueID:         testLeagueID,
@@ -74,7 +75,7 @@ func TestLeaguePokemonService_CreatePokemonForLeague(t *testing.T) {
 	})
 
 	t.Run("Fails if league is not in Setup status", func(t *testing.T) {
-		league := &models.League{ID: testLeagueID, Status: models.LeagueStatusDrafting} // Not Setup
+		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusDrafting} // Not Setup
 		mockLeagueRepo.On("GetLeagueByID", testLeagueID).Return(league, nil).Once()
 
 		result, err := service.CreatePokemonForLeague(currentUser, input)
@@ -87,7 +88,7 @@ func TestLeaguePokemonService_CreatePokemonForLeague(t *testing.T) {
 	})
 
 	t.Run("Fails if pokemon species not found", func(t *testing.T) {
-		league := &models.League{ID: testLeagueID, Status: models.LeagueStatusSetup}
+		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusSetup}
 		mockLeagueRepo.On("GetLeagueByID", testLeagueID).Return(league, nil).Once()
 		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", testPokemonSpeciesID).Return((*models.PokemonSpecies)(nil), gorm.ErrRecordNotFound).Once()
 
@@ -114,7 +115,7 @@ func TestLeaguePokemonService_CreatePokemonForLeague(t *testing.T) {
 	})
 
 	t.Run("Fails if pokemon species repository returns internal error", func(t *testing.T) {
-		league := &models.League{ID: testLeagueID, Status: models.LeagueStatusSetup}
+		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusSetup}
 		internalErr := errors.New("db error")
 		mockLeagueRepo.On("GetLeagueByID", testLeagueID).Return(league, nil).Once()
 		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", testPokemonSpeciesID).Return((*models.PokemonSpecies)(nil), internalErr).Once()
@@ -129,7 +130,7 @@ func TestLeaguePokemonService_CreatePokemonForLeague(t *testing.T) {
 	})
 
 	t.Run("Fails if league pokemon repository returns internal error", func(t *testing.T) {
-		league := &models.League{ID: testLeagueID, Status: models.LeagueStatusSetup}
+		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusSetup}
 		pokemonSpecies := &models.PokemonSpecies{ID: testPokemonSpeciesID, Name: "Pikachu"}
 		leaguePokemon := &models.LeaguePokemon{
 			LeagueID:         testLeagueID,
@@ -175,7 +176,7 @@ func TestLeaguePokemonService_BatchCreatePokemonForLeague(t *testing.T) {
 			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &[]int{100}[0]},
 			{LeagueID: testLeagueID, PokemonSpeciesID: 2, Cost: &[]int{150}[0]},
 		}
-		league := &models.League{ID: testLeagueID, Status: models.LeagueStatusSetup}
+		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusSetup}
 		pokemonSpecies1 := &models.PokemonSpecies{ID: 1, Name: "Pikachu"}
 		pokemonSpecies2 := &models.PokemonSpecies{ID: 2, Name: "Charmander"}
 
@@ -221,7 +222,7 @@ func TestLeaguePokemonService_BatchCreatePokemonForLeague(t *testing.T) {
 			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &[]int{100}[0]},
 			{LeagueID: uuid.New(), PokemonSpeciesID: 2, Cost: &[]int{150}[0]}, // Second league not found
 		}
-		league := &models.League{ID: testLeagueID, Status: models.LeagueStatusSetup}
+		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusSetup}
 
 		// First league lookup succeeds
 		mockLeagueRepo.On("GetLeagueByID", inputs[0].LeagueID).Return(league, nil).Once()
@@ -245,7 +246,7 @@ func TestLeaguePokemonService_BatchCreatePokemonForLeague(t *testing.T) {
 			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &[]int{100}[0]},
 			{LeagueID: testLeagueID, PokemonSpeciesID: 2, Cost: &[]int{150}[0]},
 		}
-		leagueDrafting := &models.League{ID: testLeagueID, Status: models.LeagueStatusDrafting} // Not Setup
+		leagueDrafting := &models.League{ID: testLeagueID, Status: enums.LeagueStatusDrafting} // Not Setup
 
 		// League is cached, so only called once
 		mockLeagueRepo.On("GetLeagueByID", testLeagueID).Return(leagueDrafting, nil).Once()
@@ -265,7 +266,7 @@ func TestLeaguePokemonService_BatchCreatePokemonForLeague(t *testing.T) {
 			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &[]int{100}[0]},
 			{LeagueID: testLeagueID, PokemonSpeciesID: 999, Cost: &[]int{150}[0]}, // PokemonSpeciesID 999 not found
 		}
-		league := &models.League{ID: testLeagueID, Status: models.LeagueStatusSetup}
+		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusSetup}
 
 		mockLeagueRepo.On("GetLeagueByID", testLeagueID).Return(league, nil).Once()
 		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", int64(1)).Return(&models.PokemonSpecies{ID: 1}, nil).Once()
@@ -286,7 +287,7 @@ func TestLeaguePokemonService_BatchCreatePokemonForLeague(t *testing.T) {
 			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &[]int{100}[0]},
 			{LeagueID: testLeagueID, PokemonSpeciesID: 2, Cost: &[]int{150}[0]},
 		}
-		league := &models.League{ID: testLeagueID, Status: models.LeagueStatusSetup}
+		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusSetup}
 		pokemonSpecies1 := &models.PokemonSpecies{ID: 1, Name: "Pikachu"}
 		pokemonSpecies2 := &models.PokemonSpecies{ID: 2, Name: "Charmander"}
 		internalErr := errors.New("db error")
@@ -343,7 +344,7 @@ func TestLeaguePokemonService_UpdateLeaguePokemon(t *testing.T) {
 			Cost:             &originalCost,
 			IsAvailable:      originalIsAvailable,
 		}
-		league := &models.League{ID: testLeagueID, Status: models.LeagueStatusSetup}
+		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusSetup}
 
 		input := &common.LeaguePokemonUpdateRequest{
 			LeaguePokemonID: testLeaguePokemonID,
@@ -383,7 +384,7 @@ func TestLeaguePokemonService_UpdateLeaguePokemon(t *testing.T) {
 			Cost:             &originalCost,
 			IsAvailable:      originalIsAvailable,
 		}
-		league := &models.League{ID: testLeagueID, Status: models.LeagueStatusSetup}
+		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusSetup}
 
 		input := &common.LeaguePokemonUpdateRequest{
 			LeaguePokemonID: testLeaguePokemonID,
@@ -423,7 +424,7 @@ func TestLeaguePokemonService_UpdateLeaguePokemon(t *testing.T) {
 			Cost:             &originalCost,
 			IsAvailable:      originalIsAvailable,
 		}
-		league := &models.League{ID: testLeagueID, Status: models.LeagueStatusSetup}
+		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusSetup}
 
 		input := &common.LeaguePokemonUpdateRequest{
 			LeaguePokemonID: testLeaguePokemonID,
@@ -527,7 +528,7 @@ func TestLeaguePokemonService_UpdateLeaguePokemon(t *testing.T) {
 			Cost:             &[]int{100}[0],
 			IsAvailable:      true,
 		}
-		league := &models.League{ID: testLeagueID, Status: models.LeagueStatusCompleted} // Not Setup or Drafting
+		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusCompleted} // Not Setup or Drafting
 		input := &common.LeaguePokemonUpdateRequest{LeaguePokemonID: testLeaguePokemonID}
 
 		mockLeaguePokemonRepo.On("GetLeaguePokemonByID", testLeaguePokemonID).Return(existingLeaguePokemon, nil).Once()
@@ -555,7 +556,7 @@ func TestLeaguePokemonService_UpdateLeaguePokemon(t *testing.T) {
 			Cost:             &originalCost,
 			IsAvailable:      originalIsAvailable,
 		}
-		league := &models.League{ID: testLeagueID, Status: models.LeagueStatusSetup}
+		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusSetup}
 
 		input := &common.LeaguePokemonUpdateRequest{
 			LeaguePokemonID: testLeaguePokemonID,

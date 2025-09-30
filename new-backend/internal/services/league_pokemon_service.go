@@ -2,12 +2,14 @@ package services
 
 import (
 	"errors"
+	"log"
+
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"log"
 )
 
 type LeaguePokemonService interface {
@@ -78,7 +80,7 @@ func (s *leaguePokemonServiceImpl) CreatePokemonForLeague(
 	}
 
 	// League must be in Setup status to add new pokemon
-	if league.Status != models.LeagueStatusSetup {
+	if league.Status != enums.LeagueStatusSetup {
 		log.Printf("LOG: (Service: CreatePokemonForLeague) - operation not allowed for current league status: %s for user %s", league.Status, currentUser.ID)
 		return nil, common.ErrInvalidState
 	}
@@ -132,7 +134,7 @@ func (s *leaguePokemonServiceImpl) BatchCreatePokemonForLeague(
 		}
 
 		// League must be in Setup status to add new pokemon
-		if league.Status != models.LeagueStatusSetup {
+		if league.Status != enums.LeagueStatusSetup {
 			log.Printf("LOG: (Service: BatchCreatePokemonForLeague) - operation not allowed for current league status: %s for user %s", league.Status, currentUser.ID)
 			return nil, common.ErrInvalidState
 		}
@@ -196,7 +198,7 @@ func (s *leaguePokemonServiceImpl) UpdateLeaguePokemon(
 	}
 
 	// Operation allowed only during Setup or Drafting status
-	if league.Status != models.LeagueStatusSetup && league.Status != models.LeagueStatusDrafting {
+	if league.Status != enums.LeagueStatusSetup && league.Status != enums.LeagueStatusDrafting {
 		log.Printf("(Service: UpdateLeaguePokemon) - operation not allowed for current league status: %s for user %s", league.Status, currentUser.ID)
 		return nil, common.ErrInvalidState
 	}

@@ -3,13 +3,15 @@ package services
 import (
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 	"log"
 	"time"
 
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 )
 
@@ -78,7 +80,7 @@ func (s *draftServiceImpl) StartDraft(currentUser *models.User, leagueID uuid.UU
 
 	draft := &models.Draft{
 		LeagueID:                    leagueID,
-		Status:                      models.DraftStatusStarted,
+		Status:                      enums.DraftStatusStarted,
 		CurrentRound:                1,
 		CurrentPickInRound:          1,
 		CurrentTurnPlayerID:         &firstPlayerID,
@@ -94,7 +96,7 @@ func (s *draftServiceImpl) StartDraft(currentUser *models.User, leagueID uuid.UU
 	}
 
 	// Update the league status to DRAFTING
-	league.Status = models.LeagueStatusDrafting
+	league.Status = enums.LeagueStatusDrafting
 	if _, err := s.leagueRepo.UpdateLeague(league); err != nil {
 		log.Printf("(Error: DraftService.StartDraft) - Failed to update league status for league %s: %v\n", leagueID, err)
 		// TODO: Consider rolling back draft creation if this fails
@@ -130,12 +132,12 @@ func (s *draftServiceImpl) MakePick(currentUser *models.User, league *models.Lea
 	}
 
 	// check league state
-	if status := league.Status; status.IsValid() && status != models.LeagueStatusDrafting {
+	if status := league.Status; status.IsValid() && status != enums.LeagueStatusDrafting {
 		log.Printf("DraftService: MakePick - user %s tried to draft when league %s not in drafting status: %v\n", currentUser.ID, league.ID, err)
 		return common.ErrInvalidState
 	}
 
-	if status := draft.Status; status.IsValid() && status != models.DraftStatusStarted {
+	if status := draft.Status; status.IsValid() && status != enums.DraftStatusStarted {
 		log.Printf("DraftService: MakePick - user %s tried to draft when league %s not in drafting status (%s): %v\n", currentUser.ID, league.ID, status, err)
 		return common.ErrInvalidState
 
