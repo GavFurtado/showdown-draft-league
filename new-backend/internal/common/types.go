@@ -8,7 +8,6 @@ import (
 )
 
 // TODO: fix the fact that some of these fields are uncessarily pointers (i misunderstood omitempty)
-
 type DiscordUser struct {
 	ID            string `json:"id"`
 	Username      string `json:"username"`
@@ -23,7 +22,6 @@ type LeagueRequest struct {
 	MaxPokemonPerPlayer int                 `json:"max_pokemon_per_player" binding:"gte=1,max=12"`
 	StartingDraftPoints int                 `json:"starting_draft_points" binding:"gte=20,max=150"`
 	StartDate           time.Time           `json:"start_date" binding:"required"`
-	EndDate             *time.Time          `json:"end_date" binding:"omitempty"`
 	Format              models.LeagueFormat `json:"format"`
 }
 

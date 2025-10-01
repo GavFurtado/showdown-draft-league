@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"fmt"
 	"log"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
@@ -38,12 +37,25 @@ func NewPokemonSpeciesService(
 
 // retrieves all pokemon species.
 func (s *pokemonServiceImpl) GetAllPokemonSpecies() ([]models.PokemonSpecies, error) {
-	return s.pokemonRepo.GetAllPokemonSpecies()
+	pokemon, err := s.pokemonRepo.GetAllPokemonSpecies()
+	if err != nil {
+		log.Printf("(Error: PokemonSpeciesService.GetAllPokemonSpecies) - Failed to get all pokemon species: %v", err)
+		return nil, common.ErrInternalService
+	}
+	log.Println("Success")
+	return pokemon, nil
 }
 
 // lists pokemon species based on a filter.
 func (s *pokemonServiceImpl) ListPokemonSpecies(filter string) ([]models.PokemonSpecies, error) {
-	return s.pokemonRepo.FindPokemonSpecies(filter)
+	pokemon, err := s.pokemonRepo.FindPokemonSpecies(filter)
+	if err != nil {
+		log.Printf("(Error: PokemonSpeciesService.ListPokemonSpecies) - Failed to find pokemon species with filter '%s': %v", filter, err)
+		return nil, common.ErrInternalService
+	}
+
+	log.Println("Success")
+	return pokemon, nil
 }
 
 // retrieves a single pokemon species by its ID.
@@ -60,8 +72,10 @@ func (s *pokemonServiceImpl) GetPokemonSpeciesByID(id int64) (*models.PokemonSpe
 			return nil, common.ErrPokemonSpeciesNotFound
 		}
 		log.Printf("(Error: PokemonSpeciesService.GetPokemonSpeciesByID) - Failed to get pokemon species by ID %d: %v", id, err)
-		return nil, fmt.Errorf("failed to get pokemon species by ID: %w", err)
+		return nil, common.ErrInternalService
 	}
+
+	log.Println("Success")
 	return pokemon, nil
 }
 
@@ -79,8 +93,10 @@ func (s *pokemonServiceImpl) GetPokemonSpeciesByName(name string) (*models.Pokem
 			return nil, common.ErrPokemonSpeciesNotFound
 		}
 		log.Printf("(Error: PokemonSpeciesService.GetPokemonSpeciesByName) - Failed to get pokemon species by name '%s': %v", name, err)
-		return nil, fmt.Errorf("failed to get pokemon species by name: %w", err)
+		return nil, common.ErrInternalService
 	}
+
+	log.Println("Success")
 	return pokemon, nil
 }
 
@@ -93,9 +109,9 @@ func (s *pokemonServiceImpl) CreatePokemonSpecies(pokemon *models.PokemonSpecies
 
 	// Check if pokemon with the same ID or name already exists
 	existingByID, err := s.pokemonRepo.GetPokemonSpeciesByID(pokemon.ID)
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Printf("(Error: PokemonSpeciesService.CreatePokemonSpecies) - Error checking existing pokemon by ID %d: %v", pokemon.ID, err)
-		return fmt.Errorf("error checking existing pokemon by ID: %w", err)
+		return common.ErrInternalService
 	}
 
 	if existingByID != nil {
@@ -104,9 +120,9 @@ func (s *pokemonServiceImpl) CreatePokemonSpecies(pokemon *models.PokemonSpecies
 	}
 
 	existingByName, err := s.pokemonRepo.GetPokemonSpeciesByName(pokemon.Name)
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Printf("(Error: PokemonSpeciesService.CreatePokemonSpecies) - Error checking existing pokemon by name '%s': %v", pokemon.Name, err)
-		return fmt.Errorf("error checking existing pokemon by name: %w", err)
+		return common.ErrInternalService
 	}
 	if existingByName != nil {
 		log.Printf("(Info: PokemonSpeciesService.CreatePokemonSpecies) - Pokemon species with name '%s' already exists", pokemon.Name)
@@ -117,9 +133,10 @@ func (s *pokemonServiceImpl) CreatePokemonSpecies(pokemon *models.PokemonSpecies
 	err = s.pokemonRepo.CreatePokemonSpecies(pokemon)
 	if err != nil {
 		log.Printf("(Error: PokemonSpeciesService.CreatePokemonSpecies) - Failed to create pokemon species ID %d name '%s': %v", pokemon.ID, pokemon.Name, err)
-		return fmt.Errorf("failed to create pokemon species: %w", err)
+		return common.ErrInternalService
 	}
 
+	log.Println("Success")
 	return nil
 }
 
@@ -138,16 +155,17 @@ func (s *pokemonServiceImpl) UpdatePokemonSpecies(pokemon *models.PokemonSpecies
 			return common.ErrPokemonSpeciesNotFound // Use specific not found error from common
 		}
 		log.Printf("(Error: PokemonSpeciesService.UpdatePokemonSpecies) - Error checking existing pokemon for update ID %d: %v", pokemon.ID, err)
-		return fmt.Errorf("error checking existing pokemon for update: %w", err)
+		return common.ErrInternalService
 	}
 
 	// Update the pokemon species
 	err = s.pokemonRepo.UpdatePokemonSpecies(pokemon)
 	if err != nil {
 		log.Printf("(Error: PokemonSpeciesService.UpdatePokemonSpecies) - Failed to update pokemon species ID %d: %v", pokemon.ID, err)
-		return fmt.Errorf("failed to update pokemon species: %w", err)
+		return common.ErrInternalService
 	}
 
+	log.Println("Success")
 	return nil
 }
 
@@ -166,14 +184,14 @@ func (s *pokemonServiceImpl) DeletePokemonSpecies(id int64) error {
 			return common.ErrPokemonSpeciesNotFound
 		}
 		log.Printf("(Error: PokemonSpeciesService.DeletePokemonSpecies) - Error checking existing pokemon for deletion ID %d: %v", id, err)
-		return fmt.Errorf("error checking existing pokemon for deletion: %w", err)
+		return common.ErrInternalService
 	}
 
 	// Delete the pokemon species
 	err = s.pokemonRepo.DeletePokemonSpecies(id)
 	if err != nil {
 		log.Printf("(Error: PokemonSpeciesService.DeletePokemonSpecies) - Failed to delete pokemon species ID %d: %v", id, err)
-		return fmt.Errorf("failed to delete pokemon species: %w", err)
+		return common.ErrInternalService
 	}
 	return nil
 }

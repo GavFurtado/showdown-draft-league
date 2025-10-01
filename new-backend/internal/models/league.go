@@ -1,29 +1,28 @@
 package models
 
 import (
-	"database/sql/driver"
-	"fmt"
-	"strings"
 	"time"
 
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
+// League defines the structure of a League
 type League struct {
-	ID                  uuid.UUID      `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	Name                string         `gorm:"not null" json:"name"`
-	StartDate           time.Time      `gorm:"not null" json:"start_date"`
-	EndDate             *time.Time     `json:"end_date"`
-	RulesetDescription  string         `gorm:"type:text" json:"ruleset_description"`
-	Status              LeagueStatus   `gorm:"type:varchar(50);not null;default:'pending'" json:"status"`
-	MaxPokemonPerPlayer int            `gorm:"not null;default:0" json:"max_pokemon_per_player"`
-	StartingDraftPoints int            `gorm:"not null;default:140" json:"starting_draft_points"`
-	Format              LeagueFormat   `gorm:"type:jsonb" json:"format"`
-	CreatedAt           time.Time      `json:"created_at"`
-	UpdatedAt           time.Time      `json:"updated_at"`
-	DeletedAt           gorm.DeletedAt `gorm:"index" json:"-"`
-	DiscordWebhookURL   *string        `json:"discord_webhoook_url"`
+	ID                  uuid.UUID          `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	Name                string             `gorm:"not null" json:"name"`
+	StartDate           time.Time          `gorm:"not null" json:"start_date"`
+	EndDate             *time.Time         `json:"end_date"` // this is set when the league is cancelled or actualy ends, nil otherwise
+	RulesetDescription  string             `gorm:"type:text" json:"ruleset_description"`
+	Status              enums.LeagueStatus `gorm:"type:varchar(50);not null;default:'pending'" json:"status"`
+	MaxPokemonPerPlayer int                `gorm:"not null;default:0" json:"max_pokemon_per_player"`
+	StartingDraftPoints int                `gorm:"not null;default:140" json:"starting_draft_points"`
+	Format              LeagueFormat       `gorm:"type:jsonb" json:"format"`
+	CreatedAt           time.Time          `json:"created_at"`
+	UpdatedAt           time.Time          `json:"updated_at"`
+	DeletedAt           gorm.DeletedAt     `gorm:"index" json:"-"`
+	DiscordWebhookURL   *string            `json:"discord_webhook_url"`
 
 	// Relationships
 	Players []Player `gorm:"foreignKey:LeagueID"`
@@ -33,93 +32,19 @@ type League struct {
 	AllDraftedPokemon []DraftedPokemon `gorm:"foreignKey:LeagueID" json:"-"`
 }
 
-// defines the structure for various optional league settings.
+// LeagueFormat defines the structure for various optional league settings.
 type LeagueFormat struct {
-	SeasonType       string `json:"season_type"`        // "ROUND_ROBIN", "GROUPS", "CUSTOM"
-	GroupCount       int    `json:"group_count"`        // Relevant if SeasonType is "GROUPS"
-	GamesPerOpponent int    `json:"games_per_opponent"` // For round-robin or group stages
+	SeasonType       enums.LeagueSeasonType `json:"season_type"`        // "ROUND_ROBIN_ONLY", "PLAYOFFS_ONLY", "HYBRID"
+	GroupCount       int                    `json:"group_count"`        // Relevant if SeasonType is "GROUPS"
+	GamesPerOpponent int                    `json:"games_per_opponent"` // For round-robin or group stages
 
-	PlayoffType        string `json:"playoff_type"`         // "NONE", "SINGLE_ELIMINATION", "DOUBLE_ELIMINATION"
-	PlayoffTeams       int    `json:"playoff_teams"`        // Number of teams that make playoffs
-	PlayoffByes        int    `json:"playoff_byes"`         // Number of teams getting a bye in playoffs
-	PlayoffSeedingType string `json:"playoff_seeding_type"` // "STANDARD", "SNAKE", "CUSTOM"
+	PlayoffType             enums.LeaguePlayoffType        `json:"playoff_type"`              // "NONE", "SINGLE_ELIM", "DOUBLE_ELIM"
+	PlayoffParticipantCount int                            `json:"playoff_participant_count"` // Number of teams that make playoffs
+	PlayoffByesCount        int                            `json:"playoff_byes_count"`        // Number of teams getting a bye in playoffs
+	PlayoffSeedingType      enums.LeaguePlayoffSeedingType `json:"playoff_seeding_type"`      // "STANDARD", "SEEDED", "BYES_ONLY"
 
-	IsSnakeRoundDraft       bool `json:"is_snake_round_draft"`
-	AllowTrading            bool `json:"allow_trading"`
-	AllowTransferCredits    bool `json:"allow_transfer_credits"`
-	TransferCreditsPerRound int  `json:"transfer_credits_per_round"`
-}
-
-// this might be breaking convention by having functions in the models but idgaf
-type LeagueStatus string
-
-const (
-	LeagueStatusPending       LeagueStatus = "PENDING"
-	LeagueStatusSetup         LeagueStatus = "SETUP"
-	LeagueStatusDrafting      LeagueStatus = "DRAFTING"
-	LeagueStatusRegularSeason LeagueStatus = "REGULARSEASON"
-	LeagueStatusPlayoffs      LeagueStatus = "PLAYOFFS"
-	LeagueStatusCompleted     LeagueStatus = "COMPLETED"
-	LeagueStatusCancelled     LeagueStatus = "CANCELLED"
-)
-
-var LeagueStatuses = []LeagueStatus{
-	LeagueStatusPending,
-	LeagueStatusSetup,
-	LeagueStatusDrafting,
-	LeagueStatusRegularSeason,
-	LeagueStatusPlayoffs,
-	LeagueStatusCompleted,
-	LeagueStatusCancelled,
-}
-
-// checks if LeagueStatus IsValid
-func (ls LeagueStatus) IsValid() bool {
-	for _, status := range LeagueStatuses {
-		if ls == status {
-			return true
-		}
-	}
-	return false
-}
-
-// Stringer() interface implementation in case it's needed
-func (ls LeagueStatus) String() string {
-	return string(ls)
-}
-
-// Extra work to make it work with the DB
-
-// Value() implements the driver.Valuer interface for GORM/database saving.
-// Tells GORM how to convert the custom type into a database-compatible type (string).
-func (ls LeagueStatus) Value() (driver.Value, error) {
-	if !ls.IsValid() {
-		return nil, fmt.Errorf("invalid LeagueStatus value: %s", ls)
-	}
-	return string(ls), nil
-}
-
-// Scan implements the sql.Scanner interface for GORM/database loading.
-// This tells GORM how to convert the database string back into the custom type.
-func (ls *LeagueStatus) Scan(value interface{}) error {
-	if value == nil {
-		*ls = "" // Or some default "empty" state if appropriate
-		return nil
-	}
-	str, ok := value.(string)
-	if !ok {
-		return fmt.Errorf("LeagueStatus: expected string, got %T", value)
-	}
-	// Important: Validate the string from the database to ensure it's a known status
-	newStatus := LeagueStatus(str).Normalize()
-	if !newStatus.IsValid() {
-		return fmt.Errorf("invalid LeagueStatus value retrieved from DB: %s", str)
-	}
-	*ls = newStatus
-	return nil
-}
-
-// Capitalizes the whole string to ensure it's all Normalized
-func (ls LeagueStatus) Normalize() LeagueStatus {
-	return LeagueStatus(strings.ToUpper(string(ls)))
+	IsSnakeRoundDraft        bool `json:"is_snake_round_draft"`
+	AllowTrading             bool `json:"allow_trading"`
+	AllowTransferCredits     bool `json:"allow_transfer_credits"`
+	TransferCreditsPerWindow int  `json:"transfer_credits_per_window"`
 }

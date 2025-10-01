@@ -13,7 +13,16 @@ require (
 	gorm.io/gorm v1.30.0
 )
 
-require github.com/gin-contrib/cors v1.7.6
+require (
+	github.com/gin-contrib/cors v1.7.6
+	github.com/stretchr/testify v1.10.0
+)
+
+require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
+)
 
 require (
 	github.com/bytedance/sonic v1.13.3 // indirect

@@ -1,3 +1,6 @@
+# docker build -t server .
+# docker run -it -p 8080:8080 -v $(pwd):/app server-image
+
 # Use a Go base image
 FROM golang:1.23-alpine
 
@@ -8,6 +11,7 @@ WORKDIR /app
 RUN go install github.com/githubnemo/CompileDaemon@latest
 
 ENV PATH=$PATH:/go/bin
+ENV TZ=Asia/Kolkata
 
 # Copy the go.mod and go.sum files to download dependencies
 
@@ -28,3 +32,4 @@ CMD CompileDaemon \
     --command="/app/server" \
     --recursive=true \
     --polling
+
