@@ -32,7 +32,7 @@ func RegisterRoutes(
 	r.GET("/", HomeHandler) // eventually a landing page
 
 	// Pokemon Species routes
-	pokemonSpecies := r.Group("/api/pokemonspecies")
+	pokemonSpecies := r.Group("/api/pokemon_species")
 	{
 		pokemonSpecies.GET("/", controllers.PokemonSpeciesController.GetAllPokemonSpecies)
 	}

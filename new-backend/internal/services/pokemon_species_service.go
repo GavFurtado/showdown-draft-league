@@ -45,14 +45,10 @@ func (s *pokemonServiceImpl) GetAllPokemonSpecies() ([]common.PokemonSpeciesList
 
 	var pokemonDTOs []common.PokemonSpeciesListDTO
 	for _, pokemon := range allPokemon {
-		primaryType := ""
-		if len(pokemon.Types) > 0 {
-			primaryType = pokemon.Types[0]
-		}
 		pokemonDTOs = append(pokemonDTOs, common.PokemonSpeciesListDTO{
 			ID:           pokemon.ID,
 			Name:         pokemon.Name,
-			PrimaryType:  primaryType,
+			Types:        pokemon.Types,
 			FrontDefault: pokemon.Sprites.FrontDefault,
 		})
 	}

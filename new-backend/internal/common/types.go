@@ -96,8 +96,8 @@ type DiscordWebhookEmbed struct {
 
 // PokemonSpeciesListDTO represents a simplified view of a PokemonSpecies for list displays.
 type PokemonSpeciesListDTO struct {
-	ID           int64  `json:"id"`
-	Name         string `json:"name"`
-	PrimaryType  string `json:"primary_type"`
-	FrontDefault string `json:"front_default"`
+	ID           int64    `json:"id"`
+	Name         string   `json:"name"`
+	Types        []string `json:"types"`
+	FrontDefault string   `json:"front_default"`
 }

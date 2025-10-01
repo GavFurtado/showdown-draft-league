@@ -31,9 +31,43 @@ type BaseStats struct {
 	Speed          int `gorm:"not null" json:"speed"`
 }
 
+// Value implements the driver.Valuer interface for BaseStats.
+func (bs BaseStats) Value() (driver.Value, error) {
+	return json.Marshal(bs)
+}
+
+// Scan implements the sql.Scanner interface for BaseStats.
+func (bs *BaseStats) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+	return json.Unmarshal(bytes, bs)
+}
+
 type Sprites struct {
 	FrontDefault    string `json:"front_default"`
 	OfficialArtwork string `json:"official_artwork"` // not used
+}
+
+// Value implements the driver.Valuer interface for Sprites.
+func (s Sprites) Value() (driver.Value, error) {
+	return json.Marshal(s)
+}
+
+// Scan implements the sql.Scanner interface for Sprites.
+func (s *Sprites) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+	return json.Unmarshal(bytes, s)
 }
 
 // StringArray is a custom type for handling JSONB arrays of strings
