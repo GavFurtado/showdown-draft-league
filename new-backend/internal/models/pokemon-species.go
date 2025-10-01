@@ -10,7 +10,7 @@ import (
 
 type PokemonSpecies struct {
 	ID        int64          `gorm:"primaryKey;uniqueIndex" json:"id"`
-	DexID     int64          `gorm:"index" json:"dex_id"`
+	DexID     int64          `gorm:"index;not null" json:"dex_id"`
 	Name      string         `gorm:"not null" json:"name"`
 	Types     StringArray    `gorm:"type:jsonb" json:"types"`     // Use custom type
 	Abilities AbilitiesArray `gorm:"type:jsonb" json:"abilities"` // Use custom type
