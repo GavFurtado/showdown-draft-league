@@ -26,9 +26,16 @@ func RegisterRoutes(
 		UserRepo:    repositories.UserRepository,
 		RBACService: services.RBACService,
 	}
+
 	// ---- Public Routes ---
 	// These do not require any authorization
 	r.GET("/", HomeHandler) // eventually a landing page
+
+	// Pokemon Species routes
+	pokemonSpecies := r.Group("/api/pokemonspecies")
+	{
+		pokemonSpecies.GET("/", controllers.PokemonSpeciesController.GetAllPokemonSpecies)
+	}
 
 	// ---- Auth Related Routes ---
 	// These are routes related to Discord OAuth

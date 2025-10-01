@@ -48,9 +48,10 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 
 func NewControllers(services *Services, cfg *config.Config, discordOauthConfig *oauth2.Config) *Controllers {
 	return &Controllers{
-		AuthController:   *controllers.NewAuthController(services.AuthService, cfg, discordOauthConfig),
-		LeagueController: controllers.NewLeagueController(services.LeagueService),
-		PlayerController: controllers.NewPlayerController(services.PlayerService),
-		UserController:   controllers.NewUserController(services.UserService),
+		AuthController:           *controllers.NewAuthController(services.AuthService, cfg, discordOauthConfig),
+		LeagueController:         controllers.NewLeagueController(services.LeagueService),
+		PlayerController:         controllers.NewPlayerController(services.PlayerService),
+		UserController:           controllers.NewUserController(services.UserService),
+		PokemonSpeciesController: controllers.NewPokemonSpeciesController(services.PokemonSpeciesService),
 	}
 }

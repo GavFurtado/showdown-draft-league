@@ -93,3 +93,11 @@ type DiscordWebhookEmbed struct {
 	Description string `json:"description,omitempty"`
 	Color       int    `json:"color,omitempty"` // RGB color integer
 }
+
+// PokemonSpeciesListDTO represents a simplified view of a PokemonSpecies for list displays.
+type PokemonSpeciesListDTO struct {
+	ID           int64  `json:"id"`
+	Name         string `json:"name"`
+	PrimaryType  string `json:"primary_type"`
+	FrontDefault string `json:"front_default"`
+}

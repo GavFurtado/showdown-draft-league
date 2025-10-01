@@ -124,7 +124,7 @@ func (c *playerControllerImpl) GetPlayerByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, player)
 }
 
-// GET /api/leagues/:id/players
+// GET /api/leagues/:leagueId/players
 // GET all players in a league :id
 func (c *playerControllerImpl) GetPlayersByLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
@@ -135,7 +135,7 @@ func (c *playerControllerImpl) GetPlayersByLeague(ctx *gin.Context) {
 	}
 
 	// get param
-	leagueIDStr := ctx.Param("id")
+	leagueIDStr := ctx.Param("leagueId")
 	leagueID, err := uuid.Parse(leagueIDStr)
 	if err != nil { // if the str was "" (which btw idk how that happens) it's still handled here
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})

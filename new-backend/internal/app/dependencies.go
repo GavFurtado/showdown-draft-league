@@ -32,8 +32,9 @@ type Services struct {
 }
 
 type Controllers struct {
-	AuthController   controllers.AuthController
-	LeagueController controllers.LeagueController
-	PlayerController controllers.PlayerController
-	UserController   controllers.UserController
+	AuthController           controllers.AuthController
+	LeagueController         controllers.LeagueController
+	PlayerController         controllers.PlayerController
+	UserController           controllers.UserController
+	PokemonSpeciesController controllers.PokemonSpeciesController
 }

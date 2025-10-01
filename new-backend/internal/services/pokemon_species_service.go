@@ -11,7 +11,7 @@ import (
 )
 
 type PokemonSpeciesService interface {
-	GetAllPokemonSpecies() ([]models.PokemonSpecies, error)
+	GetAllPokemonSpecies() ([]common.PokemonSpeciesListDTO, error) // Updated return type
 	ListPokemonSpecies(filter string) ([]models.PokemonSpecies, error)
 	GetPokemonSpeciesByID(id int64) (*models.PokemonSpecies, error)
 	GetPokemonSpeciesByName(name string) (*models.PokemonSpecies, error)
@@ -36,14 +36,29 @@ func NewPokemonSpeciesService(
 }
 
 // retrieves all pokemon species.
-func (s *pokemonServiceImpl) GetAllPokemonSpecies() ([]models.PokemonSpecies, error) {
-	pokemon, err := s.pokemonRepo.GetAllPokemonSpecies()
+func (s *pokemonServiceImpl) GetAllPokemonSpecies() ([]common.PokemonSpeciesListDTO, error) { // Updated return type
+	allPokemon, err := s.pokemonRepo.GetAllPokemonSpecies()
 	if err != nil {
 		log.Printf("(Error: PokemonSpeciesService.GetAllPokemonSpecies) - Failed to get all pokemon species: %v", err)
 		return nil, common.ErrInternalService
 	}
+
+	var pokemonDTOs []common.PokemonSpeciesListDTO
+	for _, pokemon := range allPokemon {
+		primaryType := ""
+		if len(pokemon.Types) > 0 {
+			primaryType = pokemon.Types[0]
+		}
+		pokemonDTOs = append(pokemonDTOs, common.PokemonSpeciesListDTO{
+			ID:           pokemon.ID,
+			Name:         pokemon.Name,
+			PrimaryType:  primaryType,
+			FrontDefault: pokemon.Sprites.FrontDefault,
+		})
+	}
+
 	log.Println("Success")
-	return pokemon, nil
+	return pokemonDTOs, nil
 }
 
 // lists pokemon species based on a filter.
