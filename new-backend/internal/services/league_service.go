@@ -14,7 +14,7 @@ import (
 // defines the interface for league-related business logic.
 type LeagueService interface {
 	// handles the business logic for creating a new league.
-	CreateLeague(userID uuid.UUID, req *common.LeagueRequest) (*models.League, error)
+	CreateLeague(userID uuid.UUID, req *common.LeagueCreateRequestDTO) (*models.League, error)
 	// Get league entity using leagueID
 	GetLeagueByIDForUser(userID, leagueID uuid.UUID) (*models.League, error)
 	// gets all Leagues where userID is the commissioner
@@ -51,7 +51,7 @@ func NewLeagueService(
 }
 
 // handles the business logic for creating a new league.
-func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueRequest) (*models.League, error) {
+func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueCreateRequestDTO) (*models.League, error) {
 	const maxLeaguesCommisionable = 2
 
 	// check if user already has two owned leagues

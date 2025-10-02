@@ -33,7 +33,7 @@ func TestLeaguePokemonService_CreatePokemonForLeague(t *testing.T) {
 	testCost := 100
 
 	currentUser := &models.User{ID: testUserID}
-	input := &common.LeaguePokemonCreateRequest{
+	input := &common.LeaguePokemonCreateRequestDTO{
 		LeagueID:         testLeagueID,
 		PokemonSpeciesID: testPokemonSpeciesID,
 		Cost:             &testCost,
@@ -106,7 +106,8 @@ func TestLeaguePokemonService_CreatePokemonForLeague(t *testing.T) {
 		mockLeagueRepo.On("GetLeagueByID", testLeagueID).Return((*models.League)(nil), internalErr).Once()
 
 		result, err := service.CreatePokemonForLeague(currentUser, input)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		// Service returns common.ErrLeagueNotFound for ANY error from getLeagueByID
+		assert.ErrorIs(t, err, common.ErrLeagueNotFound)
 		assert.Nil(t, result)
 
 		mockLeagueRepo.AssertExpectations(t)
@@ -121,7 +122,8 @@ func TestLeaguePokemonService_CreatePokemonForLeague(t *testing.T) {
 		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", testPokemonSpeciesID).Return((*models.PokemonSpecies)(nil), internalErr).Once()
 
 		result, err := service.CreatePokemonForLeague(currentUser, input)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		// Service returns common.ErrPokemonSpeciesNotFound for ANY error from getPokemonSpeciesByID
+		assert.ErrorIs(t, err, common.ErrPokemonSpeciesNotFound)
 		assert.Nil(t, result)
 
 		mockLeagueRepo.AssertExpectations(t)
@@ -172,7 +174,7 @@ func TestLeaguePokemonService_BatchCreatePokemonForLeague(t *testing.T) {
 	currentUser := &models.User{ID: testUserID}
 
 	t.Run("Successfully creates multiple league pokemon", func(t *testing.T) {
-		inputs := []*common.LeaguePokemonCreateRequest{
+		inputs := []common.LeaguePokemonCreateRequestDTO{
 			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &[]int{100}[0]},
 			{LeagueID: testLeagueID, PokemonSpeciesID: 2, Cost: &[]int{150}[0]},
 		}
@@ -189,7 +191,7 @@ func TestLeaguePokemonService_BatchCreatePokemonForLeague(t *testing.T) {
 		mockLeagueRepo.On("GetLeagueByID", testLeagueID).Return(league, nil).Once()
 		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", int64(1)).Return(pokemonSpecies1, nil).Once()
 		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", int64(2)).Return(pokemonSpecies2, nil).Once()
-		mockLeaguePokemonRepo.On("CreateLeaguePokemonBatch", expectedBatch).Return(nil).Once()
+		mockLeaguePokemonRepo.On("CreateLeaguePokemonBatch", expectedBatch).Return(expectedBatch, nil).Once()
 
 		results, err := service.BatchCreatePokemonForLeague(currentUser, inputs)
 		assert.NoError(t, err)
@@ -205,7 +207,7 @@ func TestLeaguePokemonService_BatchCreatePokemonForLeague(t *testing.T) {
 	})
 
 	t.Run("Returns empty slice for empty input", func(t *testing.T) {
-		inputs := []*common.LeaguePokemonCreateRequest{}
+		inputs := []common.LeaguePokemonCreateRequestDTO{}
 
 		results, err := service.BatchCreatePokemonForLeague(currentUser, inputs)
 		assert.NoError(t, err)
@@ -218,18 +220,19 @@ func TestLeaguePokemonService_BatchCreatePokemonForLeague(t *testing.T) {
 	})
 
 	t.Run("Fails if any league in batch is not found", func(t *testing.T) {
-		inputs := []*common.LeaguePokemonCreateRequest{
+		testLeagueID2 := uuid.New()
+		inputs := []common.LeaguePokemonCreateRequestDTO{
 			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &[]int{100}[0]},
-			{LeagueID: uuid.New(), PokemonSpeciesID: 2, Cost: &[]int{150}[0]}, // Second league not found
+			{LeagueID: testLeagueID2, PokemonSpeciesID: 2, Cost: &[]int{150}[0]},
 		}
 		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusSetup}
 
 		// First league lookup succeeds
-		mockLeagueRepo.On("GetLeagueByID", inputs[0].LeagueID).Return(league, nil).Once()
+		mockLeagueRepo.On("GetLeagueByID", testLeagueID).Return(league, nil).Once()
 		// First pokemon species lookup succeeds
-		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", inputs[0].PokemonSpeciesID).Return(&models.PokemonSpecies{ID: inputs[0].PokemonSpeciesID}, nil).Once()
+		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", int64(1)).Return(&models.PokemonSpecies{ID: 1}, nil).Once()
 		// Second league lookup fails - this should cause early return
-		mockLeagueRepo.On("GetLeagueByID", inputs[1].LeagueID).Return((*models.League)(nil), gorm.ErrRecordNotFound).Once()
+		mockLeagueRepo.On("GetLeagueByID", testLeagueID2).Return((*models.League)(nil), gorm.ErrRecordNotFound).Once()
 
 		results, err := service.BatchCreatePokemonForLeague(currentUser, inputs)
 		assert.ErrorIs(t, err, common.ErrLeagueNotFound)
@@ -242,7 +245,7 @@ func TestLeaguePokemonService_BatchCreatePokemonForLeague(t *testing.T) {
 	})
 
 	t.Run("Fails if any league in batch is not in Setup status", func(t *testing.T) {
-		inputs := []*common.LeaguePokemonCreateRequest{
+		inputs := []common.LeaguePokemonCreateRequestDTO{
 			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &[]int{100}[0]},
 			{LeagueID: testLeagueID, PokemonSpeciesID: 2, Cost: &[]int{150}[0]},
 		}
@@ -262,9 +265,9 @@ func TestLeaguePokemonService_BatchCreatePokemonForLeague(t *testing.T) {
 	})
 
 	t.Run("Fails if any pokemon species in batch not found", func(t *testing.T) {
-		inputs := []*common.LeaguePokemonCreateRequest{
+		inputs := []common.LeaguePokemonCreateRequestDTO{
 			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &[]int{100}[0]},
-			{LeagueID: testLeagueID, PokemonSpeciesID: 999, Cost: &[]int{150}[0]}, // PokemonSpeciesID 999 not found
+			{LeagueID: testLeagueID, PokemonSpeciesID: 999, Cost: &[]int{150}[0]},
 		}
 		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusSetup}
 
@@ -283,7 +286,7 @@ func TestLeaguePokemonService_BatchCreatePokemonForLeague(t *testing.T) {
 	})
 
 	t.Run("Fails if batch create operation returns internal error", func(t *testing.T) {
-		inputs := []*common.LeaguePokemonCreateRequest{
+		inputs := []common.LeaguePokemonCreateRequestDTO{
 			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &[]int{100}[0]},
 			{LeagueID: testLeagueID, PokemonSpeciesID: 2, Cost: &[]int{150}[0]},
 		}
@@ -300,7 +303,7 @@ func TestLeaguePokemonService_BatchCreatePokemonForLeague(t *testing.T) {
 		mockLeagueRepo.On("GetLeagueByID", testLeagueID).Return(league, nil).Once()
 		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", int64(1)).Return(pokemonSpecies1, nil).Once()
 		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", int64(2)).Return(pokemonSpecies2, nil).Once()
-		mockLeaguePokemonRepo.On("CreateLeaguePokemonBatch", expectedBatch).Return(internalErr).Once()
+		mockLeaguePokemonRepo.On("CreateLeaguePokemonBatch", expectedBatch).Return(nil, internalErr).Once()
 
 		results, err := service.BatchCreatePokemonForLeague(currentUser, inputs)
 		assert.ErrorIs(t, err, common.ErrInternalService)

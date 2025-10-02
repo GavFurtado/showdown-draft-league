@@ -23,12 +23,12 @@ type PokemonSpeciesController interface {
 	// admin only routes; not implemented
 	// TODO: implement the admin only routes after admin only middleware checking is done
 	//
-	// POST to create a new PokemonSpecies
-	CreatePokemonSpecies(ctx *gin.Context)
-	// PUT to update an existing PokemonSpecies
-	UpdatePokemonSpecies(ctx *gin.Context)
-	// DELETE an existing PokemonSpecies
-	DeletePokemonSpecies(ctx *gin.Context)
+	// // POST to create a new PokemonSpecies
+	// CreatePokemonSpecies(ctx *gin.Context)
+	// // PUT to update an existing PokemonSpecies
+	// UpdatePokemonSpecies(ctx *gin.Context)
+	// // DELETE an existing PokemonSpecies
+	// DeletePokemonSpecies(ctx *gin.Context)
 }
 
 type pokemonSpeciesControllerImpl struct {
@@ -59,6 +59,7 @@ func (c *pokemonSpeciesControllerImpl) GetAllPokemonSpecies(ctx *gin.Context) {
 
 // GET api/pokemon_species/:id
 // GetPokemonSpeciesByID returns a PokemonSpecies by it's internal ID
+// NOTE: this currently
 func (c *pokemonSpeciesControllerImpl) GetPokemonSpeciesByID(ctx *gin.Context) {
 	pokemonIDstr := ctx.Param("id")
 	pokemonID, err := strconv.ParseInt(pokemonIDstr, 10, 64)

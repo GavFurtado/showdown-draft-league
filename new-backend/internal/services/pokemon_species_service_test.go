@@ -14,8 +14,7 @@ import (
 
 func TestPokemonSpeciesService_GetPokemonSpeciesByID(t *testing.T) {
 	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
-	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository) // Added mock
-	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo, mockLeaguePokemonRepo)
+	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo)
 
 	pokemonID := int64(1)
 
@@ -58,8 +57,7 @@ func TestPokemonSpeciesService_GetPokemonSpeciesByID(t *testing.T) {
 
 func TestPokemonSpeciesService_GetPokemonSpeciesByName(t *testing.T) {
 	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
-	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository) // Added mock
-	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo, mockLeaguePokemonRepo)
+	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo)
 
 	pokemonName := "Pikachu"
 
@@ -102,18 +100,22 @@ func TestPokemonSpeciesService_GetPokemonSpeciesByName(t *testing.T) {
 
 func TestPokemonSpeciesService_GetAllPokemonSpecies(t *testing.T) {
 	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
-	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository) // Added mock
-	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo, mockLeaguePokemonRepo)
+	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo)
 
 	t.Run("Successfully gets all pokemon species", func(t *testing.T) {
-		expectedPokemon := []models.PokemonSpecies{
-			{ID: 1, Name: "Pikachu"},
-			{ID: 2, Name: "Charmander"},
+		expectedPokemon := []common.PokemonSpeciesListDTO{
+			{ID: 1, Name: "Pikachu", Types: []string{"electric"}},
+			{ID: 2, Name: "Charmander", Types: []string{"fire"}},
 		}
-		mockPokemonSpeciesRepo.On("GetAllPokemonSpecies").Return(expectedPokemon, nil).Once()
+
+		mockPokemonSpeciesRepo.On("GetAllPokemonSpecies").Return([]models.PokemonSpecies{
+			{ID: 1, Name: "Pikachu", Types: models.StringArray{"electric"}},
+			{ID: 2, Name: "Charmander", Types: models.StringArray{"fire"}},
+		}, nil).Once()
 
 		pokemon, err := service.GetAllPokemonSpecies()
 		assert.NoError(t, err)
+
 		assert.Equal(t, expectedPokemon, pokemon)
 		mockPokemonSpeciesRepo.AssertExpectations(t)
 	})
@@ -140,8 +142,7 @@ func TestPokemonSpeciesService_GetAllPokemonSpecies(t *testing.T) {
 
 func TestPokemonSpeciesService_ListPokemonSpecies(t *testing.T) {
 	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
-	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
-	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo, mockLeaguePokemonRepo)
+	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo)
 
 	filter := "Pika"
 
@@ -179,8 +180,7 @@ func TestPokemonSpeciesService_ListPokemonSpecies(t *testing.T) {
 
 func TestPokemonSpeciesService_CreatePokemonSpecies(t *testing.T) {
 	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
-	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository) // Added mock
-	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo, mockLeaguePokemonRepo)
+	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo)
 
 	newPokemon := &models.PokemonSpecies{ID: 3, Name: "Bulbasaur"}
 
@@ -264,8 +264,7 @@ func TestPokemonSpeciesService_CreatePokemonSpecies(t *testing.T) {
 
 func TestPokemonSpeciesService_UpdatePokemonSpecies(t *testing.T) {
 	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
-	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
-	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo, mockLeaguePokemonRepo)
+	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo)
 
 	updatedPokemon := &models.PokemonSpecies{ID: 1, Name: "UpdatedPikachu"}
 
@@ -320,8 +319,7 @@ func TestPokemonSpeciesService_UpdatePokemonSpecies(t *testing.T) {
 
 func TestPokemonSpeciesService_DeletePokemonSpecies(t *testing.T) {
 	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
-	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
-	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo, mockLeaguePokemonRepo)
+	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo)
 
 	pokemonID := int64(1)
 

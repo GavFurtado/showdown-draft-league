@@ -27,11 +27,9 @@ type pokemonServiceImpl struct {
 
 func NewPokemonSpeciesService(
 	pokemonRepo repositories.PokemonSpeciesRepository,
-	leaguePokemonRepo repositories.LeaguePokemonRepository,
 ) PokemonSpeciesService {
 	return &pokemonServiceImpl{
-		pokemonRepo:       pokemonRepo,
-		leaguePokemonRepo: leaguePokemonRepo,
+		pokemonRepo: pokemonRepo,
 	}
 }
 

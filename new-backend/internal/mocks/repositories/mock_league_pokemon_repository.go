@@ -19,9 +19,13 @@ func (m *MockLeaguePokemonRepository) CreateLeaguePokemon(leaguePokemon *models.
 	return result, args.Error(1)
 }
 
-func (m *MockLeaguePokemonRepository) CreateLeaguePokemonBatch(leaguePokemon []models.LeaguePokemon) error {
+func (m *MockLeaguePokemonRepository) CreateLeaguePokemonBatch(leaguePokemon []models.LeaguePokemon) ([]models.LeaguePokemon, error) {
 	args := m.Called(leaguePokemon)
-	return args.Error(0)
+	var result []models.LeaguePokemon
+	if args.Get(0) != nil {
+		result = args.Get(0).([]models.LeaguePokemon)
+	}
+	return result, args.Error(1)
 }
 
 func (m *MockLeaguePokemonRepository) GetLeaguePokemonByID(id uuid.UUID) (*models.LeaguePokemon, error) {

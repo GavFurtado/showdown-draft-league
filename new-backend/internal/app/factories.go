@@ -40,8 +40,7 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 		AuthService:           services.NewAuthService(repos.UserRepository, jwtService, discordOauthConfig),
 		DraftService:          services.NewDraftService(repos.LeagueRepository, repos.LeaguePokemonRepository, repos.DraftRepository, repos.DraftedPokemonRepository, repos.PlayerRepository, &webhookService),
 		DraftedPokemonService: services.NewDraftedPokemonService(repos.DraftedPokemonRepository, repos.UserRepository, repos.LeagueRepository, repos.PlayerRepository),
-		// why is pokemon species service using league pokemon repo???
-		PokemonSpeciesService: services.NewPokemonSpeciesService(repos.PokemonSpeciesRepository, repos.LeaguePokemonRepository),
+		PokemonSpeciesService: services.NewPokemonSpeciesService(repos.PokemonSpeciesRepository),
 		// GameService
 	}
 }
@@ -53,5 +52,6 @@ func NewControllers(services *Services, cfg *config.Config, discordOauthConfig *
 		PlayerController:         controllers.NewPlayerController(services.PlayerService),
 		UserController:           controllers.NewUserController(services.UserService),
 		PokemonSpeciesController: controllers.NewPokemonSpeciesController(services.PokemonSpeciesService),
+		LeaguePokemonController:  controllers.NewLeaguePokemonSpeciesController(services.LeaguePokemonService),
 	}
 }

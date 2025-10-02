@@ -35,13 +35,13 @@ func (ctrl *leagueControllerImpl) CreateLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
 		log.Printf("(Error: CreateLeague) - no user in context\n")
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "User information not available"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": common.ErrNoUserInContext.Error()})
 		return
 	}
 
-	var req common.LeagueRequest
+	var req common.LeagueCreateRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
 	}
 

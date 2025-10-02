@@ -16,7 +16,7 @@ type DiscordUser struct {
 }
 
 // Request Structs
-type LeagueRequest struct {
+type LeagueCreateRequestDTO struct {
 	Name                string              `json:"name" binding:"required"`
 	RulesetDescription  string              `json:"ruleset_description"`
 	MaxPokemonPerPlayer int                 `json:"max_pokemon_per_player" binding:"gte=1,max=12"`
@@ -25,7 +25,7 @@ type LeagueRequest struct {
 	Format              models.LeagueFormat `json:"format"`
 }
 
-type UpdateProfileRequest struct {
+type PlayerUpdateProfileRequest struct {
 	ShowdownName *string `json:"showdown_name" binding:"omitempty"`
 }
 
@@ -47,7 +47,7 @@ type UpdatePlayerInfoRequest struct {
 }
 
 // -- LeaguePokemon Related --
-type LeaguePokemonCreateRequest struct {
+type LeaguePokemonCreateRequestDTO struct {
 	LeagueID         uuid.UUID `json:"league_id" binding:"required"`
 	PokemonSpeciesID int64     `json:"pokemon_species_id" binding:"required"`
 	Cost             *int      `json:"cost" binding:"required" validate:"max=20"`

@@ -37,4 +37,5 @@ type Controllers struct {
 	PlayerController         controllers.PlayerController
 	UserController           controllers.UserController
 	PokemonSpeciesController controllers.PokemonSpeciesController
+	LeaguePokemonController  controllers.LeaguePokemonController
 }

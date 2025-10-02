@@ -70,7 +70,7 @@ func (c *playerControllerImpl) JoinLeague(ctx *gin.Context) {
 	log.Printf("PlayerController: JoinLeague - received join player request")
 	player, err := c.playerService.CreatePlayerHandler(&req)
 	if err != nil {
-		log.Printf("PlayerController: JoinLeague - Service Method returned an error")
+		log.Printf("PlayerController: JoinLeague - Service Method returned an error\n")
 		switch err {
 		case common.ErrUserNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
@@ -106,7 +106,7 @@ func (c *playerControllerImpl) GetPlayerByID(ctx *gin.Context) {
 
 	player, err := c.playerService.GetPlayerByIDHandler(playerID, currentUser)
 	if err != nil {
-		log.Printf("LOG: (PlayerController: GetPlayerByID) - Error occured in the Service Method")
+		log.Printf("LOG: (PlayerController: GetPlayerByID) - Error occured in the Service Method\n")
 		switch err {
 		case common.ErrPlayerNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
