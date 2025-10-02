@@ -106,7 +106,7 @@ func (c *playerControllerImpl) GetPlayerByID(ctx *gin.Context) {
 
 	player, err := c.playerService.GetPlayerByIDHandler(playerID, currentUser)
 	if err != nil {
-		log.Printf("PlayerController: GetPlayerByID - Error occured in the Service Method")
+		log.Printf("LOG: (PlayerController: GetPlayerByID) - Error occured in the Service Method")
 		switch err {
 		case common.ErrPlayerNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})

@@ -35,6 +35,8 @@ func RegisterRoutes(
 	pokemonSpecies := r.Group("/api/pokemon_species")
 	{
 		pokemonSpecies.GET("/", controllers.PokemonSpeciesController.GetAllPokemonSpecies)
+		pokemonSpecies.GET("/:id", controllers.PokemonSpeciesController.GetPokemonSpeciesByID)
+		pokemonSpecies.GET("/name/:name", controllers.PokemonSpeciesController.GetPokemonSpeciesByName)
 	}
 
 	// ---- Auth Related Routes ---

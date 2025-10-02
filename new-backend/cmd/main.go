@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -80,8 +81,7 @@ func main() {
 	routes.RegisterRoutes(server, db, cfg, appRepositories, appServices, appControllers)
 
 	// Run server
-	log.Printf("Server starting...\n")
-	log.Printf("Server running on port: %s\n", port)
+	fmt.Printf("Server started...\n")
 	if err := server.Run(":" + port); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}

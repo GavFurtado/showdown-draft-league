@@ -53,7 +53,6 @@ func (s *pokemonServiceImpl) GetAllPokemonSpecies() ([]common.PokemonSpeciesList
 		})
 	}
 
-	log.Println("Success")
 	return pokemonDTOs, nil
 }
 
@@ -65,7 +64,6 @@ func (s *pokemonServiceImpl) ListPokemonSpecies(filter string) ([]models.Pokemon
 		return nil, common.ErrInternalService
 	}
 
-	log.Println("Success")
 	return pokemon, nil
 }
 
@@ -86,7 +84,6 @@ func (s *pokemonServiceImpl) GetPokemonSpeciesByID(id int64) (*models.PokemonSpe
 		return nil, common.ErrInternalService
 	}
 
-	log.Println("Success")
 	return pokemon, nil
 }
 
@@ -107,7 +104,6 @@ func (s *pokemonServiceImpl) GetPokemonSpeciesByName(name string) (*models.Pokem
 		return nil, common.ErrInternalService
 	}
 
-	log.Println("Success")
 	return pokemon, nil
 }
 
@@ -147,7 +143,6 @@ func (s *pokemonServiceImpl) CreatePokemonSpecies(pokemon *models.PokemonSpecies
 		return common.ErrInternalService
 	}
 
-	log.Println("Success")
 	return nil
 }
 
@@ -176,7 +171,6 @@ func (s *pokemonServiceImpl) UpdatePokemonSpecies(pokemon *models.PokemonSpecies
 		return common.ErrInternalService
 	}
 
-	log.Println("Success")
 	return nil
 }
 
