@@ -13,9 +13,12 @@ import (
 )
 
 type LeaguePokemonService interface {
+	GetAllPokemonInLeague(currentUser *models.User, leagueID uuid.UUID) ([]models.LeaguePokemon, error)
 	CreatePokemonForLeague(currentUser *models.User, input *common.LeaguePokemonCreateRequestDTO) (*models.LeaguePokemon, error)
 	BatchCreatePokemonForLeague(currentUser *models.User, inputs []common.LeaguePokemonCreateRequestDTO) ([]models.LeaguePokemon, error)
 	UpdateLeaguePokemon(currentUser *models.User, input *common.LeaguePokemonUpdateRequest) (*models.LeaguePokemon, error)
+
+	// Consider implementing service methods for GetAvailablePokemonByLeague
 }
 
 type leaguePokemonServiceImpl struct {
@@ -66,6 +69,29 @@ func (s *leaguePokemonServiceImpl) getPokemonSpeciesByID(pokemonSpeciesID int64)
 		return nil, common.ErrInternalService
 	}
 	return pokemon, nil
+}
+
+// GetAllPokemonInLeague returns all pokemon in a particular league
+// Player permissions required: rbac.PermissionReadLeaguePokemon (consider making it unprotected)
+func (s *leaguePokemonServiceImpl) GetAllPokemonInLeague(currentUser *models.User, leagueID uuid.UUID) ([]models.LeaguePokemon, error) {
+	// leagueID should already be validated by middleware
+
+	// // commented in case this ever becomes an unprotected route
+	// league, err := s.getLeagueByID(leagueID)
+	// if err != nil {
+	// 	return nil, err // correct error already returned by helper
+	// }
+
+	leaguePokemon, err := s.leaguePokemonRepo.GetAllPokemonByLeague(leagueID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound { // should be impossible
+			log.Printf("LOG: (Service: CreatePokemonForLeague) - league %s not found (user %s): %v", leagueID, currentUser.ID, err)
+			return nil, common.ErrLeagueNotFound
+		}
+		log.Printf("LOG: (Service: CreatePokemonForLeague) - error fetching all league pokemon for league %s (user %s): %v", leagueID, currentUser.ID, err)
+		return nil, common.ErrInternalService
+	}
+	return leaguePokemon, nil
 }
 
 // handles creating a single LeaguePokemon entry.

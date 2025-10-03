@@ -201,7 +201,7 @@ func (r *leaguePokemonRepositoryImpl) MarkPokemonAvailable(leagueID, pokemonSpec
 func (r *leaguePokemonRepositoryImpl) GetPokemonByCostRange(leagueID uuid.UUID, minCost, maxCost int) ([]models.LeaguePokemon, error) {
 	var leaguePokemon []models.LeaguePokemon
 	err := r.db.Preload("PokemonSpecies").
-		Where("league_id = ? AND cost BETWEEN ? AND ? AND is_available = ?", leagueID, minCost, maxCost, true).
+		Where("league_id = ? AND cost BETWEEN ? AND ?", leagueID, minCost, maxCost).
 		Order("cost ASC").
 		Find(&leaguePokemon).Error
 

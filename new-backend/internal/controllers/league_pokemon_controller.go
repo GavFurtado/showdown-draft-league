@@ -9,6 +9,7 @@ import (
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/middleware"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 // LeaguePokemonController handles CRUD HTTP requests on LeaguePokemon
@@ -19,6 +20,8 @@ type LeaguePokemonController interface {
 	BatchCreatePokemonForLeague(ctx *gin.Context)
 	// PUT to update LeaguePokemon for a league
 	UpdateLeaguePokemon(ctx *gin.Context)
+	// GETs all LeaguePokemon for a league
+	GetAllPokemonByLeague(ctx *gin.Context)
 
 	// more to be implemented
 }
@@ -37,7 +40,7 @@ func NewLeaguePokemonSpeciesController(leaguePokemonService services.LeaguePokem
 func (c *leaguePokemonControllerImpl) CreatePokemonForLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
-		log.Printf("LOG: (LeaguePokemonController: CreatePokemonForLeague) - error: no user in context\n")
+		log.Printf("LOG: (Controller: CreatePokemonForLeague) - error: no user in context\n")
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": common.ErrNoUserInContext.Error()})
 		return
 	}
@@ -48,10 +51,10 @@ func (c *leaguePokemonControllerImpl) CreatePokemonForLeague(ctx *gin.Context) {
 		return
 	}
 
-	fmt.Printf("INFO: (LeaguePokemonController: CreatePokemonForLeague) - Received league pokemon creation request: %v\n", req)
+	fmt.Printf("INFO: (Controller: CreatePokemonForLeague) - Received league pokemon creation request: %v\n", req)
 	leaguePokemon, err := c.leaguePokemonService.CreatePokemonForLeague(currentUser, &req)
 	if err != nil {
-		log.Printf("LOG: (LeaguePokemonController: CreatePokemonForLeague) - Service method Error: %v\n", err)
+		log.Printf("LOG: (Controller: CreatePokemonForLeague) - Service method Error: %v\n", err)
 		switch err {
 		case common.ErrInvalidState:
 			ctx.JSON(http.StatusForbidden, gin.H{"error": common.ErrInvalidState.Error()})
@@ -65,7 +68,7 @@ func (c *leaguePokemonControllerImpl) CreatePokemonForLeague(ctx *gin.Context) {
 		return
 	}
 
-	fmt.Printf("INFO: (LeaguePokemonController: CreatePokemonForLeague) - Created LeaguePokemon %s(%s) successfully for league %s.\n",
+	fmt.Printf("INFO: (Controller: CreatePokemonForLeague) - Created LeaguePokemon %s(%s) successfully for league %s.\n",
 		leaguePokemon.ID, leaguePokemon.PokemonSpecies.Name, leaguePokemon.LeagueID)
 
 	ctx.JSON(http.StatusOK, leaguePokemon)
@@ -74,7 +77,7 @@ func (c *leaguePokemonControllerImpl) CreatePokemonForLeague(ctx *gin.Context) {
 func (c *leaguePokemonControllerImpl) BatchCreatePokemonForLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
-		log.Printf("LOG: (LeaguePokemonController: BatchCreatePokemonForLeague) - error: no user in context\n")
+		log.Printf("LOG: (Controller: BatchCreatePokemonForLeague) - error: no user in context\n")
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": common.ErrNoUserInContext.Error()})
 		return
 	}
@@ -85,10 +88,10 @@ func (c *leaguePokemonControllerImpl) BatchCreatePokemonForLeague(ctx *gin.Conte
 		return
 	}
 
-	fmt.Printf("INFO: (LeaguePokemonController: BatchCreatePokemonForLeague) - Received batch league pokemon creation request with %d items\n", len(req))
+	fmt.Printf("INFO: (Controller: BatchCreatePokemonForLeague) - Received batch league pokemon creation request with %d items\n", len(req))
 	leaguePokemon, err := c.leaguePokemonService.BatchCreatePokemonForLeague(currentUser, req)
 	if err != nil {
-		log.Printf("LOG: (LeaguePokemonController: BatchCreatePokemonForLeague) - Service method Error: %v\n", err)
+		log.Printf("LOG: (Controller: BatchCreatePokemonForLeague) - Service method Error: %v\n", err)
 		switch err {
 		case common.ErrInvalidState:
 			ctx.JSON(http.StatusForbidden, gin.H{"error": common.ErrInvalidState.Error()})
@@ -102,7 +105,7 @@ func (c *leaguePokemonControllerImpl) BatchCreatePokemonForLeague(ctx *gin.Conte
 		return
 	}
 
-	fmt.Printf("INFO: (LeaguePokemonController: BatchCreatePokemonForLeague) - Created %d LeaguePokemon successfully.\n",
+	fmt.Printf("INFO: (Controller: BatchCreatePokemonForLeague) - Created %d LeaguePokemon successfully.\n",
 		len(leaguePokemon))
 
 	ctx.JSON(http.StatusOK, leaguePokemon)
@@ -111,7 +114,7 @@ func (c *leaguePokemonControllerImpl) BatchCreatePokemonForLeague(ctx *gin.Conte
 func (c *leaguePokemonControllerImpl) UpdateLeaguePokemon(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
-		log.Printf("LOG: (LeaguePokemonController: BatchCreatePokemonForLeague) - error: no user in context\n")
+		log.Printf("LOG: (Controller: BatchCreatePokemonForLeague) - error: no user in context\n")
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": common.ErrNoUserInContext.Error()})
 		return
 	}
@@ -121,10 +124,10 @@ func (c *leaguePokemonControllerImpl) UpdateLeaguePokemon(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 	}
 
-	fmt.Printf("INFO: (LeaguePokemonController: UpdateLeaguePokemon) - Received update league pokemon request: %v\n", req)
+	fmt.Printf("INFO: (Controller: UpdateLeaguePokemon) - Received update league pokemon request: %v\n", req)
 	updatedLeaguePokemon, err := c.leaguePokemonService.UpdateLeaguePokemon(currentUser, &req)
 	if err != nil {
-		log.Printf("LOG: (LeaguePokemonController: UpdateLeaguePokemon) - Service method Error: %v\n", err)
+		log.Printf("LOG: (Controller: UpdateLeaguePokemon) - Service method Error: %v\n", err)
 		switch err {
 		case common.ErrLeaguePokemonNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrLeaguePokemonNotFound.Error()})
@@ -143,4 +146,37 @@ func (c *leaguePokemonControllerImpl) UpdateLeaguePokemon(ctx *gin.Context) {
 	fmt.Printf("INFO: (LeaguePokemonController: BatchCreatePokemonForLeague) - Updated LeaguePokemon %s(%s) successfully.\n",
 		updatedLeaguePokemon.ID, updatedLeaguePokemon.PokemonSpecies.Name)
 	ctx.JSON(http.StatusOK, updatedLeaguePokemon)
+}
+
+// GET api/leagues/:leagueId/all
+// GETs all LeaguePokemon for a league
+// Player permission required: rbac.PermissionReadLeaguePokemon
+func (c *leaguePokemonControllerImpl) GetAllPokemonByLeague(ctx *gin.Context) {
+	currentUser, exists := middleware.GetUserFromContext(ctx)
+	if !exists {
+		log.Printf("LOG: (LeaguePokemonController: BatchCreatePokemonForLeague) - error: no user in context\n")
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": common.ErrNoUserInContext.Error()})
+		return
+	}
+
+	leagueIDstr := ctx.Param("leagueId")
+	leagueID, err := uuid.Parse(leagueIDstr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		return
+	}
+
+	fmt.Printf("INFO: (Controller: UpdateLeaguePokemon) - Received valid GetAllPokemonByLeague request (user %s).\n", currentUser.ID)
+	leaguePokemon, err := c.leaguePokemonService.GetAllPokemonInLeague(currentUser, leagueID)
+	if err != nil {
+		switch err {
+		case common.ErrLeagueNotFound:
+			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrLeagueNotFound.Error()})
+		default:
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
+		}
+		return
+	}
+
+	ctx.JSON(http.StatusOK, leaguePokemon)
 }

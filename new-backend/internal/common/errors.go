@@ -35,6 +35,6 @@ var (
 	ErrInternalService = errors.New("internal service error")
 
 	// Controller Errors
-	ErrParsingParams   = errors.New("error parsing params")
+	ErrParsingParams   = errors.New("error parsing params or bad params")
 	ErrNoUserInContext = errors.New("user information not available")
 )

@@ -12,8 +12,8 @@ type PokemonSpecies struct {
 	ID        int64          `gorm:"primaryKey;uniqueIndex" json:"id"`
 	DexID     int64          `gorm:"index;not null" json:"dex_id"`
 	Name      string         `gorm:"not null" json:"name"`
-	Types     StringArray    `gorm:"type:jsonb" json:"types"`     // Use custom type
-	Abilities AbilitiesArray `gorm:"type:jsonb" json:"abilities"` // Use custom type
+	Types     StringArray    `gorm:"type:jsonb" json:"types"`
+	Abilities AbilitiesArray `gorm:"type:jsonb" json:"abilities"`
 	Stats     BaseStats      `gorm:"type:jsonb" json:"stats"`
 	Sprites   Sprites        `gorm:"type:jsonb" json:"sprites"`
 
@@ -29,6 +29,10 @@ type BaseStats struct {
 	SpecialAttack  int `gorm:"not null" json:"special_attack"`
 	SpecialDefense int `gorm:"not null" json:"special_defense"`
 	Speed          int `gorm:"not null" json:"speed"`
+}
+type Sprites struct {
+	FrontDefault    string `json:"front_default"`
+	OfficialArtwork string `json:"official_artwork"`
 }
 
 // Value implements the driver.Valuer interface for BaseStats.
@@ -46,11 +50,6 @@ func (bs *BaseStats) Scan(value interface{}) error {
 		return errors.New("type assertion to []byte failed")
 	}
 	return json.Unmarshal(bytes, bs)
-}
-
-type Sprites struct {
-	FrontDefault    string `json:"front_default"`
-	OfficialArtwork string `json:"official_artwork"` // not used
 }
 
 // Value implements the driver.Valuer interface for Sprites.
