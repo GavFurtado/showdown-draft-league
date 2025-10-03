@@ -35,6 +35,12 @@ type Sprites struct {
 	OfficialArtwork string `json:"official_artwork"`
 }
 
+// Ability struct remains the same
+type Ability struct {
+	Name     string `json:"name"`
+	IsHidden bool   `gorm:"default:false" json:"is_hidden"`
+}
+
 // Value implements the driver.Valuer interface for BaseStats.
 func (bs BaseStats) Value() (driver.Value, error) {
 	return json.Marshal(bs)
@@ -91,12 +97,6 @@ func (sa *StringArray) Scan(value interface{}) error {
 		return errors.New("type assertion to []byte failed")
 	}
 	return json.Unmarshal(bytes, sa)
-}
-
-// Ability struct remains the same
-type Ability struct {
-	Name     string `json:"name"`
-	IsHidden bool   `gorm:"default:false" json:"is_hidden"`
 }
 
 // AbilitiesArray is a custom type for handling JSONB arrays of Ability structs
