@@ -35,7 +35,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 	testUserID := uuid.New()
 	startDate := time.Now()
 
-	input := &common.LeagueRequest{
+	input := &common.LeagueCreateRequestDTO{
 		Name:                "Test League",
 		RulesetDescription:  "Test rules",
 		MaxPokemonPerPlayer: 6,

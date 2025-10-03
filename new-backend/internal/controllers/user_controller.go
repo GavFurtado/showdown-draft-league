@@ -79,7 +79,7 @@ func (ctrl *UserController) UpdateProfile(ctx *gin.Context) {
 		return
 	}
 
-	var req common.UpdateProfileRequest
+	var req common.PlayerUpdateProfileRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Missing field(s) in the payload"})
 		return

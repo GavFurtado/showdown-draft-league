@@ -92,7 +92,7 @@ func TestUserService_UpdateProfileHandler(t *testing.T) {
 
 	userID := uuid.New()
 	showdownName := "newshowdown"
-	updateReq := common.UpdateProfileRequest{ShowdownName: &showdownName}
+	updateReq := common.PlayerUpdateProfileRequest{ShowdownName: &showdownName}
 
 	t.Run("Successfully updates user profile", func(t *testing.T) {
 		originalUser := &models.User{ID: userID, ShowdownUsername: "oldshowdown"}

@@ -451,4 +451,3 @@ func TestPlayerService_UpdatePlayerDraftPosition(t *testing.T) {
 	}
 	testPlayerUpdateByAuthorizedUser(t, "UpdatePlayerDraftPosition", updateFunc)
 }
-

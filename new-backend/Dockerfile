@@ -1,5 +1,5 @@
 # docker build -t server .
-# docker run -it -p 8080:8080 -v $(pwd):/app server-image
+# docker run -it -p 8080:8080 -v $(pwd):/app server
 
 # Use a Go base image
 FROM golang:1.23-alpine

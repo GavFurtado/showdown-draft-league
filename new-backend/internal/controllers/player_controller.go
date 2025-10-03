@@ -70,7 +70,7 @@ func (c *playerControllerImpl) JoinLeague(ctx *gin.Context) {
 	log.Printf("PlayerController: JoinLeague - received join player request")
 	player, err := c.playerService.CreatePlayerHandler(&req)
 	if err != nil {
-		log.Printf("PlayerController: JoinLeague - Service Method returned an error")
+		log.Printf("PlayerController: JoinLeague - Service Method returned an error\n")
 		switch err {
 		case common.ErrUserNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
@@ -106,7 +106,7 @@ func (c *playerControllerImpl) GetPlayerByID(ctx *gin.Context) {
 
 	player, err := c.playerService.GetPlayerByIDHandler(playerID, currentUser)
 	if err != nil {
-		log.Printf("PlayerController: GetPlayerByID - Error occured in the Service Method")
+		log.Printf("LOG: (PlayerController: GetPlayerByID) - Error occured in the Service Method\n")
 		switch err {
 		case common.ErrPlayerNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
@@ -124,7 +124,7 @@ func (c *playerControllerImpl) GetPlayerByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, player)
 }
 
-// GET /api/leagues/:id/players
+// GET /api/leagues/:leagueId/players
 // GET all players in a league :id
 func (c *playerControllerImpl) GetPlayersByLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
@@ -135,7 +135,7 @@ func (c *playerControllerImpl) GetPlayersByLeague(ctx *gin.Context) {
 	}
 
 	// get param
-	leagueIDStr := ctx.Param("id")
+	leagueIDStr := ctx.Param("leagueId")
 	leagueID, err := uuid.Parse(leagueIDStr)
 	if err != nil { // if the str was "" (which btw idk how that happens) it's still handled here
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})

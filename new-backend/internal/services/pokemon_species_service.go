@@ -11,7 +11,7 @@ import (
 )
 
 type PokemonSpeciesService interface {
-	GetAllPokemonSpecies() ([]models.PokemonSpecies, error)
+	GetAllPokemonSpecies() ([]common.PokemonSpeciesListDTO, error) // Updated return type
 	ListPokemonSpecies(filter string) ([]models.PokemonSpecies, error)
 	GetPokemonSpeciesByID(id int64) (*models.PokemonSpecies, error)
 	GetPokemonSpeciesByName(name string) (*models.PokemonSpecies, error)
@@ -27,23 +27,31 @@ type pokemonServiceImpl struct {
 
 func NewPokemonSpeciesService(
 	pokemonRepo repositories.PokemonSpeciesRepository,
-	leaguePokemonRepo repositories.LeaguePokemonRepository,
 ) PokemonSpeciesService {
 	return &pokemonServiceImpl{
-		pokemonRepo:       pokemonRepo,
-		leaguePokemonRepo: leaguePokemonRepo,
+		pokemonRepo: pokemonRepo,
 	}
 }
 
 // retrieves all pokemon species.
-func (s *pokemonServiceImpl) GetAllPokemonSpecies() ([]models.PokemonSpecies, error) {
-	pokemon, err := s.pokemonRepo.GetAllPokemonSpecies()
+func (s *pokemonServiceImpl) GetAllPokemonSpecies() ([]common.PokemonSpeciesListDTO, error) { // Updated return type
+	allPokemon, err := s.pokemonRepo.GetAllPokemonSpecies()
 	if err != nil {
 		log.Printf("(Error: PokemonSpeciesService.GetAllPokemonSpecies) - Failed to get all pokemon species: %v", err)
 		return nil, common.ErrInternalService
 	}
-	log.Println("Success")
-	return pokemon, nil
+
+	var pokemonDTOs []common.PokemonSpeciesListDTO
+	for _, pokemon := range allPokemon {
+		pokemonDTOs = append(pokemonDTOs, common.PokemonSpeciesListDTO{
+			ID:           pokemon.ID,
+			Name:         pokemon.Name,
+			Types:        pokemon.Types,
+			FrontDefault: pokemon.Sprites.FrontDefault,
+		})
+	}
+
+	return pokemonDTOs, nil
 }
 
 // lists pokemon species based on a filter.
@@ -54,7 +62,6 @@ func (s *pokemonServiceImpl) ListPokemonSpecies(filter string) ([]models.Pokemon
 		return nil, common.ErrInternalService
 	}
 
-	log.Println("Success")
 	return pokemon, nil
 }
 
@@ -75,7 +82,6 @@ func (s *pokemonServiceImpl) GetPokemonSpeciesByID(id int64) (*models.PokemonSpe
 		return nil, common.ErrInternalService
 	}
 
-	log.Println("Success")
 	return pokemon, nil
 }
 
@@ -96,7 +102,6 @@ func (s *pokemonServiceImpl) GetPokemonSpeciesByName(name string) (*models.Pokem
 		return nil, common.ErrInternalService
 	}
 
-	log.Println("Success")
 	return pokemon, nil
 }
 
@@ -136,7 +141,6 @@ func (s *pokemonServiceImpl) CreatePokemonSpecies(pokemon *models.PokemonSpecies
 		return common.ErrInternalService
 	}
 
-	log.Println("Success")
 	return nil
 }
 
@@ -165,7 +169,6 @@ func (s *pokemonServiceImpl) UpdatePokemonSpecies(pokemon *models.PokemonSpecies
 		return common.ErrInternalService
 	}
 
-	log.Println("Success")
 	return nil
 }
 

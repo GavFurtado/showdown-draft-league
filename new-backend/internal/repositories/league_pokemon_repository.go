@@ -11,7 +11,7 @@ type LeaguePokemonRepository interface {
 	// adds a Pokemon species to a league's draft pool
 	CreateLeaguePokemon(leaguePokemon *models.LeaguePokemon) (*models.LeaguePokemon, error)
 	// adds multiple Pokemon species to a league's draft pool in a transaction
-	CreateLeaguePokemonBatch(leaguePokemon []models.LeaguePokemon) error
+	CreateLeaguePokemonBatch(leaguePokemon []models.LeaguePokemon) ([]models.LeaguePokemon, error)
 	// gets all Pokemon in a league's draft pool (available and unavailable)
 	GetAllPokemonByLeague(leagueID uuid.UUID) ([]models.LeaguePokemon, error)
 	// gets all available Pokemon for a specific league's draft pool
@@ -52,14 +52,21 @@ func (r *leaguePokemonRepositoryImpl) CreateLeaguePokemon(leaguePokemon *models.
 	if err != nil {
 		return nil, fmt.Errorf("(Error: CreateLeaguePokemon) - failed to create league pokemon: %w", err)
 	}
+
+	// Preload PokemonSpecies after creation
+	err = r.db.Preload("PokemonSpecies").First(leaguePokemon, "id = ?", leaguePokemon.ID).Error
+	if err != nil {
+		return nil, fmt.Errorf("(Error: CreateLeaguePokemon) - failed to preload pokemon species after creation: %w", err)
+	}
+
 	return leaguePokemon, nil
 }
 
 // adds multiple Pokemon species to a league's draft pool in a transaction
-func (r *leaguePokemonRepositoryImpl) CreateLeaguePokemonBatch(leaguePokemon []models.LeaguePokemon) error {
+func (r *leaguePokemonRepositoryImpl) CreateLeaguePokemonBatch(leaguePokemon []models.LeaguePokemon) ([]models.LeaguePokemon, error) {
 	tx := r.db.Begin()
 	if tx.Error != nil {
-		return fmt.Errorf("(Error: CreateLeaguePokemonBatch) - failed to start transaction: %w", tx.Error)
+		return nil, fmt.Errorf("(Error: CreateLeaguePokemonBatch) - failed to start transaction: %w", tx.Error)
 	}
 
 	// if fails at any point due to panic, rollback
@@ -72,10 +79,33 @@ func (r *leaguePokemonRepositoryImpl) CreateLeaguePokemonBatch(leaguePokemon []m
 	// Create all league pokemon entries in batch
 	if err := tx.CreateInBatches(leaguePokemon, 100).Error; err != nil {
 		tx.Rollback()
-		return fmt.Errorf("(Error: CreateLeaguePokemonBatch) - failed to create league pokemon batch: %w", err)
+		return nil, fmt.Errorf("(Error: CreateLeaguePokemonBatch) - failed to create league pokemon batch: %w", err)
 	}
 
-	return tx.Commit().Error
+	if err := tx.Commit().Error; err != nil {
+		return nil, fmt.Errorf("(Error: CreateLeaguePokemonBatch) - failed to commit transaction: %w", err)
+	}
+
+	// Retrieve the created league pokemon with PokemonSpecies preloaded
+	var createdLeaguePokemon []models.LeaguePokemon
+	// Assuming all leaguePokemon in the batch belong to the same leagueID
+	if len(leaguePokemon) > 0 {
+		err := r.db.Preload("PokemonSpecies").
+			Where("league_id = ?", leaguePokemon[0].LeagueID).
+			Where("id IN (?) ", func() []uuid.UUID {
+				var ids []uuid.UUID
+				for _, lp := range leaguePokemon {
+					ids = append(ids, lp.ID)
+				}
+				return ids
+			}()).
+			Find(&createdLeaguePokemon).Error
+		if err != nil {
+			return nil, fmt.Errorf("(Error: CreateLeaguePokemonBatch) - failed to retrieve created league pokemon with species: %w", err)
+		}
+	}
+
+	return createdLeaguePokemon, nil
 }
 
 // gets all available Pokemon for a specific league's draft pool
@@ -171,7 +201,7 @@ func (r *leaguePokemonRepositoryImpl) MarkPokemonAvailable(leagueID, pokemonSpec
 func (r *leaguePokemonRepositoryImpl) GetPokemonByCostRange(leagueID uuid.UUID, minCost, maxCost int) ([]models.LeaguePokemon, error) {
 	var leaguePokemon []models.LeaguePokemon
 	err := r.db.Preload("PokemonSpecies").
-		Where("league_id = ? AND cost BETWEEN ? AND ? AND is_available = ?", leagueID, minCost, maxCost, true).
+		Where("league_id = ? AND cost BETWEEN ? AND ?", leagueID, minCost, maxCost).
 		Order("cost ASC").
 		Find(&leaguePokemon).Error
 

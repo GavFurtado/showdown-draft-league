@@ -26,9 +26,18 @@ func RegisterRoutes(
 		UserRepo:    repositories.UserRepository,
 		RBACService: services.RBACService,
 	}
+
 	// ---- Public Routes ---
 	// These do not require any authorization
 	r.GET("/", HomeHandler) // eventually a landing page
+
+	// Pokemon Species routes
+	pokemonSpecies := r.Group("/api/pokemon_species")
+	{
+		pokemonSpecies.GET("/", controllers.PokemonSpeciesController.GetAllPokemonSpecies)
+		pokemonSpecies.GET("/:id", controllers.PokemonSpeciesController.GetPokemonSpeciesByID)
+		pokemonSpecies.GET("/name/:name", controllers.PokemonSpeciesController.GetPokemonSpeciesByName)
+	}
 
 	// ---- Auth Related Routes ---
 	// These are routes related to Discord OAuth
@@ -61,6 +70,38 @@ func RegisterRoutes(
 
 			// not implmented yet
 			// leagues.DELETE("/:id/leave", playerController.LeaveLeague)
+
+			players := leagues.Group(":leagueId/players")
+			{
+				players.GET(
+					"/:id",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
+					controllers.PlayerController.GetPlayerByID)
+				players.GET(
+					"/:id/roster",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayerRoster),
+					controllers.PlayerController.GetPlayerWithFullRoster)
+				players.PUT(
+					"/:id/profile",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdatePlayer),
+					controllers.PlayerController.UpdatePlayerProfile)
+			}
+
+			leaguePokemon := leagues.Group("/:leagueId/pokemon")
+			{
+				leaguePokemon.POST(
+					"/single",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateLeaguePokemon),
+					controllers.LeaguePokemonController.CreatePokemonForLeague)
+				leaguePokemon.POST(
+					"/batch",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateLeaguePokemon),
+					controllers.LeaguePokemonController.BatchCreatePokemonForLeague)
+				leaguePokemon.PUT(
+					"/",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateLeaguePokemon),
+					controllers.LeaguePokemonController.UpdateLeaguePokemon)
+			}
 		}
 
 		users := api.Group("/users")
@@ -72,21 +113,6 @@ func RegisterRoutes(
 			users.GET("/:id/players", controllers.PlayerController.GetPlayersByUser)
 		}
 
-		players := api.Group("/leagues/:leagueId/players")
-		{
-			players.GET(
-				"/:id",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
-				controllers.PlayerController.GetPlayerByID)
-			players.GET(
-				"/:id/roster",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayerRoster),
-				controllers.PlayerController.GetPlayerWithFullRoster)
-			players.PUT(
-				"/:id/profile",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdatePlayer),
-				controllers.PlayerController.UpdatePlayerProfile)
-		}
 	}
 }
 
