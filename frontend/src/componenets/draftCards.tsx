@@ -19,34 +19,34 @@ export default function PokemonCard(pokemon) {
     return (
         // Container of the whole thing : Sets perspective for effect and provides a clickable area
         <div
-        className=" group h-70 w-47 rounded-lg shadow-lg relative cursor-pointer [perspective:1000px]" // Fixed size for the card
-        onClick={handleFlip}
+            className=" group h-70 w-47 rounded-lg shadow-lg relative cursor-pointer [perspective:1000px]" // Fixed size for the card
+            onClick={handleFlip}
         >
-        {/* Inner container: This is the part that actually flips */}
-        <div
-            className={`
+            {/* Inner container: This is the part that actually flips */}
+            <div
+                className={`
             relative
             w-full h-full
             transition-transform duration-700 ease-in-out
             [transform-style:preserve-3d]
             ${isFlipped ? '[transform:rotateY(180deg)]' : ''}
             `}
-        >
-            {/* Front Face of the Card */}
-            <div className="absolute inset-0 bg-white rounded-lg p-4 flex flex-col items-center justify-center [backface-visibility:hidden]">
-                {/* Pokémon Image */}
-                <div className="relative w-full h-[100%]">
-                    <img
-                        src={pokemon.pic}
-                        alt={pokemon.name}
-                        onError={handleImageError}
-                        className="w-[100%] h-[100%] object-contain mb-4 bg-gray-100 p-2"
-                    />
-                    {/* Pokémon Cost */}
-                    <p className="text-lg font-semibold absolute  bottom-2 right-2 ">
+            >
+                {/* Front Face of the Card */}
+                <div className="absolute inset-0 bg-white rounded-lg p-4 flex flex-col items-center justify-center [backface-visibility:hidden]">
+                    {/* Pokémon Image */}
+                    <div className="relative w-full h-[100%]">
+                        <img
+                            src={pokemon.pic}
+                            alt={pokemon.name}
+                            onError={handleImageError}
+                            className="w-[100%] h-[100%] object-contain mb-4 bg-gray-100 p-2"
+                        />
+                        {/* Pokémon Cost */}
+                        <p className="text-lg font-semibold absolute  bottom-2 right-2 ">
                             {pokemon.cost}
-                    </p>
-                </div>
+                        </p>
+                    </div>
                     <div className='flex w-[100%] justify-between'>
                         {/* Pokémon Name */}
                         <div>
@@ -67,28 +67,28 @@ export default function PokemonCard(pokemon) {
                         </button>
                     </div>
                     
-            </div>
+                </div>
 
-            {/* Back Face of the Card */}
-            <div className="absolute inset-0 bg-gray-700 text-white rounded-lg p-4 flex flex-col [backface-visibility:hidden] [transform:rotateY(180deg)]">
-                <h3 className="text-l font-bold mb-4 text-center">
-                    {pokemon.name}
-                </h3>
-                <ul className="text-left text-s">
-                    <li>Hp: {pokemon.hp}</li>
-                    <li>Attack: {pokemon.attack}</li>
-                    <li>Defense: {pokemon.defense}</li>
-                    <li>Special Attack: {pokemon.specialAtk}</li>
-                    <li>Special Defense: {pokemon.specialDef}</li>
-                    <li>Speed: {pokemon.speed}</li>
-                    <li>Abilities: {abilities}</li>
+                {/* Back Face of the Card */}
+                <div className="absolute inset-0 bg-gray-700 text-white rounded-lg p-4 flex flex-col [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                    <h3 className="text-l font-bold mb-4 text-center">
+                        {pokemon.name}
+                    </h3>
+                    <ul className="text-left text-s">
+                        <li>Hp: {pokemon.hp}</li>
+                        <li>Attack: {pokemon.attack}</li>
+                        <li>Defense: {pokemon.defense}</li>
+                        <li>Special Attack: {pokemon.specialAtk}</li>
+                        <li>Special Defense: {pokemon.specialDef}</li>
+                        <li>Speed: {pokemon.speed}</li>
+                        <li>Abilities: {abilities}</li>
 
-                </ul>
-                <p className="text-base text-center mb-auto">
+                    </ul>
+                    <p className="text-base text-center mb-auto">
                     
-                </p>
+                    </p>
+                </div>
             </div>
-        </div>
         </div>
     );
 }

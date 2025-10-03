@@ -62,7 +62,7 @@ export default function Filter(props) {
     const costRef = useRef();
     const statRef = useRef();
     useEffect(() => {
-    function handleClickOutside(event) {
+        function handleClickOutside(event) {
             if (typeRef.current && !typeRef.current.contains(event.target)) {
                 typeRef.current.removeAttribute('open');
             }

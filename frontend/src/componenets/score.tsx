@@ -4,8 +4,8 @@ export default function Score(){
             <thead>
                 <tr>
                     <th colspan="3" class="title">SCORE</th>
-                    </tr>
-                    <tr>
+                </tr>
+                <tr>
                     <th>WIN</th>
                     <th>LOSS</th>
                     <th>DIFF</th>
@@ -13,9 +13,9 @@ export default function Score(){
             </thead>
             <tbody>
                 <tr>
-                <td>0</td>
-                <td>0</td>
-                <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
                 </tr>
             </tbody>
         </table>
