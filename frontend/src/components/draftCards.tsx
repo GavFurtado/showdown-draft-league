@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 export default function PokemonCard(pokemon) {
-    const [isFlipped, setIsFlipped] = useState(false); 
+    const [isFlipped, setIsFlipped] = useState(false);
     const handleFlip = () => {
         setIsFlipped(!isFlipped);
     };
@@ -15,7 +15,7 @@ export default function PokemonCard(pokemon) {
         }
         return t;
     }).join(', ');
-    const abilities=pokemon.ability.map(a => a.name).join(', ')
+    const abilities = pokemon.ability.map(a => a.name).join(', ')
     return (
         // Container of the whole thing : Sets perspective for effect and provides a clickable area
         <div
@@ -66,7 +66,7 @@ export default function PokemonCard(pokemon) {
                             />
                         </button>
                     </div>
-                    
+
                 </div>
 
                 {/* Back Face of the Card */}
@@ -85,7 +85,7 @@ export default function PokemonCard(pokemon) {
 
                     </ul>
                     <p className="text-base text-center mb-auto">
-                    
+
                     </p>
                 </div>
             </div>

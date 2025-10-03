@@ -1,10 +1,11 @@
 import axios from 'axios';
+import { DiscordUser, LeagueCreateRequest, UpdatePlayerInfoRequest, UpdateUserProfileRequest } from './request_interfaces'
+import { Pokemon, League } from './data_interfaces'; // <--- ADD THIS IMPORT
 
-// Define base URL for your backend API
-export const API_BASE_URL = 'http://localhost:8080';
+export const API_BASE_URL = 'http://localhost:8080'; // temp. make this an env var
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+    baseURL: API_BASE_URL,
 });
 
 // --- Public Routes ---
@@ -16,38 +17,37 @@ export const discordCallback = (code: string) => api.get(`/auth/discord/callback
 
 // Add a request interceptor to include the JWT token
 api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('jwt_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    (config) => {
+        const token = localStorage.getItem('jwt_token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
     }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
 );
 
-export const getMyProfile = () => api.get('/api/profile');
-
-// Example: interface CreateLeagueRequest { name: string; description: string; }
-// Example: interface League { id: number; name: string; description: string; }
-
-export const createLeague = (data: LeagueCreateRequest) => api.post('/api/leagues/', data);
-export const getLeague = (id: string) => api.get(`/api/leagues/${id}`);
-export const getPlayersByLeague = (id: string) => api.get(`/api/leagues/${id}/players`);
-export const joinLeague = (id: string) => api.post(`/api/leagues/${id}/join`);
-export const leaveLeague = (id: string) => api.delete(`/api/leagues/${id}/leave`);
-
 export const getUserMe = () => api.get('/api/users/me');
-export const getMyDiscordDetails = () => api.get('/api/users/me/discord');
+export const getMyDiscordDetails = () => api.get<DiscordUser>('/api/users/me/discord');
 export const getMyLeagues = () => api.get('/api/users/me/leagues');
-export const updateUserProfile = (data: any) => api.put('/api/users/profile', data); // Replace 'any' with a proper interface
+export const updateUserProfile = (data: UpdateUserProfileRequest) => api.put('/api/users/profile', data);
 export const getPlayersByUserId = (id: string) => api.get(`/api/users/${id}/players`);
 
-export const getPlayerByID = (id: string) => api.get(`/api/players/${id}`);
-export const getPlayerWithFullRoster = (id: string) => api.get(`/api/players/${id}/roster`);
-export const updatePlayerProfile = (id: string, data: PlayerProfileUpdateRequest) => api.put(`/api/players/${id}/profile`, data);
+export const createLeague = (data: LeagueCreateRequest) => api.post('/api/leagues/', data);
+export const getLeague = (leagueId: string) => api.get<League>(`/api/leagues/${leagueId}`);
+export const getPlayersByLeague = (leagueId: string) => api.get(`/api/leagues/${leagueId}/players`);
+export const joinLeague = (leagueId: string) => api.post(`/api/leagues/${leagueId}/join`);
+export const leaveLeague = (leagueId: string) => api.delete(`/api/leagues/${leagueId}/leave`);
 
-// Note: Add more specific interfaces for request and response data
-// based on your backend Go structs for better type safety.
+export const getPlayerByID = (leagueId: string, id: string) => api.get(`/api/leagues/${leagueId}/players/${id}`);
+export const getPlayerWithFullRoster =
+    (leagueId: string, id: string) =>
+        api.get(`/api/leagues/${leagueId}/players/${id}/roster`);
+export const updatePlayerProfile =
+    (leagueId: string, id: string, data: UpdatePlayerInfoRequest) =>
+        api.put(`/api/leagueId/${leagueId}/players/${id}/profile`, data);
+
+// --- New API Call for Pokemon Data ---
+export const getAvailablePokemon = () => api.get<Pokemon[]>('/api/pokemon/available');

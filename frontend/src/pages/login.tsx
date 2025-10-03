@@ -1,6 +1,6 @@
 import loginJpg from '../assets/login-bg.jpg'
 import discordPng from '../assets/discord-logo.png'
-import { API_BASE_URL} from '../services/api'
+import { API_BASE_URL } from '../api/api'
 
 
 const backgroundStyle = {
@@ -41,7 +41,7 @@ export default function Login() {
                     <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
                         <form action={`${API_BASE_URL}/auth/discord/login`} class="space-y-6" method="GET">
                             <div>
-                                <button type="submit" class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Login</button>
+                                <button type="submit" className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Login</button>
                             </div>
                         </form>
                     </div>

@@ -1,83 +1,152 @@
-import NavBar from "../componenets/navbar"
-import DraftCard from "../componenets/draftCards"
-import pokemonData from "../assets/pokemons.json"
-import Filter from "../componenets/filter"
+import NavBar from "../components/navbar"
+import DraftCard from "../components/draftCards"
+import Filter from "../components/filter"
 import { useState, useEffect } from "react"
+import { Pokemon, FilterState, DraftCardProps } from "../api/data_interfaces"
+import { getAvailablePokemon } from "../api/api"
+import { useLeague } from "../context/LeagueContext"
 
-const defaultFilters = {
+const defaultFilters: FilterState = {
     selectedTypes: [],
     selectedCost: '',
     sortByStat: '',
     sortOrder: 'asc',
 };
+
 export default function Draftboard() {
-    const [cards, setCards] = useState(pokemonData);
-    const [filters, setFilters] = useState(defaultFilters);
-    const [searchTerm, setSearchTerm] = useState('');
+    const { currentLeague, loading: leagueLoading, error: leagueError } = useLeague(); // Consume LeagueContext
+    const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
+    const [cards, setCards] = useState<Pokemon[]>([]);
+    const [filters, setFilters] = useState<FilterState>(defaultFilters);
+    const [searchTerm, setSearchTerm] = useState<string>('');
+    const [pokemonLoading, setPokemonLoading] = useState<boolean>(true);
+    const [pokemonError, setPokemonError] = useState<string | null>(null);
+
+    // Effect to fetch Pokemon data when the league changes
+    useEffect(() => {
+        const fetchPokemon = async () => {
+            if (!currentLeague?.id) {
+                setAllPokemon([]);
+                setCards([]);
+                setPokemonLoading(false);
+                return;
+            }
+
+            try {
+                setPokemonLoading(true);
+                setPokemonError(null);
+                // Assuming getAvailablePokemon can take a leagueId if needed,
+                // or it fetches all available Pokemon for the current user's context.
+                // For now, we'll assume it fetches all available Pokemon.
+                const response = await getAvailablePokemon();
+                setAllPokemon(response.data);
+                setCards(response.data); // Initialize cards with all fetched pokemon
+            } catch (err) {
+                setPokemonError("Failed to fetch Pokemon data.");
+                console.error(err);
+            } finally {
+                setPokemonLoading(false);
+            }
+        };
+        fetchPokemon();
+    }, [currentLeague?.id]); // Re-fetch when currentLeague.id changes
+
+    // Effect to apply filters when filters, search term, or allPokemon changes
+    useEffect(() => {
+        applyFilter();
+    }, [filters, searchTerm, allPokemon]);
 
     function applyFilter() {
-        let update = [...pokemonData]
+        let updatedCards: Pokemon[] = [...allPokemon]; // <--- ADD TYPE ANNOTATION
 
         if (searchTerm.trim() !== '') {
-            update = update.filter(card =>
+            updatedCards = updatedCards.filter(card =>
                 card.name.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
 
         if (filters.selectedTypes.length > 0) {
-            update = update.filter(card =>
+            updatedCards = updatedCards.filter(card =>
                 filters.selectedTypes.some(type =>
                     card.types.includes(type)
                 )
             );
         }
         if (filters.selectedCost) {
-            update = update.filter(card => card.cost === filters.selectedCost)
+            updatedCards = updatedCards.filter(card => card.cost.toString() === filters.selectedCost);
         }
         if (filters.sortByStat) {
-            update = update.sort((a, b) => {
+            updatedCards = updatedCards.sort((a, b) => {
                 const statA = a.stats[filters.sortByStat];
                 const statB = b.stats[filters.sortByStat];
+
+                if (statA === undefined || statB === undefined) {
+                    return 0;
+                }
 
                 return filters.sortOrder === 'asc' ? statA - statB : statB - statA;
             });
         }
 
-        setCards(update)
+        setCards(updatedCards);
     }
-    function updateFilter(key, value) {
-        setFilters(prev => ({ ...prev, [key]: value }))
-    }
-    const resetAllFilters = () => {
-        setFilters(defaultFilters)
-    };
-    useEffect(() => {
-        applyFilter();
-    }, [filters]);
-    useEffect(() => {
-        applyFilter();
-    }, [filters, searchTerm]);
-    const cardsToDisplay = cards.map(pokemon => {
-        const name = pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1)
-        return <DraftCard key={pokemon.id}
-            name={name}
-            pic={pokemon.sprites.front_default}
-            type={pokemon.types}
-            hp={pokemon.stats.hp}
-            ability={pokemon.abilities}
-            attack={pokemon.stats.attack}
-            defense={pokemon.stats.defense}
-            specialAtk={pokemon.stats["special-attack"]}
-            specialDef={pokemon.stats["special-defense"]}
-            speed={pokemon.stats.speed}
-            cost={pokemon.cost || 10}
 
-        />
-    })
+    function updateFilter(key: keyof FilterState, value: any) { // <--- ADD TYPE ANNOTATION
+        setFilters(prev => ({ ...prev, [key]: value }));
+    }
+
+    const resetAllFilters = () => {
+        setFilters(defaultFilters);
+        setSearchTerm('');
+    };
+
+    if (leagueLoading || pokemonLoading) {
+        return (
+            <div className="min-h-screen bg-[#BFC0C0] flex items-center justify-center">
+                <p className="text-xl text-gray-800">Loading data...</p>
+            </div>
+        );
+    }
+
+    if (leagueError || pokemonError) {
+        return (
+            <div className="min-h-screen bg-[#BFC0C0] flex items-center justify-center">
+                <p className="text-xl text-red-600">Error: {leagueError || pokemonError}</p>
+            </div>
+        );
+    }
+
+    if (!currentLeague) {
+        return (
+            <div className="min-h-screen bg-[#BFC0C0] flex items-center justify-center">
+                <p className="text-xl text-gray-800">No league selected. Please select a league.</p>
+            </div>
+        );
+    }
+
+    const cardsToDisplay = cards.map((pokemon: Pokemon) => {
+        const name = pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1);
+        const draftCardProps: DraftCardProps = {
+            key: pokemon.id,
+            name: name,
+            pic: pokemon.sprites.front_default,
+            type: pokemon.types,
+            hp: pokemon.stats.hp,
+            ability: pokemon.abilities,
+            attack: pokemon.stats.attack,
+            defense: pokemon.stats.defense,
+            specialAtk: pokemon.stats["special-attack"],
+            specialDef: pokemon.stats["special-defense"],
+            speed: pokemon.stats.speed,
+            cost: pokemon.cost || 10,
+        };
+        return <DraftCard {...draftCardProps} />;
+    });
+
     return (
         <>
             <div className="min-h-screen bg-[#BFC0C0] ">
-                <NavBar page="Draftboard" />
+                <NavBar page="Draftboard" /> {/* Pass page prop */}
 
                 <div className="flex flex-row">
                     <div className="flex flex-col w-[70%]">
@@ -90,7 +159,6 @@ export default function Draftboard() {
                                     placeholder="Search"
                                     aria-label="Search"
                                     id="exampleFormControlInput2"
-                                    aria-describedby="button-addon2"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
@@ -101,11 +169,11 @@ export default function Draftboard() {
                                         xmlns="http://www.w3.org/2000/svg"
                                         fill="none"
                                         viewBox="0 0 24 24"
-                                        stroke-width="2"
+                                        strokeWidth="2"
                                         stroke="black">
                                         <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
                                             d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                                     </svg>
                                 </span>
@@ -135,5 +203,5 @@ export default function Draftboard() {
                 </div>
             </div>
         </>
-    )
+    );
 }

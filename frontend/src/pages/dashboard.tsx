@@ -1,5 +1,5 @@
-import Navbar from "../componenets/navbar"
-import LeagueDropdown from "../componenets/league-data"
+import Navbar from "../components/navbar"
+import LeagueDropdown from "../components/league-data"
 
 const backcolor = {
     backgroundColor: '#1E2A38'
