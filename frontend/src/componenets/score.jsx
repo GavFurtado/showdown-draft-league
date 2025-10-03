@@ -3,7 +3,7 @@ export default function Score(){
         <table class="record-table">
             <thead>
                 <tr>
-                    <th colspan="3" class="title">RECORD</th>
+                    <th colspan="3" class="title">SCORE</th>
                     </tr>
                     <tr>
                     <th>WIN</th>
@@ -13,9 +13,9 @@ export default function Score(){
             </thead>
             <tbody>
                 <tr>
-                <td>4</td>
-                <td>4</td>
-                <td>4</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
                 </tr>
             </tbody>
         </table>

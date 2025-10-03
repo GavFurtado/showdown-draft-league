@@ -3,7 +3,7 @@ export default function PlayerScedhule(){
             <table class="schedule-table">
                 <thead>
                     <tr>
-                        <th colspan="4" class="table-title">Schedule</th>
+                        <th colspan="4" class="table-title">SCHEDULE</th>
                     </tr>
                     <tr>
                         <th>Week</th>

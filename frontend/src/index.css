@@ -1,3 +1,4 @@
+
 @import "tailwindcss";
 
 /* css for standings */
@@ -48,6 +49,7 @@
 }
 
 .record-table .title {
+  font-family: 'Inter', sans-serif;
   font-size: 20px;
   font-weight: bold;
   padding: 10px;
@@ -119,25 +121,86 @@
 }
 
 /* styles for dashboard and flex content of tables */
-
 .container-dashboard{
-  display: flex;
-  background-color: #BFC0C0;
-  flex-wrap: wrap;
-  height: 100vh;
-  border: black solid 10px;
-  margin: 1rem 1rem;
+background-color: #BFC0C0;
+  height: auto;
+  border: black solid 5px;
+  margin: 0px 25%;
+  padding-left: 2rem;
+  padding-right: 2rem;
+  overflow: hidden;
 }
 
-.player-welcome > h1{
+.container-dashboard > h1{
   font-family: 'Inter', sans-serif;
   font-weight: 800;
   color: #1e2a38;
   font-size: 3rem;
+  margin-top: 2rem;
 }
 
-.player-welcome{
-  width: 100%;
-  margin-top: 2rem;
-  margin-left: 2rem;
+
+.container-dashboard > span{
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  color: #1e2a38;
+  font-size: 2rem;
+  margin-top: 0;
+  letter-spacing: -1px;
+}
+
+.container-dashboard > a{
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  color: #1e2a38;
+  font-size: 1rem;
+  margin-top: 0;
+  margin-left: 5px;
+  text-decoration: underline;
+}
+
+/* styles for toggle animation of leagues */
+
+.viewLeagueButton {
+  width: 10em;
+  font-family:'Inter', sans-serif;
+  margin-top: 1em;
+}
+
+.showLeagueButton {
+  background-color: #1E2A38;
+  color: white;
+  padding: 10px 20px; 
+  border-radius: 12px;
+  font-size: 16px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+}
+
+.dropdown-content { 
+  height: auto;
+  width: auto;
+  opacity: 0;
+  transition: all 0.4s ease;
+  background-color: #1E2A38;
+  margin-top: 10px;
+  padding: 0 20px;
+  border: 1px solid #ccc;
+}
+
+.dropdown-content.show {
+  background-color: #1E2A38;
+  min-width: 850px;
+  min-height: fit-content;
+  opacity: 1;
+  padding: 15px 20px;
+}
+
+.dropdown-content > h1{
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  color: #BFC0C0;
+  font-size: 2rem;
+  margin-top: 0;
+  letter-spacing: -1px;
 }
