@@ -31,6 +31,7 @@ func NewAuthController(
 	}
 }
 
+// NOTE: the skip to frontend dashboard could maybe cause problems in edge case scenarios i haven't thought of (probably)
 func (aCtrl *AuthController) Login(ctx *gin.Context) {
 	// 1. Check for existing JWT cookie
 	token, err := ctx.Cookie("token")
