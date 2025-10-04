@@ -45,6 +45,7 @@ func RegisterRoutes(
 	{
 		authGroup.GET("/discord/login", controllers.AuthController.Login)
 		authGroup.GET("/discord/callback", controllers.AuthController.DiscCallback)
+		authGroup.POST("/logout", controllers.AuthController.Logout)
 	}
 
 	// --- Protected Routes ---
@@ -101,6 +102,10 @@ func RegisterRoutes(
 					"/",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateLeaguePokemon),
 					controllers.LeaguePokemonController.UpdateLeaguePokemon)
+				leaguePokemon.GET(
+					"/",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadLeaguePokemon),
+					controllers.LeaguePokemonController.GetAllPokemonByLeague)
 			}
 		}
 

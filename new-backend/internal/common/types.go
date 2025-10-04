@@ -25,16 +25,16 @@ type LeagueCreateRequestDTO struct {
 	Format              models.LeagueFormat `json:"format"`
 }
 
-type PlayerUpdateProfileRequest struct {
-	ShowdownName *string `json:"showdown_name" binding:"omitempty"`
-}
-
 // -- Player Related --
 type PlayerCreateRequest struct {
 	UserID       uuid.UUID `json:"user_id" binding:"required"`
 	LeagueID     uuid.UUID `json:"league_id" binding:"required"`
 	InLeagueName *string   `json:"in_league_name" binding:"omitempty" validate:"min=3,max=20"`
 	TeamName     *string   `json:"team_name" binding:"omitempty" validate:"min=3,max=20"`
+}
+
+type UserUpdateProfileRequest struct {
+	ShowdownName *string `json:"showdown_name" binding:"omitempty"`
 }
 
 type UpdatePlayerInfoRequest struct {
@@ -50,13 +50,13 @@ type UpdatePlayerInfoRequest struct {
 type LeaguePokemonCreateRequestDTO struct {
 	LeagueID         uuid.UUID `json:"league_id" binding:"required"`
 	PokemonSpeciesID int64     `json:"pokemon_species_id" binding:"required"`
-	Cost             *int      `json:"cost" binding:"required" validate:"max=20"`
+	Cost             *int      `json:"cost" validate:"max=20"`
 }
 
 type LeaguePokemonUpdateRequest struct {
 	LeaguePokemonID uuid.UUID `json:"league_pokemon_id" binding:"required"`
 	Cost            *int      `json:"cost,omitempty" validate:"max=20"`
-	IsAvailable     bool      `json:"is_available,omitempty"`
+	IsAvailable     *bool     `json:"is_available,omitempty"`
 }
 
 // -- DraftedPokemon Related --

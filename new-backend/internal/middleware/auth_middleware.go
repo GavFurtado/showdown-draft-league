@@ -1,10 +1,6 @@
 package middleware
 
 import (
-	"log"
-	"net/http"
-	"strings"
-
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
@@ -12,6 +8,8 @@ import (
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/google/uuid"
+	"log"
+	"net/http"
 )
 
 type AuthMiddlewareDependencies struct {
@@ -28,13 +26,12 @@ func AuthMiddleware(
 	deps AuthMiddlewareDependencies,
 ) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		authHeader := ctx.GetHeader("Authorization")
-		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer") {
-			log.Printf("(Middleware: AuthMiddleware) Missing token\n")
+		token, err := ctx.Cookie("token")
+		if err != nil {
+			log.Printf("LOG: (Middleware: AuthMiddleware) - missing or invalid token cookie: %v\n", err)
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Missing or invalid token"})
 			return
 		}
-		token := strings.TrimPrefix(authHeader, "Bearer ")
 
 		// validate token
 		userID, err := deps.JWTService.ValidateToken(token)

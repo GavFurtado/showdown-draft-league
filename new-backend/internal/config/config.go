@@ -12,6 +12,7 @@ type Config struct {
 	DiscordClientSecret string
 	DiscordRedirectURI  string
 	AppBaseURL          string
+	BackendBaseURL      string
 	DatabaseURL         string
 	JWTSecret           string
 }
@@ -29,6 +30,7 @@ func LoadConfig() *Config {
 		DiscordClientSecret: getEnv("DISCORD_CLIENT_SECRET"),
 		DiscordRedirectURI:  getEnv("DISCORD_REDIRECT_URI"),
 		AppBaseURL:          getEnv("APP_BASE_URL"),
+		BackendBaseURL:      getEnv("BACKEND_BASE_URL"),
 		DatabaseURL:         getEnv("DATABASE_URL"),
 		JWTSecret:           getEnv("JWT_SECRET"),
 	}
