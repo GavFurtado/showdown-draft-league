@@ -52,10 +52,9 @@ const StatBar: React.FC<StatBarProps> = ({ label, value }) => {
     );
 };
 
-export default function PokemonCard({ pokemon, cost, onImageError, leaguePokemonId, addPokemonToWishlist, removePokemonFromWishlist, isPokemonInWishlist }: DraftCardProps) {
-    const [isFlipped, setIsFlipped] = useState(false);
+export default function PokemonCard({ pokemon, cost, onImageError, leaguePokemonId, addPokemonToWishlist, removePokemonFromWishlist, isPokemonInWishlist, isFlipped, onFlip }: DraftCardProps) {
     const handleFlip = () => {
-        setIsFlipped(!isFlipped);
+        onFlip(leaguePokemonId);
     };
     const types = pokemon.types.map(t => {
         if (typeof t === 'string' && t.length > 0) {
@@ -115,7 +114,7 @@ export default function PokemonCard({ pokemon, cost, onImageError, leaguePokemon
                     <div className='flex w-[100%] justify-between'>
                         {/* Pokémon Name */}
                         <div>
-                            <h3 className="text-lg pb-0 mb-0 font-bold text-gray-800 text-left">
+                            <h3 className={`pb-0 mb-0 font-bold text-gray-800 text-left ${formatName(pokemon.name).length > 12 ? 'text-base' : 'text-lg'}`}>
                                 {formatName(pokemon.name)}
                             </h3>
                             <p className='p-0 m-0 text-left text-sm text-gray-600'>{types}</p>
@@ -135,8 +134,8 @@ export default function PokemonCard({ pokemon, cost, onImageError, leaguePokemon
                 </div>
 
                 {/* Back Face of the Card */}
-                <div className="absolute inset-0 bg-gray-700 text-white rounded-lg p-4 flex flex-col [backface-visibility:hidden] [transform:rotateY(180deg)]">
-                    <h3 className="text-l font-bold mb-4 text-center">
+                <div className="text-l absolute inset-0 bg-gray-700 text-white rounded-lg p-4 flex flex-col [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                    <h3 className={`font-bold mb-4 text-center ${formatName(pokemon.name).length > 12 ? 'text-base' : 'text-lg'}`}>
                         {formatName(pokemon.name)}
                     </h3>
                     <div className="flex flex-col gap-1 w-full">

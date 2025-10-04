@@ -26,6 +26,11 @@ export default function Draftboard() {
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [pokemonLoading, setPokemonLoading] = useState<boolean>(true);
     const [pokemonError, setPokemonError] = useState<string | null>(null);
+    const [currentlyFlippedCardId, setCurrentlyFlippedCardId] = useState<string | null>(null);
+
+    const handleCardFlip = (pokemonId: string) => {
+        setCurrentlyFlippedCardId(prevId => (prevId === pokemonId ? null : pokemonId));
+    };
 
     // handleImageError function
     const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -180,7 +185,9 @@ export default function Draftboard() {
             onImageError: handleImageError,
             addPokemonToWishlist: addPokemonToWishlist,
             isPokemonInWishlist: isPokemonInWishlist,
-            removePokemonFromWishlist: removePokemonFromWishlist
+            removePokemonFromWishlist: removePokemonFromWishlist,
+            isFlipped: currentlyFlippedCardId === leaguePokemon.id,
+            onFlip: handleCardFlip
         };
         return <DraftCard {...draftCardProps} />;
 

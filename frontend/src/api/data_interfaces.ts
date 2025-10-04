@@ -127,6 +127,8 @@ export interface DraftCardProps {
   addPokemonToWishlist: (pokemonId: string) => void;
   removePokemonFromWishlist: (pokemonId: string) => void;
   isPokemonInWishlist: (pokemonId: string) => boolean;
+  isFlipped: boolean;
+  onFlip: (pokemonId: string) => void;
 }
 
 export interface WishlistDisplayProps {
