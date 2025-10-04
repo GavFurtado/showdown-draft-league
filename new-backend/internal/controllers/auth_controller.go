@@ -47,7 +47,7 @@ func (aCtrl *AuthController) Login(ctx *gin.Context) {
 
 	// 4. No valid token → begin Discord OAuth flow
 	state := uuid.New().String()
-	ctx.SetCookie("oauthstate", state, 300, "/", "localhost", false, true)
+	ctx.SetCookie("oauthstate", state, 300, "/", aCtrl.cfg.AppBaseURL, false, true)
 
 	url := aCtrl.discordOauthConfig.AuthCodeURL(state)
 	ctx.Redirect(http.StatusTemporaryRedirect, url)
@@ -79,9 +79,14 @@ func (aCtrl *AuthController) DiscCallback(ctx *gin.Context) {
 
 	// Set JWT as an HTTP-only cookie
 	const sessionTokenPeriod = int((time.Hour * 24 * 3 * 30 / time.Second)) // 90 days
-	ctx.SetCookie("token", jwtToken, sessionTokenPeriod, "/", aCtrl.cfg.AppBaseURL, false, true)
+	ctx.SetCookie("token", jwtToken, sessionTokenPeriod, "/", aCtrl.cfg.BackendBaseURL, false, true)
 	ctx.Header("Authorization", fmt.Sprintf("Bearer %s", jwtToken))
 
 	// Redirect to dashboard
 	ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/dashboard", aCtrl.cfg.AppBaseURL))
+}
+
+func (aCtrl *AuthController) Logout(ctx *gin.Context) {
+	ctx.SetCookie("token", "", -1, "/", aCtrl.cfg.BackendBaseURL, false, true) // clear the token cookie
+	ctx.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }

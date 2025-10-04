@@ -45,6 +45,7 @@ func RegisterRoutes(
 	{
 		authGroup.GET("/discord/login", controllers.AuthController.Login)
 		authGroup.GET("/discord/callback", controllers.AuthController.DiscCallback)
+		authGroup.GET("/logout", controllers.AuthController.Logout)
 	}
 
 	// --- Protected Routes ---

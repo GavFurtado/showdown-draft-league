@@ -39,7 +39,7 @@ export default function UserAuthSection({
                         alt="User avatar"
                     />
                     <span className="text-white text-sm font-medium hidden md:block">
-                        {discordUser.username}#{discordUser.discriminator}
+                        {discordUser.username}{discordUser.discriminator ? discordUser.discriminator : ""}
                     </span>
                     <button
                         onClick={onLogout}

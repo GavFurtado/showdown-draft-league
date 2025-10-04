@@ -1,27 +1,25 @@
 import axios from 'axios';
 import { DiscordUser, LeagueCreateRequest, UpdatePlayerInfoRequest, UpdateUserProfileRequest } from './request_interfaces'
-import { Pokemon, League } from './data_interfaces'; // <--- ADD THIS IMPORT
+import { Pokemon, League } from './data_interfaces';
 
-export const API_BASE_URL = 'http://localhost:8080'; // temp. make this an env var
+export const API_BASE_URL = 'http://localhost:8080'; // temp; make this an env var
 
 const api = axios.create({
     baseURL: API_BASE_URL,
+    withCredentials: true
 });
 
 // --- Public Routes ---
 export const discordLogin = () => api.get('/auth/discord/login');
 export const discordCallback = (code: string) => api.get(`/auth/discord/callback?code=${code}`);
+export const logout = () => api.post('/auth/logout')
 
 
 // --- Protected Routes ---
 
-// Add a request interceptor to include the JWT token
+// Add a request interceptor to pass alongt the config
 api.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('jwt_token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
         return config;
     },
     (error) => {

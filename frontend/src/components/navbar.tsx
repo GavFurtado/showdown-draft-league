@@ -4,7 +4,7 @@ import { useLeague } from '../context/LeagueContext';
 import { useEffect, useState } from 'react';
 import { League, Player, User } from '../api/data_interfaces';
 import { DiscordUser } from '../api/request_interfaces';
-import { getMyLeagues, getUserMe, getMyDiscordDetails, getPlayersByLeague } from '../api/api';
+import { getMyLeagues, getUserMe, getMyDiscordDetails, getPlayersByLeague, logout } from '../api/api';
 import axios from 'axios'; // Import axios for error handling
 
 // Import the new sub-components
@@ -46,12 +46,15 @@ export default function NavBar({ page }: NavBarProps) {
     const logoPic = "https://www.elitefourum.com/uploads/default/original/3X/4/b/4bbe5270ed2b07d84730959af8819f255a922ea0.png";
 
     // Handle Logout
-    const handleLogout = () => {
-        console.log("Attempting to log out...");
-        localStorage.removeItem('jwt_token');
-        setUser(null);
-        setDiscordUser(null);
-        navigate('/login');
+    const handleLogout = async () => {
+        try {
+            await logout();
+            setUser(null)
+            setDiscordUser(null);
+            navigate("/login")
+        } catch (error) {
+            console.error('Logout failed: ', error);
+        }
     };
 
     // Handle League Selection from Dropdown
@@ -62,19 +65,19 @@ export default function NavBar({ page }: NavBarProps) {
 
     // Effect to fetch user data (User and DiscordUser)
     useEffect(() => {
-        console.log("NavBar: useEffect for user data running.");
+        // console.log("NavBar: useEffect for user data running.");
         const fetchUserData = async () => {
-            console.log("NavBar: fetchUserData called.");
+            // console.log("NavBar: fetchUserData called.");
             try {
                 setUserLoading(true);
                 setUserError(null);
 
                 const userResponse = await getUserMe();
-                console.log("NavBar: getUserMe response:", userResponse.data);
+                // console.log("NavBar:: getUserMe response:", userResponse.data);
                 setUser(userResponse.data);
 
                 const discordResponse = await getMyDiscordDetails();
-                console.log("NavBar: getMyDiscordDetails response:", discordResponse.data);
+                // console.log("NavBar:: getMyDiscordDetails response:", discordResponse.data);
                 setDiscordUser(discordResponse.data);
             } catch (err) {
                 if (axios.isAxiosError(err) && err.response) {
@@ -82,32 +85,22 @@ export default function NavBar({ page }: NavBarProps) {
                 } else {
                     setUserError("A network or unknown error occurred while fetching user data.");
                 }
-                console.error("NavBar: Error fetching user data:", err);
+                // console.error("NavBar:: Error fetching user data:", err);
             } finally {
                 setUserLoading(false);
-                console.log("NavBar: fetchUserData finished. User loading:", false);
+                // console.log("NavBar:: fetchUserData finished. User loading:", false);
             }
         };
-
-        const token = localStorage.getItem('jwt_token');
-        console.log("NavBar: JWT token found:", !!token);
-        if (token) {
-            fetchUserData();
-        } else {
-            console.log("NavBar: No JWT token, setting user to null.");
-            setUser(null);
-            setDiscordUser(null);
-            setUserLoading(false);
-        }
+        fetchUserData();
     }, []); // Run once on component mount
 
     // Effect to fetch user's leagues
     useEffect(() => {
-        console.log("NavBar: useEffect for user leagues running. Current user:", user);
+        // console.log("NavBar: useEffect for user leagues running. Current user:", user);
         const fetchUserLeagues = async () => {
-            console.log("NavBar: fetchUserLeagues called.");
+            // console.log("NavBar: fetchUserLeagues called.");
             if (!user?.id) {
-                console.log("NavBar: No user ID, skipping fetchUserLeagues.");
+                // console.log("NavBar: No user ID, skipping fetchUserLeagues.");
                 setUserLeagues([]);
                 setUserLeaguesLoading(false);
                 return;
@@ -117,7 +110,7 @@ export default function NavBar({ page }: NavBarProps) {
                 setUserLeaguesLoading(true);
                 setUserLeaguesError(null);
                 const response = await getMyLeagues();
-                console.log("NavBar: getMyLeagues response:", response.data);
+                // console.log("NavBar: getMyLeagues response:", response.data);
                 setUserLeagues(response.data);
             } catch (err) {
                 if (axios.isAxiosError(err) && err.response) {
@@ -125,17 +118,17 @@ export default function NavBar({ page }: NavBarProps) {
                 } else {
                     setUserLeaguesError("A network or unknown error occurred while fetching user's leagues.");
                 }
-                console.error("NavBar: Error fetching user leagues:", err);
+                // console.error("NavBar: Error fetching user leagues:", err);
             } finally {
                 setUserLeaguesLoading(false);
-                console.log("NavBar: fetchUserLeagues finished. User leagues loading:", false);
+                // console.log("NavBar: fetchUserLeagues finished. User leagues loading:", false);
             }
         };
 
         if (user) {
             fetchUserLeagues();
         } else {
-            console.log("NavBar: No user, setting userLeagues to empty.");
+            // console.log("NavBar: No user, setting userLeagues to empty.");
             setUserLeagues([]);
             setUserLeaguesLoading(false);
         }
@@ -143,11 +136,11 @@ export default function NavBar({ page }: NavBarProps) {
 
     // Effect to fetch current user's Player object for the active league
     useEffect(() => {
-        console.log("NavBar: useEffect for user player running. User ID:", user?.id, "League ID:", currentLeague?.id);
+        // console.log("NavBar: useEffect for user player running. User ID:", user?.id, "League ID:", currentLeague?.id);
         const fetchUserPlayer = async () => {
-            console.log("NavBar: fetchUserPlayer called.");
+            // console.log("NavBar: fetchUserPlayer called.");
             if (!user?.id || !currentLeague?.id) {
-                console.log("NavBar: Missing user ID or current league ID, skipping fetchUserPlayer.");
+                // console.log("NavBar: Missing user ID or current league ID, skipping fetchUserPlayer.");
                 setUserPlayer(null);
                 setUserPlayerLoading(false);
                 return;
@@ -158,7 +151,7 @@ export default function NavBar({ page }: NavBarProps) {
                 setUserPlayerError(null);
 
                 const response = await getPlayersByLeague(currentLeague.id);
-                console.log("NavBar: getPlayersByLeague response:", response.data);
+                // console.log("NavBar: getPlayersByLeague response:", response.data);
                 const allPlayersInLeague: Player[] = response.data;
                 const foundPlayer = allPlayersInLeague.find(
                     (player) => player.userId === user.id
@@ -171,10 +164,10 @@ export default function NavBar({ page }: NavBarProps) {
                 } else {
                     setUserPlayerError("A network or unknown error occurred while fetching player data.");
                 }
-                console.error("NavBar: Error fetching user player data:", err);
+                // console.error("NavBar: Error fetching user player data:", err);
             } finally {
                 setUserPlayerLoading(false);
-                console.log("NavBar: fetchUserPlayer finished. User player loading:", false);
+                // console.log("NavBar: fetchUserPlayer finished. User player loading:", false);
             }
         };
         fetchUserPlayer();
