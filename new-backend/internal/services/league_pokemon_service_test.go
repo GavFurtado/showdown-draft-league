@@ -352,7 +352,7 @@ func TestLeaguePokemonService_UpdateLeaguePokemon(t *testing.T) {
 		input := &common.LeaguePokemonUpdateRequest{
 			LeaguePokemonID: testLeaguePokemonID,
 			Cost:            &newCost,
-			IsAvailable:     newIsAvailable,
+			IsAvailable:     &newIsAvailable,
 		}
 
 		updatedLeaguePokemon := &models.LeaguePokemon{
@@ -392,7 +392,7 @@ func TestLeaguePokemonService_UpdateLeaguePokemon(t *testing.T) {
 		input := &common.LeaguePokemonUpdateRequest{
 			LeaguePokemonID: testLeaguePokemonID,
 			Cost:            &newCost,
-			IsAvailable:     originalIsAvailable, // Same as original
+			IsAvailable:     &originalIsAvailable, // Same as original
 		}
 
 		updatedLeaguePokemon := &models.LeaguePokemon{
@@ -432,7 +432,7 @@ func TestLeaguePokemonService_UpdateLeaguePokemon(t *testing.T) {
 		input := &common.LeaguePokemonUpdateRequest{
 			LeaguePokemonID: testLeaguePokemonID,
 			Cost:            &originalCost,
-			IsAvailable:     newIsAvailable,
+			IsAvailable:     &newIsAvailable,
 		}
 
 		updatedLeaguePokemon := &models.LeaguePokemon{
@@ -564,7 +564,7 @@ func TestLeaguePokemonService_UpdateLeaguePokemon(t *testing.T) {
 		input := &common.LeaguePokemonUpdateRequest{
 			LeaguePokemonID: testLeaguePokemonID,
 			Cost:            &newCost,
-			IsAvailable:     newIsAvailable,
+			IsAvailable:     &newIsAvailable,
 		}
 
 		updatedLeaguePokemon := &models.LeaguePokemon{

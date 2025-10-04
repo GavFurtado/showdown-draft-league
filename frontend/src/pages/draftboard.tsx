@@ -5,6 +5,7 @@ import { useState, useEffect } from "react"
 import { Pokemon, FilterState, DraftCardProps } from "../api/data_interfaces"
 import { getAvailablePokemon } from "../api/api"
 import { useLeague } from "../context/LeagueContext"
+import axios from 'axios'; // Import axios for error handling
 
 const defaultFilters: FilterState = {
     selectedTypes: [],
@@ -14,7 +15,7 @@ const defaultFilters: FilterState = {
 };
 
 export default function Draftboard() {
-    const { currentLeague, loading: leagueLoading, error: leagueError } = useLeague(); // Consume LeagueContext
+    const { currentLeague, loading: leagueLoading, error: leagueError } = useLeague();
     const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
     const [cards, setCards] = useState<Pokemon[]>([]);
     const [filters, setFilters] = useState<FilterState>(defaultFilters);
@@ -22,10 +23,15 @@ export default function Draftboard() {
     const [pokemonLoading, setPokemonLoading] = useState<boolean>(true);
     const [pokemonError, setPokemonError] = useState<string | null>(null);
 
+    console.log("Draftboard: Component rendered. currentLeague:", currentLeague);
+
     // Effect to fetch Pokemon data when the league changes
     useEffect(() => {
+        console.log("Draftboard: useEffect for fetchPokemon running. currentLeague?.id:", currentLeague?.id);
         const fetchPokemon = async () => {
+            console.log("Draftboard: fetchPokemon called.");
             if (!currentLeague?.id) {
+                console.log("Draftboard: No currentLeague ID, skipping fetchPokemon.");
                 setAllPokemon([]);
                 setCards([]);
                 setPokemonLoading(false);
@@ -35,17 +41,24 @@ export default function Draftboard() {
             try {
                 setPokemonLoading(true);
                 setPokemonError(null);
+                console.log(`Draftboard: Attempting to fetch available Pokemon for league ID: ${currentLeague.id}`);
                 // Assuming getAvailablePokemon can take a leagueId if needed,
                 // or it fetches all available Pokemon for the current user's context.
                 // For now, we'll assume it fetches all available Pokemon.
                 const response = await getAvailablePokemon();
+                console.log("Draftboard: getAvailablePokemon response:", response.data);
                 setAllPokemon(response.data);
                 setCards(response.data); // Initialize cards with all fetched pokemon
             } catch (err) {
-                setPokemonError("Failed to fetch Pokemon data.");
-                console.error(err);
+                if (axios.isAxiosError(err) && err.response) {
+                    setPokemonError(err.response.data.error || "Failed to fetch Pokemon data.");
+                } else {
+                    setPokemonError("A network or unknown error occurred while fetching Pokemon data.");
+                }
+                console.error("Draftboard: Error fetching Pokemon data:", err);
             } finally {
                 setPokemonLoading(false);
+                console.log("Draftboard: fetchPokemon finished. Pokemon loading:", false);
             }
         };
         fetchPokemon();
@@ -53,11 +66,12 @@ export default function Draftboard() {
 
     // Effect to apply filters when filters, search term, or allPokemon changes
     useEffect(() => {
+        console.log("Draftboard: useEffect for applyFilter running.");
         applyFilter();
     }, [filters, searchTerm, allPokemon]);
 
     function applyFilter() {
-        let updatedCards: Pokemon[] = [...allPokemon]; // <--- ADD TYPE ANNOTATION
+        let updatedCards: Pokemon[] = [...allPokemon];
 
         if (searchTerm.trim() !== '') {
             updatedCards = updatedCards.filter(card =>
@@ -91,7 +105,7 @@ export default function Draftboard() {
         setCards(updatedCards);
     }
 
-    function updateFilter(key: keyof FilterState, value: any) { // <--- ADD TYPE ANNOTATION
+    function updateFilter(key: keyof FilterState, value: any) {
         setFilters(prev => ({ ...prev, [key]: value }));
     }
 
@@ -146,7 +160,7 @@ export default function Draftboard() {
     return (
         <>
             <div className="min-h-screen bg-[#BFC0C0] ">
-                <NavBar page="Draftboard" /> {/* Pass page prop */}
+                <NavBar page="Draftboard" />
 
                 <div className="flex flex-row">
                     <div className="flex flex-col w-[70%]">

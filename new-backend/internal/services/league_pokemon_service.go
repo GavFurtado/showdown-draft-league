@@ -230,8 +230,8 @@ func (s *leaguePokemonServiceImpl) UpdateLeaguePokemon(
 		existingLeaguePokemon.Cost = input.Cost
 	}
 	// Check if IsAvailable was explicitly provided and different from existing
-	if input.IsAvailable != existingLeaguePokemon.IsAvailable {
-		existingLeaguePokemon.IsAvailable = input.IsAvailable
+	if *input.IsAvailable != existingLeaguePokemon.IsAvailable {
+		existingLeaguePokemon.IsAvailable = *input.IsAvailable
 	}
 
 	updatedLeaguePokemon, err := s.leaguePokemonRepo.UpdateLeaguePokemon(existingLeaguePokemon)
