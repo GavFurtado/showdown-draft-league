@@ -59,8 +59,8 @@ export interface Player {
   teamName: string;
   wins: number;
   losses: number;
-  draft_points: number;
-  draftPosition: number;
+
+
   role: PlayerRole; // league-specific
   isParticipating: boolean;
   createdAt: string;
@@ -111,14 +111,27 @@ export interface PokemonSprites {
 
 export interface FilterState {
   selectedTypes: string[];
-  selectedCost: string;
+  minCost: string;
+  maxCost: string;
+  costSortOrder: 'asc' | 'desc'
   sortByStat: string;
   sortOrder: 'asc' | 'desc';
 }
 
 export interface DraftCardProps {
   key: string;
+  leaguePokemonId: string;
   pokemon: Pokemon;
   cost: number;
-  onImageError?: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void; // Added optional onImageError prop
+  onImageError?: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void;
+  addPokemonToWishlist: (pokemonId: string) => void;
+  removePokemonFromWishlist: (pokemonId: string) => void;
+  isPokemonInWishlist: (pokemonId: string) => boolean;
+}
+
+export interface WishlistDisplayProps {
+  allPokemon: LeaguePokemon[];
+  wishlist: string[];
+  removePokemonFromWishlist: (pokemonId: string) => void;
+  clearWishlist: () => void;
 }

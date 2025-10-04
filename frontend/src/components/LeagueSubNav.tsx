@@ -1,6 +1,6 @@
 import { Disclosure } from '@headlessui/react';
 import { Link } from 'react-router-dom';
-import { League, Player, PlayerRole } from '../api/data_interfaces';
+import { League, Player } from '../api/data_interfaces';
 
 interface NavigationItem {
     name: string;
@@ -10,8 +10,8 @@ interface NavigationItem {
 
 const leagueNavigation: NavigationItem[] = [
     { name: 'Dashboard', href: 'dashboard', current: false },
-    { name: 'Draftboard', href: 'draftboard', current: false },
-    { name: 'Team Score', href: 'team-score', current: false },
+    { name: 'Team Sheets', href: 'team-score', current: false },
+    { name: 'Draftboard', href: 'dashboard', current: false },
     { name: 'Standings', href: 'standings', current: false },
 ];
 
@@ -52,12 +52,7 @@ export default function LeagueSubNav({
                         ))}
                         {isLeagueStaff && (
                             <>
-                                <Link to={`/league/${currentLeague.id}/staff/manage-draft`} className={mergeClasses(
-                                    currentPage === "Manage Draft" ? 'bg-gray-700 text-white' : 'text-gray-200 hover:bg-gray-600 hover:text-white',
-                                    'rounded-md px-3 py-1 text-sm font-medium',
-                                )}>
-                                    Manage Draft
-                                </Link>
+
                                 <Link to={`/league/${currentLeague.id}/staff/edit-rules`} className={mergeClasses(
                                     currentPage === "Edit Rules" ? 'bg-gray-700 text-white' : 'text-gray-200 hover:bg-gray-600 hover:text-white',
                                     'rounded-md px-3 py-1 text-sm font-medium',

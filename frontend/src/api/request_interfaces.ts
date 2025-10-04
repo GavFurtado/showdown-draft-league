@@ -54,7 +54,7 @@ export interface DraftedPokemonCreateRequest {
     leagueId: string,
     playerId: string,
     pokemonSpeciesId: string,
-    draftRoundNumber: number,
+
     draftPickNumber: number,
     isReleased?: boolean
 }
@@ -63,7 +63,7 @@ export interface DraftedPokemonUpdateRequest {
     leagueId?: string,
     playerId?: string,
     pokemonSpeciesId?: string,
-    draftRoundNumber?: number,
+
     draftPickNumber?: number,
     isReleased?: boolean
 }

@@ -1,5 +1,5 @@
 import { Disclosure } from '@headlessui/react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useLeague } from '../context/LeagueContext';
 import { useEffect, useState } from 'react';
 import { League, Player, User } from '../api/data_interfaces';
@@ -13,18 +13,12 @@ import GlobalNavLinks from './GlobalNavLinks';
 import UserAuthSection from './UserAuthSection';
 import LeagueSubNav from './LeagueSubNav';
 
-// Utility function
-function mergeClasses(...classes: (string | boolean | undefined | null)[]) {
-    return classes.filter(Boolean).join(' ');
-}
-
 interface NavBarProps {
     page?: string;
 }
 
 export default function NavBar({ page }: NavBarProps) {
-    const { leagueId } = useParams<{ leagueId: string }>();
-    const { currentLeague, loading: leagueLoading, error: leagueError } = useLeague();
+    const { currentLeague } = useLeague();
     const navigate = useNavigate();
 
     // User-related states
@@ -88,7 +82,7 @@ export default function NavBar({ page }: NavBarProps) {
                 console.error("NavBar:: Error fetching user data:", err);
             } finally {
                 setUserLoading(false);
-                // console.log("NavBar:: fetchUserData finished. User loading:", false);
+                console.log("NavBar:: fetchUserData finished. User loading:", userLoading);
             }
         };
         fetchUserData();

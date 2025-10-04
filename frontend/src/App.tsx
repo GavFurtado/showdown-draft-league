@@ -3,8 +3,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/login";
 import Navbar from "./components/navbar";
 import Dashboard from './pages/dashboard';
-import Draftboard from "./pages/draftboard";
+
 import { LeagueProvider } from './context/LeagueContext';
+import Draftboard from './pages/draftboard';
 
 function App() {
     return (
@@ -43,7 +44,7 @@ function LeagueProviderWrapper() {
 
                 {/* --- League Staff Routes (Protected by league-specific roles) */}
                 {/* placeholder examples */}
-                {/* <Route path='staff/manage-draft' element={<LeagueStaffRouteGuard role="moderator"><ManageDraft/></LeagueStaffRouteGuard>} /> */}
+
                 {/* <Route path='staff/edit-rules' element={<LeagueStaffRouteGuard role="owner"><EditRules /></LeagueStaffRouteGuard>} /> */}
 
             </Routes>

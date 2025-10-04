@@ -1,4 +1,3 @@
-import NavBar from "../components/navbar"
 import DraftCard from "../components/draftCards"
 import Filter from "../components/filter"
 import { useState, useEffect } from "react"
@@ -6,24 +5,27 @@ import { FilterState, DraftCardProps, LeaguePokemon } from "../api/data_interfac
 import { getAvailablePokemon } from "../api/api"
 import { useLeague } from "../context/LeagueContext"
 import axios from 'axios'; // Import axios for error handling
+import { WishlistDisplay } from "../components/WishlistDisplay"
+import { useWishlist } from '../hooks/useWishlist';
 
 const defaultFilters: FilterState = {
     selectedTypes: [],
-    selectedCost: '',
+    minCost: '',
+    maxCost: '',
+    costSortOrder: 'desc',
     sortByStat: '',
-    sortOrder: 'asc',
+    sortOrder: 'desc',
 };
 
 export default function Draftboard() {
     const { currentLeague, loading: leagueLoading, error: leagueError } = useLeague();
+    const { wishlist, addPokemonToWishlist, removePokemonFromWishlist, clearWishlist, isPokemonInWishlist } = useWishlist(currentLeague?.id || '');
     const [allPokemon, setAllPokemon] = useState<LeaguePokemon[]>([]);
     const [cards, setCards] = useState<LeaguePokemon[]>([]);
     const [filters, setFilters] = useState<FilterState>(defaultFilters);
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [pokemonLoading, setPokemonLoading] = useState<boolean>(true);
     const [pokemonError, setPokemonError] = useState<string | null>(null);
-
-    // console.log("Draftboard: Component rendered. currentLeague:", currentLeague);
 
     // handleImageError function
     const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -89,21 +91,37 @@ export default function Draftboard() {
                 )
             );
         }
-        if (filters.selectedCost) {
-            updatedCards = updatedCards.filter(card => card.cost.toString() === filters.selectedCost);
+
+        if (filters.minCost !== '') {
+            const min = parseInt(filters.minCost);
+            updatedCards = updatedCards.filter(card => card.cost >= min);
         }
-        if (filters.sortByStat) {
-            updatedCards = updatedCards.sort((a, b) => {
+
+        if (filters.maxCost !== '') {
+            const max = parseInt(filters.maxCost);
+            updatedCards = updatedCards.filter(card => card.cost <= max);
+        }
+
+        // Always sort with cost as secondary sort
+        updatedCards = updatedCards.sort((a, b) => {
+            // If sortByStat is selected, use it as primary sort
+            if (filters.sortByStat) {
                 const statA = a.PokemonSpecies.stats[filters.sortByStat];
                 const statB = b.PokemonSpecies.stats[filters.sortByStat];
 
-                if (statA === undefined || statB === undefined) {
-                    return 0;
-                }
+                if (statA !== undefined && statB !== undefined) {
+                    const statDiff = filters.sortOrder === 'desc' ? statB - statA : statA - statB;
 
-                return filters.sortOrder === 'asc' ? statA - statB : statB - statA;
-            });
-        }
+                    // If stats are equal, sort by cost as tiebreaker
+                    if (statDiff !== 0) {
+                        return statDiff;
+                    }
+                }
+            }
+
+            // Primary sort by cost (if no stat selected), or secondary sort (if stats are equal)
+            return filters.costSortOrder === 'desc' ? b.cost - a.cost : a.cost - b.cost;
+        });
 
         setCards(updatedCards);
     }
@@ -144,7 +162,7 @@ export default function Draftboard() {
     const cardsToDisplay = cards.map((leaguePokemon: LeaguePokemon) => {
         // console.log("Draftboard::cardsToDisplay: leaguePokemon id, cost, pokemonSpecies", leaguePokemon.id, leaguePokemon.cost, leaguePokemon.PokemonSpecies);
 
-        if (!leaguePokemon.PokemonSpecies) {
+        if (!leaguePokemon.PokemonSpecies || !currentLeague?.id) {
             console.warn("Draftboard: Skipping card due to missing pokemonSpecies:", leaguePokemon);
             return null;
         }
@@ -152,15 +170,20 @@ export default function Draftboard() {
         const pokemon = leaguePokemon.PokemonSpecies;
         const name = pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1);
         const draftCardProps: DraftCardProps = {
-            key: leaguePokemon.id, // Use leaguePokemon.id as the key
+            key: leaguePokemon.id,
+            leaguePokemonId: leaguePokemon.id,
             pokemon: {
                 ...pokemon,
-                name: name, // Override name with capitalized version
+                name: name,
             },
-            cost: leaguePokemon.cost || 10, // Use leaguePokemon.cost
-            onImageError: handleImageError, // Pass the function as a prop
+            cost: leaguePokemon.cost,
+            onImageError: handleImageError,
+            addPokemonToWishlist: addPokemonToWishlist,
+            isPokemonInWishlist: isPokemonInWishlist,
+            removePokemonFromWishlist: removePokemonFromWishlist
         };
         return <DraftCard {...draftCardProps} />;
+
     });
 
     return (
@@ -198,25 +221,27 @@ export default function Draftboard() {
                             </div>
                             <Filter updateFilter={updateFilter} filters={filters} resetAllFilters={resetAllFilters} />
                         </div>
-                        <div className="grid grid-cols-5 gap-4 m-4 p-6 mt-0 pt-0 pr-8 overflow-scroll h-auto max-h-screen rounded-2xl">
+                        <div className="grid grid-cols-5 gap-4 m-4 p-6 mt-0 pt-0 pr-8 h-auto rounded-2xl">
                             {cardsToDisplay}
                         </div>
                     </div>
 
-                    <div className="bg-white shadow-md rounded-md overflow-hidden w-[25%] mx-auto mt-16 ml-2 h-[100%]">
-                        <div className="bg-gray-100 py-2 px-4">
-                            <h2 className="text-l font-semibold text-gray-800">Your Team</h2>
+                    <div className="flex flex-col w-[25%] mx-auto mt-16 ml-2 h-[100%] gap-4">
+                        {currentLeague?.id && <WishlistDisplay allPokemon={allPokemon} wishlist={wishlist} removePokemonFromWishlist={removePokemonFromWishlist} clearWishlist={clearWishlist} />}
+                        <div className="bg-white shadow-md rounded-md overflow-hidden">
+                            <div className="bg-gray-100 py-2 px-4">
+                                <h2 className="text-l font-semibold text-gray-800">Your Team</h2>
+                            </div>
+                            <ul className="divide-y divide-gray-200">
+                                <li className="flex items-center py-4 px-6">
+                                    <img className="w-12 h-12 object-cover mr-4" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/9.png" alt="User avatar"></img>
+                                    <div className="flex-1">
+                                        <h3 className="text-lg font-medium text-gray-800">BIG MAN BLASTOISE</h3>
+                                        {/* <p className="text-gray-600 text-base">1234 points</p> */}
+                                    </div>
+                                </li>
+                            </ul>
                         </div>
-                        <ul className="divide-y divide-gray-200">
-                            <li className="flex items-center py-4 px-6">
-
-                                <img className="w-12 h-12 object-cover mr-4" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/9.png" alt="User avatar"></img>
-                                <div className="flex-1">
-                                    <h3 className="text-lg font-medium text-gray-800">BIG MAN BLASTOISE</h3>
-                                    {/* <p className="text-gray-600 text-base">1234 points</p> */}
-                                </div>
-                            </li>
-                        </ul>
                     </div>
                 </div>
             </div>
