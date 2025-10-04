@@ -1,3 +1,4 @@
+import { NoSubstitutionTemplateLiteral } from "typescript";
 
 export interface User {
   id: string; // uuid.UUID
@@ -66,31 +67,47 @@ export interface Player {
   updatedAt: string;
 }
 
+export interface LeaguePokemon {
+  id: string; // uuid.UUID
+  leagueId: string; // uuid.UUID
+  pokemonSpeciesId: number;
+  cost: number;
+  isAvailable: boolean;
+  createdAt?: string; // time.Time
+  updatedAt?: string; // time.Time
+  deletedAt?: string; // time.time;
+  // Relationships
+  League?: League;
+  PokemonSpecies: Pokemon;
+}
+
+// Pokemon Species stuff
+export interface Pokemon {
+  id: number;
+  dex_id: number;
+  name: string;
+  types: string[];
+  stats: PokemonStat;
+  abilities: PokemonAbility[];
+  sprites: PokemonSprites;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface PokemonStat {
   [key: string]: number; // e.g., hp, attack, defense, special-attack, special-defense, speed
 }
 
 export interface PokemonAbility {
-  ability: {
-    name: string;
-    url: string;
-  };
-  is_hidden: boolean;
-  slot: number;
-}
-
-export interface PokemonSprites {
-  front_default: string;
-}
-
-export interface Pokemon {
-  id: number;
   name: string;
-  types: string[];
-  stats: PokemonStat;
-  abilities: PokemonAbility[];
-  cost: number;
+  is_hidden: boolean;
 }
+export interface PokemonSprites {
+  front_default?: string; // url
+  official_artwork?: string; //url
+}
+
+
 
 export interface FilterState {
   selectedTypes: string[];
@@ -100,15 +117,8 @@ export interface FilterState {
 }
 
 export interface DraftCardProps {
-  name: string;
-  pic: string;
-  type: string[];
-  hp: number;
-  ability: PokemonAbility[];
-  attack: number;
-  defense: number;
-  specialAtk: number;
-  specialDef: number;
-  speed: number;
+  key: string;
+  pokemon: Pokemon;
   cost: number;
+  onImageError?: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void; // Added optional onImageError prop
 }

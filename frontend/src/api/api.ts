@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { DiscordUser, LeagueCreateRequest, UpdatePlayerInfoRequest, UpdateUserProfileRequest } from './request_interfaces'
-import { Pokemon, League } from './data_interfaces';
+import { Pokemon, League, LeaguePokemon } from './data_interfaces';
 
 export const API_BASE_URL = 'http://localhost:8080'; // temp; make this an env var
 
@@ -48,4 +48,4 @@ export const updatePlayerProfile =
         api.put(`/api/leagueId/${leagueId}/players/${id}/profile`, data);
 
 // --- New API Call for Pokemon Data ---
-export const getAvailablePokemon = () => api.get<Pokemon[]>('/api/pokemon/available');
+export const getAvailablePokemon = (leagueId: string) => api.get<LeaguePokemon[]>(`/api/leagues/${leagueId}/pokemon/`);

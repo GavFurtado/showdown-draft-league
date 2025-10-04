@@ -2,7 +2,7 @@ import NavBar from "../components/navbar"
 import DraftCard from "../components/draftCards"
 import Filter from "../components/filter"
 import { useState, useEffect } from "react"
-import { Pokemon, FilterState, DraftCardProps } from "../api/data_interfaces"
+import { FilterState, DraftCardProps, LeaguePokemon } from "../api/data_interfaces"
 import { getAvailablePokemon } from "../api/api"
 import { useLeague } from "../context/LeagueContext"
 import axios from 'axios'; // Import axios for error handling
@@ -16,22 +16,28 @@ const defaultFilters: FilterState = {
 
 export default function Draftboard() {
     const { currentLeague, loading: leagueLoading, error: leagueError } = useLeague();
-    const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
-    const [cards, setCards] = useState<Pokemon[]>([]);
+    const [allPokemon, setAllPokemon] = useState<LeaguePokemon[]>([]);
+    const [cards, setCards] = useState<LeaguePokemon[]>([]);
     const [filters, setFilters] = useState<FilterState>(defaultFilters);
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [pokemonLoading, setPokemonLoading] = useState<boolean>(true);
     const [pokemonError, setPokemonError] = useState<string | null>(null);
 
-    console.log("Draftboard: Component rendered. currentLeague:", currentLeague);
+    // console.log("Draftboard: Component rendered. currentLeague:", currentLeague);
+
+    // handleImageError function
+    const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+        e.currentTarget.onerror = null;
+        e.currentTarget.src = `https://placehold.co/150x150/cccccc/333333?text=No+Image`;
+    };
 
     // Effect to fetch Pokemon data when the league changes
     useEffect(() => {
-        console.log("Draftboard: useEffect for fetchPokemon running. currentLeague?.id:", currentLeague?.id);
+        // console.log("Draftboard: useEffect for fetchPokemon running. currentLeague?.id:", currentLeague?.id);
         const fetchPokemon = async () => {
-            console.log("Draftboard: fetchPokemon called.");
+            // console.log("Draftboard: fetchPokemon called.");
             if (!currentLeague?.id) {
-                console.log("Draftboard: No currentLeague ID, skipping fetchPokemon.");
+                // console.log("Draftboard: No currentLeague ID, skipping fetchPokemon.");
                 setAllPokemon([]);
                 setCards([]);
                 setPokemonLoading(false);
@@ -41,12 +47,9 @@ export default function Draftboard() {
             try {
                 setPokemonLoading(true);
                 setPokemonError(null);
-                console.log(`Draftboard: Attempting to fetch available Pokemon for league ID: ${currentLeague.id}`);
-                // Assuming getAvailablePokemon can take a leagueId if needed,
-                // or it fetches all available Pokemon for the current user's context.
-                // For now, we'll assume it fetches all available Pokemon.
-                const response = await getAvailablePokemon();
-                console.log("Draftboard: getAvailablePokemon response:", response.data);
+                // console.log(`Draftboard: Attempting to fetch available Pokemon for league ID: ${currentLeague.id}`);
+                const response = await getAvailablePokemon(currentLeague.id);
+                // console.log("Draftboard: getAvailablePokemon response:", response.data);
                 setAllPokemon(response.data);
                 setCards(response.data); // Initialize cards with all fetched pokemon
             } catch (err) {
@@ -58,7 +61,7 @@ export default function Draftboard() {
                 console.error("Draftboard: Error fetching Pokemon data:", err);
             } finally {
                 setPokemonLoading(false);
-                console.log("Draftboard: fetchPokemon finished. Pokemon loading:", false);
+                console.log("Draftboard: fetchPokemon finished. Pokemon loading:", pokemonLoading);
             }
         };
         fetchPokemon();
@@ -71,18 +74,18 @@ export default function Draftboard() {
     }, [filters, searchTerm, allPokemon]);
 
     function applyFilter() {
-        let updatedCards: Pokemon[] = [...allPokemon];
+        let updatedCards: LeaguePokemon[] = [...allPokemon];
 
         if (searchTerm.trim() !== '') {
             updatedCards = updatedCards.filter(card =>
-                card.name.toLowerCase().includes(searchTerm.toLowerCase())
+                card.PokemonSpecies.name.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
 
         if (filters.selectedTypes.length > 0) {
             updatedCards = updatedCards.filter(card =>
                 filters.selectedTypes.some(type =>
-                    card.types.includes(type)
+                    card.PokemonSpecies.types.includes(type)
                 )
             );
         }
@@ -91,8 +94,8 @@ export default function Draftboard() {
         }
         if (filters.sortByStat) {
             updatedCards = updatedCards.sort((a, b) => {
-                const statA = a.stats[filters.sortByStat];
-                const statB = b.stats[filters.sortByStat];
+                const statA = a.PokemonSpecies.stats[filters.sortByStat];
+                const statB = b.PokemonSpecies.stats[filters.sortByStat];
 
                 if (statA === undefined || statB === undefined) {
                     return 0;
@@ -138,21 +141,24 @@ export default function Draftboard() {
         );
     }
 
-    const cardsToDisplay = cards.map((pokemon: Pokemon) => {
+    const cardsToDisplay = cards.map((leaguePokemon: LeaguePokemon) => {
+        // console.log("Draftboard::cardsToDisplay: leaguePokemon id, cost, pokemonSpecies", leaguePokemon.id, leaguePokemon.cost, leaguePokemon.PokemonSpecies);
+
+        if (!leaguePokemon.PokemonSpecies) {
+            console.warn("Draftboard: Skipping card due to missing pokemonSpecies:", leaguePokemon);
+            return null;
+        }
+
+        const pokemon = leaguePokemon.PokemonSpecies;
         const name = pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1);
         const draftCardProps: DraftCardProps = {
-            key: pokemon.id,
-            name: name,
-            pic: pokemon.sprites.front_default,
-            type: pokemon.types,
-            hp: pokemon.stats.hp,
-            ability: pokemon.abilities,
-            attack: pokemon.stats.attack,
-            defense: pokemon.stats.defense,
-            specialAtk: pokemon.stats["special-attack"],
-            specialDef: pokemon.stats["special-defense"],
-            speed: pokemon.stats.speed,
-            cost: pokemon.cost || 10,
+            key: leaguePokemon.id, // Use leaguePokemon.id as the key
+            pokemon: {
+                ...pokemon,
+                name: name, // Override name with capitalized version
+            },
+            cost: leaguePokemon.cost || 10, // Use leaguePokemon.cost
+            onImageError: handleImageError, // Pass the function as a prop
         };
         return <DraftCard {...draftCardProps} />;
     });
@@ -160,8 +166,6 @@ export default function Draftboard() {
     return (
         <>
             <div className="min-h-screen bg-[#BFC0C0] ">
-                <NavBar page="Draftboard" />
-
                 <div className="flex flex-row">
                     <div className="flex flex-col w-[70%]">
                         <div className="flex flex-row m-4 p-8 pb-0 mb-2 justify-between">

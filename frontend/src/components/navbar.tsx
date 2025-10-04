@@ -85,7 +85,7 @@ export default function NavBar({ page }: NavBarProps) {
                 } else {
                     setUserError("A network or unknown error occurred while fetching user data.");
                 }
-                // console.error("NavBar:: Error fetching user data:", err);
+                console.error("NavBar:: Error fetching user data:", err);
             } finally {
                 setUserLoading(false);
                 // console.log("NavBar:: fetchUserData finished. User loading:", false);
@@ -192,7 +192,7 @@ export default function NavBar({ page }: NavBarProps) {
                         </div>
 
                         {/* Center Section: Global Navigation Links */}
-                        <div className="flex flex-1 justify-start ml-8">
+                        <div className="flex flex-1 justify-start">
                             <GlobalNavLinks user={user} currentPage={page} />
                         </div>
 

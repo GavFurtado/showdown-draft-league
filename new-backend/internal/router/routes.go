@@ -102,6 +102,10 @@ func RegisterRoutes(
 					"/",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateLeaguePokemon),
 					controllers.LeaguePokemonController.UpdateLeaguePokemon)
+				leaguePokemon.GET(
+					"/",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadLeaguePokemon),
+					controllers.LeaguePokemonController.GetAllPokemonByLeague)
 			}
 		}
 

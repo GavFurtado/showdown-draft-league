@@ -1,25 +1,64 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { DraftCardProps } from '../api/data_interfaces';
 
-export default function PokemonCard(pokemon) {
+// Helper function to get stat color based on value
+const getStatColor = (value: number): string => {
+    if (value <= 25) {
+        return '#FF0000'; // Red
+    } else if (value <= 60) {
+        return '#FFA500'; // Orange
+    } else if (value <= 89) {
+        return '#FFFF00'; // Yellow
+    } else if (value <= 120) {
+        return '#A0F555'; // Lime Green
+    } else if (value <= 199) {
+        return '#23CD5E'; // Darker Green
+    } else {
+        return '#02FFFF'; // Cyan
+    }
+};
+
+// StatBar Component
+interface StatBarProps {
+    label: string;
+    value: number;
+}
+
+const StatBar: React.FC<StatBarProps> = ({ label, value }) => {
+    const maxWidth = 255; // Max possible stat value
+    const barWidth = (value / maxWidth) * 100; // Calculate width as percentage
+    const color = getStatColor(value);
+
+    return (
+        <div className="flex items-center gap-2">
+            <span className="w-10 text-right text-xs font-medium">{label}:</span>
+            <div className="flex-1 bg-gray-600 h-4">
+                <div
+                    className="h-4"
+                    style={{ width: `${barWidth}%`, backgroundColor: color }}
+                ></div>
+            </div>
+            <span className="w-8 text-left text-sm">{value}</span>
+        </div>
+    );
+};
+
+export default function PokemonCard({ pokemon, cost, onImageError }: DraftCardProps) {
     const [isFlipped, setIsFlipped] = useState(false);
     const handleFlip = () => {
         setIsFlipped(!isFlipped);
     };
-    const handleImageError = (e) => {
-        e.target.onerror = null;
-        e.target.src = `https://placehold.co/150x150/cccccc/333333?text=No+Image`;
-    };
-    const types = pokemon.type.map(t => {
+    const types = pokemon.types.map(t => {
         if (typeof t === 'string' && t.length > 0) {
             return t.charAt(0).toUpperCase() + t.slice(1);
         }
         return t;
     }).join(', ');
-    const abilities = pokemon.ability.map(a => a.name).join(', ')
+    const abilities = pokemon.abilities.map(a => a.name).join(', ')
     return (
         // Container of the whole thing : Sets perspective for effect and provides a clickable area
         <div
-            className=" group h-70 w-47 rounded-lg shadow-lg relative cursor-pointer [perspective:1000px]" // Fixed size for the card
+            className="group h-70 w-47 rounded-lg shadow-lg relative cursor-pointer [perspective:1000px]"
             onClick={handleFlip}
         >
             {/* Inner container: This is the part that actually flips */}
@@ -37,14 +76,14 @@ export default function PokemonCard(pokemon) {
                     {/* Pokémon Image */}
                     <div className="relative w-full h-[100%]">
                         <img
-                            src={pokemon.pic}
+                            src={pokemon.sprites.front_default}
                             alt={pokemon.name}
-                            onError={handleImageError}
+                            onError={onImageError}
                             className="w-[100%] h-[100%] object-contain mb-4 bg-gray-100 p-2"
                         />
                         {/* Pokémon Cost */}
                         <p className="text-lg font-semibold absolute  bottom-2 right-2 ">
-                            {pokemon.cost}
+                            {cost}
                         </p>
                     </div>
                     <div className='flex w-[100%] justify-between'>
@@ -74,16 +113,17 @@ export default function PokemonCard(pokemon) {
                     <h3 className="text-l font-bold mb-4 text-center">
                         {pokemon.name}
                     </h3>
-                    <ul className="text-left text-s">
-                        <li>Hp: {pokemon.hp}</li>
-                        <li>Attack: {pokemon.attack}</li>
-                        <li>Defense: {pokemon.defense}</li>
-                        <li>Special Attack: {pokemon.specialAtk}</li>
-                        <li>Special Defense: {pokemon.specialDef}</li>
-                        <li>Speed: {pokemon.speed}</li>
-                        <li>Abilities: {abilities}</li>
-
-                    </ul>
+                    <div className="flex flex-col gap-1 w-full">
+                        <StatBar label="HP" value={pokemon.stats.hp} />
+                        <StatBar label="Att" value={pokemon.stats.attack} />
+                        <StatBar label="Def" value={pokemon.stats.defense} />
+                        <StatBar label="SpA" value={pokemon.stats["special_attack"]} />
+                        <StatBar label="SpD" value={pokemon.stats["special_defense"]} />
+                        <StatBar label="Spe" value={pokemon.stats.speed} />
+                    </div>
+                    <div className="text-left text-xs mt-4">
+                        <p className="font-xs"><span className='font-bold'>Abilities:</span> {abilities}</p>
+                    </div>
                     <p className="text-base text-center mb-auto">
 
                     </p>
