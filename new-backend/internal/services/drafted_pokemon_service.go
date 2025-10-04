@@ -15,17 +15,17 @@ import (
 
 type DraftedPokemonService interface {
 	// gets drafted Pokemon by ID with relationships.
-	GetDraftedPokemonByID(currentUser *models.User, id uuid.UUID) (*models.DraftedPokemon, error)
+	GetDraftedPokemonByID(id uuid.UUID) (*models.DraftedPokemon, error)
 	// gets all Pokemon drafted by a specific player.
-	GetDraftedPokemonByPlayer(currentUser *models.User, playerID uuid.UUID) ([]models.DraftedPokemon, error)
+	GetDraftedPokemonByPlayer(playerID uuid.UUID) ([]models.DraftedPokemon, error)
 	// gets all Pokemon drafted in a specific league.
-	GetDraftedPokemonByLeague(currentUser *models.User, leagueID uuid.UUID) ([]models.DraftedPokemon, error)
+	GetDraftedPokemonByLeague(leagueID uuid.UUID) ([]models.DraftedPokemon, error)
 	// gets all active (non-released) Pokemon drafted in a league.
-	GetActiveDraftedPokemonByLeague(currentUser *models.User, leagueID uuid.UUID) ([]models.DraftedPokemon, error)
+	GetActiveDraftedPokemonByLeague(leagueID uuid.UUID) ([]models.DraftedPokemon, error)
 	// gets all released Pokemon (free agents) in a league.
-	GetReleasedPokemonByLeague(currentUser *models.User, leagueID uuid.UUID) ([]models.DraftedPokemon, error)
+	GetReleasedPokemonByLeague(leagueID uuid.UUID) ([]models.DraftedPokemon, error)
 	// checks if a Pokemon species has been drafted in a league and is not released.
-	IsPokemonDrafted(currentUser *models.User, leagueID, pokemonSpeciesID uuid.UUID) (bool, error)
+	IsPokemonDrafted(leagueID uuid.UUID, pokemonSpeciesID int64) (bool, error)
 	// gets the next draft pick number for a league.
 	GetNextDraftPickNumber(currentUser *models.User, leagueID uuid.UUID) (int, error)
 	// releases a Pokemon back to free agents.
@@ -48,6 +48,7 @@ type DraftedPokemonService interface {
 
 type draftedPokemonServiceImpl struct {
 	draftedPokemonRepo repositories.DraftedPokemonRepository
+	pokemonSpeciesRepo repositories.PokemonSpeciesRepository
 	userRepo           repositories.UserRepository
 	leagueRepo         repositories.LeagueRepository
 	playerRepo         repositories.PlayerRepository
@@ -58,21 +59,23 @@ func NewDraftedPokemonService(
 	userRepo repositories.UserRepository,
 	leagueRepo repositories.LeagueRepository,
 	playerRepo repositories.PlayerRepository,
+	pokemonSpeciesRepo repositories.PokemonSpeciesRepository,
 ) DraftedPokemonService {
 	return &draftedPokemonServiceImpl{
 		draftedPokemonRepo: draftedPokemonRepo,
 		userRepo:           userRepo,
 		leagueRepo:         leagueRepo,
 		playerRepo:         playerRepo,
+		pokemonSpeciesRepo: pokemonSpeciesRepo,
 	}
 }
 
-// gets drafted Pokemon by ID with relationships.
-func (s *draftedPokemonServiceImpl) GetDraftedPokemonByID(currentUser *models.User, id uuid.UUID) (*models.DraftedPokemon, error) {
+// GetDraftedPokemonByID gets drafted Pokemon by ID with relationships.
+func (s *draftedPokemonServiceImpl) GetDraftedPokemonByID(id uuid.UUID) (*models.DraftedPokemon, error) {
 	pokemon, err := s.draftedPokemonRepo.GetDraftedPokemonByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, common.ErrPokemonSpeciesNotFound
+			return nil, common.ErrDraftedPokemonNotFound
 		}
 		log.Printf("LOG: (Error: DraftedPokemonService.GetDraftedPokemonByID) - Failed to get drafted pokemon by ID %s: %v", id, err)
 		return nil, common.ErrInternalService
@@ -81,8 +84,8 @@ func (s *draftedPokemonServiceImpl) GetDraftedPokemonByID(currentUser *models.Us
 	return pokemon, nil
 }
 
-// gets all Pokemon drafted by a specific player.
-func (s *draftedPokemonServiceImpl) GetDraftedPokemonByPlayer(currentUser *models.User, playerID uuid.UUID) ([]models.DraftedPokemon, error) {
+// GetDraftedPokemonByPlayer gets all Pokemon drafted by a specific player.
+func (s *draftedPokemonServiceImpl) GetDraftedPokemonByPlayer(playerID uuid.UUID) ([]models.DraftedPokemon, error) {
 	targetPlayer, err := s.playerRepo.GetPlayerByID(playerID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -101,8 +104,8 @@ func (s *draftedPokemonServiceImpl) GetDraftedPokemonByPlayer(currentUser *model
 	return pokemon, nil
 }
 
-// gets all Pokemon drafted in a specific league.
-func (s *draftedPokemonServiceImpl) GetDraftedPokemonByLeague(currentUser *models.User, leagueID uuid.UUID) ([]models.DraftedPokemon, error) {
+// GetDraftedPokemonByLeague gets all Pokemon drafted in a specific league.
+func (s *draftedPokemonServiceImpl) GetDraftedPokemonByLeague(leagueID uuid.UUID) ([]models.DraftedPokemon, error) {
 	pokemon, err := s.draftedPokemonRepo.GetDraftedPokemonByLeague(leagueID)
 	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.GetDraftedPokemonByLeague) - Failed to get drafted pokemon by league %s: %v", leagueID, err)
@@ -112,8 +115,8 @@ func (s *draftedPokemonServiceImpl) GetDraftedPokemonByLeague(currentUser *model
 	return pokemon, nil
 }
 
-// gets all active (non-released) Pokemon drafted in a league.
-func (s *draftedPokemonServiceImpl) GetActiveDraftedPokemonByLeague(currentUser *models.User, leagueID uuid.UUID) ([]models.DraftedPokemon, error) {
+// GetActiveDraftedPokemonByLeague gets all active (non-released) Pokemon drafted in a league.
+func (s *draftedPokemonServiceImpl) GetActiveDraftedPokemonByLeague(leagueID uuid.UUID) ([]models.DraftedPokemon, error) {
 	pokemon, err := s.draftedPokemonRepo.GetActiveDraftedPokemonByLeague(leagueID)
 	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.GetActiveDraftedPokemonByLeague) - Failed to get active drafted pokemon by league %s: %v", leagueID, err)
@@ -123,8 +126,8 @@ func (s *draftedPokemonServiceImpl) GetActiveDraftedPokemonByLeague(currentUser 
 	return pokemon, nil
 }
 
-// gets all released Pokemon in a league.
-func (s *draftedPokemonServiceImpl) GetReleasedPokemonByLeague(currentUser *models.User, leagueID uuid.UUID) ([]models.DraftedPokemon, error) {
+// GetReleasedPokemonByLeague gets all released Pokemon in a league.
+func (s *draftedPokemonServiceImpl) GetReleasedPokemonByLeague(leagueID uuid.UUID) ([]models.DraftedPokemon, error) {
 	pokemon, err := s.draftedPokemonRepo.GetReleasedPokemonByLeague(leagueID)
 	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.GetReleasedPokemonByLeague) - Failed to get released pokemon by league %s: %v", leagueID, err)
@@ -134,8 +137,16 @@ func (s *draftedPokemonServiceImpl) GetReleasedPokemonByLeague(currentUser *mode
 	return pokemon, nil
 }
 
-// checks if a Pokemon species has been drafted in a league and is not released.
-func (s *draftedPokemonServiceImpl) IsPokemonDrafted(currentUser *models.User, leagueID, pokemonSpeciesID uuid.UUID) (bool, error) {
+// IsPokemonDrafted checks if a Pokemon species has been drafted in a league and is not released.
+func (s *draftedPokemonServiceImpl) IsPokemonDrafted(leagueID uuid.UUID, pokemonSpeciesID int64) (bool, error) {
+	// check if valid species id
+	if _, err := s.pokemonSpeciesRepo.GetPokemonSpeciesByID(pokemonSpeciesID); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return false, common.ErrPokemonSpeciesNotFound
+		}
+		return false, common.ErrInternalService
+	}
+
 	isDrafted, err := s.draftedPokemonRepo.IsPokemonDrafted(leagueID, pokemonSpeciesID)
 	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.IsPokemonDrafted) - Failed to check if pokemon is drafted for league %s and species %s: %v", leagueID, pokemonSpeciesID, err)
@@ -175,6 +186,9 @@ func (s *draftedPokemonServiceImpl) ReleasePokemon(currentUser *models.User, dra
 	// otPlayer = Original Trainer Player. renamed from ownerPlayer to prevent confusion with player role owner
 	otPlayer, err := s.playerRepo.GetPlayerByID(draftedPokemon.PlayerID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return common.ErrPlayerNotFound
+		}
 		log.Printf("LOG: (Error: DraftedPokemonService.ReleasePokemon) - Error getting owner player %s for drafted pokemon %s: %v", draftedPokemon.PlayerID, draftedPokemonID, err)
 		return common.ErrInternalService
 	}
@@ -216,7 +230,7 @@ func (s *draftedPokemonServiceImpl) GetDraftedPokemonCountByPlayer(currentUser *
 	return count, nil
 }
 
-// gets draft history for a league (all picks in order, including released).
+// gets draft history for a league (all picks in order, including released and includes transfers).
 func (s *draftedPokemonServiceImpl) GetDraftHistory(currentUser *models.User, leagueID uuid.UUID) ([]models.DraftedPokemon, error) {
 	history, err := s.draftedPokemonRepo.GetDraftHistory(leagueID)
 	if err != nil {

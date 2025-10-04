@@ -22,7 +22,7 @@ type DraftedPokemonRepository interface {
 	// gets all released Pokemon (free agents) in a league
 	GetReleasedPokemonByLeague(leagueID uuid.UUID) ([]models.DraftedPokemon, error)
 	// checks if a Pokemon species has been drafted in a league
-	IsPokemonDrafted(leagueID, pokemonSpeciesID uuid.UUID) (bool, error)
+	IsPokemonDrafted(leagueID uuid.UUID, pokemonSpeciesID int64) (bool, error)
 	// gets the next draft pick number for a league
 	GetNextDraftPickNumber(leagueID uuid.UUID) (int, error)
 	// releases a Pokemon back to free agents
@@ -136,7 +136,7 @@ func (r *draftedPokemonRepositoryImpl) GetReleasedPokemonByLeague(leagueID uuid.
 }
 
 // checks if a Pokemon species has been drafted in a league
-func (r *draftedPokemonRepositoryImpl) IsPokemonDrafted(leagueID, pokemonSpeciesID uuid.UUID) (bool, error) {
+func (r *draftedPokemonRepositoryImpl) IsPokemonDrafted(leagueID uuid.UUID, pokemonSpeciesID int64) (bool, error) {
 	var count int64
 	err := r.db.Model(&models.DraftedPokemon{}).
 		Where("league_id = ? AND pokemon_species_id = ? AND is_released = ?", leagueID, pokemonSpeciesID, false).
@@ -192,7 +192,7 @@ func (r *draftedPokemonRepositoryImpl) ReDraftPokemon(draftedPokemonID, newPlaye
 	return nil
 }
 
-// gets count of Pokemon drafted by a player
+// GetDraftedPokemonCountByPlayer gets count of Pokemon drafted by a player
 func (r *draftedPokemonRepositoryImpl) GetDraftedPokemonCountByPlayer(playerID uuid.UUID) (int64, error) {
 	var count int64
 	err := r.db.Model(&models.DraftedPokemon{}).
@@ -205,7 +205,7 @@ func (r *draftedPokemonRepositoryImpl) GetDraftedPokemonCountByPlayer(playerID u
 	return count, nil
 }
 
-// gets draft history for a league (all picks in order)
+// GetDraftHistory gets draft history for a league (all picks in order)
 func (r *draftedPokemonRepositoryImpl) GetDraftHistory(leagueID uuid.UUID) ([]models.DraftedPokemon, error) {
 	var draftedPokemon []models.DraftedPokemon
 	err := r.db.Preload("Player").
@@ -221,7 +221,7 @@ func (r *draftedPokemonRepositoryImpl) GetDraftHistory(leagueID uuid.UUID) ([]mo
 	return draftedPokemon, nil
 }
 
-// trades a Pokemon from one player to another
+// TradePokemon trades a Pokemon from one player to another
 func (r *draftedPokemonRepositoryImpl) TradePokemon(draftedPokemonID, newPlayerID uuid.UUID) error {
 	err := r.db.Model(&models.DraftedPokemon{}).
 		Where("id = ?", draftedPokemonID).
@@ -233,7 +233,7 @@ func (r *draftedPokemonRepositoryImpl) TradePokemon(draftedPokemonID, newPlayerI
 	return nil
 }
 
-// performs a draft transaction (draft Pokemon and update league Pokemon availability)
+// DraftPokemonTransaction performs a draft transaction (draft Pokemon and update league Pokemon availability)
 func (r *draftedPokemonRepositoryImpl) DraftPokemonTransaction(draftedPokemon *models.DraftedPokemon) error {
 	tx := r.db.Begin()
 	if tx.Error != nil {
