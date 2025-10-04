@@ -1,4 +1,5 @@
 import { useEffect, useRef, ChangeEvent } from 'react';
+import { FilterState } from '../api/data_interfaces';
 
 const pokemonTypes = [
     'normal', 'fire', 'water', 'grass', 'electric', 'ice', 'fighting',
@@ -16,15 +17,8 @@ const pokemonStats = [
 ];
 
 interface FilterProps {
-    filters: {
-        selectedTypes: string[];
-        minCost: string;
-        maxCost: string;
-        costSortOrder: "asc" | "desc";
-        sortByStat: string | null;
-        sortOrder: "asc" | "desc";
-    };
-    updateFilter: (filterName: string, value: any) => void;
+    filters: FilterState;
+    updateFilter: (filterName: keyof FilterState, value: any) => void;
     resetAllFilters: () => void;
 }
 
