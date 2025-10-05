@@ -39,7 +39,7 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 		PlayerService:         services.NewPlayerService(repos.PlayerRepository, repos.LeagueRepository, repos.UserRepository),
 		AuthService:           services.NewAuthService(repos.UserRepository, jwtService, discordOauthConfig),
 		DraftService:          services.NewDraftService(repos.LeagueRepository, repos.LeaguePokemonRepository, repos.DraftRepository, repos.DraftedPokemonRepository, repos.PlayerRepository, &webhookService),
-		DraftedPokemonService: services.NewDraftedPokemonService(repos.DraftedPokemonRepository, repos.UserRepository, repos.LeagueRepository, repos.PlayerRepository),
+		DraftedPokemonService: services.NewDraftedPokemonService(repos.DraftedPokemonRepository, repos.UserRepository, repos.LeagueRepository, repos.PlayerRepository, repos.PokemonSpeciesRepository),
 		PokemonSpeciesService: services.NewPokemonSpeciesService(repos.PokemonSpeciesRepository),
 		// GameService
 	}
@@ -53,5 +53,6 @@ func NewControllers(services *Services, cfg *config.Config, discordOauthConfig *
 		UserController:           controllers.NewUserController(services.UserService),
 		PokemonSpeciesController: controllers.NewPokemonSpeciesController(services.PokemonSpeciesService),
 		LeaguePokemonController:  controllers.NewLeaguePokemonSpeciesController(services.LeaguePokemonService),
+		DraftedPokemonController: controllers.NewDraftedPokemonController(services.DraftedPokemonService),
 	}
 }

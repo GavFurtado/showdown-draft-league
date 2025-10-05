@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac" // Import the new rbac package
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -31,6 +32,8 @@ type LeagueRepository interface {
 	DeleteLeague(leagueId uuid.UUID) error
 	// Public helper to check if a user's player is the owner
 	IsUserOwner(userID, leagueID uuid.UUID) (bool, error)
+	// gets the current status of a league
+	GetLeagueStatus(leagueID uuid.UUID) (enums.LeagueStatus, error)
 }
 
 type leagueRepositoryImpl struct {
@@ -200,4 +203,14 @@ func (r *leagueRepositoryImpl) IsUserOwner(userID, leagueID uuid.UUID) (bool, er
 						Count(&count).Error
 
 	return count > 0, err
+}
+
+// gets the current status of a league
+func (r *leagueRepositoryImpl) GetLeagueStatus(leagueID uuid.UUID) (enums.LeagueStatus, error) {
+	var league models.League
+	err := r.db.Select("status").First(&league, "id = ?", leagueID).Error
+	if err != nil {
+		return "", err
+	}
+	return league.Status, nil
 }

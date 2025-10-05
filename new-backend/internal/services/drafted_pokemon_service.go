@@ -7,6 +7,7 @@ import (
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 	"github.com/google/uuid"
@@ -27,21 +28,15 @@ type DraftedPokemonService interface {
 	// checks if a Pokemon species has been drafted in a league and is not released.
 	IsPokemonDrafted(leagueID uuid.UUID, pokemonSpeciesID int64) (bool, error)
 	// gets the next draft pick number for a league.
-	GetNextDraftPickNumber(currentUser *models.User, leagueID uuid.UUID) (int, error)
+	GetNextDraftPickNumber(leagueID uuid.UUID) (int, error)
 	// releases a Pokemon back to free agents.
 	ReleasePokemon(currentUser *models.User, draftedPokemonID uuid.UUID) error
 	// gets count of actively drafted Pokemon by a player.
 	GetDraftedPokemonCountByPlayer(currentUser *models.User, playerID uuid.UUID) (int64, error)
 	// gets draft history for a league (all picks in order, including released).
-	GetDraftHistory(currentUser *models.User, leagueID uuid.UUID) ([]models.DraftedPokemon, error)
+	GetDraftHistory(leagueID uuid.UUID) ([]models.DraftedPokemon, error)
 	// trades a Pokemon from one player to another.
 	TradePokemon(currentUser *models.User, draftedPokemonID, newPlayerID uuid.UUID) error
-	// performs a draft transaction (create DraftedPokemon and update LeaguePokemon availability).
-	DraftPokemonTransaction(
-		currentUser *models.User,
-		draftedPokemon *models.DraftedPokemon,
-		leagueID, pokemonSpeciesID uuid.UUID,
-	) error
 	// soft deletes a drafted Pokemon entry.
 	DeleteDraftedPokemon(currentUser *models.User, draftedPokemonID uuid.UUID) error
 }
@@ -157,7 +152,17 @@ func (s *draftedPokemonServiceImpl) IsPokemonDrafted(leagueID uuid.UUID, pokemon
 }
 
 // gets the next draft pick number for a league.
-func (s *draftedPokemonServiceImpl) GetNextDraftPickNumber(currentUser *models.User, leagueID uuid.UUID) (int, error) {
+func (s *draftedPokemonServiceImpl) GetNextDraftPickNumber(leagueID uuid.UUID) (int, error) {
+	leagueStatus, err := s.leagueRepo.GetLeagueStatus(leagueID)
+	if err != nil {
+		log.Printf("LOG: (Error: DraftedPokemonService.GetNextDraftPickNumber) - Failed to get league status for league %s: %v", leagueID, err)
+		return 0, common.ErrInternalService
+	}
+
+	if leagueStatus != enums.LeagueStatusDrafting {
+		return 0, common.ErrInvalidState
+	}
+
 	nextPick, err := s.draftedPokemonRepo.GetNextDraftPickNumber(leagueID)
 	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.GetNextDraftPickNumber) - Failed to get next draft pick number for league %s: %v", leagueID, err)
@@ -179,7 +184,7 @@ func (s *draftedPokemonServiceImpl) ReleasePokemon(currentUser *models.User, dra
 	}
 
 	if draftedPokemon.IsReleased {
-		return errors.New("pokemon is already released")
+		return common.ErrPokemonAlreadyReleased
 	}
 
 	// Get the player who owns this pokemon to check authorization
@@ -231,7 +236,7 @@ func (s *draftedPokemonServiceImpl) GetDraftedPokemonCountByPlayer(currentUser *
 }
 
 // gets draft history for a league (all picks in order, including released and includes transfers).
-func (s *draftedPokemonServiceImpl) GetDraftHistory(currentUser *models.User, leagueID uuid.UUID) ([]models.DraftedPokemon, error) {
+func (s *draftedPokemonServiceImpl) GetDraftHistory(leagueID uuid.UUID) ([]models.DraftedPokemon, error) {
 	history, err := s.draftedPokemonRepo.GetDraftHistory(leagueID)
 	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.GetDraftHistory) - Failed to get draft history for league %s: %v", leagueID, err)
@@ -297,57 +302,6 @@ func (s *draftedPokemonServiceImpl) TradePokemon(currentUser *models.User, draft
 	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.TradePokemon) - Failed to trade pokemon with ID %s to player %s: %v", draftedPokemonID, newPlayerID, err)
 		return fmt.Errorf("failed to trade pokemon: %w", err)
-	}
-
-	return nil
-}
-
-// performs a draft transaction (create DraftedPokemon and update LeaguePokemon availability).
-func (s *draftedPokemonServiceImpl) DraftPokemonTransaction(
-	currentUser *models.User,
-	draftedPokemon *models.DraftedPokemon,
-	leagueID, pokemonSpeciesID uuid.UUID,
-) error {
-	// Authorization: Admin, Owner of the league, or the player making their own draft pick.
-	isOwner, err := s.leagueRepo.IsUserOwner(currentUser.ID, leagueID)
-	if err != nil {
-		return err
-	}
-
-	// Get the player entity for the current user in this specific league.
-	// needed to verify if the current user is the player making the pick.
-	currentPlayer, err := s.playerRepo.GetPlayerByUserAndLeague(currentUser.ID, leagueID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// User is not a player, cannot draft unless admin/owner
-			if currentUser.Role != "admin" && !isOwner {
-				return common.ErrUnauthorized
-			}
-		} else {
-			log.Printf("(Error: DraftPokemonTransaction) - Failed to get player for user %s in league %s: %v", currentUser.ID, leagueID, err)
-			return common.ErrInternalService
-		}
-	}
-
-	// If not admin and not owner, ensure the user is drafting for themselves.
-	if currentUser.Role != "admin" && !isOwner {
-		if currentPlayer == nil || currentPlayer.ID != draftedPokemon.PlayerID {
-			log.Printf("(Error: DraftPokemonTransaction) - Unauthorized attempt by user %s to draft for player %s in league %s (not self/admin/owner)", currentUser.ID, draftedPokemon.PlayerID, leagueID)
-			return common.ErrUnauthorized
-		}
-	}
-	// More specific draft-turn-based authorization logic would go here.
-	// check if it's actually `currentPlayer`'s turn.
-
-	// Add more specific validation/checks before starting the transaction, e.g.,
-	// Does the league exist? (Implicitly checked by owner/player check)
-	// Does the pokemon species exist in the league pool and is it available? (Can be checked here)
-	// Does the player have enough draft points? (Can be checked here)
-
-	err = s.draftedPokemonRepo.DraftPokemonTransaction(draftedPokemon)
-	if err != nil {
-		log.Printf("(Error: DraftedPokemonService.DraftPokemonTransaction) - Failed to perform draft transaction for league %s, species %s: %v", leagueID, pokemonSpeciesID, err)
-		return fmt.Errorf("failed to perform draft transaction: %w", err)
 	}
 
 	return nil

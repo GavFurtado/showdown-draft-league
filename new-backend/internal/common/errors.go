@@ -27,9 +27,10 @@ var (
 	ErrMaxLeagueCreationLimitReached = errors.New("maximum league creation limit reached")
 	ErrInvalidInput                  = errors.New("invalid input/request")
 	ErrConflict                      = errors.New("record already exists. cannot make a duplicate")
-	ErrInvalidState                  = errors.New("invalid state for this operation")
+	ErrInvalidState                  = errors.New("invalid state/status for this operation")
 	ErrInsufficientDraftPoints       = errors.New("insufficient draft points to complete this operation")
 	ErrNoPlayerForDraft              = errors.New("not enough players to start draft")
+	ErrPokemonAlreadyReleased        = errors.New("this pokemon has already been released")
 
 	// Internal Service Errors
 	ErrInternalService = errors.New("internal service error")

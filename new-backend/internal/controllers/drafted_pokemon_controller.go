@@ -1,17 +1,15 @@
 package controllers
 
 import (
-	"log"
-	"net/http"
-	"strconv"
-
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/middleware"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"golang.org/x/text/cases"
+	"log"
+	"net/http"
+	"strconv"
 )
 
 type DraftedPokemonController interface {
@@ -27,6 +25,14 @@ type DraftedPokemonController interface {
 	GetReleasedPokemonByLeague(ctx *gin.Context)
 	// GET if the species :speciesId has been drafted for this league :leagueId
 	IsPokemonDrafted(ctx *gin.Context)
+	// GET next draft pick number for the league :leagueId (if league.Status == "DRAFTING")
+	GetNextDraftPickNumber(ctx *gin.Context)
+	// PATCH Marks a pokemon as Released
+	ReleasePokemon(ctx *gin.Context)
+	// GET the number of active draftedPokmon has made (how many pokemon on player's roster)
+	GetDraftedPokemonCountByPlayer(ctx *gin.Context)
+	// GET draft history for a league (all picks in order, including released and includes transfers).
+	GetDraftHistory(ctx *gin.Context)
 }
 
 type draftedPokemonControllerImpl struct {
@@ -149,7 +155,7 @@ func (c *draftedPokemonControllerImpl) GetActiveDraftedPokemonByLeague(ctx *gin.
 // GET api/leagues/:leagueId/drafted_pokemon/released
 // GET all RELEASED pokemon drafted in a league
 // player permission: rbac.PermissionReadDraftedPokemon
-func (c *draftedPokemonControllerImpl) GetReleasedDraftedPokemonByLeaguj(ctx *gin.Context) {
+func (c *draftedPokemonControllerImpl) GetReleasedPokemonByLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
@@ -191,5 +197,112 @@ func (c *draftedPokemonControllerImpl) IsPokemonDrafted(ctx *gin.Context) {
 		}
 	}
 
-	ctx.JSON(http.StatusOK, isPokemonDrafted)
+	ctx.JSON(http.StatusOK, gin.H{"is_pokemon_drafted": isPokemonDrafted})
+}
+
+// GET api/leagues/:leagueId/draft/next_pick_number
+// GET next draft pick number for the league :leagueID (if league.Status == "DRAFTING")
+// player permission: rbac.PermissionReadDraft
+// (yes this is misplaced; should be part of the Draft not DraftedPokemon)
+func (c *draftedPokemonControllerImpl) GetNextDraftPickNumber(ctx *gin.Context) {
+	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		return
+	}
+
+	// league status checked in service method
+	nextPickNumber, err := c.draftedPokemonService.GetNextDraftPickNumber(leagueID)
+	if err != nil {
+		log.Printf("LOG: (DraftedPokemonController: GetNextDraftPickNumber) - Service method error: %v\n", err)
+		switch err {
+		case common.ErrInvalidState:
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "league status is not drafting"})
+		default:
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
+		}
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"next_pick_number": nextPickNumber})
+}
+
+// PATCH api/leagues/:leagueId/drafted_pokemon/:id/release
+// Marks a drafted pokemon as released
+// player permission: rbac.PermissionCreateDraftedPokemon
+func (c *draftedPokemonControllerImpl) ReleasePokemon(ctx *gin.Context) {
+	currentUser, err := c.getUserFromContext(ctx)
+	if err != nil {
+		return // response already sent in this case
+	}
+
+	draftedPokemonID, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		return
+	}
+
+	if err := c.draftedPokemonService.ReleasePokemon(currentUser, draftedPokemonID); err != nil {
+		log.Printf("LOG: (DraftedPokemonController: ReleasePokemon) - Service method error: %v\n", err)
+		switch err {
+		case common.ErrDraftedPokemonNotFound:
+			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrDraftedPokemonNotFound.Error()})
+		case common.ErrPlayerNotFound:
+			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrPlayerNotFound.Error()})
+		case common.ErrPokemonAlreadyReleased:
+			ctx.JSON(http.StatusConflict, gin.H{"error": common.ErrDraftedPokemonNotFound.Error()})
+		case common.ErrUnauthorized:
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": common.ErrUnauthorized.Error()})
+		default:
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
+		}
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"status": "operation success"})
+}
+
+// GET api/leagues/:leagueId/drafted_pokemon/count/:playerId
+// GET the number of active draftedPokmon has made (how many pokemon on player's roster)
+// player permission: rbac.PermissionReadDraftedPokemon
+func (c *draftedPokemonControllerImpl) GetDraftedPokemonCountByPlayer(ctx *gin.Context) {
+	currentUser, err := c.getUserFromContext(ctx)
+	if err != nil {
+		return
+	}
+
+	playerID, err := uuid.Parse(ctx.Param("playerId"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		return
+	}
+
+	count, err := c.draftedPokemonService.GetDraftedPokemonCountByPlayer(currentUser, playerID)
+	if err != nil {
+		log.Printf("LOG: (DraftedPokemonController: GetDraftedPokemonCountByPlayer) - Service method error: %v\n", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"count": count})
+}
+
+// GET api/leagues/:leagueId/draft/history
+// GET draft history for a league (all picks in order, including released and includes transfers).
+// player permission: rbac.PermissionReadDraft
+func (c *draftedPokemonControllerImpl) GetDraftHistory(ctx *gin.Context) {
+	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		return
+	}
+
+	draftHistory, err := c.draftedPokemonService.GetDraftHistory(leagueID)
+	if err != nil {
+		log.Printf("LOG: (DraftedPokemonController: GetDraftedPokemonCountByPlayer) - Service method error: %v\n", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, draftHistory)
 }

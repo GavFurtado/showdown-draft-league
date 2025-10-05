@@ -38,4 +38,5 @@ type Controllers struct {
 	UserController           controllers.UserController
 	PokemonSpeciesController controllers.PokemonSpeciesController
 	LeaguePokemonController  controllers.LeaguePokemonController
+	DraftedPokemonController controllers.DraftedPokemonController
 }
