@@ -2,6 +2,7 @@ package mock_repositories
 
 import (
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 )
@@ -66,4 +67,12 @@ func (m *MockLeagueRepository) GetLeagueWithFullDetails(id uuid.UUID) (*models.L
 func (m *MockLeagueRepository) IsUserPlayerInLeague(userID, leagueID uuid.UUID) (bool, error) {
 	args := m.Called(userID, leagueID)
 	return args.Bool(0), args.Error(1)
+}
+func (m *MockLeagueRepository) GetLeagueStatus(leagueID uuid.UUID) (enums.LeagueStatus, error) {
+	args := m.Called(leagueID)
+	return args.Get(0).(enums.LeagueStatus), args.Error(1)
+}
+func (m *MockLeagueRepository) GetLeagueStatus(leagueID uuid.UUID) (enums.LeagueStatus, error) {
+	args := m.Called(leagueID)
+	return args.Get(0).(enums.LeagueStatus), args.Error(1)
 }

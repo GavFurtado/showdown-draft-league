@@ -11,7 +11,7 @@ type DraftStatus string
 
 const (
 	DraftStatusPending   DraftStatus = "PENDING"
-	DraftStatusStarted   DraftStatus = "STARTED"
+	DraftStatusOngoing   DraftStatus = "ONGOING"
 	DraftStatusPaused    DraftStatus = "PAUSED"
 	DraftStatusCompleted DraftStatus = "COMPLETED"
 )
@@ -19,7 +19,7 @@ const (
 // Validate DraftStatus for database interactions
 func (ds DraftStatus) IsValid() bool {
 	switch ds {
-	case DraftStatusPending, DraftStatusStarted, DraftStatusPaused, DraftStatusCompleted:
+	case DraftStatusPending, DraftStatusOngoing, DraftStatusPaused, DraftStatusCompleted:
 		return true
 	default:
 		return false

@@ -17,6 +17,7 @@ const (
 	LeagueStatusPending       LeagueStatus = "PENDING"
 	LeagueStatusSetup         LeagueStatus = "SETUP"
 	LeagueStatusDrafting      LeagueStatus = "DRAFTING"
+	LeagueStatusPostDraft     LeagueStatus = "POST_DRAFT"
 	LeagueStatusRegularSeason LeagueStatus = "REGULARSEASON"
 	LeagueStatusPlayoffs      LeagueStatus = "PLAYOFFS"
 	LeagueStatusCompleted     LeagueStatus = "COMPLETED"

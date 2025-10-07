@@ -43,7 +43,8 @@ func (m *MockDraftedPokemonRepository) GetReleasedPokemonByLeague(leagueID uuid.
 	args := m.Called(leagueID)
 	return args.Get(0).([]models.DraftedPokemon), args.Error(1)
 }
-func (m *MockDraftedPokemonRepository) IsPokemonDrafted(leagueID, pokemonSpeciesID uuid.UUID) (bool, error) {
+
+func (m *MockDraftedPokemonRepository) IsPokemonDrafted(leagueID uuid.UUID, pokemonSpeciesID int64) (bool, error) {
 	args := m.Called(leagueID, pokemonSpeciesID)
 	return args.Bool(0), args.Error(1)
 }
@@ -69,10 +70,6 @@ func (m *MockDraftedPokemonRepository) GetDraftHistory(leagueID uuid.UUID) ([]mo
 }
 func (m *MockDraftedPokemonRepository) TradePokemon(draftedPokemonID, newPlayerID uuid.UUID) error {
 	args := m.Called(draftedPokemonID, newPlayerID)
-	return args.Error(0)
-}
-func (m *MockDraftedPokemonRepository) DraftPokemonTransaction(draftedPokemon *models.DraftedPokemon) error {
-	args := m.Called(draftedPokemon)
 	return args.Error(0)
 }
 func (m *MockDraftedPokemonRepository) DeleteDraftedPokemon(draftedPokemonID uuid.UUID) error {

@@ -29,8 +29,10 @@ var (
 	ErrConflict                      = errors.New("record already exists. cannot make a duplicate")
 	ErrInvalidState                  = errors.New("invalid state/status for this operation")
 	ErrInsufficientDraftPoints       = errors.New("insufficient draft points to complete this operation")
-	ErrNoPlayerForDraft              = errors.New("not enough players to start draft")
 	ErrPokemonAlreadyReleased        = errors.New("this pokemon has already been released")
+	ErrNoPlayerForDraft              = errors.New("not enough players to start draft")
+	ErrTooManyRequestedPicks         = errors.New("too many draft picks were requested")
+	ErrCannotSkipBelowMinimumRoster  = errors.New("skip action not allowed as your roster size will be too small")
 
 	// Internal Service Errors
 	ErrInternalService = errors.New("internal service error")

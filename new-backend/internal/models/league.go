@@ -17,6 +17,7 @@ type League struct {
 	RulesetDescription  string             `gorm:"type:text" json:"ruleset_description"`
 	Status              enums.LeagueStatus `gorm:"type:varchar(50);not null;default:'pending'" json:"status"`
 	MaxPokemonPerPlayer int                `gorm:"not null;default:0" json:"max_pokemon_per_player"`
+	MinPokemonPerPlayer int                `gorm:"not null;default:0" json:"min_pokemon_per_player"`
 	StartingDraftPoints int                `gorm:"not null;default:140" json:"starting_draft_points"`
 	Format              LeagueFormat       `gorm:"type:jsonb" json:"format"`
 	CreatedAt           time.Time          `json:"created_at"`

@@ -59,6 +59,17 @@ type LeaguePokemonUpdateRequest struct {
 	IsAvailable     *bool     `json:"is_available,omitempty"`
 }
 
+// -- Draft Related --
+type DraftMakePickDTO struct {
+	RequestedPickCount int             `json:"requested_pick_count" binding:"required"`
+	RequestedPicks     []RequestedPick `json:"requested_picks" binding:"required"`
+}
+
+type RequestedPick struct {
+	LeaguePokemonID uuid.UUID `json:"league_pokemon_id" binding:"required"`
+	DraftPickNumber int       `json:"draft_pick_number" binding:"required"`
+}
+
 // -- DraftedPokemon Related --
 type DraftedPokemonCreateDTO struct {
 	LeagueID         uuid.UUID `json:"league_id" binding:"required"`
