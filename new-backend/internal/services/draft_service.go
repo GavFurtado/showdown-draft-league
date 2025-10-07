@@ -116,12 +116,6 @@ func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*m
 	return draft, nil
 }
 
-// only used for the initial draft (not free agent transactions)
-
-// NOTE: this stuff could possibly need a rework so it wasn't touched in the rbac refactor.
-// current problem is that AccumulatedPicks isn't being used in the pick logic
-// would require a change to the request. request would now send the requestedDraftPickNumber and that would need to be validated.
-
 // MakePick makes one or more picks (if accumulated) in a league's draft when league;
 // Different from ForcePick, MakePick does all the required checks (there's a lot of checks) and validates the input
 func (s *draftServiceImpl) MakePick(currentUser *models.User, league *models.League, input *common.DraftMakePickDTO) error {
