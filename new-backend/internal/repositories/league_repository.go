@@ -34,6 +34,10 @@ type LeagueRepository interface {
 	IsUserOwner(userID, leagueID uuid.UUID) (bool, error)
 	// gets the current status of a league
 	GetLeagueStatus(leagueID uuid.UUID) (enums.LeagueStatus, error)
+	// retrieves all leagues with a specific status.
+	GetAllLeaguesByStatus(status enums.LeagueStatus) ([]models.League, error)
+	// retrieves all leagues that allow transfer credits.
+	GetLeaguesThatAllowTransferCredits() ([]models.League, error)
 }
 
 type leagueRepositoryImpl struct {
@@ -141,7 +145,7 @@ func (r *leagueRepositoryImpl) UpdateLeague(league *models.League) (*models.Leag
 	).Updates(league).Error
 
 	if err != nil {
-		return nil, fmt.Errorf("(Error: UpdateLeague) - failed to update league: %w", err)
+		return nil, fmt.Errorf("(Error: UpdateLeague) - failed to update league: %v", err)
 	}
 
 	return r.GetLeagueByID(league.ID)
@@ -213,4 +217,23 @@ func (r *leagueRepositoryImpl) GetLeagueStatus(leagueID uuid.UUID) (enums.League
 		return "", err
 	}
 	return league.Status, nil
+}
+
+// retrieves all leagues with a specific status.
+func (r *leagueRepositoryImpl) GetAllLeaguesByStatus(status enums.LeagueStatus) ([]models.League, error) {
+	var leagues []models.League
+	if err := r.db.Where("status = ?", status).Find(&leagues).Error; err != nil {
+		return nil, err
+	}
+	return leagues, nil
+}
+
+// retrieves all leagues that allow transfer credits.
+func (r *leagueRepositoryImpl) GetLeaguesThatAllowTransferCredits() ([]models.League, error) {
+	var leagues []models.League
+	// Preload the LeagueFormat to access AllowTransferCredits
+	if err := r.db.Preload("Format").Where("Format.allow_transfer_credits = ?", true).Find(&leagues).Error; err != nil {
+		return nil, err
+	}
+	return leagues, nil
 }

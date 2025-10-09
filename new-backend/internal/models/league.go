@@ -20,8 +20,8 @@ type League struct {
 	MinPokemonPerPlayer int                `gorm:"not null;default:0" json:"min_pokemon_per_player"`
 	StartingDraftPoints int                `gorm:"not null;default:140" json:"starting_draft_points"`
 	Format              LeagueFormat       `gorm:"type:jsonb" json:"format"`
-	CreatedAt           time.Time          `json:"created_at"`
-	UpdatedAt           time.Time          `json:"updated_at"`
+	CreatedAt           *time.Time         `gorm:"type:timestamp with time zone" json:"created_at"`
+	UpdatedAt           *time.Time         `gorm:"type:timestamp with time zone" json:"updated_at"`
 	DeletedAt           gorm.DeletedAt     `gorm:"index" json:"-"`
 	DiscordWebhookURL   *string            `json:"discord_webhook_url"`
 
@@ -35,17 +35,24 @@ type League struct {
 
 // LeagueFormat defines the structure for various optional league settings.
 type LeagueFormat struct {
-	SeasonType       enums.LeagueSeasonType `json:"season_type"`        // "ROUND_ROBIN_ONLY", "PLAYOFFS_ONLY", "HYBRID"
-	GroupCount       int                    `json:"group_count"`        // Relevant if SeasonType is "GROUPS"
-	GamesPerOpponent int                    `json:"games_per_opponent"` // For round-robin or group stages
+	IsSnakeRoundDraft bool                   `json:"is_snake_round_draft"`
+	SeasonType        enums.LeagueSeasonType `json:"season_type"`        // "ROUND_ROBIN_ONLY", "PLAYOFFS_ONLY", "HYBRID"
+	GroupCount        int                    `json:"group_count"`        // Relevant if SeasonType is "GROUPS"
+	GamesPerOpponent  int                    `json:"games_per_opponent"` // For round-robin or group stages
 
 	PlayoffType             enums.LeaguePlayoffType        `json:"playoff_type"`              // "NONE", "SINGLE_ELIM", "DOUBLE_ELIM"
 	PlayoffParticipantCount int                            `json:"playoff_participant_count"` // Number of teams that make playoffs
 	PlayoffByesCount        int                            `json:"playoff_byes_count"`        // Number of teams getting a bye in playoffs
 	PlayoffSeedingType      enums.LeaguePlayoffSeedingType `json:"playoff_seeding_type"`      // "STANDARD", "SEEDED", "BYES_ONLY"
 
-	IsSnakeRoundDraft        bool `json:"is_snake_round_draft"`
-	AllowTrading             bool `json:"allow_trading"`
-	AllowTransferCredits     bool `json:"allow_transfer_credits"`
-	TransferCreditsPerWindow int  `json:"transfer_credits_per_window"`
+	AllowTrading             bool       `json:"allow_trading"`
+	AllowTransferCredits     bool       `json:"allow_transfer_credits"`
+	TransferCreditsPerWindow int        `json:"transfer_credits_per_window"`
+	TransferCreditCap        int        `json:"transfer_credit_cap"`
+	TransferWindowFrequency  *time.Time `gorm:"type:timestamp with time zone" json:"transfer_window_frequency"`
+	TransferWindowDuration   int        `json:"transfer_window_duration"`
+	// NextTransferWindowStart stores the next occurence of a trasnfer window
+	// if league is in a transfer window, NextTransferWindowStart will store the start time of the window
+	// NextTransferWindowStart is updated at the *end* of a transfer window or when the season/bracket starts
+	NextTransferWindowStart *time.Time `gorm:"type:timestamp with time zone" json:"next_transfer_window_start"`
 }

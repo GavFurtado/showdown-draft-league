@@ -144,7 +144,7 @@ func (s *draftedPokemonServiceImpl) IsPokemonDrafted(leagueID uuid.UUID, pokemon
 
 	isDrafted, err := s.draftedPokemonRepo.IsPokemonDrafted(leagueID, pokemonSpeciesID)
 	if err != nil {
-		log.Printf("(Error: DraftedPokemonService.IsPokemonDrafted) - Failed to check if pokemon is drafted for league %s and species %s: %v", leagueID, pokemonSpeciesID, err)
+		log.Printf("(Error: DraftedPokemonService.IsPokemonDrafted) - Failed to check if pokemon is drafted for league %s and species %d: %v\n", leagueID, pokemonSpeciesID, err)
 		return false, common.ErrInternalService
 	}
 

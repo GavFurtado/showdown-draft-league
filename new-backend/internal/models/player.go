@@ -17,6 +17,7 @@ type Player struct {
 	Wins            int             `gorm:"default:0;not null" json:"wins"`
 	Losses          int             `gorm:"default:0;not null" json:"losses"`
 	DraftPoints     int             `gorm:"default:140;not null" json:"draft_points"`
+	TransferCredits int             `gorm:"default:0" json:"transfer_credits"`
 	DraftPosition   int             `json:"draft_position"` // turn order of player pick (possibly randomized)
 	Role            rbac.PlayerRole `gorm:"type:varchar(20);not null;default:'member'" json:"role"`
 	IsParticipating bool

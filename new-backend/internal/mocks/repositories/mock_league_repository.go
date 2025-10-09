@@ -72,7 +72,11 @@ func (m *MockLeagueRepository) GetLeagueStatus(leagueID uuid.UUID) (enums.League
 	args := m.Called(leagueID)
 	return args.Get(0).(enums.LeagueStatus), args.Error(1)
 }
-func (m *MockLeagueRepository) GetLeagueStatus(leagueID uuid.UUID) (enums.LeagueStatus, error) {
-	args := m.Called(leagueID)
-	return args.Get(0).(enums.LeagueStatus), args.Error(1)
+func (m *MockLeagueRepository) GetAllLeaguesByStatus(status enums.LeagueStatus) ([]models.League, error) {
+	args := m.Called(status)
+	return args.Get(0).([]models.League), args.Error(1)
+}
+func (m *MockLeagueRepository) GetLeaguesThatAllowTransferCredits() ([]models.League, error) {
+	args := m.Called()
+	return args.Get(0).([]models.League), args.Error(1)
 }

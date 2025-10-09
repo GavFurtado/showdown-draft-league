@@ -22,9 +22,9 @@ type Draft struct {
 	CurrentPickOnClock          int                    `gorm:"default:1;not null" json:"current_pick_on_clock"` // aka CurrentOverallPickNumber
 	PlayersWithAccumulatedPicks PlayerAccumulatedPicks `gorm:"type:jsonb" json:"players_with_accumulated_picks"`
 	CurrentTurnStartTime        *time.Time             `gorm:"type:timestamp with time zone" json:"current_turn_start_time"`
-	TurnTimeLimit               int                    `gorm:"default:43200;not null" json:"turn_time_limit"`
-	StartTime                   *time.Time             `gorm:"type:timestamp with time zone" json:"start_time"`
-	EndTime                     *time.Time             `gorm:"type:timestamp with time zone" json:"end_time"`
+	TurnTimeLimit               int                    `gorm:"default:1440;not null" json:"turn_time_limit"`
+	StartTime                   time.Time              `gorm:"type:timestamp with time zone" json:"start_time"`
+	EndTime                     time.Time              `gorm:"type:timestamp with time zone" json:"end_time"`
 	CreatedAt                   time.Time              `gorm:"type:timestamp with time zone" json:"created_at"`
 	UpdatedAt                   time.Time              `gorm:"type:timestamp with time zone" json:"updated_at"`
 	DeletedAt                   gorm.DeletedAt         `gorm:"index;type:timestamp with time zone" json:"-"`

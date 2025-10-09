@@ -5,6 +5,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 )
 
 // TODO: prolly needs more safe db transactions
@@ -17,6 +18,8 @@ type DraftRepository interface {
 	CreateDraft(draft *models.Draft) error
 	// updates an existing draft record.
 	UpdateDraft(draft *models.Draft) error
+	// retrieves all drafts with a specific status.
+	GetAllDraftsByStatus(status enums.DraftStatus) ([]models.Draft, error)
 }
 
 type draftRepositoryImpl struct {
@@ -47,4 +50,13 @@ func (r *draftRepositoryImpl) GetDraftByLeagueID(leagueID uuid.UUID) (*models.Dr
 // updates an existing draft record.
 func (r *draftRepositoryImpl) UpdateDraft(draft *models.Draft) error {
 	return r.db.Save(draft).Error
+}
+
+// retrieves all drafts with a specific status.
+func (r *draftRepositoryImpl) GetAllDraftsByStatus(status enums.DraftStatus) ([]models.Draft, error) {
+	var drafts []models.Draft
+	if err := r.db.Where("status = ?", status).Find(&drafts).Error; err != nil {
+		return nil, err
+	}
+	return drafts, nil
 }
