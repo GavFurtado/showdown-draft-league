@@ -33,6 +33,10 @@ var (
 	ErrNoPlayerForDraft              = errors.New("not enough players to start draft")
 	ErrTooManyRequestedPicks         = errors.New("too many draft picks were requested")
 	ErrCannotSkipBelowMinimumRoster  = errors.New("skip action not allowed as your roster size will be too small")
+	ErrDraftPausedForIntervention    = errors.New("draft paused awaiting league staff intervention")
+	ErrInvalidDraftPosition          = errors.New("invalid draft position for player")
+	ErrDuplicateDraftPosition        = errors.New("duplicate draft position found")
+	ErrIncompleteDraftOrder          = errors.New("draft order is incomplete")
 
 	// Internal Service Errors
 	ErrInternalService = errors.New("internal service error")

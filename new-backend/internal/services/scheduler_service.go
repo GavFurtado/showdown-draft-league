@@ -1,6 +1,7 @@
 package services
 
 import (
+	"container/heap"
 	"fmt"
 	"log"
 	"time"
@@ -9,36 +10,42 @@ import (
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 	u "github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
-	"github.com/google/uuid"
 )
 
 type SchedulerService interface {
 	Start() error
-	// Stop()
+	RegisterTask(task *u.ScheduledTask)
+	DeregisterTask(taskID string)
+	Stop()
 }
 
 type schedulerServiceImpl struct {
 	tasks    *u.TaskHeap
+	taskMap  map[string]*u.ScheduledTask
 	taskChan chan *u.ScheduledTask
 	// updateChan chan *u.ScheduledTask // not planned for now
-	stopChan   chan struct{}
-	leagueRepo repositories.LeagueRepository
-	draftRepo  repositories.DraftRepository
+	rescheduleChan chan struct{}
+	stopChan       chan struct{}
+	leagueRepo     repositories.LeagueRepository
+	draftRepo      repositories.DraftRepository
+	draftService   DraftService
 }
 
 func NewSchedulerService(
 	tasks *u.TaskHeap,
-	taskChan chan *u.ScheduledTask,
-	stopChan chan struct{},
 	leagueRepo repositories.LeagueRepository,
 	draftRepo repositories.DraftRepository,
+	draftService DraftService,
 ) SchedulerService {
 	return &schedulerServiceImpl{
-		tasks:      tasks,
-		taskChan:   taskChan,
-		stopChan:   stopChan,
-		leagueRepo: leagueRepo,
-		draftRepo:  draftRepo,
+		tasks:          tasks,
+		taskMap:        make(map[string]*u.ScheduledTask),
+		taskChan:       make(chan *u.ScheduledTask),
+		rescheduleChan: make(chan struct{}, 1), // buff size 1 is safer but probably doesn't really matter
+		stopChan:       make(chan struct{}),
+		leagueRepo:     leagueRepo,
+		draftRepo:      draftRepo,
+		draftService:   draftService,
 	}
 }
 
@@ -53,7 +60,7 @@ func (s *schedulerServiceImpl) Start() error {
 	// fetch leagues that use the transfer credit system
 	leagues, err := s.leagueRepo.GetLeaguesThatAllowTransferCredits()
 	if err != nil {
-		log.Printf("LOG: (SchedulerService: Start) - error fetching drafts with transfer credit system enabled: %v\n", err)
+		log.Printf("LOG: (SchedulerService: Start) - error fetching leagues with transfer credit system enabled: %v\n", err)
 		return err
 	}
 
@@ -78,17 +85,17 @@ func (s *schedulerServiceImpl) Start() error {
 		turnEndTime := turnStartTime.Add(time.Duration(turnTimeLimit) * time.Minute)
 
 		newTask := &u.ScheduledTask{
-			ID:        uuid.New(),
+			ID:        fmt.Sprintf("%d_%s", u.TaskTypeDraftTurnTimeout, draft.ID),
 			ExecuteAt: turnEndTime,
-			Type:      u.TurnTypeDraftTurnTimeout,
+			Type:      u.TaskTypeDraftTurnTimeout,
 			Payload: u.PayloadDraftTurnTimeout{
 				DraftID:  draft.ID,
 				LeagueID: draft.LeagueID,
 				PlayerID: *draft.CurrentTurnPlayerID,
 			},
 		}
-
 		s.tasks.Push(newTask)
+		s.taskMap[newTask.ID] = newTask
 	}
 
 	for _, league := range leaguesInTransferWindow {
@@ -97,36 +104,152 @@ func (s *schedulerServiceImpl) Start() error {
 		windowEndTime := windowStartTime.Add(time.Duration(windowDuration) * time.Minute)
 
 		newTask := &u.ScheduledTask{
-			ID:        uuid.New(),
+			ID:        fmt.Sprintf("%d_%s", u.TaskTypeTradingPeriodEnd, league.ID),
 			ExecuteAt: windowEndTime,
-			Type:      u.TurnTypeTradingPeriodEnd,
+			Type:      u.TaskTypeTradingPeriodEnd,
 			Payload: u.PayloadTransferPeriodEnd{
 				LeagueID: league.ID,
 			},
 		}
 		s.tasks.Push(newTask)
+		s.taskMap[newTask.ID] = newTask
 	}
 
 	for _, league := range leaguesInSeasonOrBracketOnly {
 		nextWindowStartTime := league.Format.NextTransferWindowStart
 
 		newTask := &u.ScheduledTask{
-			ID:        uuid.New(),
+			ID:        fmt.Sprintf("%d_%s", u.TaskTypeAccrueCredits, league.ID),
 			ExecuteAt: *nextWindowStartTime,
-			Type:      u.TurnTypeAccrueCredits,
+			Type:      u.TaskTypeAccrueCredits,
 			Payload: u.PayloadTransferCreditAccrual{
 				LeagueID: league.ID,
 			},
 		}
 		s.tasks.Push(newTask)
+		s.taskMap[newTask.ID] = newTask
 	}
 
-	fmt.Printf("INFO: (SchedulerService: Start) - Running Scheduler\n")
-	s.runSchedulerLoop()
+	log.Printf("LOG: (SchedulerService: Start) - Running Scheduler\n")
+	go s.runSchedulerLoop()
 
 	return nil
 }
 
-func (s *schedulerServiceImpl) runSchedulerLoop() {
+// RegisterTask adds a new task to the scheduler.
+// it sends the task to the scheduler's internal channel for processing.
+func (s *schedulerServiceImpl) RegisterTask(task *u.ScheduledTask) {
+	// add to the map for quick lookup and deregistration
+	s.taskMap[task.ID] = task
+	// send to the channel for the scheduler loop to pick up
+	s.taskChan <- task
+	log.Printf("LOG: (SchedulerService: RegisterTask) - Task registered: %s (Type: %d, ExecuteAt: %s)\n", task.ID, task.Type,
+		task.ExecuteAt)
 
+}
+
+func (s *schedulerServiceImpl) runSchedulerLoop() {
+	var timer *time.Timer
+
+	for {
+		now := time.Now()
+		nextTask, exists := s.tasks.Peek()
+
+		if exists { // if there was a task
+			if nextTask.ExecuteAt.Before(now) {
+				// task is overdue; execute now
+				timer = time.NewTimer(0) // fire new timer immediately to execute task
+			} else {
+				// the task is not due yet; wait till due
+				waitDuration := nextTask.ExecuteAt.Sub(now)
+				timer = time.NewTimer(waitDuration)
+			}
+		} else {
+			// no tasks on the priority queue, wait for a task
+			timer = time.NewTimer(time.Hour * 24 * 365 * 10) // long ahh time
+		}
+
+		select {
+		case <-s.stopChan:
+			// Stop() call was made
+			log.Printf("LOG: Scheduler received stop signal. Shutting Down. Scheduler can be restarted by restarting the server.\n")
+			if timer != nil {
+				timer.Stop()
+			}
+			return // stop goroutine
+		case newTask := <-s.taskChan:
+			// a new task has been submitted by another service
+			log.Printf("LOG: Scheduler recieved a new task: %s (Type: %s, ExecuteAt: %s)\n", newTask.ID, newTask.Type, newTask.ExecuteAt)
+			s.tasks.Push(newTask)
+		case <-s.rescheduleChan:
+			log.Println("LOG: (SchedulerService: runSchedulerLoop) - Reschedule signal received. Re-evaluating next task.")
+			// nothing else needs to be done here. timer will be rescheduled in the following iteration
+			continue
+		case <-timer.C:
+			// timer fired; execute the scheduled task
+			task := s.tasks.Pop().(*u.ScheduledTask)
+			log.Printf("LOG: Scheduler executing task: %s (Type: %s, ExecuteAt: %s)\n", task.ID, task.Type, task.ExecuteAt)
+
+			s.executeTask(task)
+		}
+	}
+}
+
+// DeregisterTask removes a task from the scheduler by its composite ID.
+// This is typically called when a task is completed manually (e.g., a pick is made before timeout).
+func (s *schedulerServiceImpl) DeregisterTask(taskID string) {
+	task, exists := s.taskMap[taskID]
+	if !exists {
+		log.Printf("WARN: (SchedulerService: DeregisterTask) - Attempted to deregister non-existent task: %s\n", taskID)
+		return
+	}
+
+	// Remove from the heap
+	heap.Remove(s.tasks, task.Index)
+
+	// Remove from the map
+	delete(s.taskMap, taskID)
+	log.Printf("LOG: (SchedulerService: DeregisterTask) - Task deregistered: %s\n", taskID)
+
+	s.rescheduleChan <- struct{}{}
+}
+
+// executeTask checks the type of the task to execute then makes the appropriate execute call for the task
+func (s *schedulerServiceImpl) executeTask(task *u.ScheduledTask) {
+	switch task.Type {
+	case u.TaskTypeDraftTurnTimeout:
+		if payload, ok := task.Payload.(u.PayloadDraftTurnTimeout); ok {
+			log.Printf("LOG: (SchedulerService: executeTask) - Draft turn timeout for DraftID: %s, PlayerID: %s\n", payload.DraftID, payload.PlayerID)
+			if err := s.draftService.AutoSkipTurn(payload.PlayerID, payload.LeagueID); err != nil {
+				log.Printf("ERROR: (SchedulerService: executeTask) - error occured in AutoSkipTurn: %v\n", err)
+				return
+			}
+		} else {
+			log.Printf("ERROR: (SchedulerService: executeTask) - Invalid payload type for DraftTurnTimeout task ID %s\n", task.ID)
+		}
+
+	case u.TaskTypeTradingPeriodEnd:
+		if payload, ok := task.Payload.(u.PayloadTransferPeriodEnd); ok {
+			log.Printf("LOG: (SchedulerService: executeTask) - Transfer period end for LeagueID: %s\n", payload.LeagueID)
+			// s.draftService.EndTransferPeriod(payload.LeagueID)
+		} else {
+			log.Printf("ERROR: (SchedulerService: executeTask) - Invalid payload type for TransferPeriodEnd task ID %s\n", task.ID)
+		}
+
+	case u.TaskTypeAccrueCredits:
+		if payload, ok := task.Payload.(u.PayloadTransferCreditAccrual); ok {
+			log.Printf("LOG: (SchedulerService: executeTask) - Accrue credits for LeagueID: %s\n", payload.LeagueID)
+			// s.draftService.AccrueTransferCredits(payload.LeagueID)
+		} else {
+			log.Printf("ERROR: (SchedulerService: executeTask) - Invalid payload type for AccrueCredits task ID %s. Expected PayloadTransferCreditAccrual.\n", task.ID)
+		}
+	default:
+		log.Printf("ERROR: (SchedulerService: executeTask) - Unknown task type: %d for task ID %s\n", task.Type, task.ID)
+	}
+}
+
+func (s *schedulerServiceImpl) Stop() {
+	// Just sends struct{} to the stopChan
+	// which will shut down the go routine
+	s.stopChan <- struct{}{}
 }

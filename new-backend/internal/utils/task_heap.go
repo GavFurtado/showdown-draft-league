@@ -7,22 +7,33 @@ import (
 
 type TaskType int // not a string like my other enums cuz it's not going into the db
 const (
-	TurnTypeDraftTurnTimeout TaskType = 0
-	TurnTypeTradingPeriodEnd TaskType = 1
-	TurnTypeAccrueCredits    TaskType = 2
+	TaskTypeDraftTurnTimeout TaskType = iota
+	TaskTypeTradingPeriodEnd
+	TaskTypeAccrueCredits
 )
 
+func (t TaskType) String() string {
+	switch t {
+	case TaskTypeDraftTurnTimeout:
+		return "DRAFT_TURN_TIMEOUT"
+	case TaskTypeTradingPeriodEnd:
+		return "TRADING_PERIOD_END"
+	case TaskTypeAccrueCredits:
+		return "ACCRUE_CREDITS"
+	}
+	return ""
+}
+
 type ScheduledTask struct {
-	ID        uuid.UUID
+	ID        string
 	ExecuteAt time.Time
 	Type      TaskType
 	Payload   any
-	index     int // allows for efficient updates if we wanna go down that route
+	Index     int
 }
 
 // payloads
 type PayloadDraftTurnTimeout struct {
-	DraftID  uuid.UUID
 	LeagueID uuid.UUID
 	PlayerID uuid.UUID // The player whose turn it is
 }
@@ -47,22 +58,29 @@ func (heap TaskHeap) Less(i, j int) bool {
 
 func (heap TaskHeap) Swap(i, j int) {
 	heap[i], heap[j] = heap[j], heap[i]
-	heap[i].index = i
-	heap[j].index = j
+	heap[i].Index = i
+	heap[j].Index = j
 }
 
 func (heap *TaskHeap) Push(x any) {
 	n := len(*heap)
 	task := x.(*ScheduledTask)
-	task.index = n
+	task.Index = n
 	*heap = append(*heap, task)
+}
+
+func (heap *TaskHeap) Peek() (*ScheduledTask, bool) {
+	if len(*heap) == 0 {
+		return nil, false
+	}
+	return (*heap)[0], true
 }
 
 func (heap *TaskHeap) Pop() any {
 	old := *heap
 	n := len(old)
 	task := old[n-1]
-	task.index = -1   // mark as removed
+	task.Index = -1   // mark as removed
 	*heap = old[:n-1] // remove last element
 	return task
 }

@@ -36,9 +36,10 @@ type League struct {
 // LeagueFormat defines the structure for various optional league settings.
 type LeagueFormat struct {
 	IsSnakeRoundDraft bool                   `json:"is_snake_round_draft"`
-	SeasonType        enums.LeagueSeasonType `json:"season_type"`        // "ROUND_ROBIN_ONLY", "PLAYOFFS_ONLY", "HYBRID"
-	GroupCount        int                    `json:"group_count"`        // Relevant if SeasonType is "GROUPS"
-	GamesPerOpponent  int                    `json:"games_per_opponent"` // For round-robin or group stages
+	DraftOrderType    enums.DraftOrderType   `gorm:"default:'random'" json:"draft_order_type"` // "PENDING", "RANDOM", "MANUAL"
+	SeasonType        enums.LeagueSeasonType `json:"season_type"`                              // "ROUND_ROBIN_ONLY", "PLAYOFFS_ONLY", "HYBRID"
+	GroupCount        int                    `json:"group_count"`                              // Relevant if SeasonType is "GROUPS"
+	GamesPerOpponent  int                    `json:"games_per_opponent"`                       // For round-robin or group stages
 
 	PlayoffType             enums.LeaguePlayoffType        `json:"playoff_type"`              // "NONE", "SINGLE_ELIM", "DOUBLE_ELIM"
 	PlayoffParticipantCount int                            `json:"playoff_participant_count"` // Number of teams that make playoffs
