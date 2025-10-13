@@ -9,7 +9,7 @@ type TaskType int // not a string like my other enums cuz it's not going into th
 const (
 	TaskTypeDraftTurnTimeout TaskType = iota
 	TaskTypeTradingPeriodEnd
-	TaskTypeAccrueCredits
+	TaskTypeTradingPeriodStart
 )
 
 func (t TaskType) String() string {
@@ -18,8 +18,8 @@ func (t TaskType) String() string {
 		return "DRAFT_TURN_TIMEOUT"
 	case TaskTypeTradingPeriodEnd:
 		return "TRADING_PERIOD_END"
-	case TaskTypeAccrueCredits:
-		return "ACCRUE_CREDITS"
+	case TaskTypeTradingPeriodStart:
+		return "TRADING_PERIOD_START"
 	}
 	return ""
 }
@@ -34,13 +34,14 @@ type ScheduledTask struct {
 
 // payloads
 type PayloadDraftTurnTimeout struct {
+	DraftID  uuid.UUID
 	LeagueID uuid.UUID
 	PlayerID uuid.UUID // The player whose turn it is
 }
 type PayloadTransferPeriodEnd struct {
 	LeagueID uuid.UUID
 }
-type PayloadTransferCreditAccrual struct {
+type PayloadTransferPeriodStart struct {
 	LeagueID uuid.UUID
 }
 

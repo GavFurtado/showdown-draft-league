@@ -12,18 +12,19 @@ import (
 	u "github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 )
 
+// SchedulerService defines the interface for managing scheduled tasks.
 type SchedulerService interface {
 	Start() error
 	RegisterTask(task *u.ScheduledTask)
 	DeregisterTask(taskID string)
 	Stop()
+	SetDraftService(draftService DraftService)
 }
 
 type schedulerServiceImpl struct {
-	tasks    *u.TaskHeap
-	taskMap  map[string]*u.ScheduledTask
-	taskChan chan *u.ScheduledTask
-	// updateChan chan *u.ScheduledTask // not planned for now
+	tasks          *u.TaskHeap
+	taskMap        map[string]*u.ScheduledTask
+	taskChan       chan *u.ScheduledTask
 	rescheduleChan chan struct{}
 	stopChan       chan struct{}
 	leagueRepo     repositories.LeagueRepository
@@ -35,20 +36,27 @@ func NewSchedulerService(
 	tasks *u.TaskHeap,
 	leagueRepo repositories.LeagueRepository,
 	draftRepo repositories.DraftRepository,
-	draftService DraftService,
 ) SchedulerService {
 	return &schedulerServiceImpl{
 		tasks:          tasks,
 		taskMap:        make(map[string]*u.ScheduledTask),
 		taskChan:       make(chan *u.ScheduledTask),
-		rescheduleChan: make(chan struct{}, 1), // buff size 1 is safer but probably doesn't really matter
+		rescheduleChan: make(chan struct{}, 1),
 		stopChan:       make(chan struct{}),
 		leagueRepo:     leagueRepo,
 		draftRepo:      draftRepo,
-		draftService:   draftService,
 	}
 }
 
+// SetDraftService injects the dependency needed for the scheduler to execute draft-related tasks.
+// This is set during application startup to break the circular dependency with DraftService.
+func (s *schedulerServiceImpl) SetDraftService(draftService DraftService) {
+	s.draftService = draftService
+}
+
+// Start initializes the scheduler on application boot. It fetches all ongoing drafts
+// and active league phases from the database, reconstructs the necessary tasks (e.g.,
+// turn timeouts), and launches the main scheduling loop in a background goroutine.
 func (s *schedulerServiceImpl) Start() error {
 	// fetch all ongoing drafts
 	drafts, err := s.draftRepo.GetAllDraftsByStatus(enums.DraftStatusOngoing)
@@ -119,10 +127,10 @@ func (s *schedulerServiceImpl) Start() error {
 		nextWindowStartTime := league.Format.NextTransferWindowStart
 
 		newTask := &u.ScheduledTask{
-			ID:        fmt.Sprintf("%d_%s", u.TaskTypeAccrueCredits, league.ID),
+			ID:        fmt.Sprintf("%d_%s", u.TaskTypeTradingPeriodStart, league.ID),
 			ExecuteAt: *nextWindowStartTime,
-			Type:      u.TaskTypeAccrueCredits,
-			Payload: u.PayloadTransferCreditAccrual{
+			Type:      u.TaskTypeTradingPeriodStart,
+			Payload: u.PayloadTransferPeriodStart{
 				LeagueID: league.ID,
 			},
 		}
@@ -136,8 +144,8 @@ func (s *schedulerServiceImpl) Start() error {
 	return nil
 }
 
-// RegisterTask adds a new task to the scheduler.
-// it sends the task to the scheduler's internal channel for processing.
+// RegisterTask adds a new task to the scheduler. It is called by other services
+// to schedule a future action, such as the timeout for a draft turn.
 func (s *schedulerServiceImpl) RegisterTask(task *u.ScheduledTask) {
 	// add to the map for quick lookup and deregistration
 	s.taskMap[task.ID] = task
@@ -148,6 +156,7 @@ func (s *schedulerServiceImpl) RegisterTask(task *u.ScheduledTask) {
 
 }
 
+// runSchedulerLoop is the main loop of the scheduler that processes tasks.
 func (s *schedulerServiceImpl) runSchedulerLoop() {
 	var timer *time.Timer
 
@@ -166,17 +175,11 @@ func (s *schedulerServiceImpl) runSchedulerLoop() {
 			}
 		} else {
 			// no tasks on the priority queue, wait for a task
+			log.Printf("LOG: (SchedulerService: runSchedulerLoop) - no tasks on the queue, waiting...\n")
 			timer = time.NewTimer(time.Hour * 24 * 365 * 10) // long ahh time
 		}
 
 		select {
-		case <-s.stopChan:
-			// Stop() call was made
-			log.Printf("LOG: Scheduler received stop signal. Shutting Down. Scheduler can be restarted by restarting the server.\n")
-			if timer != nil {
-				timer.Stop()
-			}
-			return // stop goroutine
 		case newTask := <-s.taskChan:
 			// a new task has been submitted by another service
 			log.Printf("LOG: Scheduler recieved a new task: %s (Type: %s, ExecuteAt: %s)\n", newTask.ID, newTask.Type, newTask.ExecuteAt)
@@ -189,14 +192,23 @@ func (s *schedulerServiceImpl) runSchedulerLoop() {
 			// timer fired; execute the scheduled task
 			task := s.tasks.Pop().(*u.ScheduledTask)
 			log.Printf("LOG: Scheduler executing task: %s (Type: %s, ExecuteAt: %s)\n", task.ID, task.Type, task.ExecuteAt)
-
+			// Execute the task using the injected DraftTaskExecutor
 			s.executeTask(task)
+			delete(s.taskMap, task.ID)
+		case <-s.stopChan:
+			// Stop() call was made
+			log.Printf("LOG: Scheduler received stop signal. Shutting Down. Scheduler can be restarted by restarting the server.\n")
+			if timer != nil {
+				timer.Stop()
+			}
+			return // stop goroutine
 		}
 	}
 }
 
-// DeregisterTask removes a task from the scheduler by its composite ID.
-// This is typically called when a task is completed manually (e.g., a pick is made before timeout).
+// DeregisterTask removes a task from the scheduler. This is called when a task
+// is completed ahead of schedule, for example, when a player makes a draft pick
+// before their turn timer expires.
 func (s *schedulerServiceImpl) DeregisterTask(taskID string) {
 	task, exists := s.taskMap[taskID]
 	if !exists {
@@ -219,7 +231,12 @@ func (s *schedulerServiceImpl) executeTask(task *u.ScheduledTask) {
 	switch task.Type {
 	case u.TaskTypeDraftTurnTimeout:
 		if payload, ok := task.Payload.(u.PayloadDraftTurnTimeout); ok {
-			log.Printf("LOG: (SchedulerService: executeTask) - Draft turn timeout for DraftID: %s, PlayerID: %s\n", payload.DraftID, payload.PlayerID)
+			log.Printf("LOG: (SchedulerService: executeTask) - Draft turn timeout for LeagueID: %s, PlayerID: %s\n", payload.LeagueID, payload.PlayerID)
+			if s.draftService == nil {
+				log.Printf("ERROR: (SchedulerService: executeTask) - DraftService is not set. Cannot auto-skip turn for LeagueID: %s, PlayerID: %s\n", payload.LeagueID, payload.PlayerID)
+				return
+			}
+
 			if err := s.draftService.AutoSkipTurn(payload.PlayerID, payload.LeagueID); err != nil {
 				log.Printf("ERROR: (SchedulerService: executeTask) - error occured in AutoSkipTurn: %v\n", err)
 				return
@@ -231,15 +248,30 @@ func (s *schedulerServiceImpl) executeTask(task *u.ScheduledTask) {
 	case u.TaskTypeTradingPeriodEnd:
 		if payload, ok := task.Payload.(u.PayloadTransferPeriodEnd); ok {
 			log.Printf("LOG: (SchedulerService: executeTask) - Transfer period end for LeagueID: %s\n", payload.LeagueID)
-			// s.draftService.EndTransferPeriod(payload.LeagueID)
+			if s.draftService == nil {
+				log.Printf("ERROR: (SchedulerService: executeTask) - DraftService is not set. Cannot end transfer period for LeagueID: %s\n", payload.LeagueID)
+				return
+			}
+
+			if err := s.draftService.EndTransferPeriod(payload.LeagueID); err != nil {
+				log.Printf("ERROR: (SchedulerService: executeTask) - error occured in EndTransferPeriod: %v\n", err)
+				return
+			}
 		} else {
 			log.Printf("ERROR: (SchedulerService: executeTask) - Invalid payload type for TransferPeriodEnd task ID %s\n", task.ID)
 		}
 
-	case u.TaskTypeAccrueCredits:
-		if payload, ok := task.Payload.(u.PayloadTransferCreditAccrual); ok {
+	case u.TaskTypeTradingPeriodStart:
+		if payload, ok := task.Payload.(u.PayloadTransferPeriodStart); ok {
 			log.Printf("LOG: (SchedulerService: executeTask) - Accrue credits for LeagueID: %s\n", payload.LeagueID)
-			// s.draftService.AccrueTransferCredits(payload.LeagueID)
+			if s.draftService == nil {
+				log.Printf("ERROR: (SchedulerService: executeTask) - DraftService is not set. Cannot start transfer period for LeagueID: %s\n", payload.LeagueID)
+				return
+			}
+			if err := s.draftService.StartTransferPeriod(payload.LeagueID); err != nil {
+				log.Printf("ERROR: (SchedulerService: executeTask) - error occured in StartTransferPeriod: %v\n", err)
+				return
+			}
 		} else {
 			log.Printf("ERROR: (SchedulerService: executeTask) - Invalid payload type for AccrueCredits task ID %s. Expected PayloadTransferCreditAccrual.\n", task.ID)
 		}
@@ -248,6 +280,7 @@ func (s *schedulerServiceImpl) executeTask(task *u.ScheduledTask) {
 	}
 }
 
+// Stop gracefully shuts down the scheduler's background goroutine.
 func (s *schedulerServiceImpl) Stop() {
 	// Just sends struct{} to the stopChan
 	// which will shut down the go routine

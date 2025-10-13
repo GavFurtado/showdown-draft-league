@@ -15,6 +15,7 @@ type Config struct {
 	BackendBaseURL      string
 	DatabaseURL         string
 	JWTSecret           string
+	Port                string
 }
 
 func LoadConfig() *Config {
@@ -33,6 +34,7 @@ func LoadConfig() *Config {
 		BackendBaseURL:      getEnv("BACKEND_BASE_URL"),
 		DatabaseURL:         getEnv("DATABASE_URL"),
 		JWTSecret:           getEnv("JWT_SECRET"),
+		Port:                getEnv("PORT"),
 	}
 
 	Assert(!(cfg.DiscordClientID == "" || cfg.DiscordClientSecret == "" || cfg.DiscordRedirectURI == "" ||

@@ -106,6 +106,10 @@ func RegisterRoutes(
 					"/",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadLeaguePokemon),
 					controllers.LeaguePokemonController.GetAllPokemonByLeague)
+				leaguePokemon.POST(
+					"/:leaguePokemonId/pickup",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateDraftedPokemon),
+					controllers.DraftedPokemonController.PickupFreeAgent)
 			}
 
 			draftedPokemon := leagues.Group("/:leagueId/drafted_pokemon")
@@ -150,7 +154,22 @@ func RegisterRoutes(
 					"/history",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadDraft),
 					controllers.DraftedPokemonController.GetDraftHistory)
+				draftedPokemon.POST(
+					"/:id/drop",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateDraftedPokemon),
+					controllers.DraftedPokemonController.DropPokemon)
 			}
+
+			// Draft Management Endpoints
+			leagues.POST("/:leagueId/draft/start",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateDraft),
+				controllers.DraftController.StartDraft)
+			leagues.POST("/:leagueId/transfers/start",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionStartTransferPeriod),
+				controllers.DraftController.StartTransferPeriod)
+			leagues.POST("/:leagueId/transfers/end",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionEndTransferPeriod),
+				controllers.DraftController.EndTransferPeriod)
 		}
 
 		users := api.Group("/users")

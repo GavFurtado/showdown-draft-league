@@ -9,6 +9,10 @@ import (
 )
 
 type DraftedPokemonRepository interface {
+	// Transactional methods
+	Begin() *gorm.DB
+	WithTx(tx *gorm.DB) DraftedPokemonRepository
+
 	// creates a new drafted Pokemon entry
 	CreateDraftedPokemon(draftedPokemon *models.DraftedPokemon) (*models.DraftedPokemon, error)
 	// gets drafted Pokemon by ID with relationships
@@ -49,6 +53,16 @@ type draftedPokemonRepositoryImpl struct {
 
 func NewDraftedPokemonRepository(db *gorm.DB) *draftedPokemonRepositoryImpl {
 	return &draftedPokemonRepositoryImpl{db: db}
+}
+
+// Begin starts a new transaction.
+func (r *draftedPokemonRepositoryImpl) Begin() *gorm.DB {
+	return r.db.Begin()
+}
+
+// WithTx returns a new repository instance with the given transaction.
+func (r *draftedPokemonRepositoryImpl) WithTx(tx *gorm.DB) DraftedPokemonRepository {
+	return &draftedPokemonRepositoryImpl{db: tx}
 }
 
 // creates a new drafted Pokemon entry

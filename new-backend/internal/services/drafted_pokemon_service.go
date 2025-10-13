@@ -14,6 +14,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// DraftedPokemonService defines the interface for managing drafted Pokemon.
 type DraftedPokemonService interface {
 	// gets drafted Pokemon by ID with relationships.
 	GetDraftedPokemonByID(id uuid.UUID) (*models.DraftedPokemon, error)
@@ -39,22 +40,27 @@ type DraftedPokemonService interface {
 	TradePokemon(currentUser *models.User, draftedPokemonID, newPlayerID uuid.UUID) error
 	// soft deletes a drafted Pokemon entry.
 	DeleteDraftedPokemon(currentUser *models.User, draftedPokemonID uuid.UUID) error
+	DropPokemon(currentUser *models.User, draftedPokemonID uuid.UUID) error
+	PickupFreeAgent(currentUser *models.User, leaguePokemonID uuid.UUID) error
 }
 
 type draftedPokemonServiceImpl struct {
 	draftedPokemonRepo repositories.DraftedPokemonRepository
 	pokemonSpeciesRepo repositories.PokemonSpeciesRepository
+	leaguePokemonRepo  repositories.LeaguePokemonRepository
 	userRepo           repositories.UserRepository
 	leagueRepo         repositories.LeagueRepository
 	playerRepo         repositories.PlayerRepository
 }
 
+// NewDraftedPokemonService creates a new instance of DraftedPokemonService.
 func NewDraftedPokemonService(
 	draftedPokemonRepo repositories.DraftedPokemonRepository,
 	userRepo repositories.UserRepository,
 	leagueRepo repositories.LeagueRepository,
 	playerRepo repositories.PlayerRepository,
 	pokemonSpeciesRepo repositories.PokemonSpeciesRepository,
+	leaguePokemonRepo repositories.LeaguePokemonRepository,
 ) DraftedPokemonService {
 	return &draftedPokemonServiceImpl{
 		draftedPokemonRepo: draftedPokemonRepo,
@@ -62,7 +68,113 @@ func NewDraftedPokemonService(
 		leagueRepo:         leagueRepo,
 		playerRepo:         playerRepo,
 		pokemonSpeciesRepo: pokemonSpeciesRepo,
+		leaguePokemonRepo:  leaguePokemonRepo,
 	}
+}
+
+// isLeagueInTransferWindow checks if the specified league is currently in a transfer window.
+func (s *draftedPokemonServiceImpl) isLeagueInTransferWindow(leagueID uuid.UUID) (bool, error) {
+	league, err := s.leagueRepo.GetLeagueByID(leagueID)
+	if err != nil {
+		return false, common.ErrLeagueNotFound
+	}
+	return league.Status == enums.LeagueStatusTransferWindow, nil
+}
+
+// DropPokemon allows a user to drop a drafted Pokemon, making it a free agent.
+// This operation is only allowed during a transfer window and if the user owns the Pokemon.
+func (s *draftedPokemonServiceImpl) DropPokemon(currentUser *models.User, draftedPokemonID uuid.UUID) error {
+	draftedPokemon, err := s.draftedPokemonRepo.GetDraftedPokemonByID(draftedPokemonID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return common.ErrDraftedPokemonNotFound
+		}
+		return common.ErrInternalService
+	}
+
+	// Authorize user is owner of pokemon
+	player, err := s.playerRepo.GetPlayerByID(draftedPokemon.PlayerID)
+	if err != nil {
+		return common.ErrPlayerNotFound
+	}
+	if player.UserID != currentUser.ID {
+		return common.ErrUnauthorized
+	}
+
+	inWindow, err := s.isLeagueInTransferWindow(draftedPokemon.LeagueID)
+	if err != nil {
+		return err
+	}
+	if !inWindow {
+		return common.ErrInvalidState // Or a more specific "not in transfer window" error
+	}
+
+	return s.ReleasePokemon(currentUser, draftedPokemonID)
+}
+
+// PickupFreeAgent allows a user to pick up a released Pokemon (free agent) using transfer credits.
+// This operation is only allowed during a transfer window and if the player has enough credits.
+func (s *draftedPokemonServiceImpl) PickupFreeAgent(currentUser *models.User, leaguePokemonID uuid.UUID) error {
+	leaguePokemon, err := s.leaguePokemonRepo.GetLeaguePokemonByID(leaguePokemonID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return common.ErrLeaguePokemonNotFound
+		}
+		return common.ErrInternalService
+	}
+
+	inWindow, err := s.isLeagueInTransferWindow(leaguePokemon.LeagueID)
+	if err != nil {
+		return err
+	}
+	if !inWindow {
+		return common.ErrInvalidState // Or a more specific "not in transfer window" error
+	}
+
+	player, err := s.playerRepo.GetPlayerByUserAndLeague(currentUser.ID, leaguePokemon.LeagueID)
+	if err != nil {
+		return common.ErrPlayerNotFound
+	}
+
+	if player.TransferCredits <= 0 {
+		return common.ErrInsufficientTransferCredits
+	}
+
+	if !leaguePokemon.IsAvailable {
+		return common.ErrConflict // Pokemon not available
+	}
+
+	// In a transaction
+	tx := s.draftedPokemonRepo.Begin()
+	if tx.Error != nil {
+		return common.ErrInternalService
+	}
+
+	player.TransferCredits--
+	if _, err = s.playerRepo.WithTx(tx).UpdatePlayer(player); err != nil {
+		tx.Rollback()
+		return common.ErrInternalService
+	}
+
+	newDraftedPokemon := &models.DraftedPokemon{
+		LeagueID:         leaguePokemon.LeagueID,
+		PlayerID:         player.ID,
+		PokemonSpeciesID: leaguePokemon.PokemonSpeciesID,
+		LeaguePokemonID:  leaguePokemon.ID,
+		IsReleased:       false,
+	}
+	if _, err = s.draftedPokemonRepo.WithTx(tx).CreateDraftedPokemon(newDraftedPokemon); err != nil {
+		tx.Rollback()
+		return common.ErrInternalService
+	}
+
+	leaguePokemon.IsAvailable = false
+	if _, err = s.leaguePokemonRepo.WithTx(tx).UpdateLeaguePokemon(leaguePokemon); err != nil {
+		tx.Rollback()
+		return common.ErrInternalService
+	}
+
+	return tx.Commit().Error
 }
 
 // GetDraftedPokemonByID gets drafted Pokemon by ID with relationships.
@@ -151,7 +263,7 @@ func (s *draftedPokemonServiceImpl) IsPokemonDrafted(leagueID uuid.UUID, pokemon
 	return isDrafted, nil
 }
 
-// gets the next draft pick number for a league.
+// GetNextDraftPickNumber gets the next draft pick number for a league.
 func (s *draftedPokemonServiceImpl) GetNextDraftPickNumber(leagueID uuid.UUID) (int, error) {
 	leagueStatus, err := s.leagueRepo.GetLeagueStatus(leagueID)
 	if err != nil {
@@ -172,7 +284,7 @@ func (s *draftedPokemonServiceImpl) GetNextDraftPickNumber(leagueID uuid.UUID) (
 	return nextPick, nil
 }
 
-// releases a Pokemon back to free agents.
+// ReleasePokemon releases a Pokemon back to free agents.
 func (s *draftedPokemonServiceImpl) ReleasePokemon(currentUser *models.User, draftedPokemonID uuid.UUID) error {
 	draftedPokemon, err := s.draftedPokemonRepo.GetDraftedPokemonByID(draftedPokemonID)
 	if err != nil {
@@ -224,7 +336,7 @@ func (s *draftedPokemonServiceImpl) ReleasePokemon(currentUser *models.User, dra
 	return nil
 }
 
-// gets count of actively drafted Pokemon by a player.
+// GetDraftedPokemonCountByPlayer gets count of actively drafted Pokemon by a player.
 func (s *draftedPokemonServiceImpl) GetDraftedPokemonCountByPlayer(currentUser *models.User, playerID uuid.UUID) (int64, error) {
 	count, err := s.draftedPokemonRepo.GetDraftedPokemonCountByPlayer(playerID)
 	if err != nil {
@@ -235,7 +347,7 @@ func (s *draftedPokemonServiceImpl) GetDraftedPokemonCountByPlayer(currentUser *
 	return count, nil
 }
 
-// gets draft history for a league (all picks in order, including released and includes transfers).
+// GetDraftHistory gets draft history for a league (all picks in order, including released and includes transfers).
 func (s *draftedPokemonServiceImpl) GetDraftHistory(leagueID uuid.UUID) ([]models.DraftedPokemon, error) {
 	history, err := s.draftedPokemonRepo.GetDraftHistory(leagueID)
 	if err != nil {
@@ -246,8 +358,8 @@ func (s *draftedPokemonServiceImpl) GetDraftHistory(leagueID uuid.UUID) ([]model
 	return history, nil
 }
 
+// TradePokemon trades a Pokemon from one player to another.
 // TODO: this is very basic for now. what we want is a full blown trade offer system. (not planned for anytime soon)
-// trades a Pokemon from one player to another.
 func (s *draftedPokemonServiceImpl) TradePokemon(currentUser *models.User, draftedPokemonID, newPlayerID uuid.UUID) error {
 	// 1. Get the drafted Pokemon details for authorization and validation
 	draftedPokemon, err := s.draftedPokemonRepo.GetDraftedPokemonByID(draftedPokemonID)
@@ -300,14 +412,14 @@ func (s *draftedPokemonServiceImpl) TradePokemon(currentUser *models.User, draft
 
 	err = s.draftedPokemonRepo.TradePokemon(draftedPokemonID, newPlayerID)
 	if err != nil {
-		log.Printf("(Error: DraftedPokemonService.TradePokemon) - Failed to trade pokemon with ID %s to player %s: %v", draftedPokemonID, newPlayerID, err)
+		log.Printf("(Error: TradePokemon) - Failed to trade pokemon with ID %s to player %s: %v", draftedPokemonID, newPlayerID, err)
 		return fmt.Errorf("failed to trade pokemon: %w", err)
 	}
 
 	return nil
 }
 
-// soft deletes a drafted Pokemon entry.
+// DeleteDraftedPokemon soft deletes a drafted Pokemon entry.
 // Player permission required: rbac.PermissionDeleteDraftedPokemon
 func (s *draftedPokemonServiceImpl) DeleteDraftedPokemon(currentUser *models.User, draftedPokemonID uuid.UUID) error {
 	err := s.draftedPokemonRepo.DeleteDraftedPokemon(draftedPokemonID)

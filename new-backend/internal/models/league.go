@@ -46,12 +46,14 @@ type LeagueFormat struct {
 	PlayoffByesCount        int                            `json:"playoff_byes_count"`        // Number of teams getting a bye in playoffs
 	PlayoffSeedingType      enums.LeaguePlayoffSeedingType `json:"playoff_seeding_type"`      // "STANDARD", "SEEDED", "BYES_ONLY"
 
-	AllowTrading             bool       `json:"allow_trading"`
-	AllowTransferCredits     bool       `json:"allow_transfer_credits"`
-	TransferCreditsPerWindow int        `json:"transfer_credits_per_window"`
-	TransferCreditCap        int        `json:"transfer_credit_cap"`
-	TransferWindowFrequency  *time.Time `gorm:"type:timestamp with time zone" json:"transfer_window_frequency"`
-	TransferWindowDuration   int        `json:"transfer_window_duration"`
+	AllowTrading                bool `json:"allow_trading"`
+	AllowTransferCredits        bool `json:"allow_transfer_credits"`
+	TransferCreditsPerWindow    int  `json:"transfer_credits_per_window"`
+	TransferCreditCap           int  `json:"transfer_credit_cap"`
+	TransferWindowFrequencyDays int  `json:"transfer_window_frequency_days"`
+	TransferWindowDuration      int  `json:"transfer_window_duration"`
+	DropCost                    int  `json:"drop_cost"`
+	PickupCost                  int  `json:"pickup_cost"`
 	// NextTransferWindowStart stores the next occurence of a trasnfer window
 	// if league is in a transfer window, NextTransferWindowStart will store the start time of the window
 	// NextTransferWindowStart is updated at the *end* of a transfer window or when the season/bracket starts

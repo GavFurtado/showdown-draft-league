@@ -10,6 +10,10 @@ import (
 )
 
 type PlayerRepository interface {
+	// Transactional methods
+	Begin() *gorm.DB
+	WithTx(tx *gorm.DB) PlayerRepository
+
 	CreatePlayer(player *models.Player) (*models.Player, error)
 	// gets player by ID with preloaded relationships
 	GetPlayerByID(id uuid.UUID) (*models.Player, error)
@@ -46,6 +50,16 @@ func NewPlayerRepository(db *gorm.DB) PlayerRepository {
 	return &playerRepositoryImpl{
 		db: db,
 	}
+}
+
+// Begin starts a new transaction.
+func (r *playerRepositoryImpl) Begin() *gorm.DB {
+	return r.db.Begin()
+}
+
+// WithTx returns a new repository instance with the given transaction.
+func (r *playerRepositoryImpl) WithTx(tx *gorm.DB) PlayerRepository {
+	return &playerRepositoryImpl{db: tx}
 }
 
 // creates a new player in a league

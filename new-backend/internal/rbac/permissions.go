@@ -23,6 +23,10 @@ const (
 	PermissionUpdateDraft Permission = "update:draft"
 	PermissionDeleteDraft Permission = "delete:draft"
 
+	// Transfer Period Permissions
+	PermissionStartTransferPeriod Permission = "start:transfer_period"
+	PermissionEndTransferPeriod   Permission = "end:transfer_period"
+
 	// LeaguePokemon Permissions
 	PermissionCreateLeaguePokemon Permission = "create:league_pokemon"
 	PermissionReadLeaguePokemon   Permission = "read:league_pokemon"
@@ -30,10 +34,11 @@ const (
 	PermissionDeleteLeaguePokemon Permission = "delete:league_pokemon"
 
 	// DraftedPokemon Permissions
-	PermissionCreateDraftedPokemon Permission = "create:drafted_pokemon"
-	PermissionReadDraftedPokemon   Permission = "read:drafted_pokemon"
-	PermissionUpdateDraftedPokemon Permission = "update:drafted_pokemon"
-	PermissionDeleteDraftedPokemon Permission = "delete:drafted_pokemon"
+	PermissionReleaseDraftedPokemon Permission = "release:drafted_pokemon"
+	PermissionCreateDraftedPokemon  Permission = "create:drafted_pokemon"
+	PermissionReadDraftedPokemon    Permission = "read:drafted_pokemon"
+	PermissionUpdateDraftedPokemon  Permission = "update:drafted_pokemon"
+	PermissionDeleteDraftedPokemon  Permission = "delete:drafted_pokemon"
 
 	// Game Permissions
 	PermissionCreateGame Permission = "create:game"
@@ -77,13 +82,14 @@ func init() {
 		PermissionReadUser,
 		PermissionReadPlayerRoster,
 		PermissionReadPokemonSpecies,
+		PermissionReleaseDraftedPokemon,
+		PermissionUpdatePlayer,
 	)
 
 	// Moderator permissions inherit from Member and add more
 	inheritPermissions(PRoleModerator, PRoleMember)
 	setPermissions(PRoleModerator,
 		PermissionUpdateLeague,
-		PermissionUpdatePlayer,
 		PermissionUpdateDraft,
 		PermissionUpdateLeaguePokemon,
 		PermissionUpdateDraftedPokemon,
@@ -93,6 +99,8 @@ func init() {
 		PermissionCreateLeaguePokemon,
 		PermissionCreateGame,
 		PermissionDeleteGame,
+		PermissionStartTransferPeriod,
+		PermissionEndTransferPeriod,
 	)
 
 	// Owner permissions inherit from Moderator and add more

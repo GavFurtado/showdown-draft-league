@@ -8,6 +8,10 @@ import (
 )
 
 type LeaguePokemonRepository interface {
+	// Transactional methods
+	Begin() *gorm.DB
+	WithTx(tx *gorm.DB) LeaguePokemonRepository
+
 	// gets multiple specific Pokemon from a league's draft pool by their IDs
 	GetLeaguePokemonByIDs(leagueID uuid.UUID, leaguePokemonIDs []uuid.UUID) ([]models.LeaguePokemon, error)
 	// adds a Pokemon species to a league's draft pool
@@ -38,6 +42,26 @@ type LeaguePokemonRepository interface {
 	DeleteAllLeaguePokemon(leagueID uuid.UUID) error
 }
 
+type leaguePokemonRepositoryImpl struct {
+	db *gorm.DB
+}
+
+func NewLeaguePokemonRepository(db *gorm.DB) LeaguePokemonRepository {
+	return &leaguePokemonRepositoryImpl{
+		db: db,
+	}
+}
+
+// Begin starts a new transaction.
+func (r *leaguePokemonRepositoryImpl) Begin() *gorm.DB {
+	return r.db.Begin()
+}
+
+// WithTx returns a new repository instance with the given transaction.
+func (r *leaguePokemonRepositoryImpl) WithTx(tx *gorm.DB) LeaguePokemonRepository {
+	return &leaguePokemonRepositoryImpl{db: tx}
+}
+
 // gets multiple specific Pokemon from a league's draft pool by their IDs
 func (r *leaguePokemonRepositoryImpl) GetLeaguePokemonByIDs(leagueID uuid.UUID, leaguePokemonIDs []uuid.UUID) ([]models.LeaguePokemon, error) {
 	var leaguePokemon []models.LeaguePokemon
@@ -49,16 +73,6 @@ func (r *leaguePokemonRepositoryImpl) GetLeaguePokemonByIDs(leagueID uuid.UUID, 
 		return nil, fmt.Errorf("(Error: GetLeaguePokemonByIDs) - failed to get league pokemon by IDs: %w", err)
 	}
 	return leaguePokemon, nil
-}
-
-type leaguePokemonRepositoryImpl struct {
-	db *gorm.DB
-}
-
-func NewLeaguePokemonRepository(db *gorm.DB) LeaguePokemonRepository {
-	return &leaguePokemonRepositoryImpl{
-		db: db,
-	}
 }
 
 // adds a Pokemon species to a league's draft pool

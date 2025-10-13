@@ -29,6 +29,7 @@ type Services struct {
 	RBACService           services.RBACService
 	UserService           services.UserService
 	WebhookService        services.WebhookService
+	SchedulerService      services.SchedulerService
 }
 
 type Controllers struct {
@@ -39,4 +40,5 @@ type Controllers struct {
 	PokemonSpeciesController controllers.PokemonSpeciesController
 	LeaguePokemonController  controllers.LeaguePokemonController
 	DraftedPokemonController controllers.DraftedPokemonController
+	DraftController          *controllers.DraftController
 }

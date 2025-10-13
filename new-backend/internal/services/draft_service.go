@@ -24,11 +24,11 @@ type DraftService interface {
 	MakePick(currentUser *models.User, league *models.League, input *common.DraftMakePickDTO) error
 	SkipTurn(currentUser *models.User, league *models.League) error
 	AutoSkipTurn(playerID, leagueID uuid.UUID) error
-	// StartTradingPeriod(leagueID uuid.UUID, currentUser *models.User) (*models.League, error)
-	// EndTradingPeriod(leagueID uuid.UUID, currentUser *models.User) (*models.League, error)
-
+	StartTransferPeriod(leagueID uuid.UUID) error
+	EndTransferPeriod(leagueID uuid.UUID) error
 	// DropFreeAgent(leagueID, draftedPokemonID uuid.UUID, currentUser *models.User) (*models.DraftedPokemon, error)
 	// PickupFreeAgent(leagueID, pokemonSpeciesID uuid.UUID, currentUser *models.User) (*models.DraftedPokemon, error)
+	SetSchedulerService(schedulerService SchedulerService)
 }
 
 type draftServiceImpl struct {
@@ -48,7 +48,6 @@ func NewDraftService(
 	draftedPokemonRepo repositories.DraftedPokemonRepository,
 	playerRepo repositories.PlayerRepository,
 	webhookService *WebhookService,
-	schedulerService SchedulerService,
 ) DraftService {
 	return &draftServiceImpl{
 		draftRepo:          draftRepo,
@@ -57,10 +56,19 @@ func NewDraftService(
 		leaguePokemonRepo:  leaguePokemonRepo,
 		draftedPokemonRepo: draftedPokemonRepo,
 		webhookService:     webhookService,
-		schedulerService:   schedulerService,
 	}
 }
 
+// SetSchedulerService injects the SchedulerService dependency into the DraftService.
+// This is called during application startup to break a circular dependency.
+func (s *draftServiceImpl) SetSchedulerService(schedulerService SchedulerService) {
+	s.schedulerService = schedulerService
+}
+
+// StartDraft initializes the draft for a given league. It validates that there are players,
+// sets the draft order (either randomly or by pre-set positions), creates the initial
+// draft state in the database, updates the league status to DRAFTING, and schedules the
+// first turn's timeout task.
 // player permission rbac.PermissionCreateDraft
 func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*models.Draft, error) {
 	// Retrieve the league
@@ -168,7 +176,7 @@ func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*m
 		},
 	}
 
-	s.schedulerService.RegisterTask()
+	s.schedulerService.RegisterTask(task)
 
 	// Send an initial webhook notification
 	// TODO: Implement webhook message creation logic
@@ -180,6 +188,12 @@ func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*m
 	return draft, nil
 }
 
+// MakePick handles a player's draft selection. It performs a series of validations:
+// - Confirms the draft is in an active state.
+// - Verifies it is the correct player's turn.
+// - Checks that the requested Pokémon are available and affordable.
+// - Ensures the pick doesn't violate league roster rules (e.g., minimum roster size).
+// If all checks pass, it executes the pick as a transaction and advances the draft state.
 // MakePick makes one or more picks (if accumulated) in a league's draft when league;
 // Different from ForcePick, MakePick does all the required checks (there's a lot of checks) and validates the input
 func (s *draftServiceImpl) MakePick(currentUser *models.User, league *models.League, input *common.DraftMakePickDTO) error {
@@ -297,6 +311,9 @@ func (s *draftServiceImpl) MakePick(currentUser *models.User, league *models.Lea
 	return nil // no errors
 }
 
+// SkipTurn allows a player to manually skip their current turn. It validates that the
+// player is allowed to skip without violating minimum roster requirements and then
+// advances the draft state, accumulating the skipped pick for the player.
 func (s *draftServiceImpl) SkipTurn(currentUser *models.User, league *models.League) error {
 	draft, err := s.fetchDraftResource(league.ID)
 	if err != nil {
@@ -363,6 +380,9 @@ func (s *draftServiceImpl) SkipTurn(currentUser *models.User, league *models.Lea
 	return nil
 }
 
+// AutoSkipTurn is called by the SchedulerService when a player's turn timer expires.
+// It attempts to automatically skip the turn. If the skip is not allowed (e.g., it
+// would violate minimum roster size), the draft is paused for manual intervention.
 func (s *draftServiceImpl) AutoSkipTurn(playerID, leagueID uuid.UUID) error {
 	player, err := s.playerRepo.GetPlayerByID(playerID)
 	if err != nil {
@@ -420,7 +440,7 @@ func (s *draftServiceImpl) AutoSkipTurn(playerID, leagueID uuid.UUID) error {
 
 	allPlayers, err := s.playerRepo.GetPlayersByLeague(leagueID)
 	if err != nil {
-		log.Printf("ERROR: (DraftService: autoSkipTurn) - Could not get all players in league %s: %v\n", playerID, leagueID, err)
+		log.Printf("ERROR: (DraftService: autoSkipTurn) - Could not get all players in league %s: %v\n", leagueID, err)
 		return common.ErrInternalService
 	}
 
@@ -434,6 +454,10 @@ func (s *draftServiceImpl) AutoSkipTurn(playerID, leagueID uuid.UUID) error {
 }
 
 // private helpers
+
+// advanceDraftState moves the draft to the next turn or completes it.
+// It increments the pick counter, checks if the draft's end conditions are met,
+// determines the next player based on the draft order (linear or snake), and updates the draft model.
 func (s *draftServiceImpl) advanceDraftState(
 	draft *models.Draft,
 	league *models.League,
@@ -527,6 +551,9 @@ func (s *draftServiceImpl) advanceDraftState(
 	return nil
 }
 
+// executePickTransactions handles the database operations for a batch of draft picks.
+// It creates the DraftedPokemon records, updates the player's draft points, and marks
+// the LeaguePokemon as unavailable.
 func (s *draftServiceImpl) executePickTransactions(
 	draft *models.Draft,
 	league *models.League,
@@ -596,8 +623,10 @@ func (s *draftServiceImpl) executePickTransactions(
 	return nil
 }
 
-// validatePicksAndCheckCurrentPickSlotUsed performs remaining validation checks for a batch of picks
-// and determines if the current turn's pick slot was used.
+// validatePicksAndCheckCurrentPickSlotUsed performs the final validation checks before a pick is executed.
+// It ensures that requested pick numbers are valid, the player has sufficient points, and that an
+// implicit skip of the current turn doesn't violate minimum roster rules. It returns a boolean
+// indicating if the current "on-the-clock" pick slot was used in the transaction.
 func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 	draft *models.Draft,
 	player *models.Player,
@@ -663,7 +692,8 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 	return currentPickSlotUsed, nil
 }
 
-// isSkipAllowed checks if a skip/implicit skip action is allowed as well the number of skips allowed before violating the league's minimum count for a roster
+// isSkipAllowed checks if a player can skip (or implicit skip) their turn without making it impossible
+// to meet the league's minimum roster requirement.
 // returns true if allowed, false otherwise
 // also returns number of skips allowed
 func (s *draftServiceImpl) isSkipAllowed(
@@ -696,6 +726,8 @@ func (s *draftServiceImpl) getTotalCostForPicks(allRequestedPokemon []*models.Le
 	return sumCost
 }
 
+// fetchDraftResource retrieves the draft for a league, converting a gorm.ErrRecordNotFound
+// into a service-specific error.
 func (s *draftServiceImpl) fetchDraftResource(leagueID uuid.UUID) (*models.Draft, error) {
 	draft, err := s.draftRepo.GetDraftByLeagueID(leagueID)
 	if err != nil {
@@ -707,6 +739,8 @@ func (s *draftServiceImpl) fetchDraftResource(leagueID uuid.UUID) (*models.Draft
 	return draft, nil
 }
 
+// fetchPlayerResource retrieves a player by user and league, converting a gorm.ErrRecordNotFound
+// into a service-specific error.
 func (s *draftServiceImpl) fetchPlayerResource(userID, leagueID uuid.UUID) (*models.Player, error) {
 	player, err := s.playerRepo.GetPlayerByUserAndLeague(userID, leagueID)
 	if err != nil {
@@ -718,6 +752,9 @@ func (s *draftServiceImpl) fetchPlayerResource(userID, leagueID uuid.UUID) (*mod
 	return player, nil
 }
 
+// fetchRequestedPokemon retrieves a list of LeaguePokemon by their IDs, ensuring they are
+// all available to be drafted. It returns service-specific errors for not found or
+// already drafted pokemon.
 func (s *draftServiceImpl) fetchRequestedPokemon(leagueID uuid.UUID, input *common.DraftMakePickDTO) ([]*models.LeaguePokemon, error) {
 	var pokemonIDs []uuid.UUID
 	for _, requestedPick := range input.RequestedPicks {
@@ -751,6 +788,10 @@ func (s *draftServiceImpl) validateLeagueStatusForPick(leagueStatus enums.League
 	return leagueStatus == enums.LeagueStatusDrafting && draftStatus == enums.DraftStatusOngoing
 }
 
+// checkDraftCompletion determines if the draft has concluded by checking two conditions:
+// 1. Has the total number of drafted pokemon reached the maximum allowed for the league?
+// 2. Have all players met the minimum roster requirement?
+// It is called after each pick/skip to see if the draft should be moved to a COMPLETED state.
 // checkDraftCompletion determines if the draft has concluded and updates statuses accordingly.
 // It should be called after a successful pick or skip, and after draft state has been advanced.
 func (s *draftServiceImpl) checkDraftCompletion(
@@ -796,4 +837,117 @@ func (s *draftServiceImpl) checkDraftCompletion(
 		}
 	}
 	return true, nil
+}
+
+// StartTransferPeriod begins the transfer window for a league. It updates the league status,
+// allocates transfer credits to players if enabled, and schedules the end of the window.
+func (s *draftServiceImpl) StartTransferPeriod(leagueID uuid.UUID) error {
+	// 1. Fetch the League
+	league, err := s.leagueRepo.GetLeagueByID(leagueID)
+	if err != nil {
+		log.Printf("ERROR: (DraftService: StartTransferPeriod) - Failed to fetch league %s: %v\n", leagueID, err)
+		return common.ErrLeagueNotFound
+	}
+
+	// 2. Validate Status
+	if league.Status != enums.LeagueStatusRegularSeason && league.Status != enums.LeagueStatusPostDraft {
+		log.Printf("WARN: (DraftService: StartTransferPeriod) - League %s is not in a valid state to start a transfer window. Status: %s\n", leagueID, league.Status)
+		return fmt.Errorf("invalid league status to start transfer window: %s", league.Status)
+	}
+
+	// 3. Update Player Credits (if applicable)
+	if league.Format.AllowTransferCredits {
+		players, err := s.playerRepo.GetPlayersByLeague(leagueID)
+		if err != nil {
+			log.Printf("ERROR: (DraftService: StartTransferPeriod) - Failed to get players for league %s: %v\n", leagueID, err)
+			return common.ErrInternalService
+		}
+
+		for _, player := range players {
+			player.TransferCredits += league.Format.TransferCreditsPerWindow
+			if player.TransferCredits > league.Format.TransferCreditCap {
+				player.TransferCredits = league.Format.TransferCreditCap
+			}
+			if _, err := s.playerRepo.UpdatePlayer(&player); err != nil {
+				// Log the error but continue trying to update other players
+				log.Printf("ERROR: (DraftService: StartTransferPeriod) - Failed to update transfer credits for player %s: %v\n", player.ID, err)
+			}
+		}
+	}
+
+	// 4. Update League Status
+	league.Status = enums.LeagueStatusTransferWindow
+	now := time.Now()
+	league.Format.NextTransferWindowStart = &now // The window starts now
+
+	// 5. Schedule EndTransferPeriod
+	windowEndTime := now.Add(time.Duration(league.Format.TransferWindowDuration) * time.Minute)
+	endTask := &utils.ScheduledTask{
+		ID:        fmt.Sprintf("%d_%s", utils.TaskTypeTradingPeriodEnd, league.ID),
+		ExecuteAt: windowEndTime,
+		Type:      utils.TaskTypeTradingPeriodEnd,
+		Payload: utils.PayloadTransferPeriodEnd{
+			LeagueID: league.ID,
+		},
+	}
+	s.schedulerService.RegisterTask(endTask)
+
+	// 6. Save Changes
+	if _, err := s.leagueRepo.UpdateLeague(league); err != nil {
+		log.Printf("ERROR: (DraftService: StartTransferPeriod) - Failed to update league %s status: %v\n", leagueID, err)
+		// Note: If this fails, the task is scheduled but the league status isn't updated.
+		// This could be improved with a transactional approach if necessary.
+		return common.ErrInternalService
+	}
+
+	log.Printf("LOG: (DraftService: StartTransferPeriod) - Transfer window started for league %s.\n", leagueID)
+	return nil
+}
+
+// EndTransferPeriod concludes the transfer window for a league. It updates the league status
+// and schedules the next transfer window to begin.
+func (s *draftServiceImpl) EndTransferPeriod(leagueID uuid.UUID) error {
+	// 1. Fetch the League
+	league, err := s.leagueRepo.GetLeagueByID(leagueID)
+	if err != nil {
+		log.Printf("ERROR: (DraftService: EndTransferPeriod) - Failed to fetch league %s: %v\n", leagueID, err)
+		return common.ErrLeagueNotFound
+	}
+
+	// 2. Validate Status
+	if league.Status != enums.LeagueStatusTransferWindow {
+		log.Printf("WARN: (DraftService: EndTransferPeriod) - League %s is not in a transfer window. Status: %s\n", leagueID, league.Status)
+		return fmt.Errorf("invalid league status to end transfer window: %s", league.Status)
+	}
+
+	// 3. Update League Status
+	league.Status = enums.LeagueStatusRegularSeason
+
+	// 4. Schedule next StartTransferPeriod
+	if league.Format.TransferWindowFrequencyDays > 0 {
+		nextWindowStartTime := time.Now().AddDate(0, 0, league.Format.TransferWindowFrequencyDays)
+		league.Format.NextTransferWindowStart = &nextWindowStartTime
+
+		startTask := &utils.ScheduledTask{
+			ID:        fmt.Sprintf("%d_%s", utils.TaskTypeTradingPeriodStart, league.ID),
+			ExecuteAt: nextWindowStartTime,
+			Type:      utils.TaskTypeTradingPeriodStart,
+			Payload: utils.PayloadTransferPeriodStart{
+				LeagueID: league.ID,
+			},
+		}
+		s.schedulerService.RegisterTask(startTask)
+	} else {
+		// If frequency is 0 or less, don't schedule a next window.
+		league.Format.NextTransferWindowStart = nil
+	}
+
+	// 5. Save Changes
+	if _, err := s.leagueRepo.UpdateLeague(league); err != nil {
+		log.Printf("ERROR: (DraftService: EndTransferPeriod) - Failed to update league %s: %v\n", leagueID, err)
+		return common.ErrInternalService
+	}
+
+	log.Printf("LOG: (DraftService: EndTransferPeriod) - Transfer window ended for league %s.\n", leagueID)
+	return nil
 }
