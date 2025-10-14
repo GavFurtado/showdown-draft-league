@@ -317,8 +317,14 @@ func (s *draftServiceImpl) MakePick(currentUser *models.User, leagueID uuid.UUID
 
 	if draft.Status == enums.DraftStatusCompleted {
 		fmt.Printf("INFO: (DraftService: advanceDraftState) - Draft Action (for league %s) was successful and Draft was detected to be COMPLETED. DraftStatus updated to COMPLETED.\n", draft.LeagueID)
+		taskIDToDeregister := fmt.Sprintf("%d_%s", utils.TaskTypeDraftTurnTimeout, draft.LeagueID)
+		s.schedulerService.DeregisterTask(taskIDToDeregister)
 		return nil
 	}
+
+	// deregister prev task before registering new one
+	taskIDToDeregister := fmt.Sprintf("%d_%s", utils.TaskTypeDraftTurnTimeout, draft.LeagueID)
+	s.schedulerService.DeregisterTask(taskIDToDeregister)
 
 	// schedule the timer task if the draft hasn't completed
 	taskType := utils.TaskTypeDraftTurnTimeout
@@ -400,7 +406,7 @@ func (s *draftServiceImpl) SkipTurn(currentUser *models.User, leagueID uuid.UUID
 
 	// validate if this skip action is allowed
 	accumulatedPickCount := len(draft.PlayersWithAccumulatedPicks[player.ID])
-	_, skipsLeft, err := s.isSkipAllowed(league, false, int(playerRosterSize), accumulatedPickCount)
+	_, skipsLeft, err := s.isSkipAllowed(league, false, int(playerRosterSize), accumulatedPickCount, 0)
 	if err != nil {
 		log.Printf("LOG: (DraftService: SkipTurn) - Player %s cannot skip current turn's pick (%d) as it would violate minimum roster requirement.\nRoster size: %d, Min. required: %d, Skips left: %d.\n",
 			player.ID, draft.CurrentPickOnClock, playerRosterSize, league.MinPokemonPerPlayer, skipsLeft)
@@ -415,8 +421,13 @@ func (s *draftServiceImpl) SkipTurn(currentUser *models.User, leagueID uuid.UUID
 
 	if draft.Status == enums.DraftStatusCompleted {
 		fmt.Printf("INFO: (DraftService: advanceDraftState) - Draft Action (for league %s) was successful and Draft was detected to be COMPLETED. DraftStatus updated to COMPLETED.\n", draft.LeagueID)
+		taskIDToDeregister := fmt.Sprintf("%d_%s", utils.TaskTypeDraftTurnTimeout, draft.LeagueID)
+		s.schedulerService.DeregisterTask(taskIDToDeregister)
 		return nil
 	}
+
+	taskIDToDeregister := fmt.Sprintf("%d_%s", utils.TaskTypeDraftTurnTimeout, draft.LeagueID)
+	s.schedulerService.DeregisterTask(taskIDToDeregister)
 
 	// schedule the timer task if the draft hasn't completed
 	taskType := utils.TaskTypeDraftTurnTimeout
@@ -481,18 +492,18 @@ func (s *draftServiceImpl) AutoSkipTurn(playerID, leagueID uuid.UUID) error {
 		return err
 	}
 
-	allowed, _, _ := s.isSkipAllowed(league, false, int(playerRosterSize), len(accumulatedPicksForPlayer))
+	allowed, _, err := s.isSkipAllowed(league, false, int(playerRosterSize), len(accumulatedPicksForPlayer), 0)
 	if !allowed {
 		// common.ErrCannotSkipBelowMinimumRoster
 		log.Printf("ERROR: (DraftService: autoSkipTurn) - Cannot auto skip for player %s, league %s: %v\n", playerID, leagueID, err)
 		// set Draft to PAUSED status, awaiting manual league staff intervention
 		draft.Status = enums.DraftStatusPaused
-		draft, err := s.draftRepo.UpdateDraft(draft)
+		draft, err = s.draftRepo.UpdateDraft(draft)
 		if err != nil {
 			log.Printf("ERROR: (DraftService: autoSkipTurn) - Could not update draft %d status to PAUSED: %v\n", draft.ID, err)
 			return common.ErrInternalService
 		}
-		log.Printf("LOG: (DraftService: autoSkipTurn) - Draft for league %s paused. Awaiting Manual Intervention: %v\n", leagueID, err)
+		fmt.Printf("INFO: (DraftService: autoSkipTurn) - Draft for league %s paused. Awaiting Manual Intervention\n", leagueID)
 		return common.ErrDraftPausedForIntervention
 	}
 
@@ -508,6 +519,8 @@ func (s *draftServiceImpl) AutoSkipTurn(playerID, leagueID uuid.UUID) error {
 		return err
 	}
 
+	// AutoSkip shouldn't deregister the task because it is called by the schedulerService and thus
+	// already dereigsters it automatically
 	if draft.Status == enums.DraftStatusCompleted {
 		fmt.Printf("INFO: (DraftService: advanceDraftState) - Draft Action (for league %s) was successful and Draft was detected to be COMPLETED. DraftStatus updated to COMPLETED.\n", draft.LeagueID)
 		return nil
@@ -529,6 +542,7 @@ func (s *draftServiceImpl) AutoSkipTurn(playerID, leagueID uuid.UUID) error {
 	}
 
 	s.schedulerService.RegisterTask(task)
+	fmt.Printf("INFO: (DraftService: AutoSkipTurn) - Success\n")
 	// success
 	return nil
 }
@@ -766,7 +780,7 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 	// this ensures the player doesn't implicitly skip their current turn's slot
 	// if doing so would prevent them from meeting MinPokemonPerPlayer.
 	rosterSizeAfterThisRequest := playerCurrentRosterSize + requestedPickCount
-	_, skipsAllowed, err := s.isSkipAllowed(league, currentPickSlotUsed, rosterSizeAfterThisRequest, accumulatedPickCount)
+	_, skipsAllowed, err := s.isSkipAllowed(league, currentPickSlotUsed, rosterSizeAfterThisRequest, accumulatedPickCount, input.RequestedPickCount)
 	if err != nil {
 		log.Printf("LOG: (DraftService: validatePicksAndCheckCurrentPickSlotUsed) - Player %s cannot implicitly skip current turn's pick (%d) as it would violate minimum roster requirement. Roster after picks: %d, Min required: %d, Skips left: %d.\n",
 			playerID, draft.CurrentPickOnClock, rosterSizeAfterThisRequest, league.MinPokemonPerPlayer, skipsAllowed)
@@ -782,24 +796,51 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 // also returns number of skips allowed
 func (s *draftServiceImpl) isSkipAllowed(
 	league *models.League,
-	currentPickSlotUsed bool,
-	rosterSizeAfterThisRequest,
-	accumulatedPickCountForPlayer int,
+	currentPickSlotUsed bool, // true if the current "on-the-clock" pick slot was used in the request
+	playerCurrentRosterSize int, // The player's current active roster size (before any picks in this request)
+	accumulatedPickCountForPlayer int, // Accumulated picks *before* this turn's action
+	requestedPickCount int, // Number of picks the player is attempting to make in this request (0 for SkipTurn)
 ) (bool, int, error) {
-	// calc how many more picks are needed to meet the minimum roster size
-	picksNeededToMeetMin := int(math.Max(0, float64(league.MinPokemonPerPlayer-rosterSizeAfterThisRequest)))
-	totalAvailablePickSlots := accumulatedPickCountForPlayer + 1 // +1 for draft.CurrentPickOnClock
-	// calc how many "skips" the player can still afford before violating MinPokemonPerRoster
-	skipsAllowedBeforeMinViolation := totalAvailablePickSlots - picksNeededToMeetMin
+	// Calculate the total "skip budget" for the entire draft.
+	// This is the number of optional picks a player can forgo without violating the minimum roster size.
+	totalSkipBudget := league.MaxPokemonPerPlayer - league.MinPokemonPerPlayer // if <0, invalid configuration of league
+	totalSkipBudget = int(math.Max(0, float64(totalSkipBudget)))               // still doing the check though
 
-	// if skipsAllowedBeforeMinViolation is 0 or negative, it means the player MUST use a pick
-	// for their current turn's slot (or an accumulated pick if that's the only way to meet min).
-	// if they are trying to implicitly skip their current turn's slot (currentPickSlotUsed is false)
-	// when they have no skips left, then it's an invalid action.
-	if skipsAllowedBeforeMinViolation <= 0 && !currentPickSlotUsed {
+	// Determine the total number of pick slots available to the player for this turn's action.
+	// This includes any accumulated picks and the current "on-the-clock" pick if it's not being explicitly used.
+	availablePickSlotsThisTurn := accumulatedPickCountForPlayer
+	if !currentPickSlotUsed { // If current turn's pick is NOT used, it's an available slot
+		availablePickSlotsThisTurn++
+	}
+
+	// Calculate the number of "effective skips" this action represents.
+	// This is the number of available pick slots that are *not* being used.
+	// 1 if regular turn skip (auto or otherwise),
+	// `availablePickSlotsThisTurn` - `requestedPickCount` if implicit skip (MakePick)
+	var effectiveSkipsInThisAction int
+	if requestedPickCount > 0 { // This is a MakePick action
+		effectiveSkipsInThisAction = availablePickSlotsThisTurn - requestedPickCount
+	} else { // This is a SkipTurn or AutoSkipTurn action
+		effectiveSkipsInThisAction = 1 // One skip for the current turn
+	}
+	// Ensure effectiveSkipsInThisAction is not negative
+	// should be caught by other validation (and it is i'm pretty sure))
+	effectiveSkipsInThisAction = int(math.Max(0, float64(effectiveSkipsInThisAction)))
+
+	// The total number of skips the player will have made *after* this action.
+	totalSkipsAfterAction := accumulatedPickCountForPlayer + effectiveSkipsInThisAction
+
+	// Check if this action would exceed the total skip budget.
+	if totalSkipsAfterAction > totalSkipBudget {
 		return false, 0, common.ErrCannotSkipBelowMinimumRoster
 	}
-	return true, skipsAllowedBeforeMinViolation, nil
+
+	// If we reach here, the action is allowed.
+	// Calculate the remaining skips after this one.
+	remainingSkips := totalSkipBudget - totalSkipsAfterAction
+	remainingSkips = int(math.Max(0, float64(remainingSkips))) // Ensure >=0
+
+	return true, remainingSkips, nil
 }
 
 func (s *draftServiceImpl) getTotalCostForPicks(allRequestedPokemon []*models.LeaguePokemon) int {

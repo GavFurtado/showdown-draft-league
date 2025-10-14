@@ -40,7 +40,7 @@ func NewSchedulerService(
 	return &schedulerServiceImpl{
 		tasks:          tasks,
 		taskMap:        make(map[string]*u.ScheduledTask),
-		taskChan:       make(chan *u.ScheduledTask),
+		taskChan:       make(chan *u.ScheduledTask, 5),
 		rescheduleChan: make(chan struct{}, 1),
 		stopChan:       make(chan struct{}),
 		leagueRepo:     leagueRepo,
@@ -147,6 +147,7 @@ func (s *schedulerServiceImpl) Start() error {
 // RegisterTask adds a new task to the scheduler. It is called by other services
 // to schedule a future action, such as the timeout for a draft turn.
 func (s *schedulerServiceImpl) RegisterTask(task *u.ScheduledTask) {
+
 	// add to the map for quick lookup and deregistration
 	s.taskMap[task.ID] = task
 	// send to the channel for the scheduler loop to pick up
@@ -162,17 +163,16 @@ func (s *schedulerServiceImpl) runSchedulerLoop() {
 		now := time.Now()
 		nextTask, exists := s.tasks.Peek()
 
-		log.Printf("LOG: (SchedulerService: runSchedulerLoop) - here\n")
 		if exists { // if there was a task
 			if nextTask.ExecuteAt.Before(now) {
 				// task is overdue; execute now
-				log.Printf("LOG: (SchedulerService: runSchedulerLoop) - A task is (over)due. Executing now...\n")
+				log.Printf("LOG: (SchedulerService: runSchedulerLoop) - A task is overdue. Executing now...\n")
 				timer = time.NewTimer(0) // fire new timer immediately to execute task
 			} else {
 				// the task is not due yet; wait till due
 				waitDuration := nextTask.ExecuteAt.Sub(now)
 				timer = time.NewTimer(waitDuration)
-				log.Printf("LOG: (SchedulerService: runSchedulerLoop) - No tasks are due. Waiting: %s\n", waitDuration)
+				log.Printf("LOG: (SchedulerService: runSchedulerLoop) - Task(s) are scheduled but not due. Task next due in: %s\n", waitDuration)
 			}
 		} else {
 			// no tasks on the priority queue, wait for a task
