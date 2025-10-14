@@ -40,5 +40,5 @@ type Controllers struct {
 	PokemonSpeciesController controllers.PokemonSpeciesController
 	LeaguePokemonController  controllers.LeaguePokemonController
 	DraftedPokemonController controllers.DraftedPokemonController
-	DraftController          *controllers.DraftController
+	DraftController          controllers.DraftController
 }

@@ -5,8 +5,9 @@ import (
 	"testing"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/repositories"
+	mock_repositories "github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/google/uuid"
@@ -19,12 +20,16 @@ func TestDraftedPokemonService_ReleasePokemon(t *testing.T) {
 	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
 	mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
 	mockUserRepo := new(mock_repositories.MockUserRepository)
+	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
+	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
 
 	service := services.NewDraftedPokemonService(
 		mockDraftedPokemonRepo,
 		mockUserRepo,
 		mockLeagueRepo,
 		mockPlayerRepo,
+		mockPokemonSpeciesRepo,
+		mockLeaguePokemonRepo,
 	)
 
 	testDraftedPokemonID := uuid.New()
@@ -104,7 +109,7 @@ func TestDraftedPokemonService_ReleasePokemon(t *testing.T) {
 
 		err := service.ReleasePokemon(currentUser, testDraftedPokemonID)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "pokemon is already released")
+		assert.Equal(t, common.ErrPokemonAlreadyReleased, err)
 
 		mockDraftedPokemonRepo.AssertExpectations(t)
 		mockPlayerRepo.AssertExpectations(t)
@@ -310,16 +315,19 @@ func TestDraftedPokemonService_GetDraftedPokemonByID(t *testing.T) {
 	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
 	mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
 	mockUserRepo := new(mock_repositories.MockUserRepository)
+	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
+	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
 
 	service := services.NewDraftedPokemonService(
 		mockDraftedPokemonRepo,
 		mockUserRepo,
 		mockLeagueRepo,
 		mockPlayerRepo,
+		mockPokemonSpeciesRepo,
+		mockLeaguePokemonRepo,
 	)
 
 	testID := uuid.New()
-	currentUser := &models.User{ID: uuid.New(), Role: "user"}
 
 	t.Run("Successfully gets drafted pokemon by ID", func(t *testing.T) {
 		expectedPokemon := &models.DraftedPokemon{
@@ -330,7 +338,7 @@ func TestDraftedPokemonService_GetDraftedPokemonByID(t *testing.T) {
 
 		mockDraftedPokemonRepo.On("GetDraftedPokemonByID", testID).Return(expectedPokemon, nil).Once()
 
-		result, err := service.GetDraftedPokemonByID(currentUser, testID)
+		result, err := service.GetDraftedPokemonByID(testID)
 		assert.NoError(t, err)
 		assert.Equal(t, expectedPokemon, result)
 
@@ -340,9 +348,9 @@ func TestDraftedPokemonService_GetDraftedPokemonByID(t *testing.T) {
 	t.Run("Fails if drafted pokemon not found", func(t *testing.T) {
 		mockDraftedPokemonRepo.On("GetDraftedPokemonByID", testID).Return((*models.DraftedPokemon)(nil), gorm.ErrRecordNotFound).Once()
 
-		result, err := service.GetDraftedPokemonByID(currentUser, testID)
+		result, err := service.GetDraftedPokemonByID(testID)
 		assert.Nil(t, result)
-		assert.ErrorIs(t, err, common.ErrPokemonSpeciesNotFound)
+		assert.ErrorIs(t, err, common.ErrDraftedPokemonNotFound)
 
 		mockDraftedPokemonRepo.AssertExpectations(t)
 	})
@@ -351,7 +359,7 @@ func TestDraftedPokemonService_GetDraftedPokemonByID(t *testing.T) {
 		repoErr := errors.New("database connection failed")
 		mockDraftedPokemonRepo.On("GetDraftedPokemonByID", testID).Return((*models.DraftedPokemon)(nil), repoErr).Once()
 
-		result, err := service.GetDraftedPokemonByID(currentUser, testID)
+		result, err := service.GetDraftedPokemonByID(testID)
 		assert.Nil(t, result)
 		assert.ErrorIs(t, err, common.ErrInternalService)
 
@@ -364,16 +372,19 @@ func TestDraftedPokemonService_GetDraftedPokemonByPlayer(t *testing.T) {
 	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
 	mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
 	mockUserRepo := new(mock_repositories.MockUserRepository)
+	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
+	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
 
 	service := services.NewDraftedPokemonService(
 		mockDraftedPokemonRepo,
 		mockUserRepo,
 		mockLeagueRepo,
 		mockPlayerRepo,
+		mockPokemonSpeciesRepo,
+		mockLeaguePokemonRepo,
 	)
 
 	testPlayerID := uuid.New()
-	currentUser := &models.User{ID: uuid.New(), Role: "user"}
 
 	t.Run("Successfully gets drafted pokemon by player", func(t *testing.T) {
 		targetPlayer := &models.Player{
@@ -389,7 +400,7 @@ func TestDraftedPokemonService_GetDraftedPokemonByPlayer(t *testing.T) {
 		mockPlayerRepo.On("GetPlayerByID", testPlayerID).Return(targetPlayer, nil).Once()
 		mockDraftedPokemonRepo.On("GetDraftedPokemonByPlayer", testPlayerID).Return(expectedPokemon, nil).Once()
 
-		result, err := service.GetDraftedPokemonByPlayer(currentUser, testPlayerID)
+		result, err := service.GetDraftedPokemonByPlayer(testPlayerID)
 		assert.NoError(t, err)
 		assert.Equal(t, expectedPokemon, result)
 
@@ -400,7 +411,7 @@ func TestDraftedPokemonService_GetDraftedPokemonByPlayer(t *testing.T) {
 	t.Run("Fails if player not found", func(t *testing.T) {
 		mockPlayerRepo.On("GetPlayerByID", testPlayerID).Return((*models.Player)(nil), gorm.ErrRecordNotFound).Once()
 
-		result, err := service.GetDraftedPokemonByPlayer(currentUser, testPlayerID)
+		result, err := service.GetDraftedPokemonByPlayer(testPlayerID)
 		assert.Nil(t, result)
 		assert.ErrorIs(t, err, common.ErrPlayerNotFound)
 
@@ -411,7 +422,7 @@ func TestDraftedPokemonService_GetDraftedPokemonByPlayer(t *testing.T) {
 		repoErr := errors.New("database error")
 		mockPlayerRepo.On("GetPlayerByID", testPlayerID).Return((*models.Player)(nil), repoErr).Once()
 
-		result, err := service.GetDraftedPokemonByPlayer(currentUser, testPlayerID)
+		result, err := service.GetDraftedPokemonByPlayer(testPlayerID)
 		assert.Nil(t, result)
 		assert.ErrorIs(t, err, common.ErrInternalService)
 
@@ -429,7 +440,7 @@ func TestDraftedPokemonService_GetDraftedPokemonByPlayer(t *testing.T) {
 		mockPlayerRepo.On("GetPlayerByID", testPlayerID).Return(targetPlayer, nil).Once()
 		mockDraftedPokemonRepo.On("GetDraftedPokemonByPlayer", testPlayerID).Return(([]models.DraftedPokemon)(nil), repoErr).Once()
 
-		result, err := service.GetDraftedPokemonByPlayer(currentUser, testPlayerID)
+		result, err := service.GetDraftedPokemonByPlayer(testPlayerID)
 		assert.Nil(t, result)
 		assert.ErrorIs(t, err, common.ErrInternalService)
 
@@ -443,22 +454,26 @@ func TestDraftedPokemonService_IsPokemonDrafted(t *testing.T) {
 	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
 	mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
 	mockUserRepo := new(mock_repositories.MockUserRepository)
+	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
+	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
 
 	service := services.NewDraftedPokemonService(
 		mockDraftedPokemonRepo,
 		mockUserRepo,
 		mockLeagueRepo,
 		mockPlayerRepo,
+		mockPokemonSpeciesRepo,
+		mockLeaguePokemonRepo,
 	)
 
 	testLeagueID := uuid.New()
-	testPokemonSpeciesID := uuid.New()
-	currentUser := &models.User{ID: uuid.New(), Role: "user"}
+	testPokemonSpeciesID := int64(25)
 
 	t.Run("Returns true when pokemon is drafted", func(t *testing.T) {
+		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", testPokemonSpeciesID).Return(&models.PokemonSpecies{}, nil).Once()
 		mockDraftedPokemonRepo.On("IsPokemonDrafted", testLeagueID, testPokemonSpeciesID).Return(true, nil).Once()
 
-		result, err := service.IsPokemonDrafted(currentUser, testLeagueID, testPokemonSpeciesID)
+		result, err := service.IsPokemonDrafted(testLeagueID, testPokemonSpeciesID)
 		assert.NoError(t, err)
 		assert.True(t, result)
 
@@ -466,9 +481,10 @@ func TestDraftedPokemonService_IsPokemonDrafted(t *testing.T) {
 	})
 
 	t.Run("Returns false when pokemon is not drafted", func(t *testing.T) {
+		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", testPokemonSpeciesID).Return(&models.PokemonSpecies{}, nil).Once()
 		mockDraftedPokemonRepo.On("IsPokemonDrafted", testLeagueID, testPokemonSpeciesID).Return(false, nil).Once()
 
-		result, err := service.IsPokemonDrafted(currentUser, testLeagueID, testPokemonSpeciesID)
+		result, err := service.IsPokemonDrafted(testLeagueID, testPokemonSpeciesID)
 		assert.NoError(t, err)
 		assert.False(t, result)
 
@@ -477,13 +493,24 @@ func TestDraftedPokemonService_IsPokemonDrafted(t *testing.T) {
 
 	t.Run("Fails if repository returns error", func(t *testing.T) {
 		repoErr := errors.New("database error")
+		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", testPokemonSpeciesID).Return(&models.PokemonSpecies{}, nil).Once()
 		mockDraftedPokemonRepo.On("IsPokemonDrafted", testLeagueID, testPokemonSpeciesID).Return(false, repoErr).Once()
 
-		result, err := service.IsPokemonDrafted(currentUser, testLeagueID, testPokemonSpeciesID)
+		result, err := service.IsPokemonDrafted(testLeagueID, testPokemonSpeciesID)
 		assert.False(t, result)
 		assert.ErrorIs(t, err, common.ErrInternalService)
 
 		mockDraftedPokemonRepo.AssertExpectations(t)
+	})
+
+	t.Run("Fails if pokemon species not found", func(t *testing.T) {
+		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", testPokemonSpeciesID).Return(nil, gorm.ErrRecordNotFound).Once()
+
+		result, err := service.IsPokemonDrafted(testLeagueID, testPokemonSpeciesID)
+		assert.False(t, result)
+		assert.ErrorIs(t, err, common.ErrPokemonSpeciesNotFound)
+
+		mockPokemonSpeciesRepo.AssertExpectations(t)
 	})
 }
 
@@ -492,22 +519,27 @@ func TestDraftedPokemonService_GetNextDraftPickNumber(t *testing.T) {
 	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
 	mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
 	mockUserRepo := new(mock_repositories.MockUserRepository)
+	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
+	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
 
 	service := services.NewDraftedPokemonService(
 		mockDraftedPokemonRepo,
 		mockUserRepo,
 		mockLeagueRepo,
 		mockPlayerRepo,
+		mockPokemonSpeciesRepo,
+		mockLeaguePokemonRepo,
 	)
 
 	testLeagueID := uuid.New()
-	currentUser := &models.User{ID: uuid.New(), Role: "user"}
 
 	t.Run("Successfully gets next draft pick number", func(t *testing.T) {
 		expectedPickNumber := 42
+		mockLeagueRepo.On("GetLeagueStatus", testLeagueID).Return(enums.LeagueStatusDrafting, nil).Once()
 		mockDraftedPokemonRepo.On("GetNextDraftPickNumber", testLeagueID).Return(expectedPickNumber, nil).Once()
 
-		result, err := service.GetNextDraftPickNumber(currentUser, testLeagueID)
+		// actual method call
+		result, err := service.GetNextDraftPickNumber(testLeagueID)
 		assert.NoError(t, err)
 		assert.Equal(t, expectedPickNumber, result)
 
@@ -516,13 +548,24 @@ func TestDraftedPokemonService_GetNextDraftPickNumber(t *testing.T) {
 
 	t.Run("Fails if repository returns error", func(t *testing.T) {
 		repoErr := errors.New("database error")
+		mockLeagueRepo.On("GetLeagueStatus", testLeagueID).Return(enums.LeagueStatusDrafting, nil).Once()
 		mockDraftedPokemonRepo.On("GetNextDraftPickNumber", testLeagueID).Return(0, repoErr).Once()
 
-		result, err := service.GetNextDraftPickNumber(currentUser, testLeagueID)
+		result, err := service.GetNextDraftPickNumber(testLeagueID)
 		assert.Equal(t, 0, result)
 		assert.ErrorIs(t, err, common.ErrInternalService)
 
 		mockDraftedPokemonRepo.AssertExpectations(t)
+	})
+
+	t.Run("Fails if league is not in drafting state", func(t *testing.T) {
+		mockLeagueRepo.On("GetLeagueStatus", testLeagueID).Return(enums.LeagueStatusPlayoffs, nil).Once()
+
+		result, err := service.GetNextDraftPickNumber(testLeagueID)
+		assert.Equal(t, 0, result)
+		assert.ErrorIs(t, err, common.ErrInvalidState)
+
+		mockLeagueRepo.AssertExpectations(t)
 	})
 }
 
@@ -531,12 +574,16 @@ func TestDraftedPokemonService_GetDraftedPokemonCountByPlayer(t *testing.T) {
 	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
 	mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
 	mockUserRepo := new(mock_repositories.MockUserRepository)
+	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
+	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
 
 	service := services.NewDraftedPokemonService(
 		mockDraftedPokemonRepo,
 		mockUserRepo,
 		mockLeagueRepo,
 		mockPlayerRepo,
+		mockPokemonSpeciesRepo,
+		mockLeaguePokemonRepo,
 	)
 
 	testPlayerID := uuid.New()
@@ -570,12 +617,16 @@ func TestDraftedPokemonService_DeleteDraftedPokemon(t *testing.T) {
 	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
 	mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
 	mockUserRepo := new(mock_repositories.MockUserRepository)
+	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
+	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
 
 	service := services.NewDraftedPokemonService(
 		mockDraftedPokemonRepo,
 		mockUserRepo,
 		mockLeagueRepo,
 		mockPlayerRepo,
+		mockPokemonSpeciesRepo,
+		mockLeaguePokemonRepo,
 	)
 
 	testDraftedPokemonID := uuid.New()
@@ -616,16 +667,19 @@ func TestDraftedPokemonService_SimpleGetterMethods(t *testing.T) {
 	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
 	mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
 	mockUserRepo := new(mock_repositories.MockUserRepository)
+	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
+	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
 
 	service := services.NewDraftedPokemonService(
 		mockDraftedPokemonRepo,
 		mockUserRepo,
 		mockLeagueRepo,
 		mockPlayerRepo,
+		mockPokemonSpeciesRepo,
+		mockLeaguePokemonRepo,
 	)
 
 	testLeagueID := uuid.New()
-	currentUser := &models.User{ID: uuid.New(), Role: "user"}
 	expectedPokemon := []models.DraftedPokemon{
 		{ID: uuid.New(), LeagueID: testLeagueID},
 		{ID: uuid.New(), LeagueID: testLeagueID},
@@ -634,7 +688,7 @@ func TestDraftedPokemonService_SimpleGetterMethods(t *testing.T) {
 	t.Run("GetDraftedPokemonByLeague success", func(t *testing.T) {
 		mockDraftedPokemonRepo.On("GetDraftedPokemonByLeague", testLeagueID).Return(expectedPokemon, nil).Once()
 
-		result, err := service.GetDraftedPokemonByLeague(currentUser, testLeagueID)
+		result, err := service.GetDraftedPokemonByLeague(testLeagueID)
 		assert.NoError(t, err)
 		assert.Equal(t, expectedPokemon, result)
 
@@ -645,7 +699,7 @@ func TestDraftedPokemonService_SimpleGetterMethods(t *testing.T) {
 		repoErr := errors.New("database error")
 		mockDraftedPokemonRepo.On("GetDraftedPokemonByLeague", testLeagueID).Return(([]models.DraftedPokemon)(nil), repoErr).Once()
 
-		result, err := service.GetDraftedPokemonByLeague(currentUser, testLeagueID)
+		result, err := service.GetDraftedPokemonByLeague(testLeagueID)
 		assert.Nil(t, result)
 		assert.ErrorIs(t, err, common.ErrInternalService)
 
@@ -655,7 +709,7 @@ func TestDraftedPokemonService_SimpleGetterMethods(t *testing.T) {
 	t.Run("GetActiveDraftedPokemonByLeague success", func(t *testing.T) {
 		mockDraftedPokemonRepo.On("GetActiveDraftedPokemonByLeague", testLeagueID).Return(expectedPokemon, nil).Once()
 
-		result, err := service.GetActiveDraftedPokemonByLeague(currentUser, testLeagueID)
+		result, err := service.GetActiveDraftedPokemonByLeague(testLeagueID)
 		assert.NoError(t, err)
 		assert.Equal(t, expectedPokemon, result)
 
@@ -665,7 +719,7 @@ func TestDraftedPokemonService_SimpleGetterMethods(t *testing.T) {
 	t.Run("GetReleasedPokemonByLeague success", func(t *testing.T) {
 		mockDraftedPokemonRepo.On("GetReleasedPokemonByLeague", testLeagueID).Return(expectedPokemon, nil).Once()
 
-		result, err := service.GetReleasedPokemonByLeague(currentUser, testLeagueID)
+		result, err := service.GetReleasedPokemonByLeague(testLeagueID)
 		assert.NoError(t, err)
 		assert.Equal(t, expectedPokemon, result)
 
@@ -675,7 +729,7 @@ func TestDraftedPokemonService_SimpleGetterMethods(t *testing.T) {
 	t.Run("GetDraftHistory success", func(t *testing.T) {
 		mockDraftedPokemonRepo.On("GetDraftHistory", testLeagueID).Return(expectedPokemon, nil).Once()
 
-		result, err := service.GetDraftHistory(currentUser, testLeagueID)
+		result, err := service.GetDraftHistory(testLeagueID)
 		assert.NoError(t, err)
 		assert.Equal(t, expectedPokemon, result)
 

@@ -68,7 +68,7 @@ func main() {
 	// Initialize Repositories, Servies and Controllers
 	appRepositories := app.NewRepositories(db)
 	appServices := app.NewServices(appRepositories, cfg, discordOauthConfig)
-	appControllers := app.NewControllers(appServices, cfg, discordOauthConfig)
+	appControllers := app.NewControllers(appServices, appRepositories, cfg, discordOauthConfig)
 
 	// Start the scheduler
 	if err := appServices.SchedulerService.Start(); err != nil {

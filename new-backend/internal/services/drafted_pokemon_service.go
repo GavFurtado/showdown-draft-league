@@ -144,18 +144,6 @@ func (s *draftedPokemonServiceImpl) PickupFreeAgent(currentUser *models.User, le
 		return common.ErrConflict // Pokemon not available
 	}
 
-	// In a transaction
-	tx := s.draftedPokemonRepo.Begin()
-	if tx.Error != nil {
-		return common.ErrInternalService
-	}
-
-	player.TransferCredits--
-	if _, err = s.playerRepo.WithTx(tx).UpdatePlayer(player); err != nil {
-		tx.Rollback()
-		return common.ErrInternalService
-	}
-
 	newDraftedPokemon := &models.DraftedPokemon{
 		LeagueID:         leaguePokemon.LeagueID,
 		PlayerID:         player.ID,
@@ -163,18 +151,14 @@ func (s *draftedPokemonServiceImpl) PickupFreeAgent(currentUser *models.User, le
 		LeaguePokemonID:  leaguePokemon.ID,
 		IsReleased:       false,
 	}
-	if _, err = s.draftedPokemonRepo.WithTx(tx).CreateDraftedPokemon(newDraftedPokemon); err != nil {
-		tx.Rollback()
+
+	// Call the new repository transaction method
+	if err := s.draftedPokemonRepo.PickupFreeAgentTransaction(player, newDraftedPokemon, leaguePokemon); err != nil {
+		log.Printf("LOG: (Error: DraftedPokemonService.PickupFreeAgent) - Failed to complete pickup free agent transaction: %v", err)
 		return common.ErrInternalService
 	}
 
-	leaguePokemon.IsAvailable = false
-	if _, err = s.leaguePokemonRepo.WithTx(tx).UpdateLeaguePokemon(leaguePokemon); err != nil {
-		tx.Rollback()
-		return common.ErrInternalService
-	}
-
-	return tx.Commit().Error
+	return nil
 }
 
 // GetDraftedPokemonByID gets drafted Pokemon by ID with relationships.
@@ -434,3 +418,4 @@ func (s *draftedPokemonServiceImpl) DeleteDraftedPokemon(currentUser *models.Use
 
 	return nil
 }
+

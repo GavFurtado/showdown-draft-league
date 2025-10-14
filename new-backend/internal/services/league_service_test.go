@@ -2,6 +2,7 @@ package services_test
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -20,16 +21,16 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
 	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
 	mockDraftedPokemonRepo := new(mock_repositories.MockDraftedPokemonRepository)
-	// mockDraftRepo := new(mock_repositories.MockDraftRepository) unused for tests
-	// mockGameRepo := new(mock_repositories.MockGameRepository)
+	mockDraftRepo := new(mock_repositories.MockDraftRepository)
+	mockGameRepo := new(mock_repositories.MockGameRepository)
 
 	service := services.NewLeagueService(
 		mockLeagueRepo,
 		mockPlayerRepo,
 		mockLeaguePokemonRepo,
 		mockDraftedPokemonRepo,
-		nil, // mockDraftRepo - not used in these tests
-		nil, // mockGameRepo - not used in these tests
+		mockDraftRepo,
+		mockGameRepo,
 	)
 
 	testUserID := uuid.New()
@@ -64,22 +65,21 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 			StartingDraftPoints: input.StartingDraftPoints,
 			StartDate:           input.StartDate,
 			Format:              input.Format,
-			// Status set by db
 		}
 		createdLeague := *expectedLeague
-		createdLeague.ID = uuid.New() // Simulate DB assigning ID
+		createdLeague.ID = uuid.New()
 
 		expectedOwnerPlayer := &models.Player{
 			UserID:          testUserID,
 			LeagueID:        createdLeague.ID,
 			InLeagueName:    "League Owner",
-			TeamName:        "Test League's Team",
+			TeamName:        fmt.Sprintf("%s's Team", input.Name),
 			IsParticipating: false,
 			DraftPoints:     1000,
 			Role:            rbac.PRoleOwner,
 		}
 		createdPlayer := *expectedOwnerPlayer
-		createdPlayer.ID = uuid.New() // Simulate DB assigning ID
+		createdPlayer.ID = uuid.New()
 
 		mockLeagueRepo.On("GetLeaguesCountWhereOwner", testUserID).Return(int64(0), nil).Once()
 		mockLeagueRepo.On("CreateLeague", expectedLeague).Return(&createdLeague, nil).Once()
@@ -144,7 +144,6 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 			StartingDraftPoints: input.StartingDraftPoints,
 			StartDate:           input.StartDate,
 			Format:              input.Format,
-			// Status set by db
 		}
 		createdLeague := *expectedLeague
 		createdLeague.ID = uuid.New()
@@ -169,14 +168,16 @@ func TestLeagueService_GetLeagueByIDForUser(t *testing.T) {
 	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
 	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
 	mockDraftedPokemonRepo := new(mock_repositories.MockDraftedPokemonRepository)
+	mockDraftRepo := new(mock_repositories.MockDraftRepository)
+	mockGameRepo := new(mock_repositories.MockGameRepository)
 
 	service := services.NewLeagueService(
 		mockLeagueRepo,
 		mockPlayerRepo,
 		mockLeaguePokemonRepo,
 		mockDraftedPokemonRepo,
-		nil, // mockDraftRepo - not used in these tests
-		nil, // mockGameRepo - not used in these tests
+		mockDraftRepo,
+		mockGameRepo,
 	)
 
 	testUserID := uuid.New()
@@ -220,16 +221,16 @@ func TestLeagueService_GetLeaguesByCommissioner(t *testing.T) {
 	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
 	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
 	mockDraftedPokemonRepo := new(mock_repositories.MockDraftedPokemonRepository)
-	// mockDraftRepo := new(mock_repositories.MockDraftRepository)
-	// mockGameRepo := new(mock_repositories.MockGameRepository)
+	mockDraftRepo := new(mock_repositories.MockDraftRepository)
+	mockGameRepo := new(mock_repositories.MockGameRepository)
 
 	service := services.NewLeagueService(
 		mockLeagueRepo,
 		mockPlayerRepo,
 		mockLeaguePokemonRepo,
 		mockDraftedPokemonRepo,
-		nil,
-		nil,
+		mockDraftRepo,
+		mockGameRepo,
 	)
 
 	testUserID := uuid.New()
@@ -294,16 +295,16 @@ func TestLeagueService_GetLeaguesByUser(t *testing.T) {
 	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
 	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
 	mockDraftedPokemonRepo := new(mock_repositories.MockDraftedPokemonRepository)
-	// mockDraftRepo := new(mock_repositories.MockDraftRepository)
-	// mockGameRepo := new(mock_repositories.MockGameRepository)
+	mockDraftRepo := new(mock_repositories.MockDraftRepository)
+	mockGameRepo := new(mock_repositories.MockGameRepository)
 
 	service := services.NewLeagueService(
 		mockLeagueRepo,
 		mockPlayerRepo,
 		mockLeaguePokemonRepo,
 		mockDraftedPokemonRepo,
-		nil,
-		nil,
+		mockDraftRepo,
+		mockGameRepo,
 	)
 
 	testUserID := uuid.New()

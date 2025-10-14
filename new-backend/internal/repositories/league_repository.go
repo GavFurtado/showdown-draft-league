@@ -137,11 +137,11 @@ func (r *leagueRepositoryImpl) GetLeaguesByUser(userID uuid.UUID) ([]models.Leag
 	return leagues, nil
 }
 
-// updates a league (name, start_date, ruleset_id, status, max_pokemon_per_player, free_agents)
+// updates a league
 func (r *leagueRepositoryImpl) UpdateLeague(league *models.League) (*models.League, error) {
 	err := r.db.Select(
-		"name", "start_date", "end_date", "ruleset_id", "status",
-		"max_pokemon_per_player", "allow_weekly_free_agents", "updated_at",
+		"name", "start_date", "end_date", "ruleset_description", "status",
+		"max_pokemon_per_player", "min_pokemon_per_player", "starting_draft_points", "format", "updated_at",
 	).Updates(league).Error
 
 	if err != nil {
@@ -182,15 +182,11 @@ func (r *leagueRepositoryImpl) DeleteLeague(leagueId uuid.UUID) error {
 func (r *leagueRepositoryImpl) GetLeagueWithFullDetails(id uuid.UUID) (*models.League, error) {
 	var league models.League
 
-	// Removed Preload("CommissionerUser") as it no longer exists
 	err := r.db.
 		Preload("Players").
 		Preload("Players.User").
-		Preload("Players.Roster").
-		Preload("Players.Roster.DraftedPokemon").
-		Preload("Players.Roster.DraftedPokemon.PokemonSpecies").
-		Preload("DefinedPokemon").
-		Preload("DefinedPokemon.PokemonSpecies").
+		Preload("LeaguePokemon").
+		Preload("LeaguePokemon.PokemonSpecies").
 		First(&league, "id = ?", id).Error
 
 	if err != nil {

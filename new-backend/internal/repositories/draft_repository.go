@@ -17,7 +17,7 @@ type DraftRepository interface {
 	// creates a new draft record.
 	CreateDraft(draft *models.Draft) error
 	// updates an existing draft record.
-	UpdateDraft(draft *models.Draft) error
+	UpdateDraft(draft *models.Draft) (*models.Draft, error)
 	// retrieves all drafts with a specific status.
 	GetAllDraftsByStatus(status enums.DraftStatus) ([]models.Draft, error)
 }
@@ -48,8 +48,12 @@ func (r *draftRepositoryImpl) GetDraftByLeagueID(leagueID uuid.UUID) (*models.Dr
 }
 
 // updates an existing draft record.
-func (r *draftRepositoryImpl) UpdateDraft(draft *models.Draft) error {
-	return r.db.Save(draft).Error
+func (r *draftRepositoryImpl) UpdateDraft(draft *models.Draft) (*models.Draft, error) {
+	err := r.db.Save(draft).Error
+	if err != nil {
+		return nil, err
+	}
+	return r.GetDraftByLeagueID(draft.LeagueID)
 }
 
 // retrieves all drafts with a specific status.

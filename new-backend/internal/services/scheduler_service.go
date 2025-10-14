@@ -151,9 +151,7 @@ func (s *schedulerServiceImpl) RegisterTask(task *u.ScheduledTask) {
 	s.taskMap[task.ID] = task
 	// send to the channel for the scheduler loop to pick up
 	s.taskChan <- task
-	log.Printf("LOG: (SchedulerService: RegisterTask) - Task registered: %s (Type: %d, ExecuteAt: %s)\n", task.ID, task.Type,
-		task.ExecuteAt)
-
+	log.Printf("LOG: (SchedulerService: RegisterTask) - Task registered: %s (Type: %s, ExecuteAt: %s)\n", task.ID, task.Type, task.ExecuteAt)
 }
 
 // runSchedulerLoop is the main loop of the scheduler that processes tasks.
@@ -164,14 +162,17 @@ func (s *schedulerServiceImpl) runSchedulerLoop() {
 		now := time.Now()
 		nextTask, exists := s.tasks.Peek()
 
+		log.Printf("LOG: (SchedulerService: runSchedulerLoop) - here\n")
 		if exists { // if there was a task
 			if nextTask.ExecuteAt.Before(now) {
 				// task is overdue; execute now
+				log.Printf("LOG: (SchedulerService: runSchedulerLoop) - A task is (over)due. Executing now...\n")
 				timer = time.NewTimer(0) // fire new timer immediately to execute task
 			} else {
 				// the task is not due yet; wait till due
 				waitDuration := nextTask.ExecuteAt.Sub(now)
 				timer = time.NewTimer(waitDuration)
+				log.Printf("LOG: (SchedulerService: runSchedulerLoop) - No tasks are due. Waiting: %s\n", waitDuration)
 			}
 		} else {
 			// no tasks on the priority queue, wait for a task

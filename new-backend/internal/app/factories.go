@@ -66,7 +66,7 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 			repos.LeagueRepository,
 			repos.PlayerRepository,
 			repos.PokemonSpeciesRepository,
-			repos.LeaguePokemonRepository, // Added missing argument
+			repos.LeaguePokemonRepository,
 		),
 		PokemonSpeciesService: services.NewPokemonSpeciesService(repos.PokemonSpeciesRepository),
 		SchedulerService:      schedulerService,
@@ -74,14 +74,15 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 	}
 }
 
-func NewControllers(services *Services, cfg *config.Config, discordOauthConfig *oauth2.Config) *Controllers {
+func NewControllers(services *Services, repos *Repositories, cfg *config.Config, discordOauthConfig *oauth2.Config) *Controllers {
 	return &Controllers{
 		AuthController:           *controllers.NewAuthController(services.AuthService, cfg, discordOauthConfig),
 		LeagueController:         controllers.NewLeagueController(services.LeagueService),
 		PlayerController:         controllers.NewPlayerController(services.PlayerService),
 		UserController:           controllers.NewUserController(services.UserService),
 		PokemonSpeciesController: controllers.NewPokemonSpeciesController(services.PokemonSpeciesService),
-		 LeaguePokemonController:  controllers.NewLeaguePokemonSpeciesController(services.LeaguePokemonService),
-				DraftedPokemonController: controllers.NewDraftedPokemonController(services.DraftedPokemonService),
-				DraftController:          controllers.NewDraftController(services.DraftService, services.RBACService),
-			}}
+		LeaguePokemonController:  controllers.NewLeaguePokemonSpeciesController(services.LeaguePokemonService),
+		DraftedPokemonController: controllers.NewDraftedPokemonController(services.DraftedPokemonService),
+		DraftController:          controllers.NewDraftController(services.DraftService),
+	}
+}

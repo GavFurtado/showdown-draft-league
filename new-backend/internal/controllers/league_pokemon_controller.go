@@ -154,7 +154,7 @@ func (c *leaguePokemonControllerImpl) UpdateLeaguePokemon(ctx *gin.Context) {
 func (c *leaguePokemonControllerImpl) GetAllPokemonByLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
-		log.Printf("LOG: (LeaguePokemonController: BatchCreatePokemonForLeague) - error: no user in context\n")
+		log.Printf("LOG: (LeaguePokemonController: GetAllPokemonByLeague) - error: no user in context\n")
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": common.ErrNoUserInContext.Error()})
 		return
 	}
@@ -166,7 +166,7 @@ func (c *leaguePokemonControllerImpl) GetAllPokemonByLeague(ctx *gin.Context) {
 		return
 	}
 
-	fmt.Printf("INFO: (Controller: UpdateLeaguePokemon) - Received valid GetAllPokemonByLeague request (user %s).\n", currentUser.ID)
+	fmt.Printf("INFO: (Controller: GetAllPokemonByLeague) - Received valid GetAllPokemonByLeague request (user %s).\n", currentUser.ID)
 	leaguePokemon, err := c.leaguePokemonService.GetAllPokemonInLeague(currentUser, leagueID)
 	if err != nil {
 		switch err {

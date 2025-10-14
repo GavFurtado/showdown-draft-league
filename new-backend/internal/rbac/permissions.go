@@ -6,7 +6,9 @@ type Permission string
 // Define permission constants
 const (
 	// League Permissions
-	PermissionCreateLeague Permission = "create:league" // redundant. League is created then Players. Creating a League is tied to User and not a Player or their role. Kept in to understand the roles (ig)
+	// PermissionCreateLeague is redundant; League is created then Players
+	//	reating a League is tied to User and not a Player or their role. Kept in to understand the roles (ig)
+	PermissionCreateLeague Permission = "create:league"
 	PermissionReadLeague   Permission = "read:league"
 	PermissionUpdateLeague Permission = "update:league"
 	PermissionDeleteLeague Permission = "delete:league"
@@ -84,6 +86,7 @@ func init() {
 		PermissionReadPokemonSpecies,
 		PermissionReleaseDraftedPokemon,
 		PermissionUpdatePlayer,
+		PermissionCreateDraftedPokemon,
 	)
 
 	// Moderator permissions inherit from Member and add more
@@ -95,7 +98,6 @@ func init() {
 		PermissionUpdateDraftedPokemon,
 		PermissionUpdateGame,
 		PermissionCreatePlayer,
-		PermissionCreateDraftedPokemon,
 		PermissionCreateLeaguePokemon,
 		PermissionCreateGame,
 		PermissionDeleteGame,

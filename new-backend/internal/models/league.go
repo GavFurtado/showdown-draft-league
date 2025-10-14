@@ -1,6 +1,9 @@
 package models
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
@@ -58,4 +61,16 @@ type LeagueFormat struct {
 	// if league is in a transfer window, NextTransferWindowStart will store the start time of the window
 	// NextTransferWindowStart is updated at the *end* of a transfer window or when the season/bracket starts
 	NextTransferWindowStart *time.Time `gorm:"type:timestamp with time zone" json:"next_transfer_window_start"`
+}
+
+func (f *LeagueFormat) Scan(value any) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("failed to scan LeagueFormat: %v", value)
+	}
+	return json.Unmarshal(b, f)
+}
+
+func (f LeagueFormat) Value() (driver.Value, error) {
+	return json.Marshal(f)
 }

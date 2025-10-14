@@ -76,3 +76,18 @@ func (m *MockDraftedPokemonRepository) DeleteDraftedPokemon(draftedPokemonID uui
 	args := m.Called(draftedPokemonID)
 	return args.Error(0)
 }
+
+func (m *MockDraftedPokemonRepository) GetActiveDraftedPokemonCountByLeague(leagueID uuid.UUID) (int64, error) {
+	args := m.Called(leagueID)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *MockDraftedPokemonRepository) DraftPokemonBatchTransaction(draftedPokemon []*models.DraftedPokemon, player *models.Player, leaguePokemonIDs []uuid.UUID, totalCost int) error {
+	args := m.Called(draftedPokemon, player, leaguePokemonIDs, totalCost)
+	return args.Error(0)
+}
+
+func (m *MockDraftedPokemonRepository) PickupFreeAgentTransaction(player *models.Player, newDraftedPokemon *models.DraftedPokemon, leaguePokemon *models.LeaguePokemon) error {
+	args := m.Called(player, newDraftedPokemon, leaguePokemon)
+	return args.Error(0)
+}

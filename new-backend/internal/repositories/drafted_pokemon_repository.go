@@ -9,10 +9,6 @@ import (
 )
 
 type DraftedPokemonRepository interface {
-	// Transactional methods
-	Begin() *gorm.DB
-	WithTx(tx *gorm.DB) DraftedPokemonRepository
-
 	// creates a new drafted Pokemon entry
 	CreateDraftedPokemon(draftedPokemon *models.DraftedPokemon) (*models.DraftedPokemon, error)
 	// gets drafted Pokemon by ID with relationships
@@ -45,6 +41,8 @@ type DraftedPokemonRepository interface {
 	DeleteDraftedPokemon(draftedPokemonID uuid.UUID) error
 	// performs a batch draft transaction (draft multiple Pokemon, update player points, and mark league Pokemon unavailable)
 	DraftPokemonBatchTransaction(draftedPokemon []*models.DraftedPokemon, player *models.Player, leaguePokemonIDs []uuid.UUID, totalCost int) error
+	// performs a transaction to pick up a free agent
+	PickupFreeAgentTransaction(player *models.Player, newDraftedPokemon *models.DraftedPokemon, leaguePokemon *models.LeaguePokemon) error
 }
 
 type draftedPokemonRepositoryImpl struct {
@@ -53,16 +51,6 @@ type draftedPokemonRepositoryImpl struct {
 
 func NewDraftedPokemonRepository(db *gorm.DB) *draftedPokemonRepositoryImpl {
 	return &draftedPokemonRepositoryImpl{db: db}
-}
-
-// Begin starts a new transaction.
-func (r *draftedPokemonRepositoryImpl) Begin() *gorm.DB {
-	return r.db.Begin()
-}
-
-// WithTx returns a new repository instance with the given transaction.
-func (r *draftedPokemonRepositoryImpl) WithTx(tx *gorm.DB) DraftedPokemonRepository {
-	return &draftedPokemonRepositoryImpl{db: tx}
 }
 
 // creates a new drafted Pokemon entry
@@ -296,6 +284,42 @@ func (r *draftedPokemonRepositoryImpl) DraftPokemonBatchTransaction(draftedPokem
 	if err := tx.Save(player).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("(Error: DraftPokemonBatchTransaction) - failed to update player points: %w", err)
+	}
+
+	return tx.Commit().Error
+}
+
+// PickupFreeAgentTransaction performs a transaction to pick up a free agent
+func (r *draftedPokemonRepositoryImpl) PickupFreeAgentTransaction(player *models.Player, newDraftedPokemon *models.DraftedPokemon, leaguePokemon *models.LeaguePokemon) error {
+	tx := r.db.Begin()
+	if tx.Error != nil {
+		return fmt.Errorf("(Error: PickupFreeAgentTransaction) - failed to start transaction: %w", tx.Error)
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 1. Decrement player's TransferCredits
+	player.TransferCredits--
+	if err := tx.Save(player).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("(Error: PickupFreeAgentTransaction) - failed to update player transfer credits: %w", err)
+	}
+
+	// 2. Create new DraftedPokemon entry
+	if err := tx.Create(newDraftedPokemon).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("(Error: PickupFreeAgentTransaction) - failed to create new drafted pokemon: %w", err)
+	}
+
+	// 3. Mark LeaguePokemon as unavailable
+	leaguePokemon.IsAvailable = false
+	if err := tx.Save(leaguePokemon).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("(Error: PickupFreeAgentTransaction) - failed to update league pokemon availability: %w", err)
 	}
 
 	return tx.Commit().Error

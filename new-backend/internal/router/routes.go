@@ -164,6 +164,12 @@ func RegisterRoutes(
 			leagues.POST("/:leagueId/draft/start",
 				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateDraft),
 				controllers.DraftController.StartDraft)
+			leagues.POST("/:leagueId/draft/pick",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateDraftedPokemon),
+				controllers.DraftController.MakePick)
+			leagues.POST("/:leagueId/draft/skip",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateDraftedPokemon),
+				controllers.DraftController.SkipPick)
 			leagues.POST("/:leagueId/transfers/start",
 				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionStartTransferPeriod),
 				controllers.DraftController.StartTransferPeriod)
