@@ -1,12 +1,13 @@
 import DraftCard from "../components/draftCards"
 import Filter from "../components/filter"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { FilterState, DraftCardProps, LeaguePokemon } from "../api/data_interfaces"
-import { getAvailablePokemon } from "../api/api"
+import { getAllLeaguePokmeon, makePick, getDraftedPokemonByPlayer } from "../api/api"
 import { useLeague } from "../context/LeagueContext"
 import axios from 'axios'; // Import axios for error handling
 import { WishlistDisplay } from "../components/WishlistDisplay"
 import { useWishlist } from '../hooks/useWishlist';
+import Modal from "../components/Modal";
 
 const defaultFilters: FilterState = {
     selectedTypes: [],
@@ -18,8 +19,9 @@ const defaultFilters: FilterState = {
 };
 
 export default function Draftboard() {
-    const { currentLeague, loading: leagueLoading, error: leagueError } = useLeague();
+    const { currentLeague, currentDraft, currentPlayer, refetch: refetchLeague, loading: leagueLoading, error: leagueError } = useLeague();
     const { wishlist, addPokemonToWishlist, removePokemonFromWishlist, clearWishlist, isPokemonInWishlist } = useWishlist(currentLeague?.id || '');
+
     const [allPokemon, setAllPokemon] = useState<LeaguePokemon[]>([]);
     const [cards, setCards] = useState<LeaguePokemon[]>([]);
     const [filters, setFilters] = useState<FilterState>(defaultFilters);
@@ -27,52 +29,99 @@ export default function Draftboard() {
     const [pokemonLoading, setPokemonLoading] = useState<boolean>(true);
     const [pokemonError, setPokemonError] = useState<string | null>(null);
     const [currentlyFlippedCardId, setCurrentlyFlippedCardId] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedPokemon, setSelectedPokemon] = useState<LeaguePokemon | null>(null);
+    const [draftedPokemon, setDraftedPokemon] = useState<LeaguePokemon[]>([]);
 
-    const handleCardFlip = (pokemonId: string) => {
+    const isMyTurn = currentDraft?.currentTurnPlayerID === currentPlayer?.id;
+
+    const fetchPokemon = useCallback(async () => {
+        if (!currentLeague?.id) {
+            setAllPokemon([]);
+            setCards([]);
+            setPokemonLoading(false);
+            return;
+        }
+        try {
+            setPokemonLoading(true);
+            setPokemonError(null);
+            const response = await getAllLeaguePokmeon(currentLeague.id);
+            setAllPokemon(response.data);
+            setCards(response.data); // Initialize cards with all fetched pokemon
+        } catch (err) {
+            if (axios.isAxiosError(err) && err.response) {
+                setPokemonError(err.response.data.error || "Failed to fetch Pokemon data.");
+            } else {
+                setPokemonError("A network or unknown error occurred while fetching Pokemon data.");
+            }
+            console.error("Draftboard: Error fetching Pokemon data:", err);
+        } finally {
+            setPokemonLoading(false);
+        }
+    }, [currentLeague?.id]);
+
+    useEffect(() => {
+        if (currentLeague && currentPlayer) {
+            getDraftedPokemonByPlayer(currentLeague.id, currentPlayer.id)
+                .then(response => setDraftedPokemon(response.data))
+                .catch(error => console.error("Failed to fetch drafted pokemon:", error));
+        }
+    }, [currentLeague, currentPlayer, fetchPokemon]);
+
+
+    const handleCardFlip = useCallback((pokemonId: string) => {
         setCurrentlyFlippedCardId(prevId => (prevId === pokemonId ? null : pokemonId));
-    };
+    }, [setCurrentlyFlippedCardId]);
+
+    const onDraft = useCallback((leaguePokemonId: string) => {
+        const pokemonToDraft = allPokemon.find(p => p.id === leaguePokemonId);
+        if (pokemonToDraft) {
+            setSelectedPokemon(pokemonToDraft);
+            setIsModalOpen(true);
+        }
+    }, [allPokemon, setSelectedPokemon, setIsModalOpen]);
+
+    const handleConfirmDraft = useCallback(async () => {
+        if (selectedPokemon && currentLeague && currentPlayer) {
+            try {
+                if (!currentDraft) {
+                    console.error("Draft data is not available.");
+                    return;
+                }
+                const pickRequest = {
+                    RequestedPickCount: 1,
+                    RequestedPicks: [{
+                        LeaguePokemonID: selectedPokemon.id,
+                        DraftPickNumber: currentDraft.currentPickOnClock
+                    }]
+                };
+                await makePick(currentLeague.id, pickRequest);
+                fetchPokemon();
+                refetchLeague();
+            } catch (error) {
+                console.error("Failed to make a pick:", error);
+            } finally {
+                setIsModalOpen(false);
+                setSelectedPokemon(null);
+            }
+        }
+    }, [selectedPokemon, currentLeague, currentPlayer, currentDraft, fetchPokemon, refetchLeague, setIsModalOpen, setSelectedPokemon]);
+
+    const handleCancelDraft = useCallback(() => {
+        setIsModalOpen(false);
+        setSelectedPokemon(null);
+    }, [setIsModalOpen, setSelectedPokemon]);
+
 
     // handleImageError function
-    const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const handleImageError = useCallback((e: React.SyntheticEvent<HTMLImageElement, Event>) => {
         e.currentTarget.onerror = null;
         e.currentTarget.src = `https://placehold.co/150x150/cccccc/333333?text=No+Image`;
-    };
+    }, []);
 
-    // Effect to fetch Pokemon data when the league changes
     useEffect(() => {
-        // console.log("Draftboard: useEffect for fetchPokemon running. currentLeague?.id:", currentLeague?.id);
-        const fetchPokemon = async () => {
-            // console.log("Draftboard: fetchPokemon called.");
-            if (!currentLeague?.id) {
-                // console.log("Draftboard: No currentLeague ID, skipping fetchPokemon.");
-                setAllPokemon([]);
-                setCards([]);
-                setPokemonLoading(false);
-                return;
-            }
-
-            try {
-                setPokemonLoading(true);
-                setPokemonError(null);
-                // console.log(`Draftboard: Attempting to fetch available Pokemon for league ID: ${currentLeague.id}`);
-                const response = await getAvailablePokemon(currentLeague.id);
-                // console.log("Draftboard: getAvailablePokemon response:", response.data);
-                setAllPokemon(response.data);
-                setCards(response.data); // Initialize cards with all fetched pokemon
-            } catch (err) {
-                if (axios.isAxiosError(err) && err.response) {
-                    setPokemonError(err.response.data.error || "Failed to fetch Pokemon data.");
-                } else {
-                    setPokemonError("A network or unknown error occurred while fetching Pokemon data.");
-                }
-                console.error("Draftboard: Error fetching Pokemon data:", err);
-            } finally {
-                setPokemonLoading(false);
-                console.log("Draftboard: fetchPokemon finished. Pokemon loading:", pokemonLoading);
-            }
-        };
         fetchPokemon();
-    }, [currentLeague?.id]); // Re-fetch when currentLeague.id changes
+    }, [fetchPokemon]); // Re-fetch when fetchPokemon changes
 
     // Effect to apply filters when filters, search term, or allPokemon changes
     useEffect(() => {
@@ -80,7 +129,7 @@ export default function Draftboard() {
         applyFilter();
     }, [filters, searchTerm, allPokemon]);
 
-    function applyFilter() {
+    const applyFilter = useCallback(() => {
         let updatedCards: LeaguePokemon[] = [...allPokemon];
 
         if (searchTerm.trim() !== '') {
@@ -129,16 +178,16 @@ export default function Draftboard() {
         });
 
         setCards(updatedCards);
-    }
+    }, [allPokemon, filters, searchTerm, setCards]);
 
-    function updateFilter(key: keyof FilterState, value: any) {
+    const updateFilter = useCallback((key: keyof FilterState, value: any) => {
         setFilters(prev => ({ ...prev, [key]: value }));
-    }
+    }, [setFilters]);
 
-    const resetAllFilters = () => {
+    const resetAllFilters = useCallback(() => {
         setFilters(defaultFilters);
         setSearchTerm('');
-    };
+    }, [setFilters, setSearchTerm]);
 
     if (leagueLoading || pokemonLoading) {
         return (
@@ -187,10 +236,12 @@ export default function Draftboard() {
             isPokemonInWishlist: isPokemonInWishlist,
             removePokemonFromWishlist: removePokemonFromWishlist,
             isFlipped: currentlyFlippedCardId === leaguePokemon.id,
-            onFlip: handleCardFlip
+            onFlip: handleCardFlip,
+            isDraftable: isMyTurn && leaguePokemon.isAvailable,
+            onDraft: onDraft,
         };
-        return <DraftCard {...draftCardProps} />;
-
+        const { key, ...rest } = draftCardProps;
+        return <DraftCard key={key} {...rest} />;
     });
 
     return (
@@ -234,24 +285,51 @@ export default function Draftboard() {
                     </div>
 
                     <div className="flex flex-col w-[25%] mx-auto mt-16 ml-2 h-[100%] gap-4">
-                        {currentLeague?.id && <WishlistDisplay allPokemon={allPokemon} wishlist={wishlist} removePokemonFromWishlist={removePokemonFromWishlist} clearWishlist={clearWishlist} />}
+                        {currentDraft && (
+                            <div className="p-4 bg-white rounded-lg shadow-md">
+                                <h2 className="text-lg font-bold mb-2">Draft Status</h2>
+                                <p>Round: {currentDraft?.currentRound}</p>
+                                <p>Pick: {currentDraft?.currentPickInRound}</p>
+                                <p>Player on clock: {currentDraft?.CurrentTurnPlayer?.inLeagueName}</p>                                </div>
+                        )}
+                        {currentLeague?.id && (
+                            <WishlistDisplay
+                                allPokemon={allPokemon}
+                                wishlist={wishlist}
+                                removePokemonFromWishlist={removePokemonFromWishlist}
+                                clearWishlist={clearWishlist}
+                                isMyTurn={isMyTurn ?? false}
+                                onDraft={onDraft}
+                            />
+                        )}
                         <div className="bg-white shadow-md rounded-md overflow-hidden">
                             <div className="bg-gray-100 py-2 px-4">
                                 <h2 className="text-l font-semibold text-gray-800">Your Team</h2>
                             </div>
                             <ul className="divide-y divide-gray-200">
-                                <li className="flex items-center py-4 px-6">
-                                    <img className="w-12 h-12 object-cover mr-4" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/9.png" alt="User avatar"></img>
-                                    <div className="flex-1">
-                                        <h3 className="text-lg font-medium text-gray-800">BIG MAN BLASTOISE</h3>
-                                        {/* <p className="text-gray-600 text-base">1234 points</p> */}
-                                    </div>
-                                </li>
+                                {draftedPokemon.map(p => (
+                                    <li key={p.id} className="flex items-center py-4 px-6">
+                                        <img className="w-12 h-12 object-cover mr-4" src={p.PokemonSpecies.sprites.front_default} alt={p.PokemonSpecies.name}></img>
+                                        <div className="flex-1">
+                                            <h3 className="text-lg font-medium text-gray-800">{p.PokemonSpecies.name}</h3>
+                                        </div>
+                                    </li>
+                                ))}
                             </ul>
                         </div>
                     </div>
                 </div>
             </div>
+            {selectedPokemon && (
+                <Modal isOpen={isModalOpen} onClose={handleCancelDraft} title="Confirm Draft">
+                    <h2 className="text-xl font-bold mb-4">Confirm Draft</h2>
+                    <p>Are you sure you want to draft {selectedPokemon.PokemonSpecies.name} for {selectedPokemon.cost} points?</p>
+                    <div className="mt-6 flex justify-end gap-4">
+                        <button onClick={handleCancelDraft} className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
+                        <button onClick={handleConfirmDraft} className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Confirm</button>
+                    </div>
+                </Modal>
+            )}
         </>
     );
 }

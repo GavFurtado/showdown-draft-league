@@ -6,6 +6,7 @@ import Dashboard from './pages/dashboard';
 
 import { LeagueProvider } from './context/LeagueContext';
 import Draftboard from './pages/draftboard';
+import TeamSheets from './pages/teamsheets';
 
 function App() {
     return (
@@ -39,7 +40,7 @@ function LeagueProviderWrapper() {
             <Routes>
                 <Route path='dashboard' element={<Dashboard />} />
                 <Route path='draftboard' element={<Draftboard />} />
-                {/* <Route path='team_sheets' element={<TeamSheets />} /> */}
+                <Route path='teamsheets' element={<TeamSheets />} />
                 {/* <Route path='standings' element={<Standings />} /> */}
 
                 {/* --- League Staff Routes (Protected by league-specific roles) */}

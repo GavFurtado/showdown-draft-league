@@ -10,7 +10,7 @@ const formatName = (name: string): string => {
 };
 
 
-export const WishlistDisplay: React.FC<WishlistDisplayProps> = ({ allPokemon, wishlist, removePokemonFromWishlist, clearWishlist }) => {
+export const WishlistDisplay: React.FC<WishlistDisplayProps> = ({ allPokemon, wishlist, removePokemonFromWishlist, clearWishlist, isMyTurn, onDraft }) => {
 
     console.log("WishlistDisplay: current wishlist state", wishlist);
 
@@ -64,14 +64,30 @@ export const WishlistDisplay: React.FC<WishlistDisplayProps> = ({ allPokemon, wi
                                 <p className="text-sm text-gray-600">Cost: {lp.cost}</p>
                             </div>
                         </div>
-                        <button
-                            onClick={() => removePokemonFromWishlist(lp.id)}
-                            className="text-red-500 hover:text-red-700 text-sm p-1 rounded-full hover:bg-red-100"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
+                        <div className="flex items-center gap-2">
+                            {isMyTurn && lp.isAvailable && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDraft(lp.id);
+                                    }}
+                                    className="relative flex items-center align-center justify-center h-7.5 w-7.5 rounded-full p-0 transition-colors bg-red-500 hover:bg-red-700"
+                                >
+                                    {/* Pokeball SVG */}
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
+                                        <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 2a8 8 0 110 16 8 8 0 010-16zm0 3a5 5 0 00-5 5h10a5 5 0 00-5-5zm0 2a3 3 0 110 6 3 3 0 010-6z" />
+                                    </svg>
+                                </button>
+                            )}
+                            <button
+                                onClick={() => removePokemonFromWishlist(lp.id)}
+                                className="text-red-500 hover:text-red-700 text-sm p-1 rounded-full hover:bg-red-100"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 ))}
             </div>

@@ -18,7 +18,7 @@ const pokemonStats = [
 
 interface FilterProps {
     filters: FilterState;
-    updateFilter: (filterName: keyof FilterState, value: any) => void;
+    updateFilter: (filterName: keyof FilterState, value: string | string[]) => void;
     resetAllFilters: () => void;
 }
 

@@ -1,87 +1,139 @@
-// frontend/src/context/LeagueContext.tsx
-
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { League } from '../api/data_interfaces';
-import { getLeague } from '../api/api';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
+import { League, Draft, Player, DiscordUser } from '../api/data_interfaces';
+import { getLeague, getDraftByLeagueID, getMyDiscordDetails, getPlayersByUserId } from '../api/api';
 import axios from 'axios'; // Import axios for error handling
 import { useParams } from 'react-router-dom'; // Import useParams
 
 interface LeagueContextType {
-  currentLeague: League | null;
-  setCurrentLeague: (league: League | null) => void;
-  loading: boolean;
-  error: string | null;
+    currentLeague: League | null;
+    setCurrentLeague: (league: League | null) => void;
+    currentDraft: Draft | null;
+    currentPlayer: Player | null;
+    myDiscordUser: DiscordUser | null;
+    loading: boolean;
+    error: string | null;
+    refetch: () => void;
 }
 
 export const LeagueContext = createContext<LeagueContextType | undefined>(undefined);
 
 interface LeagueProviderProps {
-  children: ReactNode;
-  // leagueId?: string; // Removed as useParams will be used internally
+    children: ReactNode;
+}
+
+interface LeagueState {
+  currentLeague: League | null;
+  currentDraft: Draft | null;
+  currentPlayer: Player | null;
+  myDiscordUser: DiscordUser | null;
+  loading: boolean;
+  error: string | null;
 }
 
 export const LeagueProvider = ({ children }: LeagueProviderProps) => {
-  const { leagueId } = useParams<{ leagueId: string }>(); // Get leagueId from URL here
-  const [currentLeague, setCurrentLeague] = useState<League | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+    const { leagueId } = useParams<{ leagueId: string }>();
+    const [state, setState] = useState<LeagueState>({
+        currentLeague: null,
+        currentDraft: null,
+        currentPlayer: null,
+        myDiscordUser: null,
+        loading: true,
+        error: null,
+    });
 
-  console.log("LeagueProvider: Component rendered. leagueId from URL:", leagueId);
-
-  useEffect(() => {
-    console.log("LeagueProvider: useEffect for fetchLeague running. leagueId:", leagueId);
-    const fetchLeague = async () => {
-      console.log("LeagueProvider: fetchLeague called.");
-      if (!leagueId) {
-        console.log("LeagueProvider: No leagueId, setting currentLeague to null.");
-        setCurrentLeague(null);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-        console.log(`LeagueProvider: Attempting to fetch league with ID: ${leagueId}`);
-        const response = await getLeague(leagueId);
-        console.log("LeagueProvider: getLeague response:", response.data);
-        setCurrentLeague(response.data);
-      } catch (err) {
-        if (axios.isAxiosError(err) && err.response) {
-          setError(err.response.data.error || "Failed to load league data.");
-        } else {
-          setError("A network or unknown error occurred while fetching league data.");
+    const fetchData = useCallback(async () => {
+        if (!leagueId) {
+            setState(prevState => ({
+                ...prevState,
+                currentLeague: null,
+                currentDraft: null,
+                currentPlayer: null,
+                myDiscordUser: null,
+                loading: false,
+            }));
+            return;
         }
-        console.error("LeagueProvider: Error fetching league data:", err);
-        setCurrentLeague(null); // Ensure no partial or incorrect data is set
-      } finally {
-        setLoading(false);
-        console.log("LeagueProvider: fetchLeague finished. Loading:", false);
-      }
+
+        setState(prevState => ({ ...prevState, loading: true, error: null }));
+
+        try {
+            const leagueResponse = await getLeague(leagueId);
+            const draftResponse = await getDraftByLeagueID(leagueId);
+            const discordUserResponse = await getMyDiscordDetails();
+
+            let playerInCurrentLeague: Player | null = null;
+            if (discordUserResponse.data?.id) {
+                const playersResponse = await getPlayersByUserId(discordUserResponse.data.id);
+                playerInCurrentLeague = playersResponse.data.find((p: Player) => p.leagueId === leagueId) || null;
+            }
+
+            let currentDraftWithPlayer = draftResponse.data;
+            if (currentDraftWithPlayer && currentDraftWithPlayer.currentTurnPlayerID) {
+                try {
+                    const turnPlayerResponse = await getPlayerById(leagueId, currentDraftWithPlayer.currentTurnPlayerID);
+                    currentDraftWithPlayer = { ...currentDraftWithPlayer, CurrentTurnPlayer: turnPlayerResponse.data };
+                } catch (playerErr) {
+                    console.error("Failed to fetch CurrentTurnPlayer:", playerErr);
+                    // Optionally, handle this error more gracefully, e.g., set CurrentTurnPlayer to null
+                }
+            }
+
+            setState(prevState => ({
+                ...prevState,
+                currentLeague: leagueResponse.data,
+                currentDraft: currentDraftWithPlayer,
+                myDiscordUser: discordUserResponse.data,
+                currentPlayer: playerInCurrentLeague,
+                loading: false,
+                error: null,
+            }));
+
+        } catch (err) {
+            let errorMessage = "A network or unknown error occurred while fetching league data.";
+            if (axios.isAxiosError(err) && err.response) {
+                errorMessage = err.response.data.error || errorMessage;
+            }
+            setState(prevState => ({
+                ...prevState,
+                currentLeague: null,
+                currentDraft: null,
+                currentPlayer: null,
+                myDiscordUser: null,
+                loading: false,
+                error: errorMessage,
+            }));
+            console.error("LeagueProvider: Error fetching league data:", err);
+        }
+    }, [leagueId]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    const contextValue: LeagueContextType = {
+        currentLeague: state.currentLeague,
+        setCurrentLeague: (league) => setState(prevState => ({ ...prevState, currentLeague: league })),
+        currentDraft: state.currentDraft,
+        currentPlayer: state.currentPlayer,
+        myDiscordUser: state.myDiscordUser,
+        loading: state.loading,
+        error: state.error,
+        refetch: fetchData,
     };
 
-    fetchLeague();
-  }, [leagueId]); // leagueId dependency; Re-fetch if leagueId changes
-
-  const contextValue: LeagueContextType = {
-    currentLeague,
-    setCurrentLeague,
-    loading,
-    error,
-  };
-
-  return (
-    <LeagueContext.Provider value={contextValue}>
-      {children}
-    </LeagueContext.Provider>
-  );
+    return (
+        <LeagueContext.Provider value={contextValue}>
+            {children}
+        </LeagueContext.Provider>
+    );
 };
+
 
 // Custom hook for easy consumption of the LeagueContext
 export const useLeague = () => {
-  const context = useContext(LeagueContext);
-  if (context === undefined) {
-    throw new Error('useLeague must be used within a LeagueProvider');
-  }
-  return context;
+    const context = useContext(LeagueContext);
+    if (context === undefined) {
+        throw new Error('useLeague must be used within a LeagueProvider');
+    }
+    return context;
 };
