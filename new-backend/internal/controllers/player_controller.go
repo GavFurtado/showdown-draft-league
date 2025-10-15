@@ -60,6 +60,7 @@ func (c *playerControllerImpl) JoinLeague(ctx *gin.Context) {
 	// service layer needs to do this checking
 	if currentUser.Role != "admin" && req.UserID != currentUser.ID {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Cannot perform this transaction"})
+		return
 	}
 
 	if req.UserID == uuid.Nil || req.LeagueID == uuid.Nil {

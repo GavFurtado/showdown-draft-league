@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/app"
@@ -24,7 +23,7 @@ func main() {
 	// CORS config
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowOrigins = []string{cfg.AppBaseURL}
-	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"}
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
 	corsConfig.ExposeHeaders = []string{"Content-Length"}
 	corsConfig.AllowCredentials = true
@@ -59,8 +58,8 @@ func main() {
 		&models.PokemonSpecies{},
 		&models.LeaguePokemon{},
 		&models.DraftedPokemon{},
+		&models.Draft{},
 		&models.Game{},
-		&models.PlayerRoster{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to auto-migrate database: %v", err)
@@ -69,12 +68,17 @@ func main() {
 	// Initialize Repositories, Servies and Controllers
 	appRepositories := app.NewRepositories(db)
 	appServices := app.NewServices(appRepositories, cfg, discordOauthConfig)
-	appControllers := app.NewControllers(appServices, cfg, discordOauthConfig)
+	appControllers := app.NewControllers(appServices, appRepositories, cfg, discordOauthConfig)
 
-	// Set Port and Initialize Server
-	port := os.Getenv("PORT")
+	// Start the scheduler
+	if err := appServices.SchedulerService.Start(); err != nil {
+		log.Fatalf("Failed to start scheduler: %v", err)
+	}
+
+	// Start the server
+	port := cfg.Port
 	if port == "" {
-		port = "8080"
+		port = "8080" // Default port
 	}
 	server := gin.New()
 

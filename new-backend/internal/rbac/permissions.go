@@ -6,7 +6,9 @@ type Permission string
 // Define permission constants
 const (
 	// League Permissions
-	PermissionCreateLeague Permission = "create:league" // redundant. League is created then Players. Creating a League is tied to User and not a Player or their role. Kept in to understand the roles (ig)
+	// PermissionCreateLeague is redundant; League is created then Players
+	//	reating a League is tied to User and not a Player or their role. Kept in to understand the roles (ig)
+	PermissionCreateLeague Permission = "create:league"
 	PermissionReadLeague   Permission = "read:league"
 	PermissionUpdateLeague Permission = "update:league"
 	PermissionDeleteLeague Permission = "delete:league"
@@ -23,6 +25,10 @@ const (
 	PermissionUpdateDraft Permission = "update:draft"
 	PermissionDeleteDraft Permission = "delete:draft"
 
+	// Transfer Period Permissions
+	PermissionStartTransferPeriod Permission = "start:transfer_period"
+	PermissionEndTransferPeriod   Permission = "end:transfer_period"
+
 	// LeaguePokemon Permissions
 	PermissionCreateLeaguePokemon Permission = "create:league_pokemon"
 	PermissionReadLeaguePokemon   Permission = "read:league_pokemon"
@@ -30,10 +36,11 @@ const (
 	PermissionDeleteLeaguePokemon Permission = "delete:league_pokemon"
 
 	// DraftedPokemon Permissions
-	PermissionCreateDraftedPokemon Permission = "create:drafted_pokemon"
-	PermissionReadDraftedPokemon   Permission = "read:drafted_pokemon"
-	PermissionUpdateDraftedPokemon Permission = "update:drafted_pokemon"
-	PermissionDeleteDraftedPokemon Permission = "delete:drafted_pokemon"
+	PermissionReleaseDraftedPokemon Permission = "release:drafted_pokemon"
+	PermissionCreateDraftedPokemon  Permission = "create:drafted_pokemon"
+	PermissionReadDraftedPokemon    Permission = "read:drafted_pokemon"
+	PermissionUpdateDraftedPokemon  Permission = "update:drafted_pokemon"
+	PermissionDeleteDraftedPokemon  Permission = "delete:drafted_pokemon"
 
 	// Game Permissions
 	PermissionCreateGame Permission = "create:game"
@@ -77,22 +84,25 @@ func init() {
 		PermissionReadUser,
 		PermissionReadPlayerRoster,
 		PermissionReadPokemonSpecies,
+		PermissionReleaseDraftedPokemon,
+		PermissionUpdatePlayer,
+		PermissionCreateDraftedPokemon,
 	)
 
 	// Moderator permissions inherit from Member and add more
 	inheritPermissions(PRoleModerator, PRoleMember)
 	setPermissions(PRoleModerator,
 		PermissionUpdateLeague,
-		PermissionUpdatePlayer,
 		PermissionUpdateDraft,
 		PermissionUpdateLeaguePokemon,
 		PermissionUpdateDraftedPokemon,
 		PermissionUpdateGame,
 		PermissionCreatePlayer,
-		PermissionCreateDraftedPokemon,
 		PermissionCreateLeaguePokemon,
 		PermissionCreateGame,
 		PermissionDeleteGame,
+		PermissionStartTransferPeriod,
+		PermissionEndTransferPeriod,
 	)
 
 	// Owner permissions inherit from Moderator and add more

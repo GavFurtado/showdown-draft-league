@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac" // Import the new rbac package
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -31,6 +32,12 @@ type LeagueRepository interface {
 	DeleteLeague(leagueId uuid.UUID) error
 	// Public helper to check if a user's player is the owner
 	IsUserOwner(userID, leagueID uuid.UUID) (bool, error)
+	// gets the current status of a league
+	GetLeagueStatus(leagueID uuid.UUID) (enums.LeagueStatus, error)
+	// retrieves all leagues with a specific status.
+	GetAllLeaguesByStatus(status enums.LeagueStatus) ([]models.League, error)
+	// retrieves all leagues that allow transfer credits.
+	GetLeaguesThatAllowTransferCredits() ([]models.League, error)
 }
 
 type leagueRepositoryImpl struct {
@@ -130,15 +137,15 @@ func (r *leagueRepositoryImpl) GetLeaguesByUser(userID uuid.UUID) ([]models.Leag
 	return leagues, nil
 }
 
-// updates a league (name, start_date, ruleset_id, status, max_pokemon_per_player, free_agents)
+// updates a league
 func (r *leagueRepositoryImpl) UpdateLeague(league *models.League) (*models.League, error) {
 	err := r.db.Select(
-		"name", "start_date", "end_date", "ruleset_id", "status",
-		"max_pokemon_per_player", "allow_weekly_free_agents", "updated_at",
+		"name", "start_date", "end_date", "ruleset_description", "status",
+		"max_pokemon_per_player", "min_pokemon_per_player", "starting_draft_points", "format", "updated_at",
 	).Updates(league).Error
 
 	if err != nil {
-		return nil, fmt.Errorf("(Error: UpdateLeague) - failed to update league: %w", err)
+		return nil, fmt.Errorf("(Error: UpdateLeague) - failed to update league: %v", err)
 	}
 
 	return r.GetLeagueByID(league.ID)
@@ -175,15 +182,11 @@ func (r *leagueRepositoryImpl) DeleteLeague(leagueId uuid.UUID) error {
 func (r *leagueRepositoryImpl) GetLeagueWithFullDetails(id uuid.UUID) (*models.League, error) {
 	var league models.League
 
-	// Removed Preload("CommissionerUser") as it no longer exists
 	err := r.db.
 		Preload("Players").
 		Preload("Players.User").
-		Preload("Players.Roster").
-		Preload("Players.Roster.DraftedPokemon").
-		Preload("Players.Roster.DraftedPokemon.PokemonSpecies").
-		Preload("DefinedPokemon").
-		Preload("DefinedPokemon.PokemonSpecies").
+		Preload("LeaguePokemon").
+		Preload("LeaguePokemon.PokemonSpecies").
 		First(&league, "id = ?", id).Error
 
 	if err != nil {
@@ -200,4 +203,33 @@ func (r *leagueRepositoryImpl) IsUserOwner(userID, leagueID uuid.UUID) (bool, er
 						Count(&count).Error
 
 	return count > 0, err
+}
+
+// gets the current status of a league
+func (r *leagueRepositoryImpl) GetLeagueStatus(leagueID uuid.UUID) (enums.LeagueStatus, error) {
+	var league models.League
+	err := r.db.Select("status").First(&league, "id = ?", leagueID).Error
+	if err != nil {
+		return "", err
+	}
+	return league.Status, nil
+}
+
+// retrieves all leagues with a specific status.
+func (r *leagueRepositoryImpl) GetAllLeaguesByStatus(status enums.LeagueStatus) ([]models.League, error) {
+	var leagues []models.League
+	if err := r.db.Where("status = ?", status).Find(&leagues).Error; err != nil {
+		return nil, err
+	}
+	return leagues, nil
+}
+
+// retrieves all leagues that allow transfer credits.
+func (r *leagueRepositoryImpl) GetLeaguesThatAllowTransferCredits() ([]models.League, error) {
+	var leagues []models.League
+	// Preload the LeagueFormat to access AllowTransferCredits
+	if err := r.db.Where("format->>'allow_transfer_credits' = ?", "true").Find(&leagues).Error; err != nil {
+		return nil, err
+	}
+	return leagues, nil
 }

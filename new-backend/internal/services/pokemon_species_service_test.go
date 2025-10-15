@@ -103,20 +103,21 @@ func TestPokemonSpeciesService_GetAllPokemonSpecies(t *testing.T) {
 	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo)
 
 	t.Run("Successfully gets all pokemon species", func(t *testing.T) {
-		expectedPokemon := []common.PokemonSpeciesListDTO{
-			{ID: 1, Name: "Pikachu", Types: []string{"electric"}},
-			{ID: 2, Name: "Charmander", Types: []string{"fire"}},
+		expectedPokemon := []models.PokemonSpecies{
+			{ID: 1, Name: "Pikachu", Types: models.StringArray{"electric"}, Sprites: models.Sprites{FrontDefault: "url"}},
+			{ID: 2, Name: "Charmander", Types: models.StringArray{"fire"}, Sprites: models.Sprites{FrontDefault: "url2"}},
+		}
+		expectedDTOs := []common.PokemonSpeciesListDTO{
+			{ID: 1, Name: "Pikachu", Types: []string{"electric"}, FrontDefault: "url"},
+			{ID: 2, Name: "Charmander", Types: []string{"fire"}, FrontDefault: "url2"},
 		}
 
-		mockPokemonSpeciesRepo.On("GetAllPokemonSpecies").Return([]models.PokemonSpecies{
-			{ID: 1, Name: "Pikachu", Types: models.StringArray{"electric"}},
-			{ID: 2, Name: "Charmander", Types: models.StringArray{"fire"}},
-		}, nil).Once()
+		mockPokemonSpeciesRepo.On("GetAllPokemonSpecies").Return(expectedPokemon, nil).Once()
 
 		pokemon, err := service.GetAllPokemonSpecies()
 		assert.NoError(t, err)
 
-		assert.Equal(t, expectedPokemon, pokemon)
+		assert.Equal(t, expectedDTOs, pokemon)
 		mockPokemonSpeciesRepo.AssertExpectations(t)
 	})
 

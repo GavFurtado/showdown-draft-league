@@ -22,23 +22,27 @@ type DraftedPokemonRepository interface {
 	// gets all released Pokemon (free agents) in a league
 	GetReleasedPokemonByLeague(leagueID uuid.UUID) ([]models.DraftedPokemon, error)
 	// checks if a Pokemon species has been drafted in a league
-	IsPokemonDrafted(leagueID, pokemonSpeciesID uuid.UUID) (bool, error)
+	IsPokemonDrafted(leagueID uuid.UUID, pokemonSpeciesID int64) (bool, error)
 	// gets the next draft pick number for a league
 	GetNextDraftPickNumber(leagueID uuid.UUID) (int, error)
 	// releases a Pokemon back to free agents
 	ReleasePokemon(draftedPokemonID uuid.UUID) error
 	// re-drafts a released Pokemon (from free agents)
 	ReDraftPokemon(draftedPokemonID, newPlayerID uuid.UUID, newPickNumber int) error
-	// gets count of Pokemon drafted by a player
+	// gets count of active Pokemon drafted by a player
 	GetDraftedPokemonCountByPlayer(playerID uuid.UUID) (int64, error)
+	// gets the actively drafted pokemon count by league
+	GetActiveDraftedPokemonCountByLeague(leagueID uuid.UUID) (int64, error)
 	// gets draft history for a league (all picks in order)
 	GetDraftHistory(leagueID uuid.UUID) ([]models.DraftedPokemon, error)
 	// trades a Pokemon from one player to another
 	TradePokemon(draftedPokemonID, newPlayerID uuid.UUID) error
-	// performs a draft transaction (draft Pokemon and update league Pokemon availability)
-	DraftPokemonTransaction(draftedPokemon *models.DraftedPokemon) error
 	// soft deletes a drafted Pokemon entry
 	DeleteDraftedPokemon(draftedPokemonID uuid.UUID) error
+	// performs a batch draft transaction (draft multiple Pokemon, update player points, and mark league Pokemon unavailable)
+	DraftPokemonBatchTransaction(draftedPokemon []*models.DraftedPokemon, player *models.Player, leaguePokemonIDs []uuid.UUID, totalCost int) error
+	// performs a transaction to pick up a free agent
+	PickupFreeAgentTransaction(player *models.Player, newDraftedPokemon *models.DraftedPokemon, leaguePokemon *models.LeaguePokemon) error
 }
 
 type draftedPokemonRepositoryImpl struct {
@@ -136,7 +140,7 @@ func (r *draftedPokemonRepositoryImpl) GetReleasedPokemonByLeague(leagueID uuid.
 }
 
 // checks if a Pokemon species has been drafted in a league
-func (r *draftedPokemonRepositoryImpl) IsPokemonDrafted(leagueID, pokemonSpeciesID uuid.UUID) (bool, error) {
+func (r *draftedPokemonRepositoryImpl) IsPokemonDrafted(leagueID uuid.UUID, pokemonSpeciesID int64) (bool, error) {
 	var count int64
 	err := r.db.Model(&models.DraftedPokemon{}).
 		Where("league_id = ? AND pokemon_species_id = ? AND is_released = ?", leagueID, pokemonSpeciesID, false).
@@ -192,7 +196,7 @@ func (r *draftedPokemonRepositoryImpl) ReDraftPokemon(draftedPokemonID, newPlaye
 	return nil
 }
 
-// gets count of Pokemon drafted by a player
+// GetDraftedPokemonCountByPlayer gets count of Pokemon drafted by a player
 func (r *draftedPokemonRepositoryImpl) GetDraftedPokemonCountByPlayer(playerID uuid.UUID) (int64, error) {
 	var count int64
 	err := r.db.Model(&models.DraftedPokemon{}).
@@ -205,7 +209,7 @@ func (r *draftedPokemonRepositoryImpl) GetDraftedPokemonCountByPlayer(playerID u
 	return count, nil
 }
 
-// gets draft history for a league (all picks in order)
+// GetDraftHistory gets draft history for a league (all picks in order)
 func (r *draftedPokemonRepositoryImpl) GetDraftHistory(leagueID uuid.UUID) ([]models.DraftedPokemon, error) {
 	var draftedPokemon []models.DraftedPokemon
 	err := r.db.Preload("Player").
@@ -221,7 +225,7 @@ func (r *draftedPokemonRepositoryImpl) GetDraftHistory(leagueID uuid.UUID) ([]mo
 	return draftedPokemon, nil
 }
 
-// trades a Pokemon from one player to another
+// TradePokemon trades a Pokemon from one player to another
 func (r *draftedPokemonRepositoryImpl) TradePokemon(draftedPokemonID, newPlayerID uuid.UUID) error {
 	err := r.db.Model(&models.DraftedPokemon{}).
 		Where("id = ?", draftedPokemonID).
@@ -233,63 +237,6 @@ func (r *draftedPokemonRepositoryImpl) TradePokemon(draftedPokemonID, newPlayerI
 	return nil
 }
 
-// performs a draft transaction (draft Pokemon and update league Pokemon availability)
-func (r *draftedPokemonRepositoryImpl) DraftPokemonTransaction(draftedPokemon *models.DraftedPokemon) error {
-	tx := r.db.Begin()
-	if tx.Error != nil {
-		return fmt.Errorf("(Error: DraftPokemonTransaction) - failed to start transaction: %w", tx.Error)
-	}
-
-	// if fails at any point due to panic, rollback
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
-	// Create the drafted Pokemon entry
-	if err := tx.Create(draftedPokemon).Error; err != nil {
-		tx.Rollback()
-		return fmt.Errorf("(Error: DraftPokemonTransaction) - failed to create drafted pokemon: %w", err)
-	}
-
-	// Mark the Pokemon as unavailable in the league pool using LeaguePokemonID
-	var leaguePokemon models.LeaguePokemon
-	if err := tx.First(&leaguePokemon, "id = ?", draftedPokemon.LeaguePokemonID).Error; err != nil {
-		tx.Rollback()
-		return fmt.Errorf("(Error: DraftPokemonTransaction) - failed to get league pokemon: %w", err)
-	}
-
-	if err := tx.Model(&models.LeaguePokemon{}).
-		Where("id = ?", draftedPokemon.LeaguePokemonID).
-		Update("is_available", false).Error; err != nil {
-		tx.Rollback()
-		return fmt.Errorf("(Error: DraftPokemonTransaction) - failed to mark pokemon unavailable: %w", err)
-	}
-
-	// Deduct DraftPoints from the player
-	var player models.Player
-	if err := tx.First(&player, "id = ?", draftedPokemon.PlayerID).Error; err != nil {
-		tx.Rollback()
-		return fmt.Errorf("(Error: DraftPokemonTransaction) - failed to get player: %w", err)
-	}
-
-	// Ensure player has enough points (this check should ideally also be done in service)
-	if leaguePokemon.Cost == nil || player.DraftPoints < *leaguePokemon.Cost {
-		tx.Rollback()
-		// Return a specific error for insufficient points
-		return fmt.Errorf("(Error: DraftPokemonTransaction) - insufficient draft points for player %s", player.ID)
-	}
-
-	player.DraftPoints -= *leaguePokemon.Cost
-	if err := tx.Save(&player).Error; err != nil {
-		tx.Rollback()
-		return fmt.Errorf("(Error: DraftPokemonTransaction) - failed to update player points: %w", err)
-	}
-
-	return tx.Commit().Error
-}
-
 // soft deletes a drafted Pokemon entry
 func (r *draftedPokemonRepositoryImpl) DeleteDraftedPokemon(draftedPokemonID uuid.UUID) error {
 	err := r.db.Delete(&models.DraftedPokemon{}, "id = ?", draftedPokemonID).Error
@@ -297,4 +244,96 @@ func (r *draftedPokemonRepositoryImpl) DeleteDraftedPokemon(draftedPokemonID uui
 		return fmt.Errorf("(Error: DeleteDraftedPokemon) - failed to delete drafted pokemon: %w", err)
 	}
 	return nil
+}
+
+// DraftPokemonBatchTransaction performs a batch draft transaction (draft multiple Pokemon, update player points, and mark league Pokemon unavailable)
+func (r *draftedPokemonRepositoryImpl) DraftPokemonBatchTransaction(draftedPokemon []*models.DraftedPokemon, player *models.Player, leaguePokemonIDs []uuid.UUID, totalCost int) error {
+	tx := r.db.Begin()
+	if tx.Error != nil {
+		return fmt.Errorf("(Error: DraftPokemonBatchTransaction) - failed to start transaction: %w", tx.Error)
+
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 1. Batch create the drafted Pokemon entries
+	var draftedPokemonModels []models.DraftedPokemon
+	for _, dp := range draftedPokemon {
+		draftedPokemonModels = append(draftedPokemonModels, *dp)
+	}
+
+	if err := tx.CreateInBatches(draftedPokemonModels, 100).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("(Error: DraftPokemonBatchTransaction) - failed to create drafted pokemon batch: %w", err)
+	}
+
+	// 2. Mark the Pokemon as unavailable in the league pool
+	if err := tx.Model(&models.LeaguePokemon{}).
+		Where("id IN (?) ", leaguePokemonIDs).
+		Update("is_available", false).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("(Error: DraftPokemonBatchTransaction) - failed to mark pokemon unavailable in batch: %w", err)
+	}
+
+	// 3. Deduct DraftPoints from the player
+	player.DraftPoints -= totalCost
+	if err := tx.Save(player).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("(Error: DraftPokemonBatchTransaction) - failed to update player points: %w", err)
+	}
+
+	return tx.Commit().Error
+}
+
+// PickupFreeAgentTransaction performs a transaction to pick up a free agent
+func (r *draftedPokemonRepositoryImpl) PickupFreeAgentTransaction(player *models.Player, newDraftedPokemon *models.DraftedPokemon, leaguePokemon *models.LeaguePokemon) error {
+	tx := r.db.Begin()
+	if tx.Error != nil {
+		return fmt.Errorf("(Error: PickupFreeAgentTransaction) - failed to start transaction: %w", tx.Error)
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 1. Decrement player's TransferCredits
+	player.TransferCredits--
+	if err := tx.Save(player).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("(Error: PickupFreeAgentTransaction) - failed to update player transfer credits: %w", err)
+	}
+
+	// 2. Create new DraftedPokemon entry
+	if err := tx.Create(newDraftedPokemon).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("(Error: PickupFreeAgentTransaction) - failed to create new drafted pokemon: %w", err)
+	}
+
+	// 3. Mark LeaguePokemon as unavailable
+	leaguePokemon.IsAvailable = false
+	if err := tx.Save(leaguePokemon).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("(Error: PickupFreeAgentTransaction) - failed to update league pokemon availability: %w", err)
+	}
+
+	return tx.Commit().Error
+}
+
+// GetActiveDraftedPokemonCountByLeague gets count of all active (non-released) Pokemon drafted in a league
+func (r *draftedPokemonRepositoryImpl) GetActiveDraftedPokemonCountByLeague(leagueID uuid.UUID) (int64, error) {
+	var count int64
+	err := r.db.Model(&models.DraftedPokemon{}).
+		Where("league_id = ? AND is_released = ?", leagueID, false).
+		Count(&count).Error
+
+	if err != nil {
+		return 0, fmt.Errorf("(Error: GetActiveDraftedPokemonCountByLeague) - failed to count active drafted pokemon: %w", err)
+	}
+	return count, nil
 }

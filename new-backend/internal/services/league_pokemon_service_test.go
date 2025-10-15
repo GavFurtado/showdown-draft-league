@@ -174,17 +174,18 @@ func TestLeaguePokemonService_BatchCreatePokemonForLeague(t *testing.T) {
 	currentUser := &models.User{ID: testUserID}
 
 	t.Run("Successfully creates multiple league pokemon", func(t *testing.T) {
+		cost1, cost2 := 100, 150
 		inputs := []common.LeaguePokemonCreateRequestDTO{
-			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &[]int{100}[0]},
-			{LeagueID: testLeagueID, PokemonSpeciesID: 2, Cost: &[]int{150}[0]},
+			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &cost1},
+			{LeagueID: testLeagueID, PokemonSpeciesID: 2, Cost: &cost2},
 		}
 		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusSetup}
 		pokemonSpecies1 := &models.PokemonSpecies{ID: 1, Name: "Pikachu"}
 		pokemonSpecies2 := &models.PokemonSpecies{ID: 2, Name: "Charmander"}
 
 		expectedBatch := []models.LeaguePokemon{
-			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &[]int{100}[0], IsAvailable: true},
-			{LeagueID: testLeagueID, PokemonSpeciesID: 2, Cost: &[]int{150}[0], IsAvailable: true},
+			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &cost1, IsAvailable: true},
+			{LeagueID: testLeagueID, PokemonSpeciesID: 2, Cost: &cost2, IsAvailable: true},
 		}
 
 		// League is cached, so only called once
@@ -221,9 +222,10 @@ func TestLeaguePokemonService_BatchCreatePokemonForLeague(t *testing.T) {
 
 	t.Run("Fails if any league in batch is not found", func(t *testing.T) {
 		testLeagueID2 := uuid.New()
+		cost1, cost2 := 100, 150
 		inputs := []common.LeaguePokemonCreateRequestDTO{
-			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &[]int{100}[0]},
-			{LeagueID: testLeagueID2, PokemonSpeciesID: 2, Cost: &[]int{150}[0]},
+			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &cost1},
+			{LeagueID: testLeagueID2, PokemonSpeciesID: 2, Cost: &cost2},
 		}
 		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusSetup}
 
@@ -245,9 +247,10 @@ func TestLeaguePokemonService_BatchCreatePokemonForLeague(t *testing.T) {
 	})
 
 	t.Run("Fails if any league in batch is not in Setup status", func(t *testing.T) {
+		cost1, cost2 := 100, 150
 		inputs := []common.LeaguePokemonCreateRequestDTO{
-			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &[]int{100}[0]},
-			{LeagueID: testLeagueID, PokemonSpeciesID: 2, Cost: &[]int{150}[0]},
+			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &cost1},
+			{LeagueID: testLeagueID, PokemonSpeciesID: 2, Cost: &cost2},
 		}
 		leagueDrafting := &models.League{ID: testLeagueID, Status: enums.LeagueStatusDrafting} // Not Setup
 
@@ -265,9 +268,10 @@ func TestLeaguePokemonService_BatchCreatePokemonForLeague(t *testing.T) {
 	})
 
 	t.Run("Fails if any pokemon species in batch not found", func(t *testing.T) {
+		cost1, cost2 := 100, 150
 		inputs := []common.LeaguePokemonCreateRequestDTO{
-			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &[]int{100}[0]},
-			{LeagueID: testLeagueID, PokemonSpeciesID: 999, Cost: &[]int{150}[0]},
+			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &cost1},
+			{LeagueID: testLeagueID, PokemonSpeciesID: 999, Cost: &cost2},
 		}
 		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusSetup}
 
@@ -286,9 +290,10 @@ func TestLeaguePokemonService_BatchCreatePokemonForLeague(t *testing.T) {
 	})
 
 	t.Run("Fails if batch create operation returns internal error", func(t *testing.T) {
+		cost1, cost2 := 100, 150
 		inputs := []common.LeaguePokemonCreateRequestDTO{
-			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &[]int{100}[0]},
-			{LeagueID: testLeagueID, PokemonSpeciesID: 2, Cost: &[]int{150}[0]},
+			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &cost1},
+			{LeagueID: testLeagueID, PokemonSpeciesID: 2, Cost: &cost2},
 		}
 		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusSetup}
 		pokemonSpecies1 := &models.PokemonSpecies{ID: 1, Name: "Pikachu"}
@@ -296,8 +301,8 @@ func TestLeaguePokemonService_BatchCreatePokemonForLeague(t *testing.T) {
 		internalErr := errors.New("db error")
 
 		expectedBatch := []models.LeaguePokemon{
-			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &[]int{100}[0], IsAvailable: true},
-			{LeagueID: testLeagueID, PokemonSpeciesID: 2, Cost: &[]int{150}[0], IsAvailable: true},
+			{LeagueID: testLeagueID, PokemonSpeciesID: 1, Cost: &cost1, IsAvailable: true},
+			{LeagueID: testLeagueID, PokemonSpeciesID: 2, Cost: &cost2, IsAvailable: true},
 		}
 
 		mockLeagueRepo.On("GetLeagueByID", testLeagueID).Return(league, nil).Once()
@@ -481,11 +486,12 @@ func TestLeaguePokemonService_UpdateLeaguePokemon(t *testing.T) {
 	})
 
 	t.Run("Fails if league not found (unreachable code path)", func(t *testing.T) {
+		cost := 100
 		existingLeaguePokemon := &models.LeaguePokemon{
 			ID:               testLeaguePokemonID,
 			LeagueID:         testLeagueID,
 			PokemonSpeciesID: testPokemonSpeciesID,
-			Cost:             &[]int{100}[0],
+			Cost:             &cost,
 			IsAvailable:      true,
 		}
 		input := &common.LeaguePokemonUpdateRequest{LeaguePokemonID: testLeaguePokemonID}
@@ -502,11 +508,12 @@ func TestLeaguePokemonService_UpdateLeaguePokemon(t *testing.T) {
 	})
 
 	t.Run("Fails if getting league returns internal error", func(t *testing.T) {
+		cost := 100
 		existingLeaguePokemon := &models.LeaguePokemon{
 			ID:               testLeaguePokemonID,
 			LeagueID:         testLeagueID,
 			PokemonSpeciesID: testPokemonSpeciesID,
-			Cost:             &[]int{100}[0],
+			Cost:             &cost,
 			IsAvailable:      true,
 		}
 		internalErr := errors.New("db error")
@@ -524,11 +531,12 @@ func TestLeaguePokemonService_UpdateLeaguePokemon(t *testing.T) {
 	})
 
 	t.Run("Fails if league is not in Setup or Drafting status", func(t *testing.T) {
+		cost := 100
 		existingLeaguePokemon := &models.LeaguePokemon{
 			ID:               testLeaguePokemonID,
 			LeagueID:         testLeagueID,
 			PokemonSpeciesID: testPokemonSpeciesID,
-			Cost:             &[]int{100}[0],
+			Cost:             &cost,
 			IsAvailable:      true,
 		}
 		league := &models.League{ID: testLeagueID, Status: enums.LeagueStatusCompleted} // Not Setup or Drafting

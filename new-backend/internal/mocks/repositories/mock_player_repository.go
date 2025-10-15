@@ -52,20 +52,20 @@ func (m *MockPlayerRepository) UpdatePlayer(player *models.Player) (*models.Play
 	}
 	return result, args.Error(1)
 }
-func (m *MockPlayerRepository) UpdatePlayerDraftPoints(playerID uuid.UUID, draftPoints int) error {
-	args := m.Called(playerID, draftPoints)
+func (m *MockPlayerRepository) UpdatePlayerDraftPoints(playerID uuid.UUID, newPoints int) error {
+	args := m.Called(playerID, newPoints)
 	return args.Error(0)
 }
 func (m *MockPlayerRepository) UpdatePlayerRecord(playerID uuid.UUID, wins, losses int) error {
 	args := m.Called(playerID, wins, losses)
 	return args.Error(0)
 }
-func (m *MockPlayerRepository) UpdatePlayerDraftPosition(playerID uuid.UUID, draftPosition int) error {
-	args := m.Called(playerID, draftPosition)
+func (m *MockPlayerRepository) UpdatePlayerDraftPosition(playerID uuid.UUID, newPosition int) error {
+	args := m.Called(playerID, newPosition)
 	return args.Error(0)
 }
-func (m *MockPlayerRepository) UpdatePlayerRole(playerID uuid.UUID, newPlayerRole rbac.PlayerRole) error {
-	args := m.Called(playerID, newPlayerRole)
+func (m *MockPlayerRepository) UpdatePlayerRole(playerID uuid.UUID, playerRole rbac.PlayerRole) error {
+	args := m.Called(playerID, playerRole)
 	return args.Error(0)
 }
 func (m *MockPlayerRepository) FindPlayerByUserAndLeague(userID, leagueID uuid.UUID) (*models.Player, error) {

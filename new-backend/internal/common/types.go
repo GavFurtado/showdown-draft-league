@@ -19,7 +19,8 @@ type DiscordUser struct {
 type LeagueCreateRequestDTO struct {
 	Name                string              `json:"name" binding:"required"`
 	RulesetDescription  string              `json:"ruleset_description"`
-	MaxPokemonPerPlayer int                 `json:"max_pokemon_per_player" binding:"gte=1,max=12"`
+	MaxPokemonPerPlayer int                 `json:"max_pokemon_per_player" binding:"gte=1,max=20"`
+	MinPokemonPerPlayer int                 `json:"min_pokemon_per_player" binding:"gte=0,max=20"`
 	StartingDraftPoints int                 `json:"starting_draft_points" binding:"gte=20,max=150"`
 	StartDate           time.Time           `json:"start_date" binding:"required"`
 	Format              models.LeagueFormat `json:"format"`
@@ -57,6 +58,17 @@ type LeaguePokemonUpdateRequest struct {
 	LeaguePokemonID uuid.UUID `json:"league_pokemon_id" binding:"required"`
 	Cost            *int      `json:"cost,omitempty" validate:"max=20"`
 	IsAvailable     *bool     `json:"is_available,omitempty"`
+}
+
+// -- Draft Related --
+type DraftMakePickDTO struct {
+	RequestedPickCount int             `json:"requested_pick_count" binding:"required"`
+	RequestedPicks     []RequestedPick `json:"requested_picks" binding:"required"`
+}
+
+type RequestedPick struct {
+	LeaguePokemonID uuid.UUID `json:"league_pokemon_id" binding:"required"`
+	DraftPickNumber int       `json:"draft_pick_number" binding:"required"`
 }
 
 // -- DraftedPokemon Related --

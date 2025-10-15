@@ -43,7 +43,8 @@ func (m *MockDraftedPokemonRepository) GetReleasedPokemonByLeague(leagueID uuid.
 	args := m.Called(leagueID)
 	return args.Get(0).([]models.DraftedPokemon), args.Error(1)
 }
-func (m *MockDraftedPokemonRepository) IsPokemonDrafted(leagueID, pokemonSpeciesID uuid.UUID) (bool, error) {
+
+func (m *MockDraftedPokemonRepository) IsPokemonDrafted(leagueID uuid.UUID, pokemonSpeciesID int64) (bool, error) {
 	args := m.Called(leagueID, pokemonSpeciesID)
 	return args.Bool(0), args.Error(1)
 }
@@ -71,11 +72,22 @@ func (m *MockDraftedPokemonRepository) TradePokemon(draftedPokemonID, newPlayerI
 	args := m.Called(draftedPokemonID, newPlayerID)
 	return args.Error(0)
 }
-func (m *MockDraftedPokemonRepository) DraftPokemonTransaction(draftedPokemon *models.DraftedPokemon) error {
-	args := m.Called(draftedPokemon)
-	return args.Error(0)
-}
 func (m *MockDraftedPokemonRepository) DeleteDraftedPokemon(draftedPokemonID uuid.UUID) error {
 	args := m.Called(draftedPokemonID)
+	return args.Error(0)
+}
+
+func (m *MockDraftedPokemonRepository) GetActiveDraftedPokemonCountByLeague(leagueID uuid.UUID) (int64, error) {
+	args := m.Called(leagueID)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *MockDraftedPokemonRepository) DraftPokemonBatchTransaction(draftedPokemon []*models.DraftedPokemon, player *models.Player, leaguePokemonIDs []uuid.UUID, totalCost int) error {
+	args := m.Called(draftedPokemon, player, leaguePokemonIDs, totalCost)
+	return args.Error(0)
+}
+
+func (m *MockDraftedPokemonRepository) PickupFreeAgentTransaction(player *models.Player, newDraftedPokemon *models.DraftedPokemon, leaguePokemon *models.LeaguePokemon) error {
+	args := m.Called(player, newDraftedPokemon, leaguePokemon)
 	return args.Error(0)
 }

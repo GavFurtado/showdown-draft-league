@@ -8,6 +8,8 @@ import (
 )
 
 type LeaguePokemonRepository interface {
+	// gets multiple specific Pokemon from a league's draft pool by their IDs
+	GetLeaguePokemonByIDs(leagueID uuid.UUID, leaguePokemonIDs []uuid.UUID) ([]models.LeaguePokemon, error)
 	// adds a Pokemon species to a league's draft pool
 	CreateLeaguePokemon(leaguePokemon *models.LeaguePokemon) (*models.LeaguePokemon, error)
 	// adds multiple Pokemon species to a league's draft pool in a transaction
@@ -44,6 +46,19 @@ func NewLeaguePokemonRepository(db *gorm.DB) LeaguePokemonRepository {
 	return &leaguePokemonRepositoryImpl{
 		db: db,
 	}
+}
+
+// gets multiple specific Pokemon from a league's draft pool by their IDs
+func (r *leaguePokemonRepositoryImpl) GetLeaguePokemonByIDs(leagueID uuid.UUID, leaguePokemonIDs []uuid.UUID) ([]models.LeaguePokemon, error) {
+	var leaguePokemon []models.LeaguePokemon
+	err := r.db.Preload("PokemonSpecies").
+		Where("league_id = ? AND id IN (?)", leagueID, leaguePokemonIDs).
+		Find(&leaguePokemon).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("(Error: GetLeaguePokemonByIDs) - failed to get league pokemon by IDs: %w", err)
+	}
+	return leaguePokemon, nil
 }
 
 // adds a Pokemon species to a league's draft pool
