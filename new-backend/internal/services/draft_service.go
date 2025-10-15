@@ -225,7 +225,11 @@ func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*m
 // If all checks pass, it executes the pick as a transaction and advances the draft state.
 // MakePick makes one or more picks (if accumulated) in a league's draft when league;
 // Different from ForcePick, MakePick does all the required checks (there's a lot of checks) and validates the input
-func (s *draftServiceImpl) MakePick(currentUser *models.User, leagueID uuid.UUID, input *common.DraftMakePickDTO) error {
+func (s *draftServiceImpl) MakePick(
+	currentUser *models.User,
+	leagueID uuid.UUID,
+	input *common.DraftMakePickDTO,
+) error {
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
 		log.Printf("LOG: (DraftService: MakePick) - (user %s) could not find league %s: %v\n", currentUser.ID, leagueID, err)

@@ -17,6 +17,7 @@ type PlayerService interface {
 	CreatePlayerHandler(input *common.PlayerCreateRequest) (*models.Player, error)
 
 	GetPlayerByIDHandler(playerID uuid.UUID, currentUser *models.User) (*models.Player, error)
+	GetPlayerByUserIDAndLeagueID(userID uuid.UUID, leagueID uuid.UUID) (*models.Player, error)
 	GetPlayersByLeagueHandler(leagueID, userID uuid.UUID) ([]models.Player, error)
 	GetPlayersByUserHandler(userID, currentUserID uuid.UUID) ([]models.Player, error)
 	GetPlayerWithFullRosterHandler(playerID, currentUserID uuid.UUID) (*models.Player, error)
@@ -141,6 +142,20 @@ func (s *playerServiceImpl) GetPlayerByIDHandler(playerID uuid.UUID, currentUser
 			return nil, common.ErrPlayerNotFound
 		}
 		log.Printf("Service: GetPlayerByIDHandler - Failed to retrieve player %s: %v", playerID, err)
+		return nil, fmt.Errorf("%w: failed to retrieve player data", common.ErrInternalService)
+	}
+
+	return player, nil
+}
+
+func (s *playerServiceImpl) GetPlayerByUserIDAndLeagueID(userID, leagueID uuid.UUID) (*models.Player, error) {
+	player, err := s.playerRepo.GetPlayerByUserAndLeague(userID, leagueID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Printf("ERROR: (Service: GetPlayerByUserIDAndLeagueID) - Player (userID %s; leagueID %s) not found: %v", userID, leagueID, err)
+			return nil, common.ErrPlayerNotFound
+		}
+		log.Printf("ERROR: (Service: GetPlayerByUserIDAndLeagueID) - Failed to retrieve player with userID %s and leagueID %s: %v", userID, leagueID, err)
 		return nil, fmt.Errorf("%w: failed to retrieve player data", common.ErrInternalService)
 	}
 

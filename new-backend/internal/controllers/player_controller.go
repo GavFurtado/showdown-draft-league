@@ -18,6 +18,8 @@ type PlayerController interface {
 	JoinLeague(ctx *gin.Context)
 	// GET a player by their ID
 	GetPlayerByID(ctx *gin.Context)
+	// GET a player by their userID and leagueID
+	GetPlayerByUserIDAndLeagueID(ctx *gin.Context)
 	// Get all players in a league with leagueID
 	GetPlayersByLeague(ctx *gin.Context)
 	// Get all players associated with a specific user
@@ -89,7 +91,7 @@ func (c *playerControllerImpl) JoinLeague(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, player)
 }
 
-// POST /api/players/:id
+// GET /api/player/:id
 func (c *playerControllerImpl) GetPlayerByID(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
@@ -115,6 +117,39 @@ func (c *playerControllerImpl) GetPlayerByID(ctx *gin.Context) {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		case common.ErrUnauthorized:
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		default:
+			// fallback
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unxpected error"})
+		}
+		return
+	}
+
+	ctx.JSON(http.StatusOK, player)
+}
+
+// GET /api/leagues/:leagueId/player?userId=
+func (c *playerControllerImpl) GetPlayerByUserIDAndLeagueID(ctx *gin.Context) {
+	userIDstr := ctx.DefaultQuery("userId", "")
+	userID, err := uuid.Parse(userIDstr)
+	if err != nil { // default query situation should be caught here without further processing
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "missing or invalid userID query"})
+		return
+	}
+	leagueIDStr := ctx.Param("leagueId")
+	leagueID, err := uuid.Parse(leagueIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		return
+	}
+
+	player, err := c.playerService.GetPlayerByUserIDAndLeagueID(userID, leagueID)
+	if err != nil {
+		log.Printf("LOG: (PlayerController: GetPlayerByID) - Error occured in the Service Method\n")
+		switch err {
+		case common.ErrPlayerNotFound:
+			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		case common.ErrInternalService:
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		default:
 			// fallback
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unxpected error"})

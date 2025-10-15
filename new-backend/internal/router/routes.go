@@ -72,17 +72,21 @@ func RegisterRoutes(
 			// not implmented yet
 			// leagues.DELETE("/:id/leave", playerController.LeaveLeague)
 
-			players := leagues.Group(":leagueId/players")
+			player := leagues.Group(":leagueId/player")
 			{
-				players.GET(
+				player.GET(
 					"/:id",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
 					controllers.PlayerController.GetPlayerByID)
-				players.GET(
+				player.GET(
+					"",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
+					controllers.PlayerController.GetPlayerByUserIDAndLeagueID)
+				player.GET(
 					"/:id/roster",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayerRoster),
 					controllers.PlayerController.GetPlayerWithFullRoster)
-				players.PUT(
+				player.PUT(
 					"/:id/profile",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdatePlayer),
 					controllers.PlayerController.UpdatePlayerProfile)
