@@ -596,4 +596,3 @@ func TestLeaguePokemonService_UpdateLeaguePokemon(t *testing.T) {
 		mockLeagueRepo.AssertExpectations(t)
 	})
 }
-

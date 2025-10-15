@@ -109,7 +109,6 @@ func (c *draftedPokemonControllerImpl) PickupFreeAgent(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"status": "free agent signed successfully"})
 }
 
-
 // Helpers
 func (c *draftedPokemonControllerImpl) getUserFromContext(ctx *gin.Context) (*models.User, error) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)

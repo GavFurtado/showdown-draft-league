@@ -4,7 +4,8 @@ import (
 	"testing"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/repositories"
+	mock_repositories "github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/repositories"
+	mock_services "github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/services"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
@@ -19,6 +20,7 @@ type draftServiceMocks struct {
 	playerRepo         *mock_repositories.MockPlayerRepository
 	leaguePokemonRepo  *mock_repositories.MockLeaguePokemonRepository
 	draftedPokemonRepo *mock_repositories.MockDraftedPokemonRepository
+	schedulerService   *mock_services.MockSchedulerService
 }
 
 func setupDraftServiceTest() (services.DraftService, draftServiceMocks) {
@@ -28,6 +30,7 @@ func setupDraftServiceTest() (services.DraftService, draftServiceMocks) {
 		playerRepo:         new(mock_repositories.MockPlayerRepository),
 		leaguePokemonRepo:  new(mock_repositories.MockLeaguePokemonRepository),
 		draftedPokemonRepo: new(mock_repositories.MockDraftedPokemonRepository),
+		schedulerService:   new(mock_services.MockSchedulerService),
 	}
 
 	// webhookService can be nil for these tests if not used
@@ -39,6 +42,7 @@ func setupDraftServiceTest() (services.DraftService, draftServiceMocks) {
 		mocks.playerRepo,
 		nil,
 	)
+	service.SetSchedulerService(mocks.schedulerService)
 
 	return service, mocks
 }
@@ -52,9 +56,6 @@ func TestDraftService_MakePick(t *testing.T) {
 	playerID := uuid.New()
 	leaguePokemonID := uuid.New()
 	pokemonSpeciesID := int64(1)
-
-
-
 
 	t.Run("Success - Make a valid pick", func(t *testing.T) {
 		// --- Test Data (local to this test) ---
@@ -95,11 +96,12 @@ func TestDraftService_MakePick(t *testing.T) {
 		mocks.playerRepo.On("GetPlayerByUserAndLeague", userID, leagueID).Return(localPlayer, nil).Once()
 		mocks.leaguePokemonRepo.On("GetLeaguePokemonByIDs", leagueID, []uuid.UUID{leaguePokemonID}).Return([]models.LeaguePokemon{*localLeaguePokemon}, nil).Once()
 		mocks.playerRepo.On("GetPlayerCountByLeague", leagueID).Return(int64(1), nil).Once()
-		mocks.draftedPokemonRepo.On("GetDraftedPokemonCountByPlayer", playerID).Return(int64(0), nil).Once()
 		mocks.draftedPokemonRepo.On("DraftPokemonBatchTransaction", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 		mocks.playerRepo.On("GetPlayersByLeague", leagueID).Return([]models.Player{*localPlayer}, nil).Once() // Simplified for this test
-		mocks.draftRepo.On("UpdateDraft", mock.AnythingOfType("*models.Draft")).Return(nil).Once()
+		mocks.draftRepo.On("UpdateDraft", mock.AnythingOfType("*models.Draft")).Return(localDraft, nil).Once()
 		mocks.draftedPokemonRepo.On("GetActiveDraftedPokemonCountByLeague", leagueID).Return(int64(1), nil).Once()
+		mocks.schedulerService.On("DeregisterTask", mock.AnythingOfType("string")).Return().Once()
+		mocks.schedulerService.On("RegisterTask", mock.AnythingOfType("*utils.ScheduledTask")).Return().Once()
 
 		// --- Call Service ---
 		err := service.MakePick(localCurrentUser, leagueID, localInput)
@@ -111,6 +113,7 @@ func TestDraftService_MakePick(t *testing.T) {
 		mocks.playerRepo.AssertExpectations(t)
 		mocks.leaguePokemonRepo.AssertExpectations(t)
 		mocks.draftedPokemonRepo.AssertExpectations(t)
+		mocks.schedulerService.AssertExpectations(t)
 	})
 
 	t.Run("Failure - Not player's turn", func(t *testing.T) {
@@ -124,28 +127,28 @@ func TestDraftService_MakePick(t *testing.T) {
 			Format:              models.LeagueFormat{IsSnakeRoundDraft: true},
 		}
 		localPlayer := &models.Player{ID: playerID, UserID: userID, LeagueID: leagueID, DraftPoints: 100}
-		        localDraft := &models.Draft{
-		            LeagueID:            leagueID,
-		            Status:              enums.DraftStatusOngoing,
-		            CurrentPickOnClock:  1,
-		            CurrentTurnPlayerID: &otherPlayerID, // Not the current player's turn
-		        }
-		        localInput := &common.DraftMakePickDTO{
-		            RequestedPickCount: 1,
-		            RequestedPicks: []common.RequestedPick{
-		                {LeaguePokemonID: leaguePokemonID, DraftPickNumber: 1},
-		            },
-		        }
-		
-		        		localCurrentUser := &models.User{ID: userID}
-		        
-		        		// --- Mock Setup ---
-		        		mocks.leagueRepo.On("GetLeagueByID", leagueID).Return(localLeague, nil).Once()
-		        		mocks.draftRepo.On("GetDraftByLeagueID", leagueID).Return(localDraft, nil).Once()
-		        		mocks.playerRepo.On("GetPlayerByUserAndLeague", userID, leagueID).Return(localPlayer, nil).Once()
-		        
-		        		// --- Call Service ---
-		        		err := service.MakePick(localCurrentUser, leagueID, localInput)		// --- Assertions ---
+		localDraft := &models.Draft{
+			LeagueID:            leagueID,
+			Status:              enums.DraftStatusOngoing,
+			CurrentPickOnClock:  1,
+			CurrentTurnPlayerID: &otherPlayerID, // Not the current player's turn
+		}
+		localInput := &common.DraftMakePickDTO{
+			RequestedPickCount: 1,
+			RequestedPicks: []common.RequestedPick{
+				{LeaguePokemonID: leaguePokemonID, DraftPickNumber: 1},
+			},
+		}
+
+		localCurrentUser := &models.User{ID: userID}
+
+		// --- Mock Setup ---
+		mocks.leagueRepo.On("GetLeagueByID", leagueID).Return(localLeague, nil).Once()
+		mocks.draftRepo.On("GetDraftByLeagueID", leagueID).Return(localDraft, nil).Once()
+		mocks.playerRepo.On("GetPlayerByUserAndLeague", userID, leagueID).Return(localPlayer, nil).Once()
+
+		// --- Call Service ---
+		err := service.MakePick(localCurrentUser, leagueID, localInput) // --- Assertions ---
 		assert.Error(t, err)
 		assert.Equal(t, common.ErrUnauthorized, err)
 		mocks.leagueRepo.AssertExpectations(t)
@@ -279,7 +282,7 @@ func TestDraftService_MakePick(t *testing.T) {
 		mocks.playerRepo.On("GetPlayerByUserAndLeague", userID, leagueID).Return(localPlayer, nil).Once()
 		mocks.leaguePokemonRepo.On("GetLeaguePokemonByIDs", leagueID, []uuid.UUID{leaguePokemonID}).Return([]models.LeaguePokemon{*localLeaguePokemon}, nil).Once()
 		mocks.playerRepo.On("GetPlayerCountByLeague", leagueID).Return(int64(8), nil).Once()
-		mocks.draftedPokemonRepo.On("GetDraftedPokemonCountByPlayer", playerID).Return(int64(0), nil).Once()
+		
 
 		// --- Call Service ---
 		err := service.MakePick(localCurrentUser, leagueID, localInput)

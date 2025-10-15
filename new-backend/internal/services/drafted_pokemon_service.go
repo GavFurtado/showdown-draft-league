@@ -418,4 +418,3 @@ func (s *draftedPokemonServiceImpl) DeleteDraftedPokemon(currentUser *models.Use
 
 	return nil
 }
-

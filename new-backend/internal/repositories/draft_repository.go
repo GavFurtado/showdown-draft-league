@@ -14,6 +14,8 @@ import (
 type DraftRepository interface {
 	// retrieves the draft associated with a league ID.
 	GetDraftByLeagueID(leagueID uuid.UUID) (*models.Draft, error)
+	// retrieves a draft by its ID.
+	GetDraftByID(draftID uuid.UUID) (*models.Draft, error)
 	// creates a new draft record.
 	CreateDraft(draft *models.Draft) error
 	// updates an existing draft record.
@@ -39,9 +41,15 @@ func (r *draftRepositoryImpl) CreateDraft(draft *models.Draft) error {
 func (r *draftRepositoryImpl) GetDraftByLeagueID(leagueID uuid.UUID) (*models.Draft, error) {
 	draft := &models.Draft{}
 	if err := r.db.Where("league_id = ?", leagueID).First(draft).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, nil
-		}
+		return nil, err
+	}
+	return draft, nil
+}
+
+// retrieves a draft by its ID.
+func (r *draftRepositoryImpl) GetDraftByID(draftID uuid.UUID) (*models.Draft, error) {
+	draft := &models.Draft{}
+	if err := r.db.Where("id = ?", draftID).First(draft).Error; err != nil {
 		return nil, err
 	}
 	return draft, nil

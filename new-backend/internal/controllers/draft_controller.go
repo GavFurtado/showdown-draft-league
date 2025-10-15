@@ -13,11 +13,13 @@ import (
 )
 
 type DraftController interface {
-	StartDraft(c *gin.Context)
-	StartTransferPeriod(c *gin.Context)
-	EndTransferPeriod(c *gin.Context)
-	MakePick(c *gin.Context)
-	SkipPick(c *gin.Context)
+	GetDraftByID(ctx *gin.Context)
+	GetDraftByLeagueID(ctx *gin.Context)
+	StartDraft(ctx *gin.Context)
+	StartTransferPeriod(ctx *gin.Context)
+	EndTransferPeriod(ctx *gin.Context)
+	MakePick(ctx *gin.Context)
+	SkipPick(ctx *gin.Context)
 }
 
 type draftControllerImpl struct {
@@ -30,8 +32,58 @@ func NewDraftController(draftService services.DraftService) *draftControllerImpl
 	}
 }
 
+func (dc *draftControllerImpl) GetDraftByID(ctx *gin.Context) {
+	draftIDStr := ctx.Param("draftId")
+	draftID, err := uuid.Parse(draftIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		return
+	}
+
+	draft, err := dc.draftService.GetDraftByID(draftID)
+	if err != nil {
+		switch {
+		case errors.Is(err, common.ErrDraftNotFound):
+			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrDraftNotFound.Error()})
+		case errors.Is(err, common.ErrInternalService):
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
+		default:
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error(), "details": err.Error()})
+		}
+		return
+	}
+
+	ctx.JSON(http.StatusOK, draft)
+
+}
+
+func (dc *draftControllerImpl) GetDraftByLeagueID(ctx *gin.Context) {
+	leagueIDStr := ctx.Param("leagueId")
+	leagueID, err := uuid.Parse(leagueIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		return
+	}
+
+	draft, err := dc.draftService.GetDraftByLeagueID(leagueID)
+	if err != nil {
+		switch {
+		case errors.Is(err, common.ErrDraftNotFound):
+			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrDraftNotFound.Error()})
+		case errors.Is(err, common.ErrInternalService):
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
+		default:
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
+		}
+		return
+	}
+
+	ctx.JSON(http.StatusOK, draft)
+}
+
 func (dc *draftControllerImpl) StartDraft(ctx *gin.Context) {
 	leagueIDStr := ctx.Param("leagueId")
+
 	leagueID, err := uuid.Parse(leagueIDStr)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid league ID"})
@@ -47,14 +99,30 @@ func (dc *draftControllerImpl) StartDraft(ctx *gin.Context) {
 
 	draft, err := dc.draftService.StartDraft(leagueID, turnTimeLimit)
 	if err != nil {
-		// More specific error handling can be added here based on the error type
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start draft", "details": err.Error()})
+		switch {
+		case errors.Is(err, common.ErrLeagueNotFound):
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrLeagueNotFound.Error()})
+		case errors.Is(err, common.ErrNoPlayerForDraft):
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrNoPlayerForDraft.Error()})
+		case errors.Is(err, common.ErrInvalidDraftPosition):
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInvalidDraftPosition.Error()})
+		case errors.Is(err, common.ErrDuplicateDraftPosition):
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrDuplicateDraftPosition.Error()})
+		case errors.Is(err, common.ErrIncompleteDraftOrder):
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrIncompleteDraftOrder.Error()})
+		case errors.Is(err, common.ErrInternalService):
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrIncompleteDraftOrder.Error()})
+		default:
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start draft", "details": err.Error()})
+		}
 		return
 	}
 
 	ctx.JSON(http.StatusOK, draft)
 }
 
+// StartTransferPeriod handles the POST /api/leagues/:leagueId/transfers/start endpoint.
+// It initiates the transfer window for a specific league.
 func (dc *draftControllerImpl) StartTransferPeriod(c *gin.Context) {
 	leagueIDStr := c.Param("leagueId")
 	leagueID, err := uuid.Parse(leagueIDStr)

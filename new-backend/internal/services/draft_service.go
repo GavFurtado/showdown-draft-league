@@ -20,6 +20,8 @@ import (
 )
 
 type DraftService interface {
+	GetDraftByID(draftID uuid.UUID) (*models.Draft, error)
+	GetDraftByLeagueID(leagueID uuid.UUID) (*models.Draft, error)
 	StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*models.Draft, error)
 	MakePick(currentUser *models.User, leagueID uuid.UUID, input *common.DraftMakePickDTO) error
 	SkipTurn(currentUser *models.User, leagueID uuid.UUID) error
@@ -63,6 +65,32 @@ func NewDraftService(
 // This is called during application startup to break a circular dependency.
 func (s *draftServiceImpl) SetSchedulerService(schedulerService SchedulerService) {
 	s.schedulerService = schedulerService
+}
+
+func (s *draftServiceImpl) GetDraftByID(draftID uuid.UUID) (*models.Draft, error) {
+	draft, err := s.draftRepo.GetDraftByID(draftID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Printf("ERROR: (DraftService: GetDraftByID) - draft record for ID %s not found: %v", draftID, err)
+			return nil, common.ErrDraftNotFound
+		}
+		log.Printf("ERROR: (DraftService: GetDraftByID) - Error fetching draft %s: %v", draftID, err)
+		return nil, common.ErrInternalService
+	}
+	return draft, nil
+}
+
+func (s *draftServiceImpl) GetDraftByLeagueID(leagueID uuid.UUID) (*models.Draft, error) {
+	draft, err := s.draftRepo.GetDraftByLeagueID(leagueID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Printf("ERROR: (DraftService: GetDraftByID) - draft record for league ID %s not found: %v", leagueID, err)
+			return nil, common.ErrDraftNotFound
+		}
+		log.Printf("ERROR: (DraftService: GetDraftByID) - Error fetching draft for league %s: %v", leagueID, err)
+		return nil, common.ErrInternalService
+	}
+	return draft, nil
 }
 
 // StartDraft initializes the draft for a given league. It validates that there are players,
@@ -275,16 +303,10 @@ func (s *draftServiceImpl) MakePick(currentUser *models.User, leagueID uuid.UUID
 		return common.ErrInternalService
 	}
 
-	playerRosterSize, err := s.draftedPokemonRepo.GetDraftedPokemonCountByPlayer(player.ID)
-	if err != nil {
-		log.Printf("DraftService: MakePick - Failed to get player %d roster size\n", player.ID)
-		return err
-	}
 	totalRequestedCost := s.getTotalCostForPicks(allRequestedLeaguePokemon)
 
 	// perform remaining validation
-	currentPickSlotUsed, err := s.validatePicksAndCheckCurrentPickSlotUsed(draft, player, league,
-		input, totalRequestedCost, int(playerRosterSize))
+	currentPickSlotUsed, err := s.validatePicksAndCheckCurrentPickSlotUsed(draft, player, league, input, totalRequestedCost)
 	if err != nil {
 		switch err {
 		case common.ErrInvalidInput:
@@ -406,7 +428,7 @@ func (s *draftServiceImpl) SkipTurn(currentUser *models.User, leagueID uuid.UUID
 
 	// validate if this skip action is allowed
 	accumulatedPickCount := len(draft.PlayersWithAccumulatedPicks[player.ID])
-	_, skipsLeft, err := s.isSkipAllowed(league, false, int(playerRosterSize), accumulatedPickCount, 0)
+	_, skipsLeft, err := s.isSkipAllowed(league, false, accumulatedPickCount, 0)
 	if err != nil {
 		log.Printf("LOG: (DraftService: SkipTurn) - Player %s cannot skip current turn's pick (%d) as it would violate minimum roster requirement.\nRoster size: %d, Min. required: %d, Skips left: %d.\n",
 			player.ID, draft.CurrentPickOnClock, playerRosterSize, league.MinPokemonPerPlayer, skipsLeft)
@@ -487,12 +509,8 @@ func (s *draftServiceImpl) AutoSkipTurn(playerID, leagueID uuid.UUID) error {
 	}
 
 	accumulatedPicksForPlayer := draft.PlayersWithAccumulatedPicks[playerID]
-	playerRosterSize, err := s.draftedPokemonRepo.GetDraftedPokemonCountByPlayer(playerID)
-	if err != nil {
-		return err
-	}
 
-	allowed, _, err := s.isSkipAllowed(league, false, int(playerRosterSize), len(accumulatedPicksForPlayer), 0)
+	allowed, _, err := s.isSkipAllowed(league, false, len(accumulatedPicksForPlayer), 0)
 	if !allowed {
 		// common.ErrCannotSkipBelowMinimumRoster
 		log.Printf("ERROR: (DraftService: autoSkipTurn) - Cannot auto skip for player %s, league %s: %v\n", playerID, leagueID, err)
@@ -731,7 +749,6 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 	league *models.League,
 	input *common.DraftMakePickDTO,
 	totalRequestedCost int,
-	playerCurrentRosterSize int,
 ) (bool, error) {
 	playerID := *draft.CurrentTurnPlayerID // validated earlier to match currentPlayer
 
@@ -744,7 +761,6 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 	// track used accumulated picks within this batch to prevent double-usage
 	usedAccumulatedPicksInThisBatch := make(map[int]bool)
 	currentPickSlotUsed := false
-	requestedPickCount := len(input.RequestedPicks)
 	accumulatedPickCount := len(accumulatedPickNumbers)
 
 	for _, requestedPick := range input.RequestedPicks {
@@ -779,11 +795,10 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 	// 3. "Skips Left" Preventative Validation
 	// this ensures the player doesn't implicitly skip their current turn's slot
 	// if doing so would prevent them from meeting MinPokemonPerPlayer.
-	rosterSizeAfterThisRequest := playerCurrentRosterSize + requestedPickCount
-	_, skipsAllowed, err := s.isSkipAllowed(league, currentPickSlotUsed, rosterSizeAfterThisRequest, accumulatedPickCount, input.RequestedPickCount)
+	_, skipsAllowed, err := s.isSkipAllowed(league, currentPickSlotUsed, accumulatedPickCount, input.RequestedPickCount)
 	if err != nil {
-		log.Printf("LOG: (DraftService: validatePicksAndCheckCurrentPickSlotUsed) - Player %s cannot implicitly skip current turn's pick (%d) as it would violate minimum roster requirement. Roster after picks: %d, Min required: %d, Skips left: %d.\n",
-			playerID, draft.CurrentPickOnClock, rosterSizeAfterThisRequest, league.MinPokemonPerPlayer, skipsAllowed)
+		log.Printf("LOG: (DraftService: validatePicksAndCheckCurrentPickSlotUsed) - Player %s cannot implicitly skip current turn's pick (%d) as it would violate minimum roster requirement. Min required: %d, Skips left: %d.\n",
+			playerID, draft.CurrentPickOnClock, league.MinPokemonPerPlayer, skipsAllowed)
 		return false, err
 	}
 
@@ -797,7 +812,6 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 func (s *draftServiceImpl) isSkipAllowed(
 	league *models.League,
 	currentPickSlotUsed bool, // true if the current "on-the-clock" pick slot was used in the request
-	playerCurrentRosterSize int, // The player's current active roster size (before any picks in this request)
 	accumulatedPickCountForPlayer int, // Accumulated picks *before* this turn's action
 	requestedPickCount int, // Number of picks the player is attempting to make in this request (0 for SkipTurn)
 ) (bool, int, error) {
