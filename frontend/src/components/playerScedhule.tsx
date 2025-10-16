@@ -1,9 +1,9 @@
-export default function PlayerScedhule(){
-    return(
-        <table class="schedule-table">
+export default function PlayerScedhule() {
+    return (
+        <table className="schedule-table">
             <thead>
                 <tr>
-                    <th colspan="4" class="table-title">SCHEDULE</th>
+                    <th colSpan='4' className="table-title">SCHEDULE</th>
                 </tr>
                 <tr>
                     <th>Week</th>

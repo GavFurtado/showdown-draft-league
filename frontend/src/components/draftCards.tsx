@@ -56,15 +56,15 @@ export default function PokemonCard({ pokemon, cost, onImageError, leaguePokemon
     const handleFlip = () => {
         onFlip(leaguePokemonId);
     };
-    const types = pokemon.types.map(t => {
+    const types = pokemon.Types.map(t => {
         if (typeof t === 'string' && t.length > 0) {
             return t.charAt(0).toUpperCase() + t.slice(1);
         }
         return t;
     }).join(', ');
-    const formattedAbilities = pokemon.abilities.map(a => (
-        <span key={a.name} className={a.is_hidden ? 'text-gray-400 italic' : ''}>
-            {formatName(a.name)}
+    const formattedAbilities = pokemon.Abilities.map(a => (
+        <span key={a.Name} className={a.IsHidden ? 'text-gray-400 italic' : ''}>
+            {formatName(a.Name)}
         </span>
     ));
 
@@ -96,8 +96,8 @@ export default function PokemonCard({ pokemon, cost, onImageError, leaguePokemon
                 <div className="absolute inset-0 bg-white rounded-lg p-4 flex flex-col items-center justify-center [backface-visibility:hidden]">
                     <div className="relative w-full h-[100%]">
                         <img
-                            src={pokemon.sprites.front_default}
-                            alt={pokemon.name}
+                            src={pokemon.Sprites.FrontDefault}
+                            alt={pokemon.Name}
                             onError={onImageError}
                             className="w-[100%] h-[100%] object-contain mb-4 bg-gray-100 p-2"
                         />
@@ -107,8 +107,8 @@ export default function PokemonCard({ pokemon, cost, onImageError, leaguePokemon
                     </div>
                     <div className='flex w-[100%] justify-between'>
                         <div>
-                            <h3 className={`pb-0 mb-0 font-bold text-gray-800 text-left ${formatName(pokemon.name).length > 12 ? 'text-base' : 'text-lg'}`}>
-                                {formatName(pokemon.name)}
+                            <h3 className={`pb-0 mb-0 font-bold text-gray-800 text-left ${formatName(pokemon.Name).length > 12 ? 'text-base' : 'text-lg'}`}>
+                                {formatName(pokemon.Name)}
                             </h3>
                             <p className='p-0 m-0 text-left text-sm text-gray-600'>{types}</p>
                         </div>
@@ -143,16 +143,16 @@ export default function PokemonCard({ pokemon, cost, onImageError, leaguePokemon
 
                 {/* Back Face of the Card */}
                 <div className="text-l absolute inset-0 bg-gray-700 text-white rounded-lg p-4 flex flex-col [backface-visibility:hidden] [transform:rotateY(180deg)]">
-                    <h3 className={`font-bold mb-4 text-center ${formatName(pokemon.name).length > 12 ? 'text-base' : 'text-lg'}`}>
-                        {formatName(pokemon.name)}
+                    <h3 className={`font-bold mb-4 text-center ${formatName(pokemon.Name).length > 12 ? 'text-base' : 'text-lg'}`}>
+                        {formatName(pokemon.Name)}
                     </h3>
                     <div className="flex flex-col gap-1 w-full">
-                        <StatBar label="HP" value={pokemon.stats.hp} />
-                        <StatBar label="Att" value={pokemon.stats.attack} />
-                        <StatBar label="Def" value={pokemon.stats.defense} />
-                        <StatBar label="SpA" value={pokemon.stats["special_attack"]} />
-                        <StatBar label="SpD" value={pokemon.stats["special_defense"]} />
-                        <StatBar label="Spe" value={pokemon.stats.speed} />
+                        <StatBar label="HP" value={pokemon.Stats.Hp} />
+                        <StatBar label="Att" value={pokemon.Stats.Attack} />
+                        <StatBar label="Def" value={pokemon.Stats.Defense} />
+                        <StatBar label="SpA" value={pokemon.Stats.SpecialAttack} />
+                        <StatBar label="SpD" value={pokemon.Stats.SpecialAttack} />
+                        <StatBar label="Spe" value={pokemon.Stats.Speed} />
                     </div>
                     <div className="text-left text-xs mt-4">
                         <p className="font-xs">

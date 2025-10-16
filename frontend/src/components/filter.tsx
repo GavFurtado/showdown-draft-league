@@ -52,7 +52,9 @@ export default function Filter(props: FilterProps) {
     const handleSortByStatChange = (event: ChangeEvent<HTMLSelectElement>) => {
         const statObj = pokemonStats.find(x => x.key === event.target.value);
         const statName = statObj ? statObj.name : null;
-        updateFilter("sortByStat", statName);
+        if (statName) {
+            updateFilter("sortByStat", statName);
+        }
     };
 
     const handleSortOrderChange = (event: ChangeEvent<HTMLSelectElement>) => {

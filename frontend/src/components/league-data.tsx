@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Score from './score';
 import PlayerScedhule from './playerScedhule';
 import Roster from './roster'
-export default function LeagueDropdown(){
+export default function LeagueDropdown() {
     const [isOpen, setIsOpen] = useState(false);
 
     const toggleDropdown = () => {

@@ -1,6 +1,6 @@
-export default function Score(){
-    return(
-        <table class="record-table">
+export default function Score() {
+    return (
+        <table className="record-table">
             <thead>
                 <tr>
                     <th colspan="3" class="title">SCORE</th>

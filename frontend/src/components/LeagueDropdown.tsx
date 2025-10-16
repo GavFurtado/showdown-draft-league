@@ -4,11 +4,11 @@ import { Fragment } from 'react';
 import { League } from '../api/data_interfaces';
 
 interface LeagueDropdownProps {
-  currentLeague: League | null;
-  userLeagues: League[];
-  loading: boolean;
-  error: string | null;
-  onSelectLeague: (leagueId: string) => void;
+    currentLeague: League | null;
+    userLeagues: League[];
+    loading: boolean;
+    error: string | null;
+    onSelectLeague: (leagueId: string) => void;
 }
 
 function mergeClasses(...classes: (string | boolean | undefined | null)[]) {
@@ -35,7 +35,7 @@ export default function LeagueDropdown({
             <div>
                 <MenuButton className="flex items-center rounded-md bg-gray-800 px-3 py-2 text-sm font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800 ml-1">
                     <span className="sr-only">Open league menu</span>
-                    {currentLeague ? currentLeague.name : "Select League"}
+                    {currentLeague ? currentLeague.Name : "Select League"}
                     <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.23 8.29a.75.75 0 01.02-1.06z" clipRule="evenodd" />
                     </svg>
@@ -53,17 +53,17 @@ export default function LeagueDropdown({
                 <MenuItems className="absolute left-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                     {userLeagues.length > 0 ? (
                         userLeagues.map((league) => (
-                            <MenuItem key={league.id}>
+                            <MenuItem key={league.ID}>
                                 {({ active }) => (
                                     <Link
-                                        to={`/league/${league.id}/dashboard`}
-                                        onClick={() => onSelectLeague(league.id)}
+                                        to={`/league/${league.ID}/dashboard`}
+                                        onClick={() => onSelectLeague(league.ID)}
                                         className={mergeClasses(
                                             active ? 'bg-gray-100' : '',
                                             'block px-4 py-2 text-sm text-gray-700'
                                         )}
                                     >
-                                        {league.name}
+                                        {league.Name}
                                     </Link>
                                 )}
                             </MenuItem>
@@ -82,7 +82,7 @@ export default function LeagueDropdown({
                                     'block px-4 py-2 text-sm text-gray-700 border-t border-gray-200 mt-1'
                                 )}
                             >
-                View All My Leagues
+                                View All My Leagues
                             </Link>
                         )}
                     </MenuItem>

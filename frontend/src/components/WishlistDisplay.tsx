@@ -14,9 +14,9 @@ export const WishlistDisplay: React.FC<WishlistDisplayProps> = ({ allPokemon, wi
 
     console.log("WishlistDisplay: current wishlist state", wishlist);
 
-    const wishlistedPokemon = allPokemon.filter(lp => wishlist.includes(lp.id));
+    const wishlistedPokemon = allPokemon.filter(lp => wishlist.includes(lp.ID));
     const getTotalCostOfWishlistedPokemon = (wishlistedPokemon: LeaguePokemon[]) => {
-        return wishlistedPokemon.reduce((sum, p) => sum + (p.cost ?? 0), 0);
+        return wishlistedPokemon.reduce((sum, p) => sum + (p.Cost ?? 0), 0);
     }
 
     if (wishlistedPokemon.length === 0) {
@@ -52,24 +52,24 @@ export const WishlistDisplay: React.FC<WishlistDisplayProps> = ({ allPokemon, wi
             <div className="text-sm text-gray-600 mb-2">Total Cost: {getTotalCostOfWishlistedPokemon(wishlistedPokemon)}</div>
             <div className="space-y-2">
                 {wishlistedPokemon.map(lp => (
-                    <div key={lp.id} className="flex items-center justify-between bg-gray-100 p-2 rounded-md">
+                    <div key={lp.ID} className="flex items-center justify-between bg-gray-100 p-2 rounded-md">
                         <div className="flex items-center">
                             <img
-                                src={lp.PokemonSpecies.sprites.front_default}
-                                alt={lp.PokemonSpecies.name}
+                                src={lp.PokemonSpecies.Sprites.FrontDefault}
+                                alt={lp.PokemonSpecies.Name}
                                 className="w-10 h-10 object-contain mr-2"
                             />
                             <div>
-                                <p className="font-medium text-gray-800">{formatName(lp.PokemonSpecies.name)}</p>
-                                <p className="text-sm text-gray-600">Cost: {lp.cost}</p>
+                                <p className="font-medium text-gray-800">{formatName(lp.PokemonSpecies.Name)}</p>
+                                <p className="text-sm text-gray-600">Cost: {lp.Cost}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            {isMyTurn && lp.isAvailable && (
+                            {isMyTurn && lp.IsAvailable && (
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        onDraft(lp.id);
+                                        onDraft(lp.ID);
                                     }}
                                     className="relative flex items-center align-center justify-center h-7.5 w-7.5 rounded-full p-0 transition-colors bg-red-500 hover:bg-red-700"
                                 >
@@ -80,7 +80,7 @@ export const WishlistDisplay: React.FC<WishlistDisplayProps> = ({ allPokemon, wi
                                 </button>
                             )}
                             <button
-                                onClick={() => removePokemonFromWishlist(lp.id)}
+                                onClick={() => removePokemonFromWishlist(lp.ID)}
                                 className="text-red-500 hover:text-red-700 text-sm p-1 rounded-full hover:bg-red-100"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">

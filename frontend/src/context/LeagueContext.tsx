@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { League, Draft, Player, DiscordUser } from '../api/data_interfaces';
-import { getLeague, getDraftByLeagueID, getMyDiscordDetails, getPlayersByUserId } from '../api/api';
+import { getLeague, getDraftByLeagueID, getMyDiscordDetails, getPlayersByUserId, getPlayerById } from '../api/api';
 import axios from 'axios'; // Import axios for error handling
 import { useParams } from 'react-router-dom'; // Import useParams
 
@@ -22,12 +22,12 @@ interface LeagueProviderProps {
 }
 
 interface LeagueState {
-  currentLeague: League | null;
-  currentDraft: Draft | null;
-  currentPlayer: Player | null;
-  myDiscordUser: DiscordUser | null;
-  loading: boolean;
-  error: string | null;
+    currentLeague: League | null;
+    currentDraft: Draft | null;
+    currentPlayer: Player | null;
+    myDiscordUser: DiscordUser | null;
+    loading: boolean;
+    error: string | null;
 }
 
 export const LeagueProvider = ({ children }: LeagueProviderProps) => {
@@ -62,15 +62,15 @@ export const LeagueProvider = ({ children }: LeagueProviderProps) => {
             const discordUserResponse = await getMyDiscordDetails();
 
             let playerInCurrentLeague: Player | null = null;
-            if (discordUserResponse.data?.id) {
-                const playersResponse = await getPlayersByUserId(discordUserResponse.data.id);
-                playerInCurrentLeague = playersResponse.data.find((p: Player) => p.leagueId === leagueId) || null;
+            if (discordUserResponse.data?.ID) {
+                const playersResponse = await getPlayersByUserId(discordUserResponse.data.ID);
+                playerInCurrentLeague = playersResponse.data.find((p: Player) => p.LeagueID === leagueId) || null;
             }
 
             let currentDraftWithPlayer = draftResponse.data;
-            if (currentDraftWithPlayer && currentDraftWithPlayer.currentTurnPlayerID) {
+            if (currentDraftWithPlayer && currentDraftWithPlayer.CurrentTurnPlayerID) {
                 try {
-                    const turnPlayerResponse = await getPlayerById(leagueId, currentDraftWithPlayer.currentTurnPlayerID);
+                    const turnPlayerResponse = await getPlayerById(leagueId, currentDraftWithPlayer.CurrentTurnPlayerID);
                     currentDraftWithPlayer = { ...currentDraftWithPlayer, CurrentTurnPlayer: turnPlayerResponse.data };
                 } catch (playerErr) {
                     console.error("Failed to fetch CurrentTurnPlayer:", playerErr);

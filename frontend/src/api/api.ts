@@ -31,15 +31,15 @@ export const joinLeague = (leagueId: string) => api.post(`/api/leagues/${leagueI
 export const leaveLeague = (leagueId: string) => api.delete(`/api/leagues/${leagueId}/leave`);
 
 // Player calls
-export const getPlayerById = (leagueId: string, id: string) => api.get(`/api/leagues/${leagueId}/players/${id}`);
+export const getPlayerById = (leagueId: string, id: string) => api.get(`/api/leagues/${leagueId}/player/${id}`);
 export const getPlayerByUserIdAndLeagueId = (leagueId: string, userId: string) =>
-    api.get(`/api/leagues/${leagueId}/players?userId=${userId}`);
+    api.get(`/api/leagues/${leagueId}/player?userId=${userId}`);
 export const getPlayerWithFullRoster =
     (leagueId: string, id: string) =>
-        api.get(`/api/leagues/${leagueId}/players/${id}/roster`);
+        api.get(`/api/leagues/${leagueId}/player/${id}/roster`);
 export const updatePlayerProfile =
     (leagueId: string, id: string, data: UpdatePlayerInfoRequest) =>
-        api.put(`/api/leagueId/${leagueId}/players/${id}/profile`, data);
+        api.put(`/api/leagueId/${leagueId}/player/${id}/profile`, data);
 
 // LeaguePokemon calls
 export const getAllLeaguePokmeon = (leagueId: string) =>

@@ -30,7 +30,7 @@ export default function LeagueSubNav({
     userPlayer,
     currentPage,
 }: LeagueSubNavProps) {
-    const isLeagueStaff = userPlayer && (userPlayer.role === "moderator" || userPlayer.role === "owner");
+    const isLeagueStaff = userPlayer && (userPlayer.Role === "moderator" || userPlayer.Role === "owner");
 
     return (
         <Disclosure as="nav" className="bg-[#4F5D75] shadow">
@@ -40,7 +40,7 @@ export default function LeagueSubNav({
                         {leagueNavigation.map((item) => (
                             <Link
                                 key={item.name}
-                                to={`/league/${currentLeague.id}/${item.href}`}
+                                to={`/league/${currentLeague.ID}/${item.href}`}
                                 aria-current={currentPage === item.name ? 'page' : undefined}
                                 className={mergeClasses(
                                     currentPage === item.name ? 'bg-gray-700 text-white' : 'text-gray-200 hover:bg-gray-600 hover:text-white',
@@ -53,7 +53,7 @@ export default function LeagueSubNav({
                         {isLeagueStaff && (
                             <>
 
-                                <Link to={`/league/${currentLeague.id}/staff/edit-rules`} className={mergeClasses(
+                                <Link to={`/league/${currentLeague.ID}/staff/edit-rules`} className={mergeClasses(
                                     currentPage === "Edit Rules" ? 'bg-gray-700 text-white' : 'text-gray-200 hover:bg-gray-600 hover:text-white',
                                     'rounded-md px-3 py-1 text-sm font-medium',
                                 )}>

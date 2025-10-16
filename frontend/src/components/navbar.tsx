@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLeague } from '../context/LeagueContext';
 import { useEffect, useState } from 'react';
 import { League, Player, User } from '../api/data_interfaces';
-import { DiscordUser } from '../api/request_interfaces';
+import { DiscordUser } from '../api/data_interfaces';
 import { getMyLeagues, getUserMe, getMyDiscordDetails, getPlayersByLeague, logout } from '../api/api';
 import axios from 'axios'; // Import axios for error handling
 
@@ -93,7 +93,7 @@ export default function NavBar({ page }: NavBarProps) {
         // console.log("NavBar: useEffect for user leagues running. Current user:", user);
         const fetchUserLeagues = async () => {
             // console.log("NavBar: fetchUserLeagues called.");
-            if (!user?.id) {
+            if (!user?.ID) {
                 // console.log("NavBar: No user ID, skipping fetchUserLeagues.");
                 setUserLeagues([]);
                 setUserLeaguesLoading(false);
@@ -133,7 +133,7 @@ export default function NavBar({ page }: NavBarProps) {
         // console.log("NavBar: useEffect for user player running. User ID:", user?.id, "League ID:", currentLeague?.id);
         const fetchUserPlayer = async () => {
             // console.log("NavBar: fetchUserPlayer called.");
-            if (!user?.id || !currentLeague?.id) {
+            if (!user?.ID || !currentLeague?.ID) {
                 // console.log("NavBar: Missing user ID or current league ID, skipping fetchUserPlayer.");
                 setUserPlayer(null);
                 setUserPlayerLoading(false);
@@ -144,11 +144,11 @@ export default function NavBar({ page }: NavBarProps) {
                 setUserPlayerLoading(true);
                 setUserPlayerError(null);
 
-                const response = await getPlayersByLeague(currentLeague.id);
+                const response = await getPlayersByLeague(currentLeague.ID);
                 // console.log("NavBar: getPlayersByLeague response:", response.data);
                 const allPlayersInLeague: Player[] = response.data;
                 const foundPlayer = allPlayersInLeague.find(
-                    (player) => player.userId === user.id
+                    (player) => player.UserID === user.ID
                 );
 
                 setUserPlayer(foundPlayer || null);
@@ -165,7 +165,7 @@ export default function NavBar({ page }: NavBarProps) {
             }
         };
         fetchUserPlayer();
-    }, [user?.id, currentLeague?.id]); // Re-fetch if user or currentLeague changes
+    }, [user?.ID, currentLeague?.ID]); // Re-fetch if user or currentLeague changes
 
     return (
         <>

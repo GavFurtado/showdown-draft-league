@@ -5,8 +5,8 @@ const MAX_WISHLIST_SIZE = 15;
 
 interface UseWishlistHook {
     wishlist: string[];
-    addPokemonToWishlist: (pokemonId: string) => string[];
-    removePokemonFromWishlist: (pokemonId: string) => string[];
+    addPokemonToWishlist: (pokemonId: string) => string[] | null;
+    removePokemonFromWishlist: (pokemonId: string) => string[] | null;
     isPokemonInWishlist: (pokemonId: string) => boolean;
     clearWishlist: () => void;
 }
@@ -43,26 +43,33 @@ export const useWishlist = (leagueId: string): UseWishlistHook => {
         }
     }, [wishlist, storageKey, leagueId]);
 
-    const addPokemonToWishlist = (pokemonId: string) => {
-        if (!leagueId) return; // Prevent actions if leagueId is not set
+    const addPokemonToWishlist = (pokemonId: string): string[] | null => {
+        if (!leagueId) return null;
+        let updatedWishlist: string[] | null = null;
         setWishlist(prevWishlist => {
             if (prevWishlist.length >= MAX_WISHLIST_SIZE) {
                 console.warn("Wishlist is full. Cannot add more Pokemon.");
-                return prevWishlist; // Do not add if wishlist is full
+                updatedWishlist = prevWishlist;
+                return prevWishlist;
             }
             if (!prevWishlist.includes(pokemonId)) {
-                return [...prevWishlist, pokemonId];
+                updatedWishlist = [...prevWishlist, pokemonId];
+                return updatedWishlist;
             }
+            updatedWishlist = prevWishlist;
             return prevWishlist;
         });
+        return updatedWishlist;
     };
 
-    const removePokemonFromWishlist = (pokemonId: string) => {
-        if (!leagueId) return; // Prevent actions if leagueId is not set
+    const removePokemonFromWishlist = (pokemonId: string): string[] | null => {
+        if (!leagueId) return null;
+        let updatedWishlist: string[] | null = null;
         setWishlist(prevWishlist => {
-            const newWishlist = prevWishlist.filter(id => id !== pokemonId);
-            return newWishlist;
+            updatedWishlist = prevWishlist.filter(id => id !== pokemonId);
+            return updatedWishlist;
         });
+        return updatedWishlist;
     };
 
     const isPokemonInWishlist = (pokemonId: string): boolean => {

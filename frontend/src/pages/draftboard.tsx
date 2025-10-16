@@ -1,6 +1,6 @@
 import DraftCard from "../components/draftCards"
 import Filter from "../components/filter"
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { FilterState, DraftCardProps, LeaguePokemon } from "../api/data_interfaces"
 import { getAllLeaguePokmeon, makePick, getDraftedPokemonByPlayer } from "../api/api"
 import { useLeague } from "../context/LeagueContext"
@@ -20,7 +20,7 @@ const defaultFilters: FilterState = {
 
 export default function Draftboard() {
     const { currentLeague, currentDraft, currentPlayer, refetch: refetchLeague, loading: leagueLoading, error: leagueError } = useLeague();
-    const { wishlist, addPokemonToWishlist, removePokemonFromWishlist, clearWishlist, isPokemonInWishlist } = useWishlist(currentLeague?.id || '');
+    const { wishlist, addPokemonToWishlist, removePokemonFromWishlist, clearWishlist, isPokemonInWishlist } = useWishlist(currentLeague?.ID || '');
 
     const [allPokemon, setAllPokemon] = useState<LeaguePokemon[]>([]);
     const [cards, setCards] = useState<LeaguePokemon[]>([]);
@@ -33,10 +33,10 @@ export default function Draftboard() {
     const [selectedPokemon, setSelectedPokemon] = useState<LeaguePokemon | null>(null);
     const [draftedPokemon, setDraftedPokemon] = useState<LeaguePokemon[]>([]);
 
-    const isMyTurn = currentDraft?.currentTurnPlayerID === currentPlayer?.id;
+    const isMyTurn = currentDraft?.CurrentTurnPlayerID === currentPlayer?.ID;
 
     const fetchPokemon = useCallback(async () => {
-        if (!currentLeague?.id) {
+        if (!currentLeague?.ID) {
             setAllPokemon([]);
             setCards([]);
             setPokemonLoading(false);
@@ -45,7 +45,7 @@ export default function Draftboard() {
         try {
             setPokemonLoading(true);
             setPokemonError(null);
-            const response = await getAllLeaguePokmeon(currentLeague.id);
+            const response = await getAllLeaguePokmeon(currentLeague.ID);
             setAllPokemon(response.data);
             setCards(response.data); // Initialize cards with all fetched pokemon
         } catch (err) {
@@ -58,11 +58,11 @@ export default function Draftboard() {
         } finally {
             setPokemonLoading(false);
         }
-    }, [currentLeague?.id]);
+    }, [currentLeague?.ID]);
 
     useEffect(() => {
         if (currentLeague && currentPlayer) {
-            getDraftedPokemonByPlayer(currentLeague.id, currentPlayer.id)
+            getDraftedPokemonByPlayer(currentLeague.ID, currentPlayer.ID)
                 .then(response => setDraftedPokemon(response.data))
                 .catch(error => console.error("Failed to fetch drafted pokemon:", error));
         }
@@ -74,7 +74,7 @@ export default function Draftboard() {
     }, [setCurrentlyFlippedCardId]);
 
     const onDraft = useCallback((leaguePokemonId: string) => {
-        const pokemonToDraft = allPokemon.find(p => p.id === leaguePokemonId);
+        const pokemonToDraft = allPokemon.find(p => p.ID === leaguePokemonId);
         if (pokemonToDraft) {
             setSelectedPokemon(pokemonToDraft);
             setIsModalOpen(true);
@@ -91,11 +91,11 @@ export default function Draftboard() {
                 const pickRequest = {
                     RequestedPickCount: 1,
                     RequestedPicks: [{
-                        LeaguePokemonID: selectedPokemon.id,
-                        DraftPickNumber: currentDraft.currentPickOnClock
+                        LeaguePokemonID: selectedPokemon.ID,
+                        DraftPickNumber: currentDraft.CurrentPickOnClock
                     }]
                 };
-                await makePick(currentLeague.id, pickRequest);
+                await makePick(currentLeague.ID, pickRequest);
                 fetchPokemon();
                 refetchLeague();
             } catch (error) {
@@ -134,34 +134,34 @@ export default function Draftboard() {
 
         if (searchTerm.trim() !== '') {
             updatedCards = updatedCards.filter(card =>
-                card.PokemonSpecies.name.toLowerCase().includes(searchTerm.toLowerCase())
+                card.PokemonSpecies.Name.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
 
         if (filters.selectedTypes.length > 0) {
             updatedCards = updatedCards.filter(card =>
                 filters.selectedTypes.some(type =>
-                    card.PokemonSpecies.types.includes(type)
+                    card.PokemonSpecies.Types.includes(type)
                 )
             );
         }
 
         if (filters.minCost !== '') {
             const min = parseInt(filters.minCost);
-            updatedCards = updatedCards.filter(card => card.cost >= min);
+            updatedCards = updatedCards.filter(card => card.Cost >= min);
         }
 
         if (filters.maxCost !== '') {
             const max = parseInt(filters.maxCost);
-            updatedCards = updatedCards.filter(card => card.cost <= max);
+            updatedCards = updatedCards.filter(card => card.Cost <= max);
         }
 
         // Always sort with cost as secondary sort
         updatedCards = updatedCards.sort((a, b) => {
             // If sortByStat is selected, use it as primary sort
             if (filters.sortByStat) {
-                const statA = a.PokemonSpecies.stats[filters.sortByStat];
-                const statB = b.PokemonSpecies.stats[filters.sortByStat];
+                const statA = a.PokemonSpecies.Stats[filters.sortByStat];
+                const statB = b.PokemonSpecies.Stats[filters.sortByStat];
 
                 if (statA !== undefined && statB !== undefined) {
                     const statDiff = filters.sortOrder === 'desc' ? statB - statA : statA - statB;
@@ -174,7 +174,7 @@ export default function Draftboard() {
             }
 
             // Primary sort by cost (if no stat selected), or secondary sort (if stats are equal)
-            return filters.costSortOrder === 'desc' ? b.cost - a.cost : a.cost - b.cost;
+            return filters.costSortOrder === 'desc' ? b.Cost - a.Cost : a.Cost - b.Cost;
         });
 
         setCards(updatedCards);
@@ -216,28 +216,28 @@ export default function Draftboard() {
     const cardsToDisplay = cards.map((leaguePokemon: LeaguePokemon) => {
         // console.log("Draftboard::cardsToDisplay: leaguePokemon id, cost, pokemonSpecies", leaguePokemon.id, leaguePokemon.cost, leaguePokemon.PokemonSpecies);
 
-        if (!leaguePokemon.PokemonSpecies || !currentLeague?.id) {
+        if (!leaguePokemon.PokemonSpecies || !currentLeague?.ID) {
             console.warn("Draftboard: Skipping card due to missing pokemonSpecies:", leaguePokemon);
             return null;
         }
 
         const pokemon = leaguePokemon.PokemonSpecies;
-        const name = pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1);
+        const name = pokemon.Name.charAt(0).toUpperCase() + pokemon.Name.slice(1);
         const draftCardProps: DraftCardProps = {
-            key: leaguePokemon.id,
-            leaguePokemonId: leaguePokemon.id,
+            key: leaguePokemon.ID,
+            leaguePokemonId: leaguePokemon.ID,
             pokemon: {
                 ...pokemon,
-                name: name,
+                Name: name,
             },
-            cost: leaguePokemon.cost,
+            cost: leaguePokemon.Cost,
             onImageError: handleImageError,
             addPokemonToWishlist: addPokemonToWishlist,
             isPokemonInWishlist: isPokemonInWishlist,
             removePokemonFromWishlist: removePokemonFromWishlist,
-            isFlipped: currentlyFlippedCardId === leaguePokemon.id,
+            isFlipped: currentlyFlippedCardId === leaguePokemon.ID,
             onFlip: handleCardFlip,
-            isDraftable: isMyTurn && leaguePokemon.isAvailable,
+            isDraftable: isMyTurn && leaguePokemon.IsAvailable,
             onDraft: onDraft,
         };
         const { key, ...rest } = draftCardProps;
@@ -288,11 +288,11 @@ export default function Draftboard() {
                         {currentDraft && (
                             <div className="p-4 bg-white rounded-lg shadow-md">
                                 <h2 className="text-lg font-bold mb-2">Draft Status</h2>
-                                <p>Round: {currentDraft?.currentRound}</p>
-                                <p>Pick: {currentDraft?.currentPickInRound}</p>
-                                <p>Player on clock: {currentDraft?.CurrentTurnPlayer?.inLeagueName}</p>                                </div>
+                                <p>Round: {currentDraft?.CurrentRound}</p>
+                                <p>Pick: {currentDraft?.CurrentPickInRound}</p>
+                                <p>Player on clock: {currentDraft?.CurrentTurnPlayer?.InLeagueName}</p>                                </div>
                         )}
-                        {currentLeague?.id && (
+                        {currentLeague?.ID && (
                             <WishlistDisplay
                                 allPokemon={allPokemon}
                                 wishlist={wishlist}
@@ -308,10 +308,10 @@ export default function Draftboard() {
                             </div>
                             <ul className="divide-y divide-gray-200">
                                 {draftedPokemon.map(p => (
-                                    <li key={p.id} className="flex items-center py-4 px-6">
-                                        <img className="w-12 h-12 object-cover mr-4" src={p.PokemonSpecies.sprites.front_default} alt={p.PokemonSpecies.name}></img>
+                                    <li key={p.ID} className="flex items-center py-4 px-6">
+                                        <img className="w-12 h-12 object-cover mr-4" src={p.PokemonSpecies.Sprites.FrontDefault} alt={p.PokemonSpecies.Name}></img>
                                         <div className="flex-1">
-                                            <h3 className="text-lg font-medium text-gray-800">{p.PokemonSpecies.name}</h3>
+                                            <h3 className="text-lg font-medium text-gray-800">{p.PokemonSpecies.Name}</h3>
                                         </div>
                                     </li>
                                 ))}
@@ -323,7 +323,7 @@ export default function Draftboard() {
             {selectedPokemon && (
                 <Modal isOpen={isModalOpen} onClose={handleCancelDraft} title="Confirm Draft">
                     <h2 className="text-xl font-bold mb-4">Confirm Draft</h2>
-                    <p>Are you sure you want to draft {selectedPokemon.PokemonSpecies.name} for {selectedPokemon.cost} points?</p>
+                    <p>Are you sure you want to draft {selectedPokemon.PokemonSpecies.Name} for {selectedPokemon.Cost} points?</p>
                     <div className="mt-6 flex justify-end gap-4">
                         <button onClick={handleCancelDraft} className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
                         <button onClick={handleConfirmDraft} className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Confirm</button>
