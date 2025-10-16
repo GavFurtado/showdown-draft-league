@@ -13,25 +13,25 @@ import (
 
 // Draft represents a draft event for a league, managing the real-time state of the draft process.
 type Draft struct {
-	ID                          uuid.UUID              `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	LeagueID                    uuid.UUID              `gorm:"type:uuid;not null;index;unique" json:"league_id"`
-	Status                      enums.DraftStatus      `gorm:"type:varchar(50);not null;default:'PENDING'" json:"status"`
-	CurrentTurnPlayerID         *uuid.UUID             `gorm:"type:uuid;index" json:"current_turn_player_id"` // Nullable: Player whose turn it is
-	CurrentRound                int                    `gorm:"default:0;not null" json:"current_round"`
-	CurrentPickInRound          int                    `gorm:"default:1;not null" json:"current_pick_in_round"`
-	CurrentPickOnClock          int                    `gorm:"default:1;not null" json:"current_pick_on_clock"` // aka CurrentOverallPickNumber
-	PlayersWithAccumulatedPicks PlayerAccumulatedPicks `gorm:"type:jsonb" json:"players_with_accumulated_picks"`
-	CurrentTurnStartTime        *time.Time             `gorm:"type:timestamp with time zone" json:"current_turn_start_time"`
-	TurnTimeLimit               int                    `gorm:"default:1440;not null" json:"turn_time_limit"`
-	StartTime                   time.Time              `gorm:"type:timestamp with time zone" json:"start_time"`
-	EndTime                     time.Time              `gorm:"type:timestamp with time zone" json:"end_time"`
-	CreatedAt                   time.Time              `gorm:"type:timestamp with time zone" json:"created_at"`
-	UpdatedAt                   time.Time              `gorm:"type:timestamp with time zone" json:"updated_at"`
-	DeletedAt                   gorm.DeletedAt         `gorm:"index;type:timestamp with time zone" json:"-"`
+	ID                          uuid.UUID              `gorm:"type:uuid;primaryKey;default:gen_random_uuid();column:id" json:"ID"`
+	LeagueID                    uuid.UUID              `gorm:"type:uuid;not null;index;unique;column:league_id" json:"LeagueID"`
+	Status                      enums.DraftStatus      `gorm:"type:varchar(50);not null;default:'PENDING';column:status" json:"Status"`
+	CurrentTurnPlayerID         *uuid.UUID             `gorm:"type:uuid;index;column:current_turn_player_id" json:"CurrentTurnPlayerID"` // Nullable: Player whose turn it is
+	CurrentRound                int                    `gorm:"default:0;not null;column:current_round" json:"CurrentRound"`
+	CurrentPickInRound          int                    `gorm:"default:1;not null;column:current_pick_in_round" json:"CurrentPickInRound"`
+	CurrentPickOnClock          int                    `gorm:"default:1;not null" json:"CurrentPickOnClock"` // aka CurrentOverallPickNumber
+	PlayersWithAccumulatedPicks PlayerAccumulatedPicks `gorm:"type:jsonb;column:players_with_accumulated_picks" json:"PlayersWithAccumulatedPicks"`
+	CurrentTurnStartTime        *time.Time             `gorm:"type:timestamp with time zone;column:current_turn_start_time" json:"CurrentTurnStartTime"`
+	TurnTimeLimit               int                    `gorm:"default:1440;not null;column:turn_time_limit" json:"TurnTimeLimit"`
+	StartTime                   time.Time              `gorm:"type:timestamp with time zone;column:start_time" json:"StartTime"`
+	EndTime                     time.Time              `gorm:"type:timestamp with time zone;column:end_time" json:"EndTime"`
+	CreatedAt                   time.Time              `gorm:"type:timestamp with time zone;column:created_at" json:"CreatedAt"`
+	UpdatedAt                   time.Time              `gorm:"type:timestamp with time zone;column:updated_at" json:"UpdatedAt"`
+	DeletedAt                   gorm.DeletedAt         `gorm:"index;type:timestamp with time zone;column:deleted_at" json:"-"`
 
 	// Relationships
-	League            League `gorm:"foreignKey:LeagueID;references:ID"`
-	CurrentTurnPlayer Player `gorm:"foreignKey:CurrentTurnPlayerID;references:ID"`
+	League            League `gorm:"foreignKey:league_id;references:id" json:"League"`
+	CurrentTurnPlayer Player `gorm:"foreignKey:current_turn_player_id;references:id" json:"CurrentTurnPlayer"`
 }
 
 // PlayerAccumulatedPicks is a custom type for storing a map of player IDs to their accumulated pick numbers.

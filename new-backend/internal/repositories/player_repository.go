@@ -62,9 +62,6 @@ func (r *playerRepositoryImpl) GetPlayerByID(id uuid.UUID) (*models.Player, erro
 	var player models.Player
 	err := r.db.Preload("User").
 		Preload("League").
-		Preload("Roster").
-		Preload("Roster.DraftedPokemon").
-		Preload("Roster.DraftedPokemon.PokemonSpecies").
 		First(&player, "id = ?", id).Error
 
 	if err != nil {
@@ -206,7 +203,7 @@ func (r *playerRepositoryImpl) DeletePlayer(playerID uuid.UUID) error {
 	}()
 
 	// First soft delete all roster entries for this player
-	if err := tx.Where("player_id = ?", playerID).Delete(&models.PlayerRoster{}).Error; err != nil {
+	if err := tx.Where("player_id = ?", playerID).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("(Error: DeletePlayer) - failed to delete player roster: %w", err)
 	}

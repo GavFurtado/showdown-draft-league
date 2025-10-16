@@ -13,54 +13,54 @@ import (
 
 // League defines the structure of a League
 type League struct {
-	ID                  uuid.UUID          `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	Name                string             `gorm:"not null" json:"name"`
-	StartDate           time.Time          `gorm:"not null" json:"start_date"`
-	EndDate             *time.Time         `json:"end_date"` // this is set when the league is cancelled or actualy ends, nil otherwise
-	RulesetDescription  string             `gorm:"type:text" json:"ruleset_description"`
-	Status              enums.LeagueStatus `gorm:"type:varchar(50);not null;default:'pending'" json:"status"`
-	MaxPokemonPerPlayer int                `gorm:"not null;default:0" json:"max_pokemon_per_player"`
-	MinPokemonPerPlayer int                `gorm:"not null;default:0" json:"min_pokemon_per_player"`
-	StartingDraftPoints int                `gorm:"not null;default:140" json:"starting_draft_points"`
-	Format              LeagueFormat       `gorm:"type:jsonb" json:"format"`
-	CreatedAt           *time.Time         `gorm:"type:timestamp with time zone" json:"created_at"`
-	UpdatedAt           *time.Time         `gorm:"type:timestamp with time zone" json:"updated_at"`
-	DeletedAt           gorm.DeletedAt     `gorm:"index" json:"-"`
-	DiscordWebhookURL   *string            `json:"discord_webhook_url"`
+	ID                  uuid.UUID          `gorm:"type:uuid;primaryKey;default:gen_random_uuid();column:id" json:"ID"`
+	Name                string             `gorm:"not null;column:name" json:"Name"`
+	StartDate           time.Time          `gorm:"not null;column:start_date" json:"StartDate"`
+	EndDate             *time.Time         `gorm:"column:end_date" json:"EndDate"` // this is set when the league is cancelled or actualy ends, nil otherwise
+	RulesetDescription  string             `gorm:"type:text;column:ruleset_description" json:"RulesetDescription"`
+	Status              enums.LeagueStatus `gorm:"type:varchar(50);not null;default:'pending';column:status" json:"Status"`
+	MaxPokemonPerPlayer int                `gorm:"not null;default:0;column:max_pokemon_per_player" json:"MaxPokemonPerPlayer"`
+	MinPokemonPerPlayer int                `gorm:"not null;default:0;column:min_pokemon_per_player" json:"MinPokemonPerPlayer"`
+	StartingDraftPoints int                `gorm:"not null;default:140;column:starting_draft_points" json:"StartingDraftPoints"`
+	Format              LeagueFormat       `gorm:"type:jsonb;column:format" json:"Format"`
+	CreatedAt           *time.Time         `gorm:"type:timestamp with time zone;column:created_at" json:"CreatedAt"`
+	UpdatedAt           *time.Time         `gorm:"type:timestamp with time zone;column:updated_at" json:"UpdatedAt"`
+	DeletedAt           gorm.DeletedAt     `gorm:"index;column:deleted_at" json:"-"`
+	DiscordWebhookURL   *string            `gorm:"column:discord_webhook_url" json:"DiscordWebhookURL"`
 
 	// Relationships
-	Players []Player `gorm:"foreignKey:LeagueID"`
+	Players []Player `gorm:"foreignKey:league_id" json:"Players"`
 	// League has many LeaguePokemon (its defined draft pool)
-	DefinedPokemon []LeaguePokemon `gorm:"foreignKey:LeagueID" json:"-"`
+	DefinedPokemon []LeaguePokemon `gorm:"foreignKey:league_id" json:"-"`
 	// League has many DraftedPokemon (all Pokemon drafted in this league)
-	AllDraftedPokemon []DraftedPokemon `gorm:"foreignKey:LeagueID" json:"-"`
+	AllDraftedPokemon []DraftedPokemon `gorm:"foreignKey:league_id" json:"-"`
 }
 
 // LeagueFormat defines the structure for various optional league settings.
 type LeagueFormat struct {
-	IsSnakeRoundDraft bool                   `json:"is_snake_round_draft"`
-	DraftOrderType    enums.DraftOrderType   `gorm:"default:'random'" json:"draft_order_type"` // "PENDING", "RANDOM", "MANUAL"
-	SeasonType        enums.LeagueSeasonType `json:"season_type"`                              // "ROUND_ROBIN_ONLY", "PLAYOFFS_ONLY", "HYBRID"
-	GroupCount        int                    `json:"group_count"`                              // Relevant if SeasonType is "GROUPS"
-	GamesPerOpponent  int                    `json:"games_per_opponent"`                       // For round-robin or group stages
+	IsSnakeRoundDraft bool                   `json:"IsSnakeRoundDraft" gorm:"column:is_snake_round_draft"`
+	DraftOrderType    enums.DraftOrderType   `gorm:"default:'RANDOM'" json:"DraftOrderType"` // "PENDING", "RANDOM", "MANUAL"
+	SeasonType        enums.LeagueSeasonType `json:"SeasonType"`                             // "ROUND_ROBIN_ONLY", "PLAYOFFS_ONLY", "HYBRID"
+	GroupCount        int                    `json:"GroupCount"`                             // Relevant if SeasonType is "GROUPS"
+	GamesPerOpponent  int                    `json:"GamesPerOpponent"`                       // For round-robin or group stages
 
-	PlayoffType             enums.LeaguePlayoffType        `json:"playoff_type"`              // "NONE", "SINGLE_ELIM", "DOUBLE_ELIM"
-	PlayoffParticipantCount int                            `json:"playoff_participant_count"` // Number of teams that make playoffs
-	PlayoffByesCount        int                            `json:"playoff_byes_count"`        // Number of teams getting a bye in playoffs
-	PlayoffSeedingType      enums.LeaguePlayoffSeedingType `json:"playoff_seeding_type"`      // "STANDARD", "SEEDED", "BYES_ONLY"
+	PlayoffType             enums.LeaguePlayoffType        `json:"PlayoffType"`             // "NONE", "SINGLE_ELIM", "DOUBLE_ELIM"
+	PlayoffParticipantCount int                            `json:"PlayoffParticipantCount"` // Number of teams that make playoffs
+	PlayoffByesCount        int                            `json:"PlayoffByesCount"`        // Number of teams getting a bye in playoffs
+	PlayoffSeedingType      enums.LeaguePlayoffSeedingType `json:"PlayoffSeedingType"`      // "STANDARD", "SEEDED", "BYES_ONLY"
 
-	AllowTrading                bool `json:"allow_trading"`
-	AllowTransferCredits        bool `json:"allow_transfer_credits"`
-	TransferCreditsPerWindow    int  `json:"transfer_credits_per_window"`
-	TransferCreditCap           int  `json:"transfer_credit_cap"`
-	TransferWindowFrequencyDays int  `json:"transfer_window_frequency_days"`
-	TransferWindowDuration      int  `json:"transfer_window_duration"`
-	DropCost                    int  `json:"drop_cost"`
-	PickupCost                  int  `json:"pickup_cost"`
+	AllowTrading                bool `json:"AllowTrading" gorm:"column:allow_trading"`
+	AllowTransferCredits        bool `json:"AllowTransferCredits" gorm:"column:allow_transfer_credits"`
+	TransferCreditsPerWindow    int  `json:"TransferCreditsPerWindow" gorm:"column:transfer_credits_per_window"`
+	TransferCreditCap           int  `json:"TransferCreditCap" gorm:"column:transfer_credit_cap"`
+	TransferWindowFrequencyDays int  `json:"TransferWindowFrequencyDays" gorm:"column:transfer_window_frequency_days"`
+	TransferWindowDuration      int  `json:"TransferWindowDuration" gorm:"column:transfer_window_duration"`
+	DropCost                    int  `json:"DropCost" gorm:"column:drop_cost"`
+	PickupCost                  int  `json:"PickupCost" gorm:"column:pickup_cost"`
 	// NextTransferWindowStart stores the next occurence of a trasnfer window
 	// if league is in a transfer window, NextTransferWindowStart will store the start time of the window
 	// NextTransferWindowStart is updated at the *end* of a transfer window or when the season/bracket starts
-	NextTransferWindowStart *time.Time `gorm:"type:timestamp with time zone" json:"next_transfer_window_start"`
+	NextTransferWindowStart *time.Time `gorm:"type:timestamp with time zone;column:next_transfer_window_start" json:"NextTransferWindowStart"`
 }
 
 func (f *LeagueFormat) Scan(value any) error {
@@ -68,9 +68,93 @@ func (f *LeagueFormat) Scan(value any) error {
 	if !ok {
 		return fmt.Errorf("failed to scan LeagueFormat: %v", value)
 	}
-	return json.Unmarshal(b, f)
+
+	var m map[string]interface{}
+	if err := json.Unmarshal(b, &m); err != nil {
+		return err
+	}
+
+	if val, ok := m["is_snake_round_draft"].(bool); ok {
+		f.IsSnakeRoundDraft = val
+	}
+	if val, ok := m["draft_order_type"].(string); ok {
+		f.DraftOrderType = enums.DraftOrderType(val)
+	}
+	if val, ok := m["season_type"].(string); ok {
+		f.SeasonType = enums.LeagueSeasonType(val)
+	}
+	if val, ok := m["group_count"].(float64); ok {
+		f.GroupCount = int(val)
+	}
+	if val, ok := m["games_per_opponent"].(float64); ok {
+		f.GamesPerOpponent = int(val)
+	}
+	if val, ok := m["playoff_type"].(string); ok {
+		f.PlayoffType = enums.LeaguePlayoffType(val)
+	}
+	if val, ok := m["playoff_participant_count"].(float64); ok {
+		f.PlayoffParticipantCount = int(val)
+	}
+	if val, ok := m["playoff_byes_count"].(float64); ok {
+		f.PlayoffByesCount = int(val)
+	}
+	if val, ok := m["playoff_seeding_type"].(string); ok {
+		f.PlayoffSeedingType = enums.LeaguePlayoffSeedingType(val)
+	}
+	if val, ok := m["allow_trading"].(bool); ok {
+		f.AllowTrading = val
+	}
+	if val, ok := m["allow_transfer_credits"].(bool); ok {
+		f.AllowTransferCredits = val
+	}
+	if val, ok := m["transfer_credits_per_window"].(float64); ok {
+		f.TransferCreditsPerWindow = int(val)
+	}
+	if val, ok := m["transfer_credit_cap"].(float64); ok {
+		f.TransferCreditCap = int(val)
+	}
+	if val, ok := m["transfer_window_frequency_days"].(float64); ok {
+		f.TransferWindowFrequencyDays = int(val)
+	}
+	if val, ok := m["transfer_window_duration"].(float64); ok {
+		f.TransferWindowDuration = int(val)
+	}
+	if val, ok := m["drop_cost"].(float64); ok {
+		f.DropCost = int(val)
+	}
+	if val, ok := m["pickup_cost"].(float64); ok {
+		f.PickupCost = int(val)
+	}
+	if val, ok := m["next_transfer_window_start"].(string); ok {
+		t, err := time.Parse(time.RFC3339, val)
+		if err == nil {
+			f.NextTransferWindowStart = &t
+		}
+	}
+
+	return nil
 }
 
 func (f LeagueFormat) Value() (driver.Value, error) {
-	return json.Marshal(f)
+	m := map[string]any{
+		"is_snake_round_draft":           f.IsSnakeRoundDraft,
+		"draft_order_type":               f.DraftOrderType,
+		"season_type":                    f.SeasonType,
+		"group_count":                    f.GroupCount,
+		"games_per_opponent":             f.GamesPerOpponent,
+		"playoff_type":                   f.PlayoffType,
+		"playoff_participant_count":      f.PlayoffParticipantCount,
+		"playoff_byes_count":             f.PlayoffByesCount,
+		"playoff_seeding_type":           f.PlayoffSeedingType,
+		"allow_trading":                  f.AllowTrading,
+		"allow_transfer_credits":         f.AllowTransferCredits,
+		"transfer_credits_per_window":    f.TransferCreditsPerWindow,
+		"transfer_credit_cap":            f.TransferCreditCap,
+		"transfer_window_frequency_days": f.TransferWindowFrequencyDays,
+		"transfer_window_duration":       f.TransferWindowDuration,
+		"drop_cost":                      f.DropCost,
+		"pickup_cost":                    f.PickupCost,
+		"next_transfer_window_start":     f.NextTransferWindowStart,
+	}
+	return json.Marshal(m)
 }

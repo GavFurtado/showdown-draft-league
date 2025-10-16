@@ -9,26 +9,25 @@ import (
 )
 
 type Player struct {
-	ID              uuid.UUID       `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	UserID          uuid.UUID       `gorm:"type:uuid;not null" json:"user_id"`
-	LeagueID        uuid.UUID       `gorm:"type:uuid;not null" json:"league_id"`
-	InLeagueName    string          `json:"in_league_name"`
-	TeamName        string          `gorm:"not null" json:"team_name"`
-	Wins            int             `gorm:"default:0;not null" json:"wins"`
-	Losses          int             `gorm:"default:0;not null" json:"losses"`
-	DraftPoints     int             `gorm:"default:140;not null" json:"draft_points"`
-	TransferCredits int             `gorm:"default:0" json:"transfer_credits"`
-	DraftPosition   int             `json:"draft_position"` // turn order of player pick (possibly randomized)
-	Role            rbac.PlayerRole `gorm:"type:varchar(20);not null;default:'member'" json:"role"`
-	IsParticipating bool
-	CreatedAt       time.Time      `json:"created_at"`
-	UpdatedAt       time.Time      `json:"updated_at"`
-	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
+	ID              uuid.UUID       `gorm:"type:uuid;primaryKey;default:gen_random_uuid();column:id" json:"ID"`
+	UserID          uuid.UUID       `gorm:"type:uuid;not null;column:user_id" json:"UserID"`
+	LeagueID        uuid.UUID       `gorm:"type:uuid;not null;column:league_id" json:"LeagueID"`
+	InLeagueName    string          `gorm:"column:in_league_name" json:"InLeagueName"`
+	TeamName        string          `gorm:"not null;column:team_name" json:"TeamName"`
+	Wins            int             `gorm:"default:0;not null;column:wins" json:"Wins"`
+	Losses          int             `gorm:"default:0;not null;column:losses" json:"Losses"`
+	DraftPoints     int             `gorm:"default:140;not null;column:draft_points" json:"DraftPoints"`
+	TransferCredits int             `gorm:"default:0;column:transfer_credits" json:"TransferCredits"`
+	DraftPosition   int             `gorm:"column:draft_position" json:"DraftPosition"` // turn order of player pick (possibly randomized)
+	Role            rbac.PlayerRole `gorm:"type:varchar(20);not null;default:'member';column:role" json:"Role"`
+	IsParticipating bool            `gorm:"column:is_participating" json:"IsParticipating"`
+	CreatedAt       time.Time       `gorm:"column:created_at" json:"CreatedAt"`
+	UpdatedAt       time.Time       `gorm:"column:updated_at" json:"UpdatedAt"`
+	DeletedAt       gorm.DeletedAt  `gorm:"index;column:deleted_at" json:"-"`
 
 	// Relationships
-	User   User           `gorm:"foreignKey:UserID;references:ID"`
-	League League         `gorm:"foreignKey:LeagueID;references:ID"`
-	Roster []PlayerRoster `gorm:"foreignKey:PlayerID;references:ID;inverseOf:Player"`
+	User   User   `gorm:"foreignKey:user_id;references:id" json:"User"`
+	League League `gorm:"foreignKey:league_id;references:id" json:"League"`
 }
 
 // IsLeagueOwner checks if the player has the LeagueOwner role.
