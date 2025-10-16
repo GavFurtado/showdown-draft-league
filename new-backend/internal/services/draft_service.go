@@ -638,10 +638,10 @@ func (s *draftServiceImpl) advanceDraftState(
 
 	var nextPlayerIdx int
 	if league.Format.IsSnakeRoundDraft {
-		if draft.CurrentRound%2 == 0 { // even rounds are reverse order
-			nextPlayerIdx = currentPlayerIdx - 1
-		} else { // odd rounds are forward order
-			nextPlayerIdx = currentPlayerIdx + 1
+		if draft.CurrentRound%2 != 0 { // Odd round (forward order)
+			nextPlayerIdx = draft.CurrentPickInRound - 1
+		} else { // Even round (reverse order)
+			nextPlayerIdx = int(playerCount) - draft.CurrentPickInRound
 		}
 	} else { // linear draft
 		nextPlayerIdx = currentPlayerIdx + 1

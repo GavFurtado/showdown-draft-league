@@ -21,7 +21,7 @@ export interface User {
 }
 
 // League enums
-export type LeagueStatus = "pending" | "active" | "completed" | "cancelled";
+export type LeagueStatus = "PENDING" | "SETUP" | "DRAFTING" | "POST_DRAFT" | "TRANSFER_WINDOW" | "REGULARSEASON" | "PLAYOFFS" | "COMPLETED" | "CANCELLED";
 export type DraftOrderType = "PENDING" | "RANDOM" | "MANUAL";
 export type LeagueSeasonType = "ROUND_ROBIN_ONLY" | "PLAYOFFS_ONLY" | "HYBRID";
 export type LeaguePlayoffType = "NONE" | "SINGLE_ELIM" | "DOUBLE_ELIM";
@@ -60,7 +60,7 @@ export interface League {
   Format: LeagueFormat;
   DiscordWebhookURL: string | null;
   // Relationships
-  // Players?: Player[];
+  Players?: Player[];
   // LeaguePokemon?: LeaguePokemon[];
   // DraftedPokemon?: DraftedPokemon[];
 }
@@ -96,6 +96,8 @@ export interface Player {
   TeamName: string;
   Wins: number;
   Losses: number;
+  DraftPoints: number;
+  TransferCredits: number;
   Role: PlayerRole; // league-specific
   IsParticipating: boolean;
   CreatedAt: string; // ISO 8601 string
@@ -164,6 +166,8 @@ export interface DraftCardProps {
   onFlip: (pokemonId: string) => void;
   isDraftable: boolean;
   onDraft: (leaguePokemonId: string) => void;
+  isAvailable: boolean;
+  isMyTurn: boolean;
 }
 
 export interface WishlistDisplayProps {
@@ -173,4 +177,21 @@ export interface WishlistDisplayProps {
   clearWishlist: () => void;
   isMyTurn: boolean; // New prop
   onDraft: (leaguePokemonId: string) => void; // New prop
+}
+
+export interface DraftedPokemon {
+  ID: string;
+  LeagueID: string;
+  PlayerID: string;
+  PokemonSpeciesID: number;
+  LeaguePokemonID: string;
+  DraftRoundNumber: number;
+  DraftPickNumber: number;
+  IsReleased: boolean;
+  CreatedAt: string;
+  UpdatedAt: string;
+  League: League;
+  Player: Player;
+  PokemonSpecies: Pokemon;
+  LeaguePokemon: LeaguePokemon;
 }

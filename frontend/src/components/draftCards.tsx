@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pokemon, DraftCardProps } from '../api/data_interfaces';
+import pokeballIcon from '../assets/pokeball-icon.png';
 
 // Helper function to format names (replace hyphens with spaces and title case)
 const formatName = (name: string): string => {
@@ -52,7 +53,8 @@ const StatBar: React.FC<StatBarProps> = ({ label, value }) => {
     );
 };
 
-export default function PokemonCard({ pokemon, cost, onImageError, leaguePokemonId, addPokemonToWishlist, removePokemonFromWishlist, isPokemonInWishlist, isFlipped, onFlip, isDraftable, onDraft }: DraftCardProps) {
+export default function PokemonCard({ pokemon, cost, onImageError, leaguePokemonId, addPokemonToWishlist, removePokemonFromWishlist, isPokemonInWishlist, isFlipped, onFlip, isDraftable, onDraft, isAvailable, isMyTurn }: DraftCardProps) {
+    console.log(`DraftCard for ${pokemon.Name}: isMyTurn=${isMyTurn}, isAvailable=${isAvailable}, isDraftable=${isDraftable}`);
     const handleFlip = () => {
         onFlip(leaguePokemonId);
     };
@@ -93,7 +95,7 @@ export default function PokemonCard({ pokemon, cost, onImageError, leaguePokemon
             ${isFlipped ? '[transform:rotateY(180deg)]' : ''}
             `}
             >
-                <div className="absolute inset-0 bg-white rounded-lg p-4 flex flex-col items-center justify-center [backface-visibility:hidden]">
+                <div className={`absolute inset-0 bg-white rounded-lg p-4 flex flex-col items-center justify-center [backface-visibility:hidden] ${!isAvailable ? 'opacity-50 grayscale' : ''}`}>
                     <div className="relative w-full h-[100%]">
                         <img
                             src={pokemon.Sprites.FrontDefault}
@@ -112,30 +114,31 @@ export default function PokemonCard({ pokemon, cost, onImageError, leaguePokemon
                             </h3>
                             <p className='p-0 m-0 text-left text-sm text-gray-600'>{types}</p>
                         </div>
-                        {isDraftable ? (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onDraft(leaguePokemonId);
-                                }}
-                                className="relative flex items-center align-center justify-center mt-4 h-7.5 w-7.5 rounded-full p-0 transition-colors bg-red-500 hover:bg-red-700"
-                            >
-                                {/* Pokeball SVG */}
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
-                                    <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 2a8 8 0 110 16 8 8 0 010-16zm0 3a5 5 0 00-5 5h10a5 5 0 00-5-5zm0 2a3 3 0 110 6 3 3 0 010-6z" />
-                                </svg>
-                            </button>
-                        ) : (
-                            <button
-                                onClick={handleWishlistToggle}
-                                className={`relative flex items-center align-center justify-center mt-4 h-7.5 w-7.5 rounded-full p-0 transition-colors
-                                    ${isInWishlist ? 'bg-yellow-400 hover:bg-yellow-500' : 'bg-gray-200 hover:bg-gray-300'}
-                                `}>
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557L3.422 8.99a.562.562 0 0 1 .321-.989l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
-                                </svg>
-
-                            </button>
+                        {isAvailable && ( // Only render buttons if available
+                            isMyTurn ? ( // If it's my turn, show Pokeball (draft button)
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDraft(leaguePokemonId);
+                                    }}
+                                    className="relative flex items-center align-center justify-center mt-4 h-7.5 w-7.5 rounded-full p-0 transition-all duration-150 hover:bg-gray-200 hover:shadow-lg"
+                                >
+                                     <img src={pokeballIcon} alt="draft mon" className="w-5 h-5 rounded-full transition-transform duration-150 transform hover:scale-125" />
+                                </button>
+                            ) : ( // Else, show Star (wishlist button)
+                                <button
+                                    onClick={handleWishlistToggle}
+                                    className={`relative flex items-center align-center justify-center mt-4 h-7.5 w-7.5 rounded-full p-0 transition-all duration-150 focus:outline-none focus:ring-0
+                                                ${isInWishlist ? 'bg-yellow-400 hover:bg-yellow-500' : 'bg-gray-200 hover:bg-gray-300'}`}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5}
+                                         className={`w-5 h-5 transition-colors duration-150
+                                                     ${isInWishlist ? 'stroke-white' : 'stroke-gray-600'}`}
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557L3.422 8.99a.562.562 0 0 1 .321-.989l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
+                                    </svg>
+                                </button>
+                            )
                         )}
                     </div>
 
@@ -171,5 +174,5 @@ export default function PokemonCard({ pokemon, cost, onImageError, leaguePokemon
                 </div>
             </div>
         </div>
-    );
+    )
 }

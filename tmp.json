@@ -1,0 +1,21 @@
+{
+    "RequestedPickCount": 4,
+    "RequestedPicks" : [
+        {
+            "LeaguePokemonID": "428c6495-292c-47e9-a480-e4c2fce82a85", 
+            "DraftPickNumber": 3
+        },
+        {
+            "LeaguePokemonID": "428c6495-292c-47e9-a480-e4c2fce82a85", 
+            "DraftPickNumber": 4
+        },
+        {
+            "LeaguePokemonID": "428c6495-292c-47e9-a480-e4c2fce82a85", 
+            "DraftPickNumber": 8
+        },
+        {
+            "LeaguePokemonID": "428c6495-292c-47e9-a480-e4c2fce82a85", 
+            "DraftPickNumber": 9
+        },
+    ]
+}

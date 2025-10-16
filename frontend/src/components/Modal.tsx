@@ -11,7 +11,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" id="my-modal">
+        <div className="fixed inset-0 bg-gray-400 bg-opacity-30 overflow-y-auto h-full w-full" id="my-modal">
             <div className="relative top-20 mx-auto p-5 border max-w-xl shadow-lg rounded-md bg-white">
                 <div className="flex justify-between items-center pb-3">
                     <h3 className="text-lg font-bold">{title}</h3>
