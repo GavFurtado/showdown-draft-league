@@ -5,24 +5,33 @@ interface ModalProps {
     onClose: () => void;
     title: string;
     children: React.ReactNode;
+    showDefaultCloseButton?: boolean;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, showDefaultCloseButton = false }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-gray-400 bg-opacity-30 overflow-y-auto h-full w-full" id="my-modal">
-            <div className="relative top-20 mx-auto p-5 border max-w-xl shadow-lg rounded-md bg-white">
+        <div 
+            className="fixed inset-0 overflow-y-auto h-full w-full"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+            id="my-modal"
+        >
+            <div className="relative top-20 mx-auto p-5 border max-w-xl shadow-lg rounded-md bg-background-surface">
                 <div className="flex justify-between items-center pb-3">
-                    <h3 className="text-lg font-bold">{title}</h3>
-                    <button className="text-gray-400 hover:text-gray-600" onClick={onClose}>&times;</button>
+                    <h3 className="text-lg font-bold text-text-primary">{title}</h3>
+                    <button className="text-gray-400 hover:text-gray-600" onClick={onClose}>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
                 </div>
                 <div className="mt-2 mb-4">
                     {children}
                 </div>
-                <div className="flex justify-end pt-4">
-                    <button className="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500" onClick={onClose}>Close</button>
-                </div>
+                {showDefaultCloseButton && (
+                    <div className="flex justify-end pt-4">
+                        <button className="px-4 py-2 bg-accent-primary text-text-on-accent text-base font-medium rounded-md shadow-sm hover:bg-accent-primary-hover focus:outline-none focus:ring-2 focus:ring-blue-500" onClick={onClose}>Close</button>
+                    </div>
+                )}
             </div>
         </div>
     );

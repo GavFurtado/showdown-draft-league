@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import Score from './score';
 import PlayerScedhule from './playerScedhule';
-import Roster from './roster'
 export default function LeagueDropdown() {
     const [isOpen, setIsOpen] = useState(false);
 
@@ -17,7 +16,6 @@ export default function LeagueDropdown() {
                 <h1> Team - Big Booty Boys</h1>
                 <PlayerScedhule />
                 <Score />
-                <Roster />
             </div>
         </div>
     );

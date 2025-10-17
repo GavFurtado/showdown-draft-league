@@ -56,6 +56,7 @@ export interface League {
   RulesetDescription: string;
   Status: LeagueStatus;
   MaxPokemonPerPlayer: number;
+  MinPokemonPerPlayer: number;
   StartingDraftPoints: number;
   Format: LeagueFormat;
   DiscordWebhookURL: string | null;

@@ -12,6 +12,7 @@ const leagueNavigation: NavigationItem[] = [
     { name: 'Dashboard', href: 'dashboard', current: false },
     { name: 'Team Sheets', href: 'teamsheets', current: false },
     { name: 'Draftboard', href: 'draftboard', current: false },
+    { name: 'Draft History', href: 'draft-history', current: false },
     { name: 'Standings', href: 'standings', current: false },
 ];
 
