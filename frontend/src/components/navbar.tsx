@@ -171,7 +171,8 @@ export default function NavBar({ page }: NavBarProps) {
         <>
             {/* Top Level Navbar */}
             <Disclosure as="nav" className="bg-[#2D3142]">
-                <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
+                {/* <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8"> */}
+                <div className="mx-auto px-2 sm:px-6 lg:px-8">
                     <div className="relative flex h-16 items-center justify-between">
                         {/* Left Section: Logo & League Dropdown */}
                         <div className="flex items-center">

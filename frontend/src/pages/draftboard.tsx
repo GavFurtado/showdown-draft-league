@@ -297,6 +297,7 @@ export default function Draftboard() {
                                                     cost={p.Cost}
                                                     leaguePokemonId={p.ID}
                                                     onRemove={() => onDraft(p.ID)}
+                                                    showRemoveButton={true}
                                                     pickNumber={pickNumbersToUse[index]}
                                                     bgColor="bg-yellow-100 border border-yellow-400"
                                                 />

@@ -53,6 +53,7 @@ export const WishlistDisplay: React.FC<WishlistDisplayProps> = ({ allPokemon, wi
                         leaguePokemonId={lp.ID}
                         onDraft={onDraft}
                         onRemove={removePokemonFromWishlist}
+                        showRemoveButton={true}
                         isMyTurn={isMyTurn}
                         isAvailable={lp.IsAvailable}
                         isWishlistItem={true}

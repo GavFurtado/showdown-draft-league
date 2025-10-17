@@ -53,7 +53,7 @@ const DraftHistory: React.FC = () => {
                                     Player
                                 </th>
                                 <th scope="col" className="w-28 px-3 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
-                                    Cost
+                                    Pick#
                                 </th>
                                 <th scope="col" className="w-28 px-3 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
                                     Round

@@ -35,7 +35,8 @@ export default function LeagueSubNav({
 
     return (
         <Disclosure as="nav" className="bg-[#4F5D75] shadow">
-            <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
+            {/* <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8"> */}
+            <div className="mx-auto px-2 sm:px-6 lg:px-8">
                 <div className="flex h-10 items-center justify-start">
                     <div className="flex space-x-4">
                         {leagueNavigation.map((item) => (
