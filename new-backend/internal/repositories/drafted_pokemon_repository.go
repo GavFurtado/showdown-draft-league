@@ -215,8 +215,8 @@ func (r *draftedPokemonRepositoryImpl) GetDraftedPokemonCountByPlayer(playerID u
 func (r *draftedPokemonRepositoryImpl) GetDraftHistory(leagueID uuid.UUID) ([]models.DraftedPokemon, error) {
 	var draftedPokemon []models.DraftedPokemon
 	err := r.db.Preload("Player").
-		Preload("Player.User").
 		Preload("PokemonSpecies").
+		Preload("LeaguePokemon").
 		Where("league_id = ?", leagueID).
 		Order("draft_pick_number ASC").
 		Find(&draftedPokemon).Error

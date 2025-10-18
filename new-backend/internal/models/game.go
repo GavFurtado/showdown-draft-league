@@ -29,12 +29,12 @@ type Game struct {
 	DeletedAt           gorm.DeletedAt `gorm:"index;column:deleted_at" json:"-"`
 
 	// Relationships
-	ReportingPlayer Player `gorm:"foreignKey:reporting_player_id;references:ID" json:"ReportingPlayer,omitempty"`
-	League          League `gorm:"foreignKey:league_id;references:id" json:"League,omitempty"`
-	Player1         Player `gorm:"foreignKey:player1_id;references:ID" json:"Player1,omitempty"`
-	Player2         Player `gorm:"foreignKey:player2_id;references:ID" json:"Player2,omitempty"`
-	Winner          Player `gorm:"foreignKey:winner_id;references:ID" json:"Winner,omitempty"`
-	Loser           Player `gorm:"foreignKey:loser_id;references:ID" json:"Loser,omitempty"`
+	ReportingPlayer Player  `gorm:"foreignKey:reporting_player_id;references:ID" json:"ReportingPlayer,omitempty"`
+	League          League  `gorm:"foreignKey:league_id;references:id" json:"League,omitempty"`
+	Player1         *Player `gorm:"foreignKey:player1_id;references:ID" json:"Player1,omitempty"`
+	Player2         *Player `gorm:"foreignKey:player2_id;references:ID" json:"Player2,omitempty"`
+	Winner          Player  `gorm:"foreignKey:winner_id;references:ID" json:"Winner,omitempty"`
+	Loser           Player  `gorm:"foreignKey:loser_id;references:ID" json:"Loser,omitempty"`
 }
 
 type GameStatus string

@@ -26,8 +26,8 @@ type Player struct {
 	DeletedAt       gorm.DeletedAt  `gorm:"index;column:deleted_at" json:"-"`
 
 	// Relationships
-	User   User   `gorm:"foreignKey:user_id;references:id" json:"User,omitempty"`
-	League League `gorm:"foreignKey:league_id;references:id" json:"League,omitempty"`
+	User   *User   `gorm:"foreignKey:user_id;references:id" json:"User,omitempty"`
+	League *League `gorm:"foreignKey:league_id;references:id" json:"League,omitempty"`
 }
 
 // IsLeagueOwner checks if the player has the LeagueOwner role.

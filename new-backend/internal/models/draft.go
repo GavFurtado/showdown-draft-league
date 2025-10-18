@@ -30,8 +30,8 @@ type Draft struct {
 	DeletedAt                   gorm.DeletedAt         `gorm:"index;type:timestamp with time zone;column:deleted_at" json:"-"`
 
 	// Relationships
-	League            League `gorm:"foreignKey:league_id;references:id" json:"League,omitempty"`
-	CurrentTurnPlayer Player `gorm:"foreignKey:current_turn_player_id;references:id" json:"CurrentTurnPlayer,omitempty"`
+	League            *League `gorm:"foreignKey:league_id;references:id" json:"League,omitempty"`
+	CurrentTurnPlayer *Player `gorm:"foreignKey:current_turn_player_id;references:id" json:"CurrentTurnPlayer,omitempty"`
 }
 
 // PlayerAccumulatedPicks is a custom type for storing a map of player IDs to their accumulated pick numbers.

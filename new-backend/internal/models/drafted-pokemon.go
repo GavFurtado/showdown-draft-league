@@ -26,7 +26,7 @@ type DraftedPokemon struct {
 
 	// Relationships
 	League         League         `gorm:"foreignKey:league_id;references:id" json:"League,omitempty"`
-	Player         Player         `gorm:"foreignKey:player_id;references:id" json:"Player,omitempty"`
+	Player         *Player        `gorm:"foreignKey:player_id;references:id" json:"Player,omitempty"`
 	PokemonSpecies PokemonSpecies `gorm:"foreignKey:pokemon_species_id;references:id" json:"PokemonSpecies,omitempty"`
-	LeaguePokemon  LeaguePokemon  `gorm:"foreignKey:league_pokemon_id;references:id" json:"LeaguePokemon"`
+	LeaguePokemon  *LeaguePokemon `gorm:"foreignKey:league_pokemon_id;references:id" json:"LeaguePokemon,omitempty"`
 }

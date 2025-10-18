@@ -61,7 +61,6 @@ func (r *playerRepositoryImpl) CreatePlayer(player *models.Player) (*models.Play
 func (r *playerRepositoryImpl) GetPlayerByID(id uuid.UUID) (*models.Player, error) {
 	var player models.Player
 	err := r.db.Preload("User").
-		Preload("League").
 		First(&player, "id = ?", id).Error
 
 	if err != nil {
@@ -74,7 +73,6 @@ func (r *playerRepositoryImpl) GetPlayerByID(id uuid.UUID) (*models.Player, erro
 func (r *playerRepositoryImpl) GetPlayerByUserAndLeague(userID, leagueID uuid.UUID) (*models.Player, error) {
 	var player models.Player
 	err := r.db.Preload("User").
-		Preload("League").
 		Where("user_id = ? AND league_id = ?", userID, leagueID).
 		First(&player).Error
 

@@ -12,7 +12,7 @@ type UserRepository interface {
 	GetUserByDiscordID(discordID string) (*models.User, error)
 	UpdateUser(user *models.User) (*models.User, error)
 	// fetches all Leagues that a specific user is a player in.
-	GetUserLeagues(userID uuid.UUID) ([]models.League, error)
+	GetUserLeagues(userID uuid.UUID) ([]*models.League, error)
 }
 
 type userRepositoryImpl struct {
@@ -62,7 +62,7 @@ func (r *userRepositoryImpl) UpdateUser(user *models.User) (*models.User, error)
 }
 
 // fetches all Leagues that a specific user is a player in.
-func (r *userRepositoryImpl) GetUserLeagues(userID uuid.UUID) ([]models.League, error) {
+func (r *userRepositoryImpl) GetUserLeagues(userID uuid.UUID) ([]*models.League, error) {
 	var user models.User
 
 	// Fetch the user, preloading their players and each player's associated league.
@@ -78,7 +78,7 @@ func (r *userRepositoryImpl) GetUserLeagues(userID uuid.UUID) ([]models.League, 
 
 	// Extract the unique Leagues from the preloaded Players slice
 	// collect unique leagues
-	leagues := make([]models.League, 0, len(user.Players))
+	leagues := make([]*models.League, 0, len(user.Players))
 	uniqueLeagues := make(map[uuid.UUID]struct{})
 
 	for _, player := range user.Players {

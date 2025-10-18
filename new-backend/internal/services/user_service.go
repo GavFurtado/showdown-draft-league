@@ -16,7 +16,7 @@ type UserService interface {
 	GetMyProfileHandler(userID uuid.UUID) (*models.User, error)
 	GetMyDiscordDetailsHandler(userID uuid.UUID) (*common.DiscordUser, error)
 	UpdateProfileHandler(userID uuid.UUID, req common.UserUpdateProfileRequest) (*models.User, error)
-	GetMyLeaguesHandler(userID uuid.UUID) ([]models.League, error)
+	GetMyLeaguesHandler(userID uuid.UUID) ([]*models.League, error)
 }
 
 type userServiceImpl struct {
@@ -88,7 +88,7 @@ func (s *userServiceImpl) UpdateProfileHandler(userID uuid.UUID, input common.Us
 	return updatedUser, nil
 }
 
-func (s *userServiceImpl) GetMyLeaguesHandler(userID uuid.UUID) ([]models.League, error) {
+func (s *userServiceImpl) GetMyLeaguesHandler(userID uuid.UUID) ([]*models.League, error) {
 	log.Printf("UserService: GetMyLeaguesHandler called for user %s", userID)
 
 	leagues, err := s.userRepo.GetUserLeagues(userID)
