@@ -7,7 +7,7 @@ interface LayoutProps {
 
 export default function Layout({ children, variant = 'container' }: LayoutProps) {
     return (
-        <main className="min-h-screen bg-background-primary">
+        <main className="min-h-screen bg-background-main">
             {variant === 'full' ? (
                 children
             ) : (

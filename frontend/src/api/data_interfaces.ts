@@ -116,11 +116,11 @@ export interface LeaguePokemon {
   DeletedAt?: string; // ISO 8601 string
   // Relationships
   League?: League;
-  PokemonSpecies: Pokemon;
+  PokemonSpecies: PokemonSpecies;
 }
 
 // Pokemon Species stuff
-export interface Pokemon {
+export interface PokemonSpecies {
   ID: number;
   DexID: number;
   Name: string;
@@ -157,7 +157,7 @@ export interface FilterState {
 export interface DraftCardProps {
   key: string;
   leaguePokemonId: string;
-  pokemon: Pokemon;
+  pokemon: PokemonSpecies;
   cost: number;
   onImageError?: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void;
   addPokemonToWishlist: (pokemonId: string) => void;
@@ -193,6 +193,6 @@ export interface DraftedPokemon {
   UpdatedAt: string;
   League: League;
   Player: Player;
-  PokemonSpecies: Pokemon;
+  PokemonSpecies: PokemonSpecies;
   LeaguePokemon: LeaguePokemon;
 }

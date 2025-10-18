@@ -8,7 +8,7 @@ import { WishlistDisplay } from "../components/WishlistDisplay"
 import { useWishlist } from '../hooks/useWishlist';
 import { useDraftTimer } from '../hooks/useDraftTimer';
 import Modal from "../components/Modal";
-import { PokemonListItem } from "../components/PokemonListItem";
+import { PokemonRosterList } from "../components/PokemonRosterList";
 import Layout from "../components/Layout";
 
 const defaultFilters: FilterState = {
@@ -194,7 +194,7 @@ export default function Draftboard() {
 
     if (leagueError || pokemonError) {
         return (
-            <div className="min-h-screen bg-background-primary flex items-center justify-center">
+            <div className="min-h-screen bg-background-main flex items-center justify-center">
                 <p className="text-xl text-red-600">Error: {leagueError || pokemonError}</p>
             </div>
         );
@@ -232,7 +232,13 @@ export default function Draftboard() {
                 <div className="flex flex-col w-full md:w-[75%] order-2 md:order-1 p-4 sm:p-6"> {/* Main content area */}
                     <div className="flex flex-row pb-0 mb-2 justify-between">
                         <div className="relative flex text-black">
-                            <input type="search" className="placeholder:text-black relative m-0 block flex-auto rounded border border-solid border-black bg-transparent bg-clip-padding px-3 py-[0.25rem] text-base font-normal leading-[1.6] text-surface outline-none transition duration-200 ease-in-out focus:z-[3] focus:border-primary focus:shadow-inset focus:outline-none motion-reduce:transition-none" placeholder="Search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                            <input
+                                type="search"
+                                className="placeholder:text-black relative m-0 block flex-auto rounded border border-solid 
+                                border-black bg-transparent bg-clip-padding px-3 py-[0.25rem] text-base font-normal leading-[1.6]
+                                text-surface outline-none transition duration-200 ease-in-out focus:z-[3] focus:border-primary 
+                                focus:shadow-inset focus:outline-none motion-reduce:transition-none"
+                                placeholder="Search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                             <span className="flex items-center whitespace-nowrap px-3 py-[0.25rem] text-surface [&>svg]:h-5 [&>svg]:w-5" id="button-addon2">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="black"><path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
                             </span>
@@ -244,7 +250,9 @@ export default function Draftboard() {
                     </div>
                 </div>
 
-                <div className="flex flex-col w-full md:w-[20%] md:mt-16 h-auto gap-4 p-4 md:p-0 order-1 md:order-2"> {/* Right-hand content */}
+                {/* Right-hand content */}
+                <div className="flex flex-col w-full md:w-[20%] md:mt-16 h-auto gap-4 p-4 md:p-0 order-1 md:order-2">
+                    {/* only showss for small viewport */}
                     <button className="md:hidden bg-gray-200 p-2 rounded-md" onClick={() => setIsInfoOpen(!isInfoOpen)}>
                         {isInfoOpen ? 'Hide' : 'Show'} Draft Info
                     </button>
@@ -285,43 +293,28 @@ export default function Draftboard() {
                                 <h2 className="text-l font-semibold text-gray-800">Your Team ({draftedPokemon.length})</h2>
                                 <span className="text-sm font-medium text-gray-600">Points Left: {remainingPoints}</span>
                             </div>
+                            {/* Pending Picks Display */}
                             <div className="p-2 space-y-2">
                                 {isMyTurn && pendingPicks.length > 0 && (
                                     <>
                                         <h3 className="text-sm font-bold px-1 pt-1">Pending Picks ({pendingPicks.length}/{numberOfPicksAvailable})</h3>
-                                        <div className="space-y-2">
-                                            {pendingPicks.map((p, index) => (
-                                                <PokemonListItem
-                                                    key={`pending-${p.ID}`}
-                                                    pokemon={p.PokemonSpecies}
-                                                    cost={p.Cost}
-                                                    leaguePokemonId={p.ID}
-                                                    onRemove={() => onDraft(p.ID)}
-                                                    showRemoveButton={true}
-                                                    pickNumber={pickNumbersToUse[index]}
-                                                    bgColor="bg-yellow-100 border border-yellow-400"
-                                                />
-                                            ))}
-                                        </div>
+                                        <PokemonRosterList
+                                            roster={pendingPicks}
+                                            rosterType="pendingPick"
+                                            onRemove={onDraft}
+                                            showRemoveButton={true}
+                                            bgColor="bg-yellow-100 border border-yellow-400"
+                                        />
                                         <hr className="my-2 border-gray-300" />
                                     </>
                                 )}
                                 {draftedPokemonError && <p className="text-red-600">Error: {draftedPokemonError}</p>}
                                 {draftedPokemon.length > 0 ? (
-                                    draftedPokemon.map(p => {
-                                        const correspondingLeaguePokemon = allPokemon.find(lp => lp.ID === p.LeaguePokemonID);
-                                        const costToDisplay = correspondingLeaguePokemon ? correspondingLeaguePokemon.Cost : null;
-                                        return (
-                                            <PokemonListItem
-                                                key={p.ID}
-                                                pokemon={p.PokemonSpecies}
-                                                cost={costToDisplay}
-                                                leaguePokemonId={p.LeaguePokemonID}
-                                                pickNumber={p.DraftPickNumber}
-                                                bgColor="bg-gray-200"
-                                            />
-                                        );
-                                    })
+                                    <PokemonRosterList
+                                        roster={draftedPokemon}
+                                        rosterType="drafted"
+                                        bgColor="bg-gray-200"
+                                    />
                                 ) : (
                                     !isMyTurn || pendingPicks.length === 0 && <p className="text-gray-600 p-2">Your team is empty.</p>
                                 )}

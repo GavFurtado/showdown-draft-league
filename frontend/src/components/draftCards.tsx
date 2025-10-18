@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pokemon, DraftCardProps } from '../api/data_interfaces';
+import { PokemonSpecies, DraftCardProps } from '../api/data_interfaces';
 import pokeballIcon from '../assets/pokeball-icon.png';
 
 // Helper function to format names (replace hyphens with spaces and title case)
@@ -14,17 +14,17 @@ const formatName = (name: string): string => {
 // Helper function to get stat color based on value
 const getStatColor = (value: number): string => {
     if (value <= 25) {
-        return '#FF0000'; // Red
+        return '#FF0000';
     } else if (value <= 60) {
-        return '#FFA500'; // Orange
+        return '#FFA500';
     } else if (value <= 89) {
-        return '#FFFF00'; // Yellow
+        return '#FFFF00';
     } else if (value <= 120) {
-        return '#A0F555'; // Lime Green
+        return '#A0F555';
     } else if (value <= 199) {
-        return '#23CD5E'; // Darker Green
+        return '#23CD5E';
     } else {
-        return '#02FFFF'; // Cyan
+        return '#02FFFF';
     }
 };
 
@@ -95,15 +95,15 @@ export default function PokemonCard({ pokemon, cost, onImageError, leaguePokemon
             ${isFlipped ? '[transform:rotateY(180deg)]' : ''}
             `}
             >
-                <div className={`absolute inset-0 bg-white rounded-lg p-4 flex flex-col items-center justify-center [backface-visibility:hidden] ${!isAvailable ? 'opacity-50 grayscale' : ''}`}>
+                <div className={`absolute inset-0 bg-background-surface rounded-lg p-4 flex flex-col items-center justify-center [backface-visibility:hidden] ${!isAvailable ? 'opacity-50 grayscale' : ''}`}>
                     <div className="relative w-full h-[100%]">
                         <img
                             src={pokemon.Sprites.FrontDefault}
                             alt={pokemon.Name}
                             onError={onImageError}
-                            className="w-[100%] h-[100%] object-contain mb-4 bg-gray-100 p-2"
+                            className="w-[100%] h-[100%] object-contain mb-4 bg-background-tertiary p-2"
                         />
-                        <p className="text-lg font-semibold absolute  bottom-2 right-2 ">
+                        <p className="text-lg font-semibold absolute bottom-2 right-2 ">
                             {cost}
                         </p>
                     </div>
@@ -123,7 +123,7 @@ export default function PokemonCard({ pokemon, cost, onImageError, leaguePokemon
                                     }}
                                     className="relative flex items-center align-center justify-center mt-4 h-7.5 w-7.5 rounded-full p-0 transition-all duration-150 hover:bg-gray-200 hover:shadow-lg"
                                 >
-                                     <img src={pokeballIcon} alt="draft mon" className="w-5 h-5 rounded-full transition-transform duration-150 transform hover:scale-125" />
+                                    <img src={pokeballIcon} alt="draft mon" className="w-5 h-5 rounded-full transition-transform duration-150 transform hover:scale-125" />
                                 </button>
                             ) : ( // Else, show Star (wishlist button)
                                 <button
@@ -132,7 +132,7 @@ export default function PokemonCard({ pokemon, cost, onImageError, leaguePokemon
                                                 ${isInWishlist ? 'bg-yellow-400 hover:bg-yellow-500' : 'bg-gray-200 hover:bg-gray-300'}`}
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5}
-                                         className={`w-5 h-5 transition-colors duration-150
+                                        className={`w-5 h-5 transition-colors duration-150
                                                      ${isInWishlist ? 'stroke-white' : 'stroke-gray-600'}`}
                                     >
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557L3.422 8.99a.562.562 0 0 1 .321-.989l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />

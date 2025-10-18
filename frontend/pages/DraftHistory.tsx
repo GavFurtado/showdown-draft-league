@@ -46,13 +46,13 @@ const DraftHistory: React.FC = () => {
                     <table className="min-w-full divide-y divide-gray-700">
                         <thead className="bg-gray-700">
                             <tr>
-                                <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
+                                <th scope="col" className="text-left px-6 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
                                     Pokemon
                                 </th>
-                                <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
+                                <th scope="col" className="text-left px-6 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
                                     Player
                                 </th>
-                                <th scope="col" className="w-28 px-3 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
+                                <th scope="col" className=" w-28 px-3 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
                                     Pick#
                                 </th>
                                 <th scope="col" className="w-28 px-3 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
@@ -67,7 +67,7 @@ const DraftHistory: React.FC = () => {
                                 <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
                                     Action
                                 </th>
-                                <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
+                                <th scope="col" className="text-left px-6 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
                                     Timestamp
                                 </th>
                             </tr>

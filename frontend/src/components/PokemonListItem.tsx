@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pokemon } from '../api/data_interfaces'; // Reverted to Pokemon
+import { PokemonSpecies } from '../api/data_interfaces'; // Reverted to Pokemon
 import pokeballIcon from '../assets/pokeball-icon.png'
 
 const formatName = (name: string): string => {
@@ -11,9 +11,9 @@ const formatName = (name: string): string => {
 };
 
 interface PokemonListItemProps {
-    pokemon: Pokemon; // Reverted to Pokemon
-    cost: number | null; // Re-added cost prop
-    leaguePokemonId: string; // Re-added leaguePokemonId prop
+    pokemon: PokemonSpecies;
+    cost: number | null;
+    leaguePokemonId: string;
     onDraft?: (leaguePokemonId: string) => void;
     onRemove?: (leaguePokemonId: string) => void;
     isMyTurn?: boolean;
@@ -27,24 +27,25 @@ interface PokemonListItemProps {
 
 export const PokemonListItem: React.FC<PokemonListItemProps> = ({
     pokemon,
-    cost, // Re-added cost
-    leaguePokemonId, // Re-added leaguePokemonId
+    cost,
+    leaguePokemonId,
     onDraft,
     onRemove,
     isMyTurn,
     isAvailable,
     pickNumber,
-    bgColor = 'bg-gray-100',
+    bgColor = 'bg-background-tertiary',
     isWishlistItem,
     showCost = true,
     showRemoveButton = false
 }) => {
+    // console.log("PokemonListItem:: pokemon prop: ", pokemon)
     return (
         <div className={`flex items-center justify-between p-2 rounded-md ${bgColor}`}>
             <div className="flex items-center flex-1 gap-x-2">
                 <img
-                    src={pokemon.Sprites.FrontDefault} // Access directly from pokemon
-                    alt={pokemon.Name} // Access directly from pokemon
+                    src={pokemon.Sprites.FrontDefault}
+                    alt={pokemon.Name}
                     className="w-10 h-10 object-contain"
                 />
                 <div className="flex-1">

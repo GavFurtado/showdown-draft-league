@@ -3,8 +3,8 @@ import Layout from '../components/Layout';
 import { useLeague } from '../context/LeagueContext';
 import { getPlayersByLeague, getDraftedPokemonByPlayer } from '../api/api';
 import { Player, DraftedPokemon } from '../api/data_interfaces';
-import { PokemonListItem } from '../components/PokemonListItem';
 import axios from 'axios';
+import { PokemonRosterList } from '../components/PokemonRosterList';
 
 // Roster Display Component
 const RosterDisplay = ({ player }: { player: Player }) => {
@@ -23,7 +23,7 @@ const RosterDisplay = ({ player }: { player: Player }) => {
                 setRoster(response.data || []);
             } catch (err) {
                 if (axios.isAxiosError(err) && err.response) {
-                    setRosterError(err.response.data.error || "Failed to load roster.");
+                    setRosterError(err.response.data.error || "Failed to load roster. Server maybe offline.");
                 } else {
                     setRosterError("A network or unknown error occurred while fetching the roster.");
                 }
@@ -43,18 +43,7 @@ const RosterDisplay = ({ player }: { player: Player }) => {
         <div>
             <h3 className="text-2xl font-bold text-text-primary mb-4">{player.TeamName || player.InLeagueName}'s Roster</h3>
             {roster.length > 0 ? (
-                <div className="flex flex-col space-y-2">
-                    {roster.map(dp => (
-                        <PokemonListItem
-                            key={dp.ID}
-                            pokemon={dp.PokemonSpecies} // Pass the PokemonSpecies object
-                            cost={dp.LeaguePokemon.Cost} // Pass the cost from LeaguePokemon
-                            leaguePokemonId={dp.LeaguePokemonID} // Pass the LeaguePokemonID
-                            pickNumber={dp.DraftPickNumber} // Pass the draft pick number
-                            bgColor="bg-gray-50"
-                        />
-                    ))}
-                </div>
+                <PokemonRosterList roster={roster} rosterType='drafted' bgColor="bg-gray-50" />
             ) : (
                 <p className="text-text-secondary">This player has no Pokémon on their roster.</p>
             )}
@@ -131,6 +120,76 @@ export default function Teamsheets() {
                     )}
                 </div>
             </div>
+            <div className="flex flex-col md:flex-col gap-5 py-5">
+                <div className="w-full bg-background-surface p-4 rounded-lg shadow-md">
+                    <h2 className="text-xl font-bold text-text-primary mb-4">Roster's Defensive Type Chart</h2>
+                    <table className="min-w-full divide-y divide-gray-700 table-fixed">
+                        <thead className="bg-gray-700">
+                            <tr>
+                                <th scope="col" className="px-2 py-3 text-text-on-nav text-left text-[10px] uppercase tracking-wider w-40">
+                                    Pokémon
+                                </th>
+                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
+                                    Normal
+                                </th>
+                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
+                                    Fire
+                                </th>
+                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
+                                    Water
+                                </th>
+                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
+                                    Electric
+                                </th>
+                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
+                                    Grass
+                                </th>
+                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
+                                    Ice
+                                </th>
+                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
+                                    Fighting
+                                </th>
+                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
+                                    Poison
+                                </th>
+                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
+                                    Ground
+                                </th>
+                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
+                                    Flying
+                                </th>
+                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
+                                    Psychic
+                                </th>
+                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
+                                    Bug
+                                </th>
+                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
+                                    Rock
+                                </th>
+                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
+                                    Ghost
+                                </th>
+                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
+                                    Dragon
+                                </th>
+                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
+                                    Dark
+                                </th>
+                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
+                                    Steel
+                                </th>
+                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
+                                    Fairy
+                                </th>
+
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+
         </Layout>
     );
 }
