@@ -22,14 +22,14 @@ type League struct {
 	MaxPokemonPerPlayer int                `gorm:"not null;default:0;column:max_pokemon_per_player" json:"MaxPokemonPerPlayer"`
 	MinPokemonPerPlayer int                `gorm:"not null;default:0;column:min_pokemon_per_player" json:"MinPokemonPerPlayer"`
 	StartingDraftPoints int                `gorm:"not null;default:140;column:starting_draft_points" json:"StartingDraftPoints"`
-	Format              LeagueFormat       `gorm:"type:jsonb;column:format" json:"Format"`
+	Format              LeagueFormat       `gorm:"type:jsonb;column:format" json:"Format,omitempty"`
 	CreatedAt           *time.Time         `gorm:"type:timestamp with time zone;column:created_at" json:"CreatedAt"`
 	UpdatedAt           *time.Time         `gorm:"type:timestamp with time zone;column:updated_at" json:"UpdatedAt"`
 	DeletedAt           gorm.DeletedAt     `gorm:"index;column:deleted_at" json:"-"`
 	DiscordWebhookURL   *string            `gorm:"column:discord_webhook_url" json:"DiscordWebhookURL"`
 
 	// Relationships
-	Players []Player `gorm:"foreignKey:league_id" json:"Players"`
+	Players []Player `gorm:"foreignKey:league_id" json:"Players,omitempty"`
 	// League has many LeaguePokemon (its defined draft pool)
 	DefinedPokemon []LeaguePokemon `gorm:"foreignKey:league_id" json:"-"`
 	// League has many DraftedPokemon (all Pokemon drafted in this league)
