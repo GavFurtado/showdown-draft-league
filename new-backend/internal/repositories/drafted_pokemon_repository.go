@@ -80,7 +80,9 @@ func (r *draftedPokemonRepositoryImpl) GetDraftedPokemonByID(id uuid.UUID) (*mod
 // gets all Pokemon drafted by a specific player in a league
 func (r *draftedPokemonRepositoryImpl) GetDraftedPokemonByPlayer(playerID uuid.UUID) ([]models.DraftedPokemon, error) {
 	var draftedPokemon []models.DraftedPokemon
-	err := r.db.Preload("PokemonSpecies").
+	err := r.db.
+		Preload("PokemonSpecies").
+		Preload("LeaguePokemon").
 		Where("player_id = ? AND is_released = ?", playerID, false).
 		Order("draft_pick_number ASC").
 		Find(&draftedPokemon).Error
