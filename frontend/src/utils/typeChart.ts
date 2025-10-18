@@ -249,7 +249,7 @@ export function getPokemonDefensiveProfile(type1: Type, type2: Type | null, abil
         switch (ability.Name) {
             case "dry-skin":
                 defensiveProfile[Type.WATER]! *= Effectiveness.IMMUNE;
-                defensiveProfile[Type.FIRE]! *= Effectiveness.SUPER_EFFECTIVE;
+                defensiveProfile[Type.FIRE]! *= 1.25; // the weird one of the group
                 affectedTypes.push(Type.WATER)
                 affectedTypes.push(Type.FIRE)
                 break;
@@ -301,7 +301,7 @@ export function getPokemonDefensiveProfile(type1: Type, type2: Type | null, abil
                 });
                 break;
             default:
-                console.log("WHAT THE HELLY!!! An not considered ability to factor in made it into the ability checks for defensive profile calculations: ", ability);
+                console.log("WHAT THE HELLY!!! An unconsidered ability to factor in made it into the ability checks for defensive profile calculations: ", ability);
                 break;
         }
     }
