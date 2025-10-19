@@ -47,10 +47,10 @@ const DraftHistory: React.FC = () => {
                     <table className="min-w-full divide-y divide-gray-700">
                         <thead className="bg-gray-700">
                             <tr>
-                                <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
-                                    Pokemon
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-on-nav uppercase tracking-wider">
+                                    Pokémon
                                 </th>
-                                <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-on-nav uppercase tracking-wider">
                                     Player
                                 </th>
                                 <th scope="col" className="w-28 px-3 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
@@ -87,7 +87,7 @@ const DraftHistory: React.FC = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-center text-sm text-text-primary">{item.Player.InLeagueName}</div>
+                                        <div className="text-left text-sm text-text-primary">{item.Player.InLeagueName}</div>
                                     </td>
                                     <td className="w-28 px-3 py-4 whitespace-nowrap text-sm text-text-primary text-center">
                                         {item.DraftPickNumber}

@@ -30,7 +30,7 @@ const TeamPokemonView: React.FC<TeamPokemonViewProps> = ({ roster }) => {
             <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-background-primary">
                     <tr>
-                        <th scope="col" className="px-2 py-4 text-text-on-nav text-left text-[10px] font-bold uppercase tracking-wider w-40">Pokémon ({roster.length})</th>
+                        <th scope="col" className="px-2 py-4 text-text-on-nav text-left text-[10px] font-bold uppercase tracking-wider w-60">Pokémon ({roster.length})</th>
                         <th scope="col" className="px-2 py-4 text-text-on-nav text-left text-[10px] font-bold uppercase tracking-wider">Types</th>
                         <th scope="col" className="px-2 py-4 text-text-on-nav text-left text-[10px] font-bold uppercase tracking-wider">Abilities</th>
                         <th scope="col" className="px-2 py-4 text-text-on-nav text-left text-[10px] font-bold uppercase tracking-wider">Cost</th>
@@ -121,7 +121,7 @@ const TeamPokemonView: React.FC<TeamPokemonViewProps> = ({ roster }) => {
                 <ToggleSwitch
                     isOn={isTableView}
                     onToggle={() => setIsCardView(!isTableView)}
-                    label={isTableView ? " " : "View as Table "}
+                    label={isTableView ? "View as Table  " : "View as Table "}
                 />
             </div>
             {roster.length > 0 ? (
