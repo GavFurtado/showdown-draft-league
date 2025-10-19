@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // Dummy change
 import Layout from '../components/Layout';
 import { useLeague } from '../context/LeagueContext';
 import { getPlayersByLeague, getDraftedPokemonByPlayer } from '../api/api';
@@ -6,6 +6,7 @@ import { Player, DraftedPokemon } from '../api/data_interfaces';
 import axios from 'axios';
 import { PokemonRosterList } from '../components/PokemonRosterList';
 import { DefensiveTypeChart } from '../components/DefensiveTypeChart';
+import TeamPokemonView from '../components/TeamPokemonView';
 
 // Roster Display Component
 const RosterDisplay = ({ player }: { player: Player }) => {
@@ -153,6 +154,10 @@ export default function Teamsheets() {
                 </div>
             </div>
             <div className="flex flex-col md:flex-col gap-5 py-5">
+
+                <div className="w-full bg-background-surface p-4 rounded-lg shadow-md">
+                    <TeamPokemonView roster={selectedPlayerRoster} />
+                </div>
                 <div className="w-full bg-background-surface p-4 rounded-lg shadow-md">
                     <h2 className="text-2xl font-bold text-text-primary mb-4 pb-2">Defensive Type Chart</h2>
                     {rosterLoading && <p className="text-text-secondary">Loading defensive chart...</p>}

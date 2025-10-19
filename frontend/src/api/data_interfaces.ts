@@ -155,6 +155,8 @@ export interface FilterState {
 }
 
 export interface DraftCardProps {
+  viewMode?: 'draftboard' | 'teamsheet';
+  cardSize?: 'default' | 'small';
   key: string;
   leaguePokemonId: string;
   pokemon: PokemonSpecies;

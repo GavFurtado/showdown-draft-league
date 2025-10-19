@@ -77,15 +77,14 @@ export const DefensiveTypeChart: React.FC<DefensiveTypeChartProps> = ({ roster }
                         );
 
                         return (
-                            <tr key={dp.ID} className='border-b border-gray-900/10'>
-                                <td className="px-2 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <tr key={dp.ID} className='border-b border-gray-900/10'><td className="px-2 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
                                     <div className="flex items-center">
                                         <img src={dp.PokemonSpecies.Sprites.FrontDefault} alt={dp.PokemonSpecies.Name} className="h-8 w-8 mr-2" />
                                         <span className={dp.PokemonSpecies.Name.length > 14 ? 'text-xs' : 'text-sm'}>
                                             {formatPokemonName(dp.PokemonSpecies.Name)}
                                         </span>
                                     </div>
-                                </td>                                {AllTypes.map(attackingType => {
+                                 </td>{AllTypes.map(attackingType => {
                                     const effectiveness = defensiveProfile[attackingType] ?? Effectiveness.NEUTRAL;
                                     const isAffectedByAbility = affectedTypes.includes(attackingType);
                                     return (
