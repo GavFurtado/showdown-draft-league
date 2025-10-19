@@ -1,15 +1,8 @@
 import React from 'react';
-import { PokemonSpecies, DraftCardProps } from '../api/data_interfaces';
+import { formatPokemonName, formatAbilityName } from "../utils/nameFormatter";
+import { DraftCardProps } from '../api/data_interfaces';
 import pokeballIcon from '../assets/pokeball-icon.png';
 
-// Helper function to format names (replace hyphens with spaces and title case)
-const formatName = (name: string): string => {
-    return name
-        .replace(/-/g, ' ')
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-};
 
 // Helper function to get stat color based on value
 const getStatColor = (value: number): string => {
@@ -66,7 +59,7 @@ export default function PokemonCard({ pokemon, cost, onImageError, leaguePokemon
     }).join(', ');
     const formattedAbilities = pokemon.Abilities.map(a => (
         <span key={a.Name} className={a.IsHidden ? 'text-gray-400 italic' : ''}>
-            {formatName(a.Name)}
+            {formatAbilityName(a.Name)}
         </span>
     ));
 
@@ -109,8 +102,8 @@ export default function PokemonCard({ pokemon, cost, onImageError, leaguePokemon
                     </div>
                     <div className='flex w-[100%] justify-between'>
                         <div>
-                            <h3 className={`pb-0 mb-0 font-bold text-gray-800 text-left ${formatName(pokemon.Name).length > 12 ? 'text-base' : 'text-lg'}`}>
-                                {formatName(pokemon.Name)}
+                            <h3 className={`pb-0 mb-0 font-bold text-gray-800 text-left ${formatPokemonName(pokemon.Name).length > 12 ? 'text-base' : 'text-lg'}`}>
+                                {formatPokemonName(pokemon.Name)}
                             </h3>
                             <p className='p-0 m-0 text-left text-sm text-gray-600'>{types}</p>
                         </div>
@@ -146,8 +139,8 @@ export default function PokemonCard({ pokemon, cost, onImageError, leaguePokemon
 
                 {/* Back Face of the Card */}
                 <div className="text-l absolute inset-0 bg-gray-700 text-white rounded-lg p-4 flex flex-col [backface-visibility:hidden] [transform:rotateY(180deg)]">
-                    <h3 className={`font-bold mb-4 text-center ${formatName(pokemon.Name).length > 12 ? 'text-base' : 'text-lg'}`}>
-                        {formatName(pokemon.Name)}
+                    <h3 className={`font-bold mb-4 text-center ${formatPokemonName(pokemon.Name).length > 12 ? 'text-base' : 'text-lg'}`}>
+                        {formatPokemonName(pokemon.Name)}
                     </h3>
                     <div className="flex flex-col gap-1 w-full">
                         <StatBar label="HP" value={pokemon.Stats.Hp} />

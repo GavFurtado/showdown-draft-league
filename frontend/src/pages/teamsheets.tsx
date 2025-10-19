@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Layout from '../components/Layout';
 import { useLeague } from '../context/LeagueContext';
 import { getPlayersByLeague, getDraftedPokemonByPlayer } from '../api/api';
 import { Player, DraftedPokemon } from '../api/data_interfaces';
 import axios from 'axios';
 import { PokemonRosterList } from '../components/PokemonRosterList';
+import { DefensiveTypeChart } from '../components/DefensiveTypeChart';
 
 // Roster Display Component
 const RosterDisplay = ({ player }: { player: Player }) => {
@@ -58,6 +59,9 @@ export default function Teamsheets() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+    const [selectedPlayerRoster, setSelectedPlayerRoster] = useState<DraftedPokemon[]>([]);
+    const [rosterLoading, setRosterLoading] = useState(false);
+    const [rosterError, setRosterError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!currentLeague?.ID) return;
@@ -88,12 +92,40 @@ export default function Teamsheets() {
         fetchPlayers();
     }, [currentLeague?.ID]);
 
+    const fetchSelectedPlayerRoster = useCallback(async () => {
+        if (!selectedPlayer?.ID || !currentLeague?.ID) {
+            setSelectedPlayerRoster([]);
+            return;
+        }
+
+        try {
+            setRosterLoading(true);
+            setRosterError(null);
+            const response = await getDraftedPokemonByPlayer(currentLeague.ID, selectedPlayer.ID);
+            setSelectedPlayerRoster(response.data || []);
+        } catch (err) {
+            if (axios.isAxiosError(err) && err.response) {
+                setRosterError(err.response.data.error || "Failed to load roster. Server maybe offline.");
+            } else {
+                setRosterError("A network or unknown error occurred while fetching the roster.");
+            }
+            console.error(`Error fetching roster for player ${selectedPlayer.ID}:`, err);
+        } finally {
+            setRosterLoading(false);
+        }
+    }, [selectedPlayer?.ID, currentLeague?.ID]);
+
+    useEffect(() => {
+        fetchSelectedPlayerRoster();
+    }, [fetchSelectedPlayerRoster]);
+
+
     return (
         <Layout variant="container">
             <div className="flex flex-col md:flex-row gap-6 py-6">
                 {/* Left Pane: Player List */}
                 <div className="w-full md:w-1/3 bg-background-surface p-4 rounded-lg shadow-md">
-                    <h2 className="text-xl font-bold text-text-primary mb-4">Players</h2>
+                    <h2 className="text-2xl font-bold text-text-primary mb-4">Players</h2>
                     {loading && <p className="text-text-secondary">Loading...</p>}
                     {error && <p className="text-red-500">Error: {error}</p>}
                     <ul className="space-y-2">
@@ -122,71 +154,18 @@ export default function Teamsheets() {
             </div>
             <div className="flex flex-col md:flex-col gap-5 py-5">
                 <div className="w-full bg-background-surface p-4 rounded-lg shadow-md">
-                    <h2 className="text-xl font-bold text-text-primary mb-4">Roster's Defensive Type Chart</h2>
-                    <table className="min-w-full divide-y divide-gray-700 table-fixed">
-                        <thead className="bg-gray-700">
-                            <tr>
-                                <th scope="col" className="px-2 py-3 text-text-on-nav text-left text-[10px] uppercase tracking-wider w-40">
-                                    Pokémon
-                                </th>
-                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
-                                    Normal
-                                </th>
-                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
-                                    Fire
-                                </th>
-                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
-                                    Water
-                                </th>
-                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
-                                    Electric
-                                </th>
-                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
-                                    Grass
-                                </th>
-                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
-                                    Ice
-                                </th>
-                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
-                                    Fighting
-                                </th>
-                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
-                                    Poison
-                                </th>
-                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
-                                    Ground
-                                </th>
-                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
-                                    Flying
-                                </th>
-                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
-                                    Psychic
-                                </th>
-                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
-                                    Bug
-                                </th>
-                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
-                                    Rock
-                                </th>
-                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
-                                    Ghost
-                                </th>
-                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
-                                    Dragon
-                                </th>
-                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
-                                    Dark
-                                </th>
-                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
-                                    Steel
-                                </th>
-                                <th scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-[calc((100%-160px)/18)]">
-                                    Fairy
-                                </th>
-
-                            </tr>
-                        </thead>
-                    </table>
+                    <h2 className="text-2xl font-bold text-text-primary mb-4 pb-2">Defensive Type Chart</h2>
+                    {rosterLoading && <p className="text-text-secondary">Loading defensive chart...</p>}
+                    {rosterError && <p className="text-red-500">Error: {rosterError}</p>}
+                    {!rosterLoading && !rosterError && selectedPlayerRoster.length > 0 && (
+                        <DefensiveTypeChart roster={selectedPlayerRoster} />
+                    )}
+                    {!rosterLoading && !rosterError && selectedPlayerRoster.length === 0 && selectedPlayer && (
+                        <p className="p-4 text-text-secondary">{selectedPlayer.InLeagueName} has no Pokémon on their roster to display defensive types.</p>
+                    )}
+                    {!selectedPlayer && (
+                        <p className="p-4 text-text-secondary">Select a player to view their defensive type chart.</p>
+                    )}
                 </div>
             </div>
 

@@ -3,7 +3,9 @@ import { PokemonAbility } from "../api/data_interfaces";
 export enum Effectiveness {
     NEUTRAL = 1.0,
     SUPER_EFFECTIVE = 2.0,
+    EXTREMELY_EFFECTIVE = 4.0,
     NOT_VERY_EFFECTIVE = 0.5,
+    BARELY_EFFECTIVE = 0.25,
     IMMUNE = 0.0,
 }
 
@@ -29,6 +31,7 @@ export enum Type {
     FAIRY = "fairy",
     // no mon is stellar by default
 }
+export const AllTypes: Type[] = [Type.NORMAL, Type.FIRE, Type.WATER, Type.GRASS, Type.ELECTRIC, Type.ICE, Type.FIGHTING, Type.POISON, Type.GROUND, Type.FLYING, Type.PSYCHIC, Type.BUG, Type.ROCK, Type.GHOST, Type.DRAGON, Type.DARK, Type.STEEL, Type.FAIRY]
 
 export type TypeEffectivenessMap = {
     [key in Type]?: Effectiveness;
@@ -211,7 +214,6 @@ const effectivenessAlteringAbilities: string[] = [
     "thick-fat",
 ]
 
-
 function getSingleTypeEffectiveness(attackingType: Type, defendingType: Type): Effectiveness {
     const effectivenessMap = typeChart[attackingType]
 
@@ -229,14 +231,12 @@ function getDualTypeEffectiveness(attackingType: Type, type1: Type, type2: Type 
     return typeEffectiveness;
 }
 
-
 export function getPokemonDefensiveProfile(type1: Type, type2: Type | null, abilities: PokemonAbility[]): [TypeEffectivenessMap, boolean, Type[]] {
     let didAbilityMatter = false;
     let defensiveProfile: TypeEffectivenessMap = {};
     let affectedTypes: Type[] = []
 
-    const types: Type[] = [Type.NORMAL, Type.FIRE, Type.WATER, Type.GRASS, Type.ELECTRIC, Type.ICE, Type.FIGHTING, Type.POISON, Type.GROUND, Type.FLYING, Type.PSYCHIC, Type.BUG, Type.ROCK, Type.GHOST, Type.DRAGON, Type.DARK, Type.STEEL, Type.FAIRY]
-    for (const attackingType of types) {
+    for (const attackingType of AllTypes) {
         var typeEffectiveness = getDualTypeEffectiveness(attackingType, type1, type2)
         defensiveProfile[attackingType] = typeEffectiveness;
     }
@@ -249,7 +249,6 @@ export function getPokemonDefensiveProfile(type1: Type, type2: Type | null, abil
         switch (ability.Name) {
             case "dry-skin":
                 defensiveProfile[Type.WATER]! *= Effectiveness.IMMUNE;
-                defensiveProfile[Type.FIRE]! *= 1.25; // the weird one of the group
                 affectedTypes.push(Type.WATER)
                 affectedTypes.push(Type.FIRE)
                 break;

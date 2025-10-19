@@ -1,6 +1,7 @@
 import DraftCard from "../components/draftCards"
 import Filter from "../components/filter"
 import { useState, useEffect, useCallback } from "react"
+import { formatPokemonName } from "../utils/nameFormatter";
 import { FilterState, DraftCardProps, LeaguePokemon, DraftedPokemon } from "../api/data_interfaces"
 import { getAllLeaguePokmeon, makePick, getDraftedPokemonByPlayer, skipPick } from "../api/api"
 import { useLeague } from "../context/LeagueContext"
@@ -20,12 +21,6 @@ const defaultFilters: FilterState = {
     sortOrder: 'desc',
 };
 
-const formatName = (name: string): string => {
-    return name
-        .split('-')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-};
 
 export default function Draftboard() {
     const { currentLeague, currentDraft, currentPlayer, refetch: refetchLeague, loading: leagueLoading, error: leagueError } = useLeague();
@@ -203,7 +198,7 @@ export default function Draftboard() {
     const cardsToDisplay = cards.map(leaguePokemon => {
         if (!leaguePokemon.PokemonSpecies || !currentLeague?.ID) return null;
         const pokemon = leaguePokemon.PokemonSpecies;
-        const name = formatName(pokemon.Name);
+        const name = formatPokemonName(pokemon.Name);
         const isPending = pendingPicks.some(p => p.ID === leaguePokemon.ID);
 
         const draftCardProps: DraftCardProps = {
@@ -288,6 +283,7 @@ export default function Draftboard() {
                             </div>
                         )}
                         <WishlistDisplay {...{ allPokemon, wishlist, removePokemonFromWishlist, clearWishlist, isMyTurn: isMyTurn ?? false, onDraft }} />
+                        {/* Your Team / Pending Picks */}
                         <div className="bg-background-surface shadow-md rounded-md overflow-hidden">
                             <div className="bg-gray-100 py-2 px-4 flex justify-between items-center">
                                 <h2 className="text-l font-semibold text-gray-800">Your Team ({draftedPokemon.length})</h2>
@@ -343,7 +339,7 @@ export default function Draftboard() {
                                 {pendingPicks.map((p, index) => (
                                     <tr key={p.ID} className="border-t border-gray-200">
                                         <td className="p-2">{pickNumbersToUse[index]}</td>
-                                        <td className="p-2">{formatName(p.PokemonSpecies.Name)}</td>
+                                        <td className="p-2">{formatPokemonName(p.PokemonSpecies.Name)}</td>
                                         <td className="p-2">{p.Cost}</td>
                                     </tr>
                                 ))}

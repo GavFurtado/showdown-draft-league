@@ -1,14 +1,7 @@
 import React from 'react';
 import { PokemonSpecies } from '../api/data_interfaces'; // Reverted to Pokemon
 import pokeballIcon from '../assets/pokeball-icon.png'
-
-const formatName = (name: string): string => {
-    return name
-        .replace(/-/g, ' ')
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-};
+import { formatPokemonName } from "../utils/nameFormatter";
 
 interface PokemonListItemProps {
     pokemon: PokemonSpecies;
@@ -49,7 +42,7 @@ export const PokemonListItem: React.FC<PokemonListItemProps> = ({
                     className="w-10 h-10 object-contain"
                 />
                 <div className="flex-1">
-                    <p className={`font-medium text-gray-800 ${isWishlistItem && !isAvailable ? 'line-through text-gray-500' : ''}`}>{formatName(pokemon.Name)}</p>
+                    <p className={`font-medium text-gray-800 ${isWishlistItem && !isAvailable ? 'line-through text-gray-500' : ''}`}>{formatPokemonName(pokemon.Name)}</p>
                     {showCost && <p className="text-sm text-gray-600">Cost: {cost ?? 'N/A'}</p>}
                 </div>
             </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLeague } from '../context/LeagueContext';
 import { getDraftHistory } from '../api/api';
+import { formatPokemonName } from "../utils/nameFormatter";
 import { DraftedPokemon } from '../api/data_interfaces';
 import Layout from '../components/Layout';
 import { PokemonListItem } from '../components/PokemonListItem';
@@ -108,7 +109,7 @@ export default function DraftHistory() {
                                                 <div className="flex items-center">
                                                     <img src={dp.PokemonSpecies.Sprites.FrontDefault} alt={dp.PokemonSpecies.Name} className="h-10 w-10 flex-shrink-0" />
                                                     <div className="ml-4">
-                                                        <div className="font-medium text-text-default">{dp.PokemonSpecies.Name}</div>
+                                                        <div className="font-medium text-text-default">{formatPokemonName(dp.PokemonSpecies.Name)}</div>
                                                     </div>
                                                 </div>
                                             </td>

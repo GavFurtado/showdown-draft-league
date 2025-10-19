@@ -4,6 +4,7 @@ import { getDraftHistory } from '../src/api/api';
 import { DraftedPokemon } from '../src/api/data_interfaces';
 import Layout from '../src/components/Layout';
 import { format } from 'date-fns';
+import { formatPokemonName } from '../src/utils/nameFormatter';
 
 const DraftHistory: React.FC = () => {
     const { leagueId } = useParams<{ leagueId: string }>();
@@ -30,7 +31,7 @@ const DraftHistory: React.FC = () => {
     }, [leagueId]);
 
     if (loading) {
-        return <Layout variant="container"><div className="text-white">Loading draft history...</div></Layout>;
+        return <Layout variant="container"><div className="text-center text-xl text-text-primary">Loading draft history...</div></Layout>;
     }
 
     if (error) {
@@ -46,14 +47,14 @@ const DraftHistory: React.FC = () => {
                     <table className="min-w-full divide-y divide-gray-700">
                         <thead className="bg-gray-700">
                             <tr>
-                                <th scope="col" className="text-left px-6 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
+                                <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
                                     Pokemon
                                 </th>
-                                <th scope="col" className="text-left px-6 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
+                                <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
                                     Player
                                 </th>
-                                <th scope="col" className=" w-28 px-3 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
-                                    Pick#
+                                <th scope="col" className="w-28 px-3 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
+                                    Pick #
                                 </th>
                                 <th scope="col" className="w-28 px-3 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
                                     Round
@@ -67,7 +68,7 @@ const DraftHistory: React.FC = () => {
                                 <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
                                     Action
                                 </th>
-                                <th scope="col" className="text-left px-6 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
+                                <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-text-on-nav uppercase tracking-wider">
                                     Timestamp
                                 </th>
                             </tr>
@@ -81,12 +82,12 @@ const DraftHistory: React.FC = () => {
                                                 <img className="h-10 w-10 rounded-full" src={item.PokemonSpecies.Sprites.FrontDefault || item.PokemonSpecies.Sprites.OfficialArtwork || '/placeholder-roster.png'} alt={item.PokemonSpecies.Name} />
                                             </div>
                                             <div className="ml-4">
-                                                <div className="text-sm font-medium text-text-primary">{item.PokemonSpecies.Name}</div>
+                                                <div className="text-sm font-medium text-text-primary">{formatPokemonName(item.PokemonSpecies.Name)}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-text-primary">{item.Player.InLeagueName}</div>
+                                        <div className="text-center text-sm text-text-primary">{item.Player.InLeagueName}</div>
                                     </td>
                                     <td className="w-28 px-3 py-4 whitespace-nowrap text-sm text-text-primary text-center">
                                         {item.DraftPickNumber}
