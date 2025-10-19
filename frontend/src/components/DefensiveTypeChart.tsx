@@ -10,18 +10,18 @@ interface DefensiveTypeChartProps {
 const getEffectivenessColor = (effectiveness: Effectiveness): string => {
     switch (effectiveness) {
         case Effectiveness.IMMUNE:
-            return 'bg-gray-600 text-white text-shadow-2xs';
+            return 'bg-gray-600 text-white font-bold';
         case Effectiveness.BARELY_EFFECTIVE:
-            return 'bg-green-700 text-white text-shadow-2xs';
+            return 'bg-green-700 text-white font-bold';
         case Effectiveness.NOT_VERY_EFFECTIVE:
-            return 'bg-lime-700 text-white text-shadow-2xs';
+            return 'bg-lime-700 text-white font-bold';
         case Effectiveness.SUPER_EFFECTIVE:
-            return 'bg-amber-700 text-white text-shadow-2xs';
+            return 'bg-amber-700 text-white font-bold';
         case Effectiveness.EXTREMELY_EFFECTIVE:
-            return 'bg-red-700 text-white text-shadow-2xs';
+            return 'bg-red-700 text-white font-bold';
         case Effectiveness.NEUTRAL:
         default:
-            return 'bg-gray-200 text-gray-800 text-shadow-2xs';
+            return 'bg-gray-200 text-gray-500 font-bold text-shadow-2xs';
     }
 };
 
@@ -40,6 +40,7 @@ const formatTypeName = (typeName: string): string => {
     if (typeName === 'normal') return 'norm';
     if (typeName === 'ground') return 'grnd';
     if (typeName === 'psychic') return 'psych';
+    if (typeName === 'water') return 'water';
     if (typeName === 'flying') return 'fly';
     if (typeName === 'steel') return 'steel';
     if (typeName === 'fairy') return 'fairy';
