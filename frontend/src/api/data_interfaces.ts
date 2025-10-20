@@ -198,3 +198,8 @@ export interface DraftedPokemon {
   PokemonSpecies: PokemonSpecies;
   LeaguePokemon: LeaguePokemon;
 }
+
+export type PlayerPick = {
+  pickNumber: number;
+  pokemon: DraftedPokemon | null;
+};

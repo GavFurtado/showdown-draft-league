@@ -7,7 +7,7 @@ import Dashboard from './pages/dashboard';
 import { LeagueProvider } from './context/LeagueContext';
 import Draftboard from './pages/draftboard';
 import TeamSheets from './pages/teamsheets';
-import DraftHistory from '../pages/DraftHistory';
+import DraftHistory from './pages/DraftHistory';
 
 function App() {
     return (

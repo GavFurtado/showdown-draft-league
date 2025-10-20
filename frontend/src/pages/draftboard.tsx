@@ -3,7 +3,7 @@ import Filter from "../components/filter"
 import { useState, useEffect, useCallback } from "react"
 import { formatPokemonName } from "../utils/nameFormatter";
 import { FilterState, DraftCardProps, LeaguePokemon, DraftedPokemon, Player } from "../api/data_interfaces"
-import { getAllLeaguePokmeon, makePick, getDraftedPokemonByPlayer, skipPick, getPlayersByLeague } from "../api/api"
+import { getAllLeaguePokmeon, makePick, getDraftedPokemonByPlayer, skipPick, getPlayersByLeague, getDraftHistory } from "../api/api"
 import { useLeague } from "../context/LeagueContext"
 import { WishlistDisplay } from "../components/WishlistDisplay"
 import { useWishlist } from '../hooks/useWishlist';
@@ -11,7 +11,6 @@ import { useDraftTimer } from '../hooks/useDraftTimer';
 import Modal from "../components/Modal";
 import { PokemonRosterList } from "../components/PokemonRosterList";
 import Layout from "../components/Layout";
-import FullScreenModal from "../components/FullScreenModal";
 import FullScreenDraftModal from "../components/FullScreenDraftModal";
 
 const defaultFilters: FilterState = {
@@ -22,7 +21,6 @@ const defaultFilters: FilterState = {
     sortByStat: '',
     sortOrder: 'desc',
 };
-
 
 export default function Draftboard() {
     const { currentLeague, currentDraft, currentPlayer, refetch: refetchLeague, loading: leagueLoading, error: leagueError } = useLeague();
@@ -42,7 +40,7 @@ export default function Draftboard() {
     const [isInfoOpen, setIsInfoOpen] = useState(false);
     const [pendingPicks, setPendingPicks] = useState<LeaguePokemon[]>([]);
     const [isFullScreenModalOpen, setIsFullScreenModalOpen] = useState(false);
-    const [allPlayersDraftedPokemon, setAllPlayersDraftedPokemon] = useState<{ [key: string]: DraftedPokemon[] }>({});
+    const [draftHistory, setDraftHistory] = useState<DraftedPokemon[]>([]);
     const [leaguePlayers, setLeaguePlayers] = useState<Player[]>([]);
 
     const isMyTurn = currentDraft?.CurrentTurnPlayerID === currentPlayer?.ID;
@@ -79,22 +77,16 @@ export default function Draftboard() {
         }
     }, [currentLeague, currentPlayer]);
 
-    const fetchAllPlayersDraftedPokemon = useCallback(async () => {
-        if (currentLeague && leaguePlayers.length > 0) {
+    const fetchDraftHistory = useCallback(async () => {
+        if (currentLeague) {
             try {
-                const promises = leaguePlayers.map(player => getDraftedPokemonByPlayer(currentLeague.ID, player.ID));
-                const results = await Promise.all(promises);
-                const newAllPlayersDraftedPokemon = results.reduce((acc, result, index) => {
-                    const player = leaguePlayers[index];
-                    acc[player.ID] = result.data;
-                    return acc;
-                }, {} as { [key: string]: DraftedPokemon[] });
-                setAllPlayersDraftedPokemon(newAllPlayersDraftedPokemon);
+                const response = await getDraftHistory(currentLeague.ID);
+                setDraftHistory(response.data);
             } catch (error) {
-                console.error("Failed to fetch all players drafted pokemon:", error);
+                console.error("Failed to fetch draft history:", error);
             }
         }
-    }, [currentLeague, leaguePlayers]);
+    }, [currentLeague]);
 
     useEffect(() => {
         fetchPokemon();
@@ -111,9 +103,9 @@ export default function Draftboard() {
 
     useEffect(() => {
         if (isFullScreenModalOpen) {
-            fetchAllPlayersDraftedPokemon();
+            fetchDraftHistory();
         }
-    }, [isFullScreenModalOpen, fetchAllPlayersDraftedPokemon]);
+    }, [isFullScreenModalOpen, fetchDraftHistory]);
 
     const handleCardFlip = useCallback((pokemonId: string) => {
         setCurrentlyFlippedCardId(prevId => (prevId === pokemonId ? null : pokemonId));
@@ -423,7 +415,7 @@ export default function Draftboard() {
                     onClose={() => setIsFullScreenModalOpen(false)}
                     title="Full Draft View"
                     leaguePlayers={leaguePlayers}
-                    allPlayersDraftedPokemon={allPlayersDraftedPokemon}
+                    draftHistory={draftHistory}
                     currentDraft={currentDraft}
                     currentPlayer={currentPlayer}
                     currentLeague={currentLeague}
