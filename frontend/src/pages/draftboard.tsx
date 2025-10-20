@@ -2,8 +2,8 @@ import DraftCard from "../components/draftCards"
 import Filter from "../components/filter"
 import { useState, useEffect, useCallback } from "react"
 import { formatPokemonName } from "../utils/nameFormatter";
-import { FilterState, DraftCardProps, LeaguePokemon, DraftedPokemon } from "../api/data_interfaces"
-import { getAllLeaguePokmeon, makePick, getDraftedPokemonByPlayer, skipPick } from "../api/api"
+import { FilterState, DraftCardProps, LeaguePokemon, DraftedPokemon, Player } from "../api/data_interfaces"
+import { getAllLeaguePokmeon, makePick, getDraftedPokemonByPlayer, skipPick, getPlayersByLeague } from "../api/api"
 import { useLeague } from "../context/LeagueContext"
 import { WishlistDisplay } from "../components/WishlistDisplay"
 import { useWishlist } from '../hooks/useWishlist';
@@ -11,6 +11,8 @@ import { useDraftTimer } from '../hooks/useDraftTimer';
 import Modal from "../components/Modal";
 import { PokemonRosterList } from "../components/PokemonRosterList";
 import Layout from "../components/Layout";
+import FullScreenModal from "../components/FullScreenModal";
+import FullScreenDraftModal from "../components/FullScreenDraftModal";
 
 const defaultFilters: FilterState = {
     selectedTypes: [],
@@ -39,6 +41,9 @@ export default function Draftboard() {
     const [draftedPokemonError, setDraftedPokemonError] = useState<string | null>(null);
     const [isInfoOpen, setIsInfoOpen] = useState(false);
     const [pendingPicks, setPendingPicks] = useState<LeaguePokemon[]>([]);
+    const [isFullScreenModalOpen, setIsFullScreenModalOpen] = useState(false);
+    const [allPlayersDraftedPokemon, setAllPlayersDraftedPokemon] = useState<{ [key: string]: DraftedPokemon[] }>({});
+    const [leaguePlayers, setLeaguePlayers] = useState<Player[]>([]);
 
     const isMyTurn = currentDraft?.CurrentTurnPlayerID === currentPlayer?.ID;
     const accumulatedPicks = currentDraft?.PlayersWithAccumulatedPicks?.[currentPlayer?.ID || ''] || [];
@@ -74,10 +79,41 @@ export default function Draftboard() {
         }
     }, [currentLeague, currentPlayer]);
 
+    const fetchAllPlayersDraftedPokemon = useCallback(async () => {
+        if (currentLeague && leaguePlayers.length > 0) {
+            try {
+                const promises = leaguePlayers.map(player => getDraftedPokemonByPlayer(currentLeague.ID, player.ID));
+                const results = await Promise.all(promises);
+                const newAllPlayersDraftedPokemon = results.reduce((acc, result, index) => {
+                    const player = leaguePlayers[index];
+                    acc[player.ID] = result.data;
+                    return acc;
+                }, {} as { [key: string]: DraftedPokemon[] });
+                setAllPlayersDraftedPokemon(newAllPlayersDraftedPokemon);
+            } catch (error) {
+                console.error("Failed to fetch all players drafted pokemon:", error);
+            }
+        }
+    }, [currentLeague, leaguePlayers]);
+
     useEffect(() => {
         fetchPokemon();
         fetchDraftedPokemon();
     }, [fetchPokemon, fetchDraftedPokemon]);
+
+    useEffect(() => {
+        if (currentLeague?.ID) {
+            getPlayersByLeague(currentLeague.ID)
+                .then(response => setLeaguePlayers(response.data))
+                .catch(error => console.error("Failed to fetch league players:", error));
+        }
+    }, [currentLeague?.ID]);
+
+    useEffect(() => {
+        if (isFullScreenModalOpen) {
+            fetchAllPlayersDraftedPokemon();
+        }
+    }, [isFullScreenModalOpen, fetchAllPlayersDraftedPokemon]);
 
     const handleCardFlip = useCallback((pokemonId: string) => {
         setCurrentlyFlippedCardId(prevId => (prevId === pokemonId ? null : pokemonId));
@@ -224,7 +260,8 @@ export default function Draftboard() {
     return (
         <Layout variant="full">
             <div className="flex flex-col md:flex-row">
-                <div className="flex flex-col w-full md:w-[75%] order-2 md:order-1 p-4 sm:p-6"> {/* Main content area */}
+                {/* Main content area */}
+                <div className="flex flex-col w-full md:w-[75%] order-2 md:order-1 p-4 sm:p-6">
                     <div className="flex flex-row pb-0 mb-2 justify-between">
                         <div className="relative flex text-black">
                             <input
@@ -247,14 +284,19 @@ export default function Draftboard() {
 
                 {/* Right-hand content */}
                 <div className="flex flex-col w-full md:w-[20%] md:mt-16 h-auto gap-4 p-4 md:p-0 order-1 md:order-2">
-                    {/* only showss for small viewport */}
+                    {/* only shows for small viewport */}
                     <button className="md:hidden bg-gray-200 p-2 rounded-md" onClick={() => setIsInfoOpen(!isInfoOpen)}>
                         {isInfoOpen ? 'Hide' : 'Show'} Draft Info
                     </button>
                     <div className={`${isInfoOpen ? 'block' : 'hidden'} md:block space-y-4`}>
                         {shouldShowDraftStatus && currentDraft && (
                             <div className="p-4 bg-background-surface rounded-lg shadow-md">
-                                <h2 className="text-lg font-bold mb-2">Draft Status</h2>
+                                <div className="flex justify-between items-center mb-2">
+                                    <h2 className="text-lg font-bold">Draft Status</h2>
+                                    <button className="bg-gray-200 p-2 rounded-md" onClick={() => setIsFullScreenModalOpen(!isFullScreenModalOpen)}>
+                                        Show Full Draft
+                                    </button>
+                                </div>
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between items-center">
                                         <span className="font-semibold">Player Turn:</span>
@@ -374,6 +416,18 @@ export default function Draftboard() {
                         </div>
                     </div>
                 </Modal>
+            )}
+            {isFullScreenModalOpen && (
+                <FullScreenDraftModal
+                    isOpen={isFullScreenModalOpen}
+                    onClose={() => setIsFullScreenModalOpen(false)}
+                    title="Full Draft View"
+                    leaguePlayers={leaguePlayers}
+                    allPlayersDraftedPokemon={allPlayersDraftedPokemon}
+                    currentDraft={currentDraft}
+                    currentPlayer={currentPlayer}
+                    currentLeague={currentLeague}
+                />
             )}
         </Layout>
     );
