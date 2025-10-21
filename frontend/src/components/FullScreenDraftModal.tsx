@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Player, Draft, DraftedPokemon, League, PlayerPick } from "../api/data_interfaces";
 import { formatPokemonName } from '../utils/nameFormatter';
 
-// -- Co-located Components for Draft History Modal --
 interface PlayerDraftPickItemProps {
     pick: PlayerPick;
     currentPickNumbersOnClock: number[];

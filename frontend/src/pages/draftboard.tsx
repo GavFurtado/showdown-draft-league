@@ -285,7 +285,7 @@ export default function Draftboard() {
                             <div className="p-4 bg-background-surface rounded-lg shadow-md">
                                 <div className="flex justify-between items-center mb-2">
                                     <h2 className="text-lg font-bold">Draft Status</h2>
-                                    <button className="bg-gray-200 p-2 rounded-md" onClick={() => setIsFullScreenModalOpen(!isFullScreenModalOpen)}>
+                                    <button className="text-sm bg-transparent border border-black p-2 rounded-md hover:border-accent-primary-hover hover:bg-accent-primary hover:text-white" onClick={() => setIsFullScreenModalOpen(!isFullScreenModalOpen)}>
                                         Show Full Draft
                                     </button>
                                 </div>
@@ -320,7 +320,7 @@ export default function Draftboard() {
                         {/* Your Team / Pending Picks */}
                         <div className="bg-background-surface shadow-md rounded-md overflow-hidden">
                             <div className="bg-gray-100 py-2 px-4 flex justify-between items-center">
-                                <h2 className="text-l font-semibold text-gray-800">Your Team ({draftedPokemon.length})</h2>
+                                <h2 className="text-lg font-bold text-gray-800">Your Team ({draftedPokemon.length})</h2>
                                 <span className="text-sm font-medium text-gray-600">Points Left: {remainingPoints}</span>
                             </div>
                             {/* Pending Picks Display */}

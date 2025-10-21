@@ -297,7 +297,7 @@ export default function Filter(props: FilterProps) {
 
             <button
                 onClick={resetAllFilters}
-                className={`py-1 px-3 rounded-md text-sm font-medium border hover:bg-[#2D3142] hover:text-white transition-colors`}
+                className={`py-1 px-3 rounded-md text-sm font-medium border hover:bg-accent-primary-hover hover:text-white hover:border-accent-primary transition-colors`}
             >
                 <span className="hidden sm:inline">Clear All Filters</span>
                 <span className="sm:hidden">Clear</span>

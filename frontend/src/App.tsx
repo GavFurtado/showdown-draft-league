@@ -27,6 +27,7 @@ function App() {
                 {/* <Route path='/admin/*' element={<AdminRouteGuard><AdminDashboard></AdminRouteGuard>} /> */}
 
                 {/* --- Protected League-Specific Routes (Requires league context) --- */}
+                <Route path='/league/:leagueId/join' element={<JoinLeague />} />
                 <Route path='/league/:leagueId/*' element={<LeagueProviderWrapper />} />
             </Routes>
         </BrowserRouter>

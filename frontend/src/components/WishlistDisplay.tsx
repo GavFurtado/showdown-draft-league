@@ -38,7 +38,7 @@ export const WishlistDisplay: React.FC<WishlistDisplayProps> = ({ allPokemon, wi
                 </h2>
                 <button
                     onClick={clearWishlist}
-                    className="text-error-700 hover:text-white hover:bg-red-500 text-xs py-1 px-2 rounded-md border border-red-500 hover:border-red-700 transition-colors"
+                    className="text-error-700 hover:text-white hover:bg-red-500 text-sm py-1 px-2 rounded-md border border-red-500 hover:border-red-700 transition-colors"
                 >
                     Clear
                 </button>
