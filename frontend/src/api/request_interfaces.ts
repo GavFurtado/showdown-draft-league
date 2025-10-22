@@ -1,4 +1,12 @@
 import { LeagueFormat } from "./data_interfaces";
+
+export interface JoinLeagueRequest {
+    UserID: string,
+    LeagueID: string,
+    InLeagueName?: string,
+    TeamName?: string,
+}
+
 // User Related
 export interface UpdateUserProfileRequest {
     ShowdownName?: string,
@@ -10,7 +18,7 @@ export interface LeagueCreateRequest {
     RulesetDescription: string,
     MaxPokemonPerPlayer: number,
     StartingDraftPoints: number,
-    StartDate: string // ISO8601 string
+    StartDate: string
     Format: LeagueFormat
 }
 

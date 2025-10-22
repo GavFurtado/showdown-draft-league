@@ -22,7 +22,7 @@ const defaultFilters: FilterState = {
     sortOrder: 'desc',
 };
 
-export default function Draftboard() {
+const Draftboard: React.FC = () => {
     const { currentLeague, currentDraft, currentPlayer, refetch: refetchLeague, loading: leagueLoading, error: leagueError } = useLeague();
     const { wishlist, addPokemonToWishlist, removePokemonFromWishlist, clearWishlist, isPokemonInWishlist } = useWishlist(currentLeague?.ID || '');
     const { timeRemaining, shouldShowDraftStatus, nextTurnInXTurns } = useDraftTimer(currentDraft, currentLeague, currentPlayer, currentLeague?.Players);
@@ -397,7 +397,13 @@ export default function Draftboard() {
                             </div>
                         </div>
                         <div className="mt-6 flex justify-end gap-4">
-                            <button onClick={handleCancelDraft} className="px-4 py-2 bg-gray-400 rounded hover:bg-gray-400">Cancel</button>
+                            <button
+                                onClick={handleCancelDraft}
+                                className="px-4 py-2 text-white bg-error-500 rounded hover:bg-background-secondary hover:text-error-500 cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+
                             <button
                                 onClick={handleConfirmDraft}
                                 disabled={remainingPoints - pendingPicks.reduce((sum, p) => sum + p.Cost, 0) < 0}
@@ -425,3 +431,4 @@ export default function Draftboard() {
     );
 }
 
+export default Draftboard;

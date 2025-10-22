@@ -84,6 +84,7 @@ export default function Filter(props: FilterProps) {
 
     return (
         <div className="flex items-center gap-4 sm:gap-6">
+            {/* Type Filter */}
             <details className="group relative" ref={typeRef}>
                 <summary
                     className={`flex items-center gap-2 pb-1 text-[#2D3142] [&::-webkit-details-marker]:hidden
@@ -137,6 +138,7 @@ export default function Filter(props: FilterProps) {
                 </div>
             </details>
 
+            {/* Cost Filter */}
             <details className="group relative" ref={costRef}>
                 <summary
                     className={`flex items-center gap-2 pb-1 text-[#2D3142] [&::-webkit-details-marker]:hidden
@@ -227,6 +229,7 @@ export default function Filter(props: FilterProps) {
                 </div>
             </details>
 
+            {/* Stats */}
             <details className="group relative" ref={statRef}>
                 <summary
                     className={`flex items-center gap-2 pb-1 text-[#2D3142] [&::-webkit-details-marker]:hidden

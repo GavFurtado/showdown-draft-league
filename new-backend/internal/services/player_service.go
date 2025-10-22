@@ -7,6 +7,7 @@ import (
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 	"github.com/google/uuid"
@@ -57,6 +58,11 @@ func (s *playerServiceImpl) CreatePlayerHandler(input *common.PlayerCreateReques
 			return nil, common.ErrLeagueNotFound
 		}
 		return nil, fmt.Errorf("%w: failed to retrieve league data", common.ErrInternalService)
+	}
+
+	if league.Status != enums.LeagueStatusSetup {
+		log.Printf("Service: CreatePlayerHandler - League %s is not in SETUP status to add players: %v", input.LeagueID, err)
+		return nil, common.ErrInvalidState
 	}
 
 	user, err := s.userRepo.GetUserByID(input.UserID)
@@ -118,9 +124,10 @@ func (s *playerServiceImpl) CreatePlayerHandler(input *common.PlayerCreateReques
 		DraftPoints:  int(league.StartingDraftPoints),
 
 		// derived values
-		Wins:   0,
-		Losses: 0,
-		Role:   rbac.PRoleMember, // Default role for new players
+		Wins:          0,
+		Losses:        0,
+		DraftPosition: 0,
+		Role:          rbac.PRoleMember,
 	}
 
 	createdPlayer, err := s.playerRepo.CreatePlayer(&player)

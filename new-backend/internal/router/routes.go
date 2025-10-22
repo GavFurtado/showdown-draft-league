@@ -54,6 +54,7 @@ func RegisterRoutes(
 	api.Use(middleware.AuthMiddleware(authMiddlewareDeps)) // top level logged in check
 	{
 		api.GET("/profile", controllers.UserController.GetMyProfile)
+
 		leagues := api.Group("/leagues")
 		{
 			leagues.POST(
@@ -61,11 +62,11 @@ func RegisterRoutes(
 				controllers.LeagueController.CreateLeague)
 			leagues.GET(
 				"/:leagueId",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadLeague),
 				controllers.LeagueController.GetLeague)
 			leagues.GET(
 				"/:leagueId/players",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
+				// temporarily commented until limited non league rbac route is implemented
+				// middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
 				controllers.PlayerController.GetPlayersByLeague)
 			leagues.POST("/:leagueId/join", controllers.PlayerController.JoinLeague)
 

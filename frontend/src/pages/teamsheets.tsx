@@ -54,7 +54,7 @@ const RosterDisplay = ({ player }: { player: Player }) => {
 };
 
 // Main Teamsheets Page Component
-export default function Teamsheets() {
+const Teamsheets: React.FC = () => {
     const { currentLeague } = useLeague();
     const [players, setPlayers] = useState<Player[]>([]);
     const [loading, setLoading] = useState(true);
@@ -176,4 +176,5 @@ export default function Teamsheets() {
 
         </Layout>
     );
-}
+};
+export default Teamsheets;

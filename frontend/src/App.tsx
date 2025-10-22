@@ -1,13 +1,15 @@
 import './index.css';
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import Login from "./pages/login";
 import Navbar from "./components/navbar";
 import Dashboard from './pages/dashboard';
 
 import { LeagueProvider } from './context/LeagueContext';
+import { UserProvider } from './context/UserContext';
 import Draftboard from './pages/draftboard';
 import TeamSheets from './pages/teamsheets';
 import DraftHistory from './pages/DraftHistory';
+import JoinLeague from './pages/JoinLeague';
 
 function App() {
     return (
@@ -20,40 +22,53 @@ function App() {
 
                 {/* --- Protected Global Routes (user must be logged in) --- */}
                 {/* this route would list all leagues the user is a part off */}
-                <Route path='/my-leagues' element={null} />
+                <Route element={<UserProviderWrapper />}>
+                    <Route path='/my-leagues' element={null} />
+                    <Route path='/:leagueId/join' element={<JoinLeague />} />
+                </Route>
 
                 {/* --- Admin User Routes (Protected by the global 'admin' role) --- */}
                 {/* not implemented */}
                 {/* <Route path='/admin/*' element={<AdminRouteGuard><AdminDashboard></AdminRouteGuard>} /> */}
 
                 {/* --- Protected League-Specific Routes (Requires league context) --- */}
-                <Route path='/league/:leagueId/join' element={<JoinLeague />} />
-                <Route path='/league/:leagueId/*' element={<LeagueProviderWrapper />} />
+                <Route path='/league/:leagueId/*' element={<UserAndLeagueProviderWrapper />} />
             </Routes>
         </BrowserRouter>
     );
 }
 
-// Wrapper component to use LeagueProvider and define league-specific routes
-function LeagueProviderWrapper() {
+function UserProviderWrapper() {
     return (
-        <LeagueProvider> {/* extracts leagueId from URL*/}
+        <UserProvider>
             <Navbar />
-            <Routes>
-                <Route path='dashboard' element={<Dashboard />} />
-                <Route path='draftboard' element={<Draftboard />} />
-                <Route path='teamsheets' element={<TeamSheets />} />
-                <Route path='draft-history' element={<DraftHistory />} />
-                {/* <Route path='standings' element={<Standings />} /> */}
-
-                {/* --- League Staff Routes (Protected by league-specific roles) */}
-                {/* placeholder examples */}
-
-                {/* <Route path='staff/edit-rules' element={<LeagueStaffRouteGuard role="owner"><EditRules /></LeagueStaffRouteGuard>} /> */}
-
-            </Routes>
-        </LeagueProvider>
+            <Outlet />
+        </UserProvider>
     );
 }
+
+function UserAndLeagueProviderWrapper() {
+    return (
+        <UserProvider>
+            <LeagueProvider> {/* extracts leagueId from URL*/}
+                <Navbar />
+                <Routes>
+                    <Route path='dashboard' element={<Dashboard />} />
+                    <Route path='draftboard' element={<Draftboard />} />
+                    <Route path='teamsheets' element={<TeamSheets />} />
+                    <Route path='draft-history' element={<DraftHistory />} />
+                    {/* <Route path='standings' element={<Standings />} /> */}
+
+                    {/* --- League Staff Routes (Protected by league-specific roles) */}
+                    {/* placeholder examples */}
+
+                    {/* <Route path='staff/edit-rules' element={<LeagueStaffRouteGuard role="owner"><EditRules /></LeagueStaffRouteGuard>} /> */}
+                </Routes>
+            </LeagueProvider>
+        </UserProvider>
+    );
+}
+
+
 
 export default App;

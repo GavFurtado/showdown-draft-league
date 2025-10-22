@@ -1,8 +1,8 @@
 import axios from 'axios';
-import { LeagueCreateRequest, UpdatePlayerInfoRequest, UpdateUserProfileRequest, LeaguePokemonCreateRequest, LeaguePokemonBatchCreateRequest, LeaguePokemonUpdateRequest, MakePickRequest, PickupFreeAgentRequest } from './request_interfaces'
-import { DiscordUser, Draft, League, LeaguePokemon } from './data_interfaces';
+import { LeagueCreateRequest, UpdatePlayerInfoRequest, UpdateUserProfileRequest, LeaguePokemonCreateRequest, LeaguePokemonBatchCreateRequest, LeaguePokemonUpdateRequest, MakePickRequest, PickupFreeAgentRequest, JoinLeagueRequest } from './request_interfaces'
+import { DiscordUser, Draft, League, LeaguePokemon, Player } from './data_interfaces';
 
-export const API_BASE_URL = 'http://localhost:8080'; // temp; make this an env var
+export const API_BASE_URL = ''; // temp; make this an env var
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -25,15 +25,15 @@ export const getPlayersByUserId = (id: string) => api.get(`/api/users/${id}/play
 
 // League calls
 export const createLeague = (data: LeagueCreateRequest) => api.post('/api/leagues/', data);
-export const getLeague = (leagueId: string) => api.get<League>(`/api/leagues/${leagueId}`);
+export const getLeagueById = (leagueId: string) => api.get<League>(`/api/leagues/${leagueId}`);
 export const getPlayersByLeague = (leagueId: string) => api.get(`/api/leagues/${leagueId}/players`);
-export const joinLeague = (leagueId: string) => api.post(`/api/leagues/${leagueId}/join`);
+export const joinLeague = (leagueId: string, data: JoinLeagueRequest) => api.post(`/api/leagues/${leagueId}/join`, data);
 export const leaveLeague = (leagueId: string) => api.delete(`/api/leagues/${leagueId}/leave`);
 
 // Player calls
 export const getPlayerById = (leagueId: string, id: string) => api.get(`/api/leagues/${leagueId}/player/${id}`);
 export const getPlayerByUserIdAndLeagueId = (leagueId: string, userId: string) =>
-    api.get(`/api/leagues/${leagueId}/player?userId=${userId}`);
+    api.get<Player>(`/api/leagues/${leagueId}/player?userId=${userId}`);
 export const getPlayerWithFullRoster =
     (leagueId: string, id: string) =>
         api.get(`/api/leagues/${leagueId}/player/${id}/roster`);

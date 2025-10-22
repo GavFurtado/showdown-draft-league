@@ -40,8 +40,8 @@ func NewPlayerController(playerService services.PlayerService) *playerController
 	}
 }
 
-// POST /api/leagues/:id/join (id being leagueID)
-// Creates a player for the league :id, essentially joining the league
+// POST /api/leagues/:leagueId/join
+// Creates a player for the league, essentially joining the league
 func (c *playerControllerImpl) JoinLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
@@ -81,6 +81,8 @@ func (c *playerControllerImpl) JoinLeague(ctx *gin.Context) {
 			ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 		case common.ErrInternalService, common.ErrFailedToCreatePlayer:
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		case common.ErrInvalidState:
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		default:
 			// fallback in case the error is unrecognized
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "unexpected error"})
