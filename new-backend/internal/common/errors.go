@@ -11,7 +11,7 @@ var (
 	ErrPokemonSpeciesNotFound = errors.New("species not found")
 	ErrDraftedPokemonNotFound = errors.New("drafted pokemon instance not found")
 	ErrLeaguePokemonNotFound  = errors.New("league pokemon instance not found")
-	ErrDraftNotFound          = errors.New("drafted information not found for league")
+	ErrDraftNotFound          = errors.New("draft information not found for league")
 
 	// Player creation specific errors
 	ErrUserAlreadyInLeague  = errors.New("user is already a player in this league")
@@ -27,7 +27,7 @@ var (
 	ErrMaxLeagueCreationLimitReached = errors.New("maximum league creation limit reached")
 	ErrInvalidInput                  = errors.New("invalid input/request")
 	ErrConflict                      = errors.New("record already exists. cannot make a duplicate")
-	ErrInvalidState                  = errors.New("invalid state/status for this operation")
+	ErrInvalidState                  = errors.New("league/draft is in invalid state/status for this operation")
 	ErrInsufficientDraftPoints       = errors.New("insufficient draft points to complete this operation")
 	ErrInsufficientTransferCredits   = errors.New("insufficient transfer credits to complete this operation") // Added this line
 	ErrPokemonAlreadyReleased        = errors.New("this pokemon has already been released")

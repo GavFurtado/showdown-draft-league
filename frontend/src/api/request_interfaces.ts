@@ -1,29 +1,33 @@
-// User Related
-export interface DiscordUser {
-    id: string,
-    username: string,
-    discriminator: string,
-    avatar: string // url
+import { LeagueFormat } from "./data_interfaces";
+
+export interface JoinLeagueRequest {
+    UserID: string,
+    LeagueID: string,
+    InLeagueName?: string,
+    TeamName?: string,
 }
+
+// User Related
 export interface UpdateUserProfileRequest {
-    showdownName?: string,
+    ShowdownName?: string,
 }
 
 // League Related
 export interface LeagueCreateRequest {
-    name: string,
-    rulesetDescription: string,
-    maxPokemonPerPlayer: number,
-    startingDraftPoints: number,
-    startDate: string // ISO8601 string
+    Name: string,
+    RulesetDescription: string,
+    MaxPokemonPerPlayer: number,
+    StartingDraftPoints: number,
+    StartDate: string
+    Format: LeagueFormat
 }
 
 // Player Related
 export interface PlayerCreateRequest {
-    userId: string,
-    leagueId: string,
-    inLeagueName?: string,
-    teamName?: string
+    UserId: string,
+    LeagueId: string,
+    InLeagueName?: string,
+    TeamName?: string
 }
 
 export interface UpdatePlayerInfoRequest {
@@ -35,36 +39,58 @@ export interface UpdatePlayerInfoRequest {
     DraftPosition?: string
 }
 
-// LeaguePokemon Related
-export interface LeaguePokemonCreateRequest {
-    leagueId: string,
-    pokemonSpeciesId: number,
-    cost?: string
+// PokemonSpecies related
+export interface PokemonSpecies {
+    Id: number,
+    Name: string,
+    Types: string[],
+    FrontDefault: string // url
+    OfficialArtwork?: string // url
 }
 
+// LeaguePokemon Related
+export interface LeaguePokemonCreateRequest {
+    LeagueID: string
+    PokemonSpeciesId: number,
+    Cost?: number
+}
+export type LeaguePokemonBatchCreateRequest = LeaguePokemonCreateRequest[];
+
 export interface LeaguePokemonUpdateRequest {
-    leaguePokemonId: string,
-    cost?: number,
-    isAvailable?: boolean
+    LeaguePokemonId: string,
+    Cost?: number,
+    IsAvailable?: boolean
 }
 
 // DraftedPokemon Related
-// not fully implemented in backend yet
 export interface DraftedPokemonCreateRequest {
-    leagueId: string,
-    playerId: string,
-    pokemonSpeciesId: string,
-
-    draftPickNumber: number,
-    isReleased?: boolean
+    LeagueId: string,
+    PlayerId: string,
+    PokemonSpeciesId: string,
+    DraftRoundNumber: number
+    DraftPickNumber: number,
+    IsReleased?: boolean
 }
-// this will most likely need to be changed after backend updates
+
 export interface DraftedPokemonUpdateRequest {
-    leagueId?: string,
-    playerId?: string,
-    pokemonSpeciesId?: string,
-
-    draftPickNumber?: number,
-    isReleased?: boolean
+    LeagueId?: string,
+    PlayerId?: string,
+    PokemonSpeciesId?: string,
+    DraftPickNumber?: number,
+    DraftRoundNumber?: number,
+    IsReleased?: boolean
 }
 
+export interface MakePickRequest {
+    RequestedPickCount: number,
+    RequestedPicks: RequestedPick[]
+}
+
+export interface RequestedPick {
+    LeaguePokemonID: string,
+    DraftPickNumber: number
+}
+
+export interface PickupFreeAgentRequest {
+    PlayerId: string;
+}

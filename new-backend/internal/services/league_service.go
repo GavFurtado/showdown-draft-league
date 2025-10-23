@@ -71,7 +71,7 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueC
 		MaxPokemonPerPlayer: input.MaxPokemonPerPlayer,
 		StartingDraftPoints: input.StartingDraftPoints,
 		StartDate:           input.StartDate,
-		Format: models.LeagueFormat{
+		Format: &models.LeagueFormat{
 			SeasonType:               input.Format.SeasonType,
 			GroupCount:               input.Format.GroupCount,
 			GamesPerOpponent:         input.Format.GamesPerOpponent,

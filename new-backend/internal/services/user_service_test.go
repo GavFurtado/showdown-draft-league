@@ -148,7 +148,7 @@ func TestUserService_GetMyLeaguesHandler(t *testing.T) {
 	userID := uuid.New()
 
 	t.Run("Successfully gets user leagues", func(t *testing.T) {
-		expectedLeagues := []models.League{
+		expectedLeagues := []*models.League{
 			{ID: uuid.New(), Name: "League 1"},
 			{ID: uuid.New(), Name: "League 2"},
 		}

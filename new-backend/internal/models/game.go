@@ -12,29 +12,29 @@ import (
 
 // Game represents a best-of-x series between two players in a league.
 type Game struct {
-	ID                  uuid.UUID      `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	LeagueID            uuid.UUID      `gorm:"type:uuid;not null" json:"league_id"`
-	Player1ID           uuid.UUID      `gorm:"type:uuid;not null" json:"player_1_id"`
-	Player2ID           uuid.UUID      `gorm:"type:uuid;not null" json:"player_2_id"`
-	WinnerID            *uuid.UUID     `gorm:"type:uuid" json:"winner_id"`
-	LoserID             *uuid.UUID     `gorm:"type:uuid" json:"loser_id"`
-	Player1Wins         int            `gorm:"default:0;not null" json:"player_1_wins"`
-	Player2Wins         int            `gorm:"default:0;not null" json:"player_2_wins"`
-	RoundNumber         int            `gorm:"not null" json:"round_number"`
-	Status              GameStatus     `gorm:"type:varchar(50);not null;default:'pending'" json:"status"`
-	ReportingPlayerID   uuid.UUID      `gorm:"type:uuid;not null" json:"reporting_player_id"`
-	ShowdownReplayLinks []string       `gorm:"type:jsonb" binding:"url" json:"replay_links"`
-	CreatedAt           time.Time      `json:"created_at"`
-	UpdatedAt           time.Time      `json:"updated_at"`
-	DeletedAt           gorm.DeletedAt `gorm:"index" json:"-"`
+	ID                  uuid.UUID      `gorm:"type:uuid;primaryKey;default:gen_random_uuid();column:id" json:"ID"`
+	LeagueID            uuid.UUID      `gorm:"type:uuid;not null;column:league_id" json:"LeagueID"`
+	Player1ID           uuid.UUID      `gorm:"type:uuid;not null;column:player1_id" json:"Player1ID"`
+	Player2ID           uuid.UUID      `gorm:"type:uuid;not null;column:player2_id" json:"Player2ID"`
+	WinnerID            *uuid.UUID     `gorm:"type:uuid;column:winner_id" json:"WinnerID"`
+	LoserID             *uuid.UUID     `gorm:"type:uuid;column:loser_id" json:"LoserID"`
+	Player1Wins         int            `gorm:"default:0;not null;column:player1_wins" json:"Player1Wins"`
+	Player2Wins         int            `gorm:"default:0;not null;column:player2_wins" json:"Player2Wins"`
+	RoundNumber         int            `gorm:"not null;column:round_number" json:"RoundNumber"`
+	Status              GameStatus     `gorm:"type:varchar(50);not null;default:'pending';column:status" json:"Status"`
+	ReportingPlayerID   uuid.UUID      `gorm:"type:uuid;not null;column:reporting_player_id" json:"ReportingPlayerID"`
+	ShowdownReplayLinks []string       `gorm:"type:jsonb;column:showdown_replay_links" binding:"url" json:"ShowdownReplayLinks"`
+	CreatedAt           time.Time      `json:"CreatedAt" gorm:"column:created_at"`
+	UpdatedAt           time.Time      `json:"UpdatedAt" gorm:"column:updated_at"`
+	DeletedAt           gorm.DeletedAt `gorm:"index;column:deleted_at" json:"-"`
 
 	// Relationships
-	League          League `gorm:"foreignKey:LeagueID;references:ID"`
-	Player1         Player `gorm:"foreignKey:Player1ID;references:ID"`
-	Player2         Player `gorm:"foreignKey:Player2ID;references:ID"`
-	Winner          Player `gorm:"foreignKey:WinnerID;references:ID"`
-	Loser           Player `gorm:"foreignKey:LoserID;references:ID"`
-	ReportingPlayer Player `gorm:"foreignKey:ReportingPlayerID;references:ID"`
+	ReportingPlayer Player  `gorm:"foreignKey:reporting_player_id;references:ID" json:"ReportingPlayer,omitempty"`
+	League          League  `gorm:"foreignKey:league_id;references:id" json:"League,omitempty"`
+	Player1         *Player `gorm:"foreignKey:player1_id;references:ID" json:"Player1,omitempty"`
+	Player2         *Player `gorm:"foreignKey:player2_id;references:ID" json:"Player2,omitempty"`
+	Winner          Player  `gorm:"foreignKey:winner_id;references:ID" json:"Winner,omitempty"`
+	Loser           Player  `gorm:"foreignKey:loser_id;references:ID" json:"Loser,omitempty"`
 }
 
 type GameStatus string

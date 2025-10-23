@@ -18,7 +18,7 @@ const pokemonStats = [
 
 interface FilterProps {
     filters: FilterState;
-    updateFilter: (filterName: keyof FilterState, value: any) => void;
+    updateFilter: (filterName: keyof FilterState, value: string | string[]) => void;
     resetAllFilters: () => void;
 }
 
@@ -52,7 +52,9 @@ export default function Filter(props: FilterProps) {
     const handleSortByStatChange = (event: ChangeEvent<HTMLSelectElement>) => {
         const statObj = pokemonStats.find(x => x.key === event.target.value);
         const statName = statObj ? statObj.name : null;
-        updateFilter("sortByStat", statName);
+        if (statName) {
+            updateFilter("sortByStat", statName);
+        }
     };
 
     const handleSortOrderChange = (event: ChangeEvent<HTMLSelectElement>) => {
@@ -82,6 +84,7 @@ export default function Filter(props: FilterProps) {
 
     return (
         <div className="flex items-center gap-4 sm:gap-6">
+            {/* Type Filter */}
             <details className="group relative" ref={typeRef}>
                 <summary
                     className={`flex items-center gap-2 pb-1 text-[#2D3142] [&::-webkit-details-marker]:hidden
@@ -135,6 +138,7 @@ export default function Filter(props: FilterProps) {
                 </div>
             </details>
 
+            {/* Cost Filter */}
             <details className="group relative" ref={costRef}>
                 <summary
                     className={`flex items-center gap-2 pb-1 text-[#2D3142] [&::-webkit-details-marker]:hidden
@@ -225,6 +229,7 @@ export default function Filter(props: FilterProps) {
                 </div>
             </details>
 
+            {/* Stats */}
             <details className="group relative" ref={statRef}>
                 <summary
                     className={`flex items-center gap-2 pb-1 text-[#2D3142] [&::-webkit-details-marker]:hidden
@@ -295,9 +300,10 @@ export default function Filter(props: FilterProps) {
 
             <button
                 onClick={resetAllFilters}
-                className={`py-1 px-3 rounded-md text-sm font-medium border hover:bg-[#2D3142] hover:text-white transition-colors`}
+                className={`py-1 px-3 rounded-md text-sm font-medium border hover:bg-accent-primary-hover hover:text-white hover:border-accent-primary transition-colors`}
             >
-                Clear All Filters
+                <span className="hidden sm:inline">Clear All Filters</span>
+                <span className="sm:hidden">Clear</span>
             </button>
         </div>
     );

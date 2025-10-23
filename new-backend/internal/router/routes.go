@@ -54,6 +54,7 @@ func RegisterRoutes(
 	api.Use(middleware.AuthMiddleware(authMiddlewareDeps)) // top level logged in check
 	{
 		api.GET("/profile", controllers.UserController.GetMyProfile)
+
 		leagues := api.Group("/leagues")
 		{
 			leagues.POST(
@@ -61,28 +62,32 @@ func RegisterRoutes(
 				controllers.LeagueController.CreateLeague)
 			leagues.GET(
 				"/:leagueId",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadLeague),
 				controllers.LeagueController.GetLeague)
 			leagues.GET(
 				"/:leagueId/players",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
+				// temporarily commented until limited non league rbac route is implemented
+				// middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
 				controllers.PlayerController.GetPlayersByLeague)
 			leagues.POST("/:leagueId/join", controllers.PlayerController.JoinLeague)
 
 			// not implmented yet
 			// leagues.DELETE("/:id/leave", playerController.LeaveLeague)
 
-			players := leagues.Group(":leagueId/players")
+			player := leagues.Group(":leagueId/player")
 			{
-				players.GET(
+				player.GET(
 					"/:id",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
 					controllers.PlayerController.GetPlayerByID)
-				players.GET(
+				player.GET(
+					"",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
+					controllers.PlayerController.GetPlayerByUserIDAndLeagueID)
+				player.GET(
 					"/:id/roster",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayerRoster),
 					controllers.PlayerController.GetPlayerWithFullRoster)
-				players.PUT(
+				player.PUT(
 					"/:id/profile",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdatePlayer),
 					controllers.PlayerController.UpdatePlayerProfile)

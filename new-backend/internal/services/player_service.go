@@ -7,6 +7,7 @@ import (
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 	"github.com/google/uuid"
@@ -17,6 +18,7 @@ type PlayerService interface {
 	CreatePlayerHandler(input *common.PlayerCreateRequest) (*models.Player, error)
 
 	GetPlayerByIDHandler(playerID uuid.UUID, currentUser *models.User) (*models.Player, error)
+	GetPlayerByUserIDAndLeagueID(userID uuid.UUID, leagueID uuid.UUID) (*models.Player, error)
 	GetPlayersByLeagueHandler(leagueID, userID uuid.UUID) ([]models.Player, error)
 	GetPlayersByUserHandler(userID, currentUserID uuid.UUID) ([]models.Player, error)
 	GetPlayerWithFullRosterHandler(playerID, currentUserID uuid.UUID) (*models.Player, error)
@@ -56,6 +58,11 @@ func (s *playerServiceImpl) CreatePlayerHandler(input *common.PlayerCreateReques
 			return nil, common.ErrLeagueNotFound
 		}
 		return nil, fmt.Errorf("%w: failed to retrieve league data", common.ErrInternalService)
+	}
+
+	if league.Status != enums.LeagueStatusSetup {
+		log.Printf("Service: CreatePlayerHandler - League %s is not in SETUP status to add players: %v", input.LeagueID, err)
+		return nil, common.ErrInvalidState
 	}
 
 	user, err := s.userRepo.GetUserByID(input.UserID)
@@ -117,9 +124,10 @@ func (s *playerServiceImpl) CreatePlayerHandler(input *common.PlayerCreateReques
 		DraftPoints:  int(league.StartingDraftPoints),
 
 		// derived values
-		Wins:   0,
-		Losses: 0,
-		Role:   rbac.PRoleMember, // Default role for new players
+		Wins:          0,
+		Losses:        0,
+		DraftPosition: 0,
+		Role:          rbac.PRoleMember,
 	}
 
 	createdPlayer, err := s.playerRepo.CreatePlayer(&player)
@@ -141,6 +149,20 @@ func (s *playerServiceImpl) GetPlayerByIDHandler(playerID uuid.UUID, currentUser
 			return nil, common.ErrPlayerNotFound
 		}
 		log.Printf("Service: GetPlayerByIDHandler - Failed to retrieve player %s: %v", playerID, err)
+		return nil, fmt.Errorf("%w: failed to retrieve player data", common.ErrInternalService)
+	}
+
+	return player, nil
+}
+
+func (s *playerServiceImpl) GetPlayerByUserIDAndLeagueID(userID, leagueID uuid.UUID) (*models.Player, error) {
+	player, err := s.playerRepo.GetPlayerByUserAndLeague(userID, leagueID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Printf("ERROR: (Service: GetPlayerByUserIDAndLeagueID) - Player (userID %s; leagueID %s) not found: %v", userID, leagueID, err)
+			return nil, common.ErrPlayerNotFound
+		}
+		log.Printf("ERROR: (Service: GetPlayerByUserIDAndLeagueID) - Failed to retrieve player with userID %s and leagueID %s: %v", userID, leagueID, err)
 		return nil, fmt.Errorf("%w: failed to retrieve player data", common.ErrInternalService)
 	}
 

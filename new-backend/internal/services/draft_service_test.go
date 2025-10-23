@@ -64,7 +64,7 @@ func TestDraftService_MakePick(t *testing.T) {
 			Status:              enums.LeagueStatusDrafting,
 			MinPokemonPerPlayer: 1,
 			MaxPokemonPerPlayer: 12,
-			Format:              models.LeagueFormat{IsSnakeRoundDraft: true},
+			Format:              &models.LeagueFormat{IsSnakeRoundDraft: true},
 		}
 		localPlayer := &models.Player{ID: playerID, UserID: userID, LeagueID: leagueID, DraftPoints: 100}
 		localDraft := &models.Draft{
@@ -124,7 +124,7 @@ func TestDraftService_MakePick(t *testing.T) {
 			Status:              enums.LeagueStatusDrafting,
 			MinPokemonPerPlayer: 1,
 			MaxPokemonPerPlayer: 12,
-			Format:              models.LeagueFormat{IsSnakeRoundDraft: true},
+			Format:              &models.LeagueFormat{IsSnakeRoundDraft: true},
 		}
 		localPlayer := &models.Player{ID: playerID, UserID: userID, LeagueID: leagueID, DraftPoints: 100}
 		localDraft := &models.Draft{
@@ -202,7 +202,7 @@ func TestDraftService_MakePick(t *testing.T) {
 			Status:              enums.LeagueStatusDrafting,
 			MinPokemonPerPlayer: 1,
 			MaxPokemonPerPlayer: 12,
-			Format:              models.LeagueFormat{IsSnakeRoundDraft: true},
+			Format:              &models.LeagueFormat{IsSnakeRoundDraft: true},
 		}
 		localPlayer := &models.Player{ID: playerID, UserID: userID, LeagueID: leagueID, DraftPoints: 100}
 		localDraft := &models.Draft{
@@ -250,7 +250,7 @@ func TestDraftService_MakePick(t *testing.T) {
 			Status:              enums.LeagueStatusDrafting,
 			MinPokemonPerPlayer: 1,
 			MaxPokemonPerPlayer: 12,
-			Format:              models.LeagueFormat{IsSnakeRoundDraft: true},
+			Format:              &models.LeagueFormat{IsSnakeRoundDraft: true},
 		}
 		localPlayer := &models.Player{ID: playerID, UserID: userID, LeagueID: leagueID, DraftPoints: 20} // Not enough points
 		localDraft := &models.Draft{
@@ -282,7 +282,6 @@ func TestDraftService_MakePick(t *testing.T) {
 		mocks.playerRepo.On("GetPlayerByUserAndLeague", userID, leagueID).Return(localPlayer, nil).Once()
 		mocks.leaguePokemonRepo.On("GetLeaguePokemonByIDs", leagueID, []uuid.UUID{leaguePokemonID}).Return([]models.LeaguePokemon{*localLeaguePokemon}, nil).Once()
 		mocks.playerRepo.On("GetPlayerCountByLeague", leagueID).Return(int64(8), nil).Once()
-		
 
 		// --- Call Service ---
 		err := service.MakePick(localCurrentUser, leagueID, localInput)

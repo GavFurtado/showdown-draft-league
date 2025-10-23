@@ -1,22 +1,16 @@
 import React from 'react';
 import { LeaguePokemon, WishlistDisplayProps } from '../api/data_interfaces';
 
-const formatName = (name: string): string => {
-    return name
-        .replace(/-/g, ' ')
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-};
+import { PokemonListItem } from './PokemonListItem';
 
 
-export const WishlistDisplay: React.FC<WishlistDisplayProps> = ({ allPokemon, wishlist, removePokemonFromWishlist, clearWishlist }) => {
+export const WishlistDisplay: React.FC<WishlistDisplayProps> = ({ allPokemon, wishlist, removePokemonFromWishlist, clearWishlist, isMyTurn, onDraft }) => {
 
     console.log("WishlistDisplay: current wishlist state", wishlist);
 
-    const wishlistedPokemon = allPokemon.filter(lp => wishlist.includes(lp.id));
+    const wishlistedPokemon = allPokemon.filter(lp => wishlist.includes(lp.ID));
     const getTotalCostOfWishlistedPokemon = (wishlistedPokemon: LeaguePokemon[]) => {
-        return wishlistedPokemon.reduce((sum, p) => sum + (p.cost ?? 0), 0);
+        return wishlistedPokemon.reduce((sum, p) => sum + (p.Cost ?? 0), 0);
     }
 
     if (wishlistedPokemon.length === 0) {
@@ -44,7 +38,7 @@ export const WishlistDisplay: React.FC<WishlistDisplayProps> = ({ allPokemon, wi
                 </h2>
                 <button
                     onClick={clearWishlist}
-                    className="text-red-500 hover:text-red-700 text-xs py-1 px-2 rounded-md border border-red-500 hover:border-red-700 transition-colors"
+                    className="text-error-700 hover:text-white hover:bg-red-500 text-sm py-1 px-2 rounded-md border border-red-500 hover:border-red-700 transition-colors"
                 >
                     Clear
                 </button>
@@ -52,27 +46,18 @@ export const WishlistDisplay: React.FC<WishlistDisplayProps> = ({ allPokemon, wi
             <div className="text-sm text-gray-600 mb-2">Total Cost: {getTotalCostOfWishlistedPokemon(wishlistedPokemon)}</div>
             <div className="space-y-2">
                 {wishlistedPokemon.map(lp => (
-                    <div key={lp.id} className="flex items-center justify-between bg-gray-100 p-2 rounded-md">
-                        <div className="flex items-center">
-                            <img
-                                src={lp.PokemonSpecies.sprites.front_default}
-                                alt={lp.PokemonSpecies.name}
-                                className="w-10 h-10 object-contain mr-2"
-                            />
-                            <div>
-                                <p className="font-medium text-gray-800">{formatName(lp.PokemonSpecies.name)}</p>
-                                <p className="text-sm text-gray-600">Cost: {lp.cost}</p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => removePokemonFromWishlist(lp.id)}
-                            className="text-red-500 hover:text-red-700 text-sm p-1 rounded-full hover:bg-red-100"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
+                    <PokemonListItem
+                        key={lp.ID}
+                        pokemon={lp.PokemonSpecies}
+                        cost={lp.Cost}
+                        leaguePokemonId={lp.ID}
+                        onDraft={onDraft}
+                        onRemove={removePokemonFromWishlist}
+                        showRemoveButton={true}
+                        isMyTurn={isMyTurn}
+                        isAvailable={lp.IsAvailable}
+                        isWishlistItem={true}
+                    />
                 ))}
             </div>
 

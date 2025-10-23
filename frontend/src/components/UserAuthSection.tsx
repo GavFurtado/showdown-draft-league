@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { User } from '../api/data_interfaces';
-import { DiscordUser } from '../api/request_interfaces';
+import { DiscordUser } from '../api/data_interfaces';
 
 function mergeClasses(...classes: (string | boolean | undefined | null)[]) {
     return classes.filter(Boolean).join(' ');
@@ -35,11 +35,11 @@ export default function UserAuthSection({
                 <div className="flex items-center space-x-3">
                     <img
                         className="h-8 w-8 rounded-full"
-                        src={discordUser.avatar}
+                        src={discordUser.Avatar}
                         alt="User avatar"
                     />
                     <span className="text-white text-sm font-medium hidden md:block">
-                        {discordUser.username}{discordUser.discriminator ? discordUser.discriminator : ""}
+                        {discordUser.Username}{discordUser.Discriminator ? discordUser.Discriminator : ""}
                     </span>
                     <button
                         onClick={onLogout}

@@ -225,7 +225,11 @@ func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*m
 // If all checks pass, it executes the pick as a transaction and advances the draft state.
 // MakePick makes one or more picks (if accumulated) in a league's draft when league;
 // Different from ForcePick, MakePick does all the required checks (there's a lot of checks) and validates the input
-func (s *draftServiceImpl) MakePick(currentUser *models.User, leagueID uuid.UUID, input *common.DraftMakePickDTO) error {
+func (s *draftServiceImpl) MakePick(
+	currentUser *models.User,
+	leagueID uuid.UUID,
+	input *common.DraftMakePickDTO,
+) error {
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
 		log.Printf("LOG: (DraftService: MakePick) - (user %s) could not find league %s: %v\n", currentUser.ID, leagueID, err)
@@ -634,10 +638,10 @@ func (s *draftServiceImpl) advanceDraftState(
 
 	var nextPlayerIdx int
 	if league.Format.IsSnakeRoundDraft {
-		if draft.CurrentRound%2 == 0 { // even rounds are reverse order
-			nextPlayerIdx = currentPlayerIdx - 1
-		} else { // odd rounds are forward order
-			nextPlayerIdx = currentPlayerIdx + 1
+		if draft.CurrentRound%2 != 0 { // Odd round (forward order)
+			nextPlayerIdx = draft.CurrentPickInRound - 1
+		} else { // Even round (reverse order)
+			nextPlayerIdx = int(playerCount) - draft.CurrentPickInRound
 		}
 	} else { // linear draft
 		nextPlayerIdx = currentPlayerIdx + 1

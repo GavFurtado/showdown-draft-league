@@ -1,97 +1,135 @@
-import { NoSubstitutionTemplateLiteral } from "typescript";
+export type PlayerAccumulatedPicks = {
+  [playerId: string]: number[];
+};
 
-export interface User {
-  id: string; // uuid.UUID
-  discordId: string; // uuid.UUID
-  discordUsername: string; // uuid.UUID
-  discordAvatarUrl: string;
-  showdownUsername: string;
-  role: 'user' | 'admin';
-  createdAt: string;
-  updatedAt: string;
+export interface DiscordUser {
+  ID: string;
+  Username: string;
+  Discriminator?: string;
+  Avatar: string; // url
 }
 
-// Assuming these enums are also defined in your Go backend and sent as strings
-export type LeagueStatus = "pending" | "active" | "completed" | "cancelled";
+export interface User {
+  ID: string; // uuid.UUID
+  DiscordID: string; // uuid.UUID
+  DiscordUsername: string; // uuid.UUID
+  DiscordAvatarUrl: string;
+  ShowdownUsername: string;
+  Role: 'user' | 'admin';
+  CreatedAt: string; // ISO 8601 string
+  UpdatedAt: string; // ISO 8601 string
+}
+
+// League enums
+export type LeagueStatus = "PENDING" | "SETUP" | "DRAFTING" | "POST_DRAFT" | "TRANSFER_WINDOW" | "REGULARSEASON" | "PLAYOFFS" | "COMPLETED" | "CANCELLED";
+export type DraftOrderType = "PENDING" | "RANDOM" | "MANUAL";
 export type LeagueSeasonType = "ROUND_ROBIN_ONLY" | "PLAYOFFS_ONLY" | "HYBRID";
 export type LeaguePlayoffType = "NONE" | "SINGLE_ELIM" | "DOUBLE_ELIM";
 export type LeaguePlayoffSeedingType = "STANDARD" | "SEEDED" | "BYES_ONLY";
 
 export interface LeagueFormat {
-  seasonType: LeagueSeasonType;
-  groupCount: number;
-  gamesPerOpponent: number;
-  playoffType: LeaguePlayoffType;
-  playoffParticipantCount: number;
-  playoffByesCount: number;
-  playoffSeedingType: LeaguePlayoffSeedingType;
-  isSnakeRoundDraft: boolean;
-  allowTrading: boolean;
-  allowTransferCredits: boolean;
-  transferCreditsPerWindow: number;
+  IsSnakeRoundDraft: boolean;
+  DraftOrderType: DraftOrderType;
+  SeasonType: LeagueSeasonType;
+  GroupCount: number;
+  GamesPerOpponent: number;
+  PlayoffType: LeaguePlayoffType;
+  PlayoffParticipantCount: number;
+  PlayoffByesCount: number;
+  PlayoffSeedingType: LeaguePlayoffSeedingType;
+  AllowTrading: boolean;
+  AllowTransferCredits: boolean;
+  TransferCreditsPerWindow: number;
+  TransferCreditCap: number;
+  TransferWindowFrequencyDays: number;
+  TransferWindowDuration: number;
+  DropCost: number;
+  PickupCost: number;
+  NextTransferWindowStart?: string; // ISO 8601 string 
 }
 
 export interface League {
-  id: string; // uuid.UUID
-  name: string;
-  startDate: string; // time.Time
-  endDate: string | null; // *time.Time
-  rulesetDescription: string;
-  status: LeagueStatus;
-  maxPokemonPerPlayer: number;
-  startingDraftPoints: number;
-  format: LeagueFormat;
-  discordWebhookURL: string | null;
-
+  ID: string; // uuid.UUID
+  Name: string;
+  StartDate: string; // ISO 8601 string
+  EndDate: string | null; // ISO 8601 string
+  RulesetDescription: string;
+  Status: LeagueStatus;
+  MaxPokemonPerPlayer: number;
+  MinPokemonPerPlayer: number;
+  StartingDraftPoints: number;
+  Format: LeagueFormat;
+  DiscordWebhookURL: string | null;
   // Relationships
-  // Players?: Player[];
+  Players?: Player[];
   // LeaguePokemon?: LeaguePokemon[];
   // DraftedPokemon?: DraftedPokemon[];
 }
 
+// Draft related
+export type DraftStatus = "PENDING" | "ONGOING" | "PAUSED" | "COMPLETED";
+export interface Draft {
+  ID: string,
+  LeagueID: string,
+  Status: DraftStatus,
+  CurrentTurnPlayerID: string | null,
+  CurrentRound: number,
+  CurrentPickInRound: number,
+  CurrentPickOnClock: number,
+  PlayersWithAccumulatedPicks: PlayerAccumulatedPicks,
+  CurrentTurnStartTime: string // ISO 8601 string
+  TurnTimeLimit: number // in minutes
+  StartTime: string // ISO 8601 string
+  EndTime: string // ISO 8601 string
+  CreatedAt?: string // ISO 8601 string
+  UpdatedAt?: string // ISO 8601 string
+  // Relationships
+  League?: League
+  CurrentTurnPlayer?: Player // pretty sure this is preloaded by backend
+}
+
 export type PlayerRole = "member" | "moderator" | "owner";
-
 export interface Player {
-  id: string;
-  userId: string;
-  leagueId: string;
-  inLeagueName: string;
-  teamName: string;
-  wins: number;
-  losses: number;
-
-
-  role: PlayerRole; // league-specific
-  isParticipating: boolean;
-  createdAt: string;
-  updatedAt: string;
+  ID: string;
+  UserID: string;
+  LeagueID: string;
+  InLeagueName: string;
+  TeamName: string;
+  Wins: number;
+  Losses: number;
+  DraftPoints: number;
+  TransferCredits: number;
+  Role: PlayerRole; // league-specific
+  IsParticipating: boolean;
+  CreatedAt: string; // ISO 8601 string
+  UpdatedAt: string; // ISO 8601 string
 }
 
 export interface LeaguePokemon {
-  id: string; // uuid.UUID
-  leagueId: string; // uuid.UUID
-  pokemonSpeciesId: number;
-  cost: number;
-  isAvailable: boolean;
-  createdAt?: string; // time.Time
-  updatedAt?: string; // time.Time
-  deletedAt?: string; // time.time;
+  ID: string; // uuid.UUID
+  LeagueId: string; // uuid.UUID
+  PokemonSpeciesId: number;
+  Cost: number;
+  IsAvailable: boolean;
+  CreatedAt?: string; // ISO 8601 string
+  UpdatedAt?: string; // ISO 8601 string
+  DeletedAt?: string; // ISO 8601 string
   // Relationships
   League?: League;
-  PokemonSpecies: Pokemon;
+  PokemonSpecies: PokemonSpecies;
 }
 
 // Pokemon Species stuff
-export interface Pokemon {
-  id: number;
-  dex_id: number;
-  name: string;
-  types: string[];
-  stats: PokemonStat;
-  abilities: PokemonAbility[];
-  sprites: PokemonSprites;
-  created_at?: string;
-  updated_at?: string;
+export interface PokemonSpecies {
+  ID: number;
+  DexID: number;
+  Name: string;
+  Types: string[];
+  Stats: PokemonStat;
+  Abilities: PokemonAbility[];
+  Sprites: PokemonSprites;
+  CreatedAt?: string; // ISO 8601 string
+  UpdatedAt?: string; // ISO 8601 string
 }
 
 export interface PokemonStat {
@@ -99,15 +137,13 @@ export interface PokemonStat {
 }
 
 export interface PokemonAbility {
-  name: string;
-  is_hidden: boolean;
+  Name: string;
+  IsHidden: boolean;
 }
 export interface PokemonSprites {
-  front_default?: string; // url
-  official_artwork?: string; //url
+  FrontDefault?: string; // url
+  OfficialArtwork?: string; //url
 }
-
-
 
 export interface FilterState {
   selectedTypes: string[];
@@ -119,9 +155,11 @@ export interface FilterState {
 }
 
 export interface DraftCardProps {
+  viewMode?: 'draftboard' | 'teamsheet';
+  cardSize?: 'default' | 'small';
   key: string;
   leaguePokemonId: string;
-  pokemon: Pokemon;
+  pokemon: PokemonSpecies;
   cost: number;
   onImageError?: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void;
   addPokemonToWishlist: (pokemonId: string) => void;
@@ -129,6 +167,10 @@ export interface DraftCardProps {
   isPokemonInWishlist: (pokemonId: string) => boolean;
   isFlipped: boolean;
   onFlip: (pokemonId: string) => void;
+  isDraftable: boolean;
+  onDraft: (leaguePokemonId: string) => void;
+  isAvailable: boolean;
+  isMyTurn: boolean;
 }
 
 export interface WishlistDisplayProps {
@@ -136,4 +178,28 @@ export interface WishlistDisplayProps {
   wishlist: string[];
   removePokemonFromWishlist: (pokemonId: string) => void;
   clearWishlist: () => void;
+  isMyTurn: boolean; // New prop
+  onDraft: (leaguePokemonId: string) => void; // New prop
 }
+
+export interface DraftedPokemon {
+  ID: string;
+  LeagueID: string;
+  PlayerID: string;
+  PokemonSpeciesID: number;
+  LeaguePokemonID: string;
+  DraftRoundNumber: number;
+  DraftPickNumber: number;
+  IsReleased: boolean;
+  CreatedAt: string;
+  UpdatedAt: string;
+  League: League;
+  Player: Player;
+  PokemonSpecies: PokemonSpecies;
+  LeaguePokemon: LeaguePokemon;
+}
+
+export type PlayerPick = {
+  pickNumber: number;
+  pokemon: DraftedPokemon | null;
+};
