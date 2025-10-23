@@ -7,6 +7,7 @@ import axios from 'axios';
 import { PokemonRosterList } from '../components/PokemonRosterList';
 import { DefensiveTypeChart } from '../components/DefensiveTypeChart';
 import TeamPokemonView from '../components/TeamPokemonView';
+import SpeedTable from '../components/SpeedTable';
 
 // Roster Display Component
 const RosterDisplay = ({ player }: { player: Player }) => {
@@ -159,7 +160,6 @@ const Teamsheets: React.FC = () => {
                     <TeamPokemonView roster={selectedPlayerRoster} />
                 </div>
                 <div className="w-full bg-background-surface p-4 rounded-lg shadow-md">
-                    <h2 className="text-2xl font-bold text-text-primary mb-4 pb-2">Defensive Type Chart</h2>
                     {rosterLoading && <p className="text-text-secondary">Loading defensive chart...</p>}
                     {rosterError && <p className="text-red-500">Error: {rosterError}</p>}
                     {!rosterLoading && !rosterError && selectedPlayerRoster.length > 0 && (
@@ -172,8 +172,11 @@ const Teamsheets: React.FC = () => {
                         <p className="p-4 text-text-secondary">Select a player to view their defensive type chart.</p>
                     )}
                 </div>
-            </div>
+                <div className="w-full bg-background-surface p-4 rounded-lg shadow-md">
+                    <SpeedTable roster={selectedPlayerRoster} />
+                </div>
 
+            </div>
         </Layout>
     );
 };

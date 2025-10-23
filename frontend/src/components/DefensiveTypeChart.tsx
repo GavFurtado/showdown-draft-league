@@ -54,37 +54,39 @@ export const DefensiveTypeChart: React.FC<DefensiveTypeChartProps> = ({ roster }
     }
 
     return (
-        <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-700 table-fixed">
-                <thead className="bg-background-primary">
-                    <tr>
-                        <th scope="col" className="px-2 py-3 text-text-on-nav text-left text-[10px] uppercase tracking-wider w-40">
-                            Pokémon
-                        </th>
-                        {AllTypes.map(type => (
-                            <th key={type} scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-12">
-                                {formatTypeName(type)}
+        <div className="bg-background-surface p-4 rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold text-text-primary mb-4 pb-2">Defensive Type Chart</h2>
+            <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-700 table-fixed">
+                    <thead className="bg-background-primary">
+                        <tr>
+                            <th scope="col" className="px-2 py-3 text-text-on-nav text-left text-[10px] uppercase tracking-wider w-40">
+                                Pokémon
                             </th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody className="bg-white">
-                    {roster.map(dp => {
-                        const [defensiveProfile, _didAbilityMatter, affectedTypes] = getPokemonDefensiveProfile(
-                            dp.PokemonSpecies.Types[0] as Type,
-                            dp.PokemonSpecies.Types[1] ? dp.PokemonSpecies.Types[1] as Type : null,
-                            dp.PokemonSpecies.Abilities
-                        );
+                            {AllTypes.map(type => (
+                                <th key={type} scope="col" className="px-2 py-3 text-text-on-nav text-center text-[10px] uppercase tracking-wider w-12">
+                                    {formatTypeName(type)}
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white">
+                        {roster.map(dp => {
+                            const [defensiveProfile, _didAbilityMatter, affectedTypes] = getPokemonDefensiveProfile(
+                                dp.PokemonSpecies.Types[0] as Type,
+                                dp.PokemonSpecies.Types[1] ? dp.PokemonSpecies.Types[1] as Type : null,
+                                dp.PokemonSpecies.Abilities
+                            );
 
-                        return (
-                            <tr key={dp.ID} className='border-b border-gray-900/10'><td className="px-2 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                            return (
+                                <tr key={dp.ID} className='border-b border-gray-900/10'><td className="px-2 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
                                     <div className="flex items-center">
                                         <img src={dp.PokemonSpecies.Sprites.FrontDefault} alt={dp.PokemonSpecies.Name} className="h-8 w-8 mr-2" />
                                         <span className={dp.PokemonSpecies.Name.length > 14 ? 'text-xs' : 'text-sm'}>
                                             {formatPokemonName(dp.PokemonSpecies.Name)}
                                         </span>
                                     </div>
-                                 </td>{AllTypes.map(attackingType => {
+                                </td>{AllTypes.map(attackingType => {
                                     const effectiveness = defensiveProfile[attackingType] ?? Effectiveness.NEUTRAL;
                                     const isAffectedByAbility = affectedTypes.includes(attackingType);
                                     return (
@@ -93,11 +95,12 @@ export const DefensiveTypeChart: React.FC<DefensiveTypeChartProps> = ({ roster }
                                         </td>
                                     );
                                 })}
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 };

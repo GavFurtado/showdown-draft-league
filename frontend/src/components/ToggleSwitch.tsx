@@ -9,7 +9,7 @@ interface ToggleSwitchProps {
 const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ isOn, onToggle, label }) => {
     return (
         <div className="flex items-center space-x-2">
-            {label && <span className="text-text-primary text-sm font-medium text-text-secondary">{label} </span>}
+            {label && <span className="text-text-primary text-sm font-medium">{label} </span>}
             <button
                 onClick={onToggle}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-primary
