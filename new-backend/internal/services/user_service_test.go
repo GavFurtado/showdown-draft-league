@@ -161,7 +161,7 @@ func TestUserService_GetMyLeaguesHandler(t *testing.T) {
 	})
 
 	t.Run("Returns ErrUserNotFound if user not found", func(t *testing.T) {
-		mockUserRepo.On("GetUserLeagues", userID).Return(([]models.League)(nil), gorm.ErrRecordNotFound).Once()
+		mockUserRepo.On("GetUserLeagues", userID).Return(([]*models.League)(nil), gorm.ErrRecordNotFound).Once()
 
 		leagues, err := service.GetMyLeaguesHandler(userID)
 		assert.ErrorIs(t, err, common.ErrUserNotFound)
@@ -171,7 +171,7 @@ func TestUserService_GetMyLeaguesHandler(t *testing.T) {
 
 	t.Run("Returns ErrInternalService for other repository errors", func(t *testing.T) {
 		internalErr := errors.New("database error")
-		mockUserRepo.On("GetUserLeagues", userID).Return(([]models.League)(nil), internalErr).Once()
+		mockUserRepo.On("GetUserLeagues", userID).Return(([]*models.League)(nil), internalErr).Once()
 
 		leagues, err := service.GetMyLeaguesHandler(userID)
 		assert.ErrorIs(t, err, common.ErrInternalService)

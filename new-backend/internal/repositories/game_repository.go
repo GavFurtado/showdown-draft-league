@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -50,7 +51,7 @@ type GameRepository interface {
 	// gets current round number for a league (highest round with games)
 	GetCurrentRoundNumber(leagueID uuid.UUID) (int, error)
 	// bulk creates games for a round (useful for scheduling)
-	CreateGamesForRound(games []models.Game) error
+	CreateGamesForWeek(games []models.Game) error
 	// updates player records after game completion (transaction)
 	UpdatePlayerRecordsAfterGame(
 		winnerID, loserID uuid.UUID,
@@ -131,7 +132,7 @@ func (r *gameRepositoryImpl) GetGamesByPlayer(playerID uuid.UUID) ([]models.Game
 		Preload("Player2.User").
 		Preload("Winner").
 		Preload("Winner.User").
-		Where("player_1_id = ? OR player_2_id = ?", playerID, playerID).
+		Where("player1_id = ? OR player2_id = ?", playerID, playerID).
 		Order("round_number ASC, created_at ASC").
 		Find(&games).Error
 
@@ -167,7 +168,7 @@ func (r *gameRepositoryImpl) GetPendingGamesByLeague(leagueID uuid.UUID) ([]mode
 		Preload("Player1.User").
 		Preload("Player2").
 		Preload("Player2.User").
-		Where("league_id = ? AND status = ?", leagueID, models.GameStatusPending).
+		Where("league_id = ? AND status = ?", leagueID, enums.GameStatusPending).
 		Order("round_number ASC, created_at ASC").
 		Find(&games).Error
 
@@ -188,7 +189,7 @@ func (r *gameRepositoryImpl) GetCompletedGamesByLeague(leagueID uuid.UUID) ([]mo
 		Preload("Winner.User").
 		Preload("Loser").
 		Preload("Loser.User").
-		Where("league_id = ? AND status = ?", leagueID, models.GameStatusCompleted).
+		Where("league_id = ? AND status = ?", leagueID, enums.GameStatusCompleted).
 		Order("round_number ASC, updated_at DESC").
 		Find(&games).Error
 
@@ -206,7 +207,7 @@ func (r *gameRepositoryImpl) GetDisputedGamesByLeague(leagueID uuid.UUID) ([]mod
 		Preload("Player2").
 		Preload("Player2.User").
 		Preload("Reporter").
-		Where("league_id = ? AND status = ?", leagueID, models.GameStatusDisputed).
+		Where("league_id = ? AND status = ?", leagueID, enums.GameStatusDisputed).
 		Order("updated_at DESC").
 		Find(&games).Error
 
@@ -220,9 +221,9 @@ func (r *gameRepositoryImpl) GetDisputedGamesByLeague(leagueID uuid.UUID) ([]mod
 func (r *gameRepositoryImpl) UpdateGameScore(gameID uuid.UUID, player1Wins, player2Wins int) error {
 	err := r.db.Model(&models.Game{}).
 		Where("id = ?", gameID).
-		Updates(map[string]interface{}{
-			"player_1_wins": player1Wins,
-			"player_2_wins": player2Wins,
+		Updates(map[string]any{
+			"player1_wins": player1Wins,
+			"player2_wins": player2Wins,
 		}).Error
 
 	if err != nil {
@@ -238,14 +239,14 @@ func (r *gameRepositoryImpl) ReportGameResult(
 	player1Wins, player2Wins int,
 	replayLinks []string,
 ) error {
-	updates := map[string]interface{}{
+	updates := map[string]any{
 		"winner_id":             winnerID,
 		"loser_id":              loserID,
-		"reported_by_user_id":   reporterID,
-		"player_1_wins":         player1Wins,
-		"player_2_wins":         player2Wins,
+		"reporting_player_id":   reporterID,
+		"player1_wins":          player1Wins,
+		"player2_wins":          player2Wins,
 		"showdown_replay_links": replayLinks,
-		"status":                models.GameStatusCompleted,
+		"status":                enums.GameStatusCompleted,
 	}
 
 	err := r.db.Model(&models.Game{}).
@@ -260,9 +261,9 @@ func (r *gameRepositoryImpl) ReportGameResult(
 
 // marks a game as disputed
 func (r *gameRepositoryImpl) DisputeGame(gameID uuid.UUID, reporterID uuid.UUID) error {
-	updates := map[string]interface{}{
-		"status":              models.GameStatusDisputed,
-		"reported_by_user_id": reporterID,
+	updates := map[string]any{
+		"status":              enums.GameStatusDisputed,
+		"reporting_player_id": reporterID,
 	}
 
 	err := r.db.Model(&models.Game{}).
@@ -282,13 +283,13 @@ func (r *gameRepositoryImpl) ResolveDisputedGame(
 	player1Wins, player2Wins int,
 	replayLinks []string,
 ) error {
-	updates := map[string]interface{}{
+	updates := map[string]any{
 		"winner_id":             winnerID,
 		"loser_id":              loserID,
 		"player_1_wins":         player1Wins,
 		"player_2_wins":         player2Wins,
 		"showdown_replay_links": replayLinks,
-		"status":                models.GameStatusCompleted,
+		"status":                enums.GameStatusCompleted,
 	}
 
 	err := r.db.Model(&models.Game{}).
@@ -309,7 +310,7 @@ func (r *gameRepositoryImpl) GetHeadToHeadRecord(player1ID, player2ID uuid.UUID)
 		Preload("Winner.User").
 		Where("(player_1_id = ? AND player_2_id = ?) OR (player_1_id = ? AND player_2_id = ?)",
 			player1ID, player2ID, player2ID, player1ID).
-		Where("status = ?", models.GameStatusCompleted).
+		Where("status = ?", enums.GameStatusCompleted).
 		Order("updated_at DESC").
 		Find(&games).Error
 
@@ -323,7 +324,7 @@ func (r *gameRepositoryImpl) GetHeadToHeadRecord(player1ID, player2ID uuid.UUID)
 func (r *gameRepositoryImpl) GetPlayerRecordInLeague(playerID, leagueID uuid.UUID) (wins, losses int64, err error) {
 	// Count wins
 	err = r.db.Model(&models.Game{}).
-		Where("league_id = ? AND winner_id = ? AND status = ?", leagueID, playerID, models.GameStatusCompleted).
+		Where("league_id = ? AND winner_id = ? AND status = ?", leagueID, playerID, enums.GameStatusCompleted).
 		Count((*int64)(&wins)).Error
 	if err != nil {
 		return 0, 0, fmt.Errorf("(Error: GetPlayerRecordInLeague) - failed to count wins: %w", err)
@@ -331,7 +332,7 @@ func (r *gameRepositoryImpl) GetPlayerRecordInLeague(playerID, leagueID uuid.UUI
 
 	// Count losses
 	err = r.db.Model(&models.Game{}).
-		Where("league_id = ? AND loser_id = ? AND status = ?", leagueID, playerID, models.GameStatusCompleted).
+		Where("league_id = ? AND loser_id = ? AND status = ?", leagueID, playerID, enums.GameStatusCompleted).
 		Count((*int64)(&losses)).Error
 	if err != nil {
 		return 0, 0, fmt.Errorf("(Error: GetPlayerRecordInLeague) - failed to count losses: %w", err)
@@ -355,7 +356,7 @@ func (r *gameRepositoryImpl) GetCurrentRoundNumber(leagueID uuid.UUID) (int, err
 }
 
 // bulk creates games for a round (useful for scheduling)
-func (r *gameRepositoryImpl) CreateGamesForRound(games []models.Game) error {
+func (r *gameRepositoryImpl) CreateGamesForWeek(games []models.Game) error {
 	tx := r.db.Begin()
 	if tx.Error != nil {
 		return fmt.Errorf("(Error: CreateGamesForRound) - failed to start transaction: %w", tx.Error)
@@ -398,7 +399,7 @@ func (r *gameRepositoryImpl) UpdatePlayerRecordsAfterGame(
 	// Update winner's record
 	if err := tx.Model(&models.Player{}).
 		Where("id = ?", winnerID).
-		Updates(map[string]interface{}{
+		Updates(map[string]any{
 			"wins":   winnerNewWins,
 			"losses": winnerNewLosses,
 		}).Error; err != nil {
@@ -409,7 +410,7 @@ func (r *gameRepositoryImpl) UpdatePlayerRecordsAfterGame(
 	// Update loser's record
 	if err := tx.Model(&models.Player{}).
 		Where("id = ?", loserID).
-		Updates(map[string]interface{}{
+		Updates(map[string]any{
 			"wins":   loserNewWins,
 			"losses": loserNewLosses,
 		}).Error; err != nil {
@@ -437,7 +438,7 @@ func (r *gameRepositoryImpl) GetPendingGamesByPlayer(playerID uuid.UUID) ([]mode
 		Preload("Player1.User").
 		Preload("Player2").
 		Preload("Player2.User").
-		Where("(player_1_id = ? OR player_2_id = ?) AND status = ?", playerID, playerID, models.GameStatusPending).
+		Where("(player1_id = ? OR player2_id = ?) AND status = ?", playerID, playerID, enums.GameStatusPending).
 		Order("round_number ASC, created_at ASC").
 		Find(&games).Error
 

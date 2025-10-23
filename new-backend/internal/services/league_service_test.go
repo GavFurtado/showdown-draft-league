@@ -64,7 +64,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 			MaxPokemonPerPlayer: input.MaxPokemonPerPlayer,
 			StartingDraftPoints: input.StartingDraftPoints,
 			StartDate:           input.StartDate,
-			Format:              input.Format,
+			Format:              &input.Format,
 		}
 		createdLeague := *expectedLeague
 		createdLeague.ID = uuid.New()
@@ -143,7 +143,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 			MaxPokemonPerPlayer: input.MaxPokemonPerPlayer,
 			StartingDraftPoints: input.StartingDraftPoints,
 			StartDate:           input.StartDate,
-			Format:              input.Format,
+			Format:              &input.Format,
 		}
 		createdLeague := *expectedLeague
 		createdLeague.ID = uuid.New()

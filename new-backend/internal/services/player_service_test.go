@@ -8,6 +8,7 @@ import (
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/google/uuid"
@@ -41,7 +42,7 @@ func TestPlayerService_CreatePlayerHandler(t *testing.T) {
 		TeamName:     &teamName,
 	}
 
-	testLeague := &models.League{ID: leagueID, StartingDraftPoints: 100}
+	testLeague := &models.League{ID: leagueID, StartingDraftPoints: 100, Status: enums.LeagueStatusSetup}
 	testUser := &models.User{ID: userID, DiscordUsername: discordUsername}
 
 	t.Run("Success - Create Player", func(t *testing.T) {

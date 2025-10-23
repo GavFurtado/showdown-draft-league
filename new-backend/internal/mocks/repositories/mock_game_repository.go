@@ -121,7 +121,7 @@ func (m *MockGameRepository) GetCurrentRoundNumber(leagueID uuid.UUID) (int, err
 	return args.Int(0), args.Error(1)
 }
 
-func (m *MockGameRepository) CreateGamesForRound(games []models.Game) error {
+func (m *MockGameRepository) CreateGamesForWeek(games []models.Game) error {
 	args := m.Called(games)
 	return args.Error(0)
 }
