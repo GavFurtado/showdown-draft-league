@@ -10,21 +10,32 @@ import (
 
 // Game represents a best-of-x series between two players in a league.
 type Game struct {
-	ID                  uuid.UUID        `gorm:"type:uuid;primaryKey;default:gen_random_uuid();column:id" json:"ID"`
-	LeagueID            uuid.UUID        `gorm:"type:uuid;not null;column:league_id" json:"LeagueID"`
-	Player1ID           uuid.UUID        `gorm:"type:uuid;not null;column:player1_id" json:"Player1ID"`
-	Player2ID           uuid.UUID        `gorm:"type:uuid;not null;column:player2_id" json:"Player2ID"`
-	WinnerID            *uuid.UUID       `gorm:"type:uuid;column:winner_id" json:"WinnerID"`
-	LoserID             *uuid.UUID       `gorm:"type:uuid;column:loser_id" json:"LoserID"`
-	Player1Wins         int              `gorm:"default:0;not null;column:player1_wins" json:"Player1Wins"`
-	Player2Wins         int              `gorm:"default:0;not null;column:player2_wins" json:"Player2Wins"`
-	WeekNumber          int              `gorm:"not null;column:week_number" json:"WeekNumber"`
-	Status              enums.GameStatus `gorm:"type:varchar(50);not null;default:'pending';column:status" json:"Status"`
-	ReportingPlayerID   uuid.UUID        `gorm:"type:uuid;not null;column:reporting_player_id" json:"ReportingPlayerID"`
+	ID uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid();column:id" json:"ID"`
+
+	LeagueID  uuid.UUID `gorm:"type:uuid;not null;column:league_id" json:"LeagueID"`
+	Player1ID uuid.UUID `gorm:"type:uuid;not null;column:player1_id" json:"Player1ID"`
+	Player2ID uuid.UUID `gorm:"type:uuid;not null;column:player2_id" json:"Player2ID"`
+
+	WinnerID *uuid.UUID `gorm:"type:uuid;column:winner_id" json:"WinnerID"`
+	LoserID  *uuid.UUID `gorm:"type:uuid;column:loser_id" json:"LoserID"`
+
+	Player1Wins int `gorm:"default:0;not null;column:player1_wins" json:"Player1Wins"`
+	Player2Wins int `gorm:"default:0;not null;column:player2_wins" json:"Player2Wins"`
+
+	RoundNumber         int              `gorm:"not null;column:round_number" json:"RoundNumber"` // week number or playoff round number
+	GroupNumber         *int             `gorm:"column:group_number" json:"GroupNumber"`
+	GameType            enums.GameType   `gorm:"not null;default:'REGULAR_SEASON;column:game_type" json:"GameType"`
+	Status              enums.GameStatus `gorm:"type:varchar(50);not null;default:'PENDING';column:status" json:"Status"`
+	BracketPosition     *string          `gorm:"column:bracket_position" json:"BracketPosition"` // flavour text for the type of playoff game
 	ShowdownReplayLinks []string         `gorm:"type:jsonb;column:showdown_replay_links" binding:"url" json:"ShowdownReplayLinks"`
-	CreatedAt           time.Time        `json:"CreatedAt" gorm:"column:created_at"`
-	UpdatedAt           time.Time        `json:"UpdatedAt" gorm:"column:updated_at"`
-	DeletedAt           gorm.DeletedAt   `gorm:"index;column:deleted_at" json:"-"`
+
+	ReportingPlayerID uuid.UUID  `gorm:"type:uuid;not null;column:reporting_player_id" json:"ReportingPlayerID"`
+	WinnerToGameID    *uuid.UUID `gorm:"type:uuid;column:winner_to_game_id" json:"WinnerToGameID"`
+	LoserToGameID     *uuid.UUID `gorm:"type:uuid;column:loser_to_game_id" json:"LoserToGameID"`
+
+	CreatedAt time.Time      `json:"CreatedAt" gorm:"column:created_at"`
+	UpdatedAt time.Time      `json:"UpdatedAt" gorm:"column:updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index;column:deleted_at" json:"-"`
 
 	// Relationships
 	ReportingPlayer Player  `gorm:"foreignKey:reporting_player_id;references:ID" json:"ReportingPlayer,omitempty"`

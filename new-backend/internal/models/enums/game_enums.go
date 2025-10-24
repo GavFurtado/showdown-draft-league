@@ -3,15 +3,23 @@ package enums
 import (
 	"database/sql/driver"
 	"fmt"
+	"slices"
 	"strings"
 )
 
 type GameStatus string
+type GameType string
 
 const (
-	GameStatusPending   GameStatus = "pending"
-	GameStatusCompleted GameStatus = "completed"
-	GameStatusDisputed  GameStatus = "disputed"
+	GameStatusPending   GameStatus = "PENDING"
+	GameStatusCompleted GameStatus = "COMPLETED"
+	GameStatusDisputed  GameStatus = "DISPUTED"
+)
+
+const (
+	GameTypeRegularSeason GameType = "REGULAR_SEASON"
+	GameTypePlayoffUpper  GameType = "PLAYOFF_UPPER"
+	GameTypePlayoffLower  GameType = "PLAYOFF_LOWER"
 )
 
 var gameStatuses = []GameStatus{
@@ -21,29 +29,24 @@ var gameStatuses = []GameStatus{
 }
 
 // IsValid checks if the GameStatus is one of the predefined valid statuses.
-func (gs GameStatus) IsValid() bool {
-	for _, status := range gameStatuses {
-		if gs == status {
-			return true
-		}
-	}
-	return false
+func (gt GameStatus) IsValid() bool {
+	return slices.Contains(gameStatuses, gt)
 }
 
 // Value implements the driver.Valuer interface for GORM/database saving.
 // This tells GORM how to convert the custom type into a database-compatible type (string).
-func (gs GameStatus) Value() (driver.Value, error) {
-	if !gs.IsValid() {
-		return nil, fmt.Errorf("invalid GameStatus value: %s", gs)
+func (gt GameStatus) Value() (driver.Value, error) {
+	if !gt.IsValid() {
+		return nil, fmt.Errorf("invalid GameStatus value: %s", gt)
 	}
-	return string(gs), nil
+	return string(gt), nil
 }
 
 // Scan implements the sql.Scanner interface for GORM/database loading.
 // This tells GORM how to convert the database string back into the custom type.
-func (gs *GameStatus) Scan(value any) error {
+func (gt *GameStatus) Scan(value any) error {
 	if value == nil {
-		*gs = GameStatusPending // Default or zero value for nil
+		*gt = GameStatusPending // Default or zero value for nil
 		return nil
 	}
 	str, ok := value.(string)
@@ -55,10 +58,54 @@ func (gs *GameStatus) Scan(value any) error {
 	if !newStatus.IsValid() {
 		return fmt.Errorf("invalid GameStatus value retrieved from DB: %s", str)
 	}
-	*gs = newStatus
+	*gt = newStatus
 	return nil
 }
 
-func (gs GameStatus) Normalize() GameStatus {
-	return GameStatus(strings.ToUpper(string(gs)))
+func (gt GameStatus) Normalize() GameStatus {
+	return GameStatus(strings.ToUpper(string(gt)))
+}
+
+var gameTypes = []GameType{
+	GameTypePlayoffUpper,
+	GameTypePlayoffLower,
+	GameTypeRegularSeason,
+}
+
+// IsValid checks if the GameStatus is one of the predefined valid statuses.
+func (gt GameType) IsValid() bool {
+	return slices.Contains(gameTypes, gt)
+}
+
+// Value implements the driver.Valuer interface for GORM/database saving.
+// This tells GORM how to convert the custom type into a database-compatible type (string).
+func (gt GameType) Value() (driver.Value, error) {
+	if !gt.IsValid() {
+		return nil, fmt.Errorf("invalid GameType value: %s", gt)
+	}
+	return string(gt), nil
+}
+
+// Scan implements the sql.Scanner interface for GORM/database loading.
+// This tells GORM how to convert the database string back into the custom type.
+func (gt *GameType) Scan(value any) error {
+	if value == nil {
+		*gt = GameTypeRegularSeason // Default or zero value for nil
+		return nil
+	}
+	str, ok := value.(string)
+	if !ok {
+		return fmt.Errorf("GameType: expected string, got %T", value)
+	}
+	// Validate the string from the database to ensure it's a known status
+	newGameType := GameType(str).Normalize()
+	if !newGameType.IsValid() {
+		return fmt.Errorf("invalid GameStatus value retrieved from DB: %s", str)
+	}
+	*gt = newGameType
+	return nil
+}
+
+func (gt GameType) Normalize() GameType {
+	return GameType(strings.ToUpper(string(gt)))
 }

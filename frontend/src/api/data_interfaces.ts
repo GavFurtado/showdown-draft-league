@@ -60,6 +60,7 @@ export interface League {
   StartingDraftPoints: number;
   Format: LeagueFormat;
   DiscordWebhookURL: string | null;
+  // NewPlayerGroupNumber: number; // has no real use in the frontend; still in json because yes
   // Relationships
   Players?: Player[];
   // LeaguePokemon?: LeaguePokemon[];
@@ -98,6 +99,8 @@ export interface Player {
   Wins: number;
   Losses: number;
   DraftPoints: number;
+  GroupNumber: number;
+  SkipsLeft: number;
   TransferCredits: number;
   Role: PlayerRole; // league-specific
   IsParticipating: boolean;

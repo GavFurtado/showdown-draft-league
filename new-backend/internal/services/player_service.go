@@ -79,7 +79,8 @@ func (s *playerServiceImpl) CreatePlayerHandler(input *common.PlayerCreateReques
 		input.InLeagueName = &user.DiscordUsername
 	}
 	if input.TeamName == nil {
-		input.TeamName = &user.DiscordUsername
+		username := fmt.Sprintf("%s's Team", user.DiscordUsername)
+		input.TeamName = &username
 	}
 
 	// --- UNIQUENESS CHECKS ---
@@ -127,6 +128,8 @@ func (s *playerServiceImpl) CreatePlayerHandler(input *common.PlayerCreateReques
 		Wins:          0,
 		Losses:        0,
 		DraftPosition: 0,
+		GroupNumber:   league.NewPlayerGroupNumber,
+		SkipsLeft:     league.MaxPokemonPerPlayer - league.MinPokemonPerPlayer,
 		Role:          rbac.PRoleMember,
 	}
 
@@ -134,6 +137,12 @@ func (s *playerServiceImpl) CreatePlayerHandler(input *common.PlayerCreateReques
 	if err != nil {
 		log.Printf("Service: CreatePlayerHandler - Failed to create player for user %s in league %s: %v", input.UserID, input.LeagueID, err)
 		return nil, fmt.Errorf("%w: failed to add player to league", common.ErrFailedToCreatePlayer)
+	}
+
+	league.NewPlayerGroupNumber = ((league.NewPlayerGroupNumber + 1) % league.Format.GroupCount) + 1 // extra +1 due to 1-based GroupNumbers
+	if _, err = s.leagueRepo.UpdateLeague(league); err != nil {
+		log.Printf("Service: CreatePlayerHandler - Failed to update league %s after creating player for %s: %v", league.ID, input.UserID, err)
+		return nil, common.ErrInternalService
 	}
 
 	log.Printf("Service: CreatePlayerHandler - Player %s created for user %s in league %s.", createdPlayer.ID, input.UserID, input.LeagueID)

@@ -64,7 +64,7 @@ export const useDraftTimer = (currentDraft: Draft | null | undefined, currentLea
             if (!playerPicking) continue;
 
             if (playerPicking && playerPicking.ID === currentPlayer.ID) {
-                nextTurnInXTurns = (overallPick - currentOverallPick);
+                nextTurnInXTurns = (overallPick - currentOverallPick) - 1;
                 foundNextPick = true;
                 break;
             }

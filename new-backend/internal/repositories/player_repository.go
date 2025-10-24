@@ -111,10 +111,7 @@ func (r *playerRepositoryImpl) GetPlayersByUser(userID uuid.UUID) ([]models.Play
 
 // updates player information
 func (r *playerRepositoryImpl) UpdatePlayer(player *models.Player) (*models.Player, error) {
-	err := r.db.Select(
-		"in_league_name", "team_name", "wins", "losses", "draft_points",
-		"draft_position", "updated_at",
-	).Updates(player).Error
+	err := r.db.Model(player).Select("*").Updates(player).Error
 
 	if err != nil {
 		return nil, fmt.Errorf("(Error: UpdatePlayer) - failed to update player: %w", err)

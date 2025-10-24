@@ -25,6 +25,7 @@ var (
 
 	// Business Logic Errors
 	ErrMaxLeagueCreationLimitReached = errors.New("maximum league creation limit reached")
+	ErrExceedsMaxAllowableGroupCount = errors.New("maximum group counts allowed is 2 for a league")
 	ErrInvalidInput                  = errors.New("invalid input/request")
 	ErrConflict                      = errors.New("record already exists. cannot make a duplicate")
 	ErrInvalidState                  = errors.New("league/draft is in invalid state/status for this operation")

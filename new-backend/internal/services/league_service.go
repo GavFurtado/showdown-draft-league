@@ -53,6 +53,7 @@ func NewLeagueService(
 // handles the business logic for creating a new league.
 func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueCreateRequestDTO) (*models.League, error) {
 	const maxLeaguesCommisionable = 2
+	const maxGroupsAllowed = 2
 
 	// check if user already has two owned leagues
 	count, err := s.leagueRepo.GetLeaguesCountWhereOwner(userID)
@@ -62,15 +63,27 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueC
 	}
 
 	if count >= maxLeaguesCommisionable {
-		return nil, fmt.Errorf("max league creation limit reached: %d", maxLeaguesCommisionable)
+		return nil, common.ErrMaxLeagueCreationLimitReached
+	}
+
+	if input.Format.GroupCount > maxGroupsAllowed {
+		return nil, common.ErrExceedsMaxAllowableGroupCount
+	}
+
+	newPlayerGroupNumber := 1
+	if input.Format.GroupCount > 1 {
+		// owner is first player and auto assigned 1. So next player will have to be group 2
+		// will need to be changed if we decide to make use of Player.IsParticapating
+		newPlayerGroupNumber = 2
 	}
 
 	league := &models.League{
-		Name:                input.Name,
-		RulesetDescription:  input.RulesetDescription,
-		MaxPokemonPerPlayer: input.MaxPokemonPerPlayer,
-		StartingDraftPoints: input.StartingDraftPoints,
-		StartDate:           input.StartDate,
+		Name:                 input.Name,
+		RulesetDescription:   input.RulesetDescription,
+		MaxPokemonPerPlayer:  input.MaxPokemonPerPlayer,
+		StartingDraftPoints:  input.StartingDraftPoints,
+		StartDate:            input.StartDate,
+		NewPlayerGroupNumber: newPlayerGroupNumber,
 		Format: &models.LeagueFormat{
 			SeasonType:               input.Format.SeasonType,
 			GroupCount:               input.Format.GroupCount,
@@ -100,6 +113,8 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueC
 		TeamName:        fmt.Sprintf("%s's Team", input.Name), // Default, can be updated later
 		IsParticipating: false,
 		DraftPoints:     int(createdLeague.StartingDraftPoints),
+		TransferCredits: 0,
+		GroupNumber:     1, // first player for the league so assigned this
 		Role:            rbac.PRoleOwner,
 	}
 
