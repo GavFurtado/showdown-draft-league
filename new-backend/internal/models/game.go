@@ -25,7 +25,7 @@ type Game struct {
 	RoundNumber         int              `gorm:"not null;column:round_number" json:"RoundNumber"` // week number or playoff round number
 	GroupNumber         *int             `gorm:"column:group_number" json:"GroupNumber"`
 	GameType            enums.GameType   `gorm:"not null;default:'REGULAR_SEASON;column:game_type" json:"GameType"`
-	Status              enums.GameStatus `gorm:"type:varchar(50);not null;default:'PENDING';column:status" json:"Status"`
+	Status              enums.GameStatus `gorm:"type:varchar(50);not null;default:'SCHEDULED';column:status" json:"Status"`
 	BracketPosition     *string          `gorm:"column:bracket_position" json:"BracketPosition"` // flavour text for the type of playoff game
 	ShowdownReplayLinks []string         `gorm:"type:jsonb;column:showdown_replay_links" binding:"url" json:"ShowdownReplayLinks"`
 

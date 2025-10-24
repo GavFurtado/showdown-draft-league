@@ -11,9 +11,10 @@ type GameStatus string
 type GameType string
 
 const (
-	GameStatusPending   GameStatus = "PENDING"
-	GameStatusCompleted GameStatus = "COMPLETED"
-	GameStatusDisputed  GameStatus = "DISPUTED"
+	GameStatusScheduled       GameStatus = "SCHEDULED"
+	GameStatusApprovalPending GameStatus = "APPROVAL_PENDING"
+	GameStatusCompleted       GameStatus = "COMPLETED"
+	GameStatusDisputed        GameStatus = "DISPUTED"
 )
 
 const (
@@ -23,7 +24,8 @@ const (
 )
 
 var gameStatuses = []GameStatus{
-	GameStatusPending,
+	GameStatusScheduled,
+	GameStatusApprovalPending,
 	GameStatusCompleted,
 	GameStatusDisputed,
 }
@@ -46,7 +48,7 @@ func (gt GameStatus) Value() (driver.Value, error) {
 // This tells GORM how to convert the database string back into the custom type.
 func (gt *GameStatus) Scan(value any) error {
 	if value == nil {
-		*gt = GameStatusPending // Default or zero value for nil
+		*gt = GameStatusScheduled // Default or zero value for nil
 		return nil
 	}
 	str, ok := value.(string)

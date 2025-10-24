@@ -20,12 +20,6 @@ type GameRepository interface {
 	GetGamesByPlayer(playerID uuid.UUID) ([]models.Game, error)
 	// gets games by round number in a league
 	GetGamesByLeagueAndRound(leagueID uuid.UUID, roundNumber int) ([]models.Game, error)
-	// gets pending games for a league
-	GetPendingGamesByLeague(leagueID uuid.UUID) ([]models.Game, error)
-	// gets completed games for a league
-	GetCompletedGamesByLeague(leagueID uuid.UUID) ([]models.Game, error)
-	// gets disputed games for a league
-	GetDisputedGamesByLeague(leagueID uuid.UUID) ([]models.Game, error)
 	// updates game with score and potentially marks it as completed
 	UpdateGameScore(gameID uuid.UUID, player1Wins, player2Wins int) error
 	// reports game result with winner/loser and replay links
@@ -48,10 +42,8 @@ type GameRepository interface {
 	GetHeadToHeadRecord(player1ID, player2ID uuid.UUID) ([]models.Game, error)
 	// gets player's win-loss record in a specific league
 	GetPlayerRecordInLeague(playerID, leagueID uuid.UUID) (wins, losses int64, err error)
-	// gets current round number for a league (highest round with games)
-	GetCurrentRoundNumber(leagueID uuid.UUID) (int, error)
-	// bulk creates games for a round (useful for scheduling)
-	CreateGamesForWeek(games []models.Game) error
+	// bulk creates games
+	CreateGames(games []*models.Game) error
 	// updates player records after game completion (transaction)
 	UpdatePlayerRecordsAfterGame(
 		winnerID, loserID uuid.UUID,
@@ -59,8 +51,14 @@ type GameRepository interface {
 	) error
 	// soft deletes a game
 	DeleteGame(gameID uuid.UUID) error
-	// gets games that need to be played by a specific player (pending games involving the player)
-	GetPendingGamesByPlayer(playerID uuid.UUID) ([]models.Game, error)
+	// gets games that need to be played by a specific player (scheduled games involving the player)
+	GetScheduledGamesByPlayer(playerID uuid.UUID) ([]models.Game, error)
+	// gets scheduled games for a league
+	GetScheduledGamesByLeague(leagueID uuid.UUID) ([]models.Game, error)
+	// gets completed games for a league
+	GetCompletedGamesByLeague(leagueID uuid.UUID) ([]models.Game, error)
+	// gets disputed games for a league
+	GetDisputedGamesByLeague(leagueID uuid.UUID) ([]models.Game, error)
 }
 
 type gameRepositoryImpl struct {
@@ -161,19 +159,36 @@ func (r *gameRepositoryImpl) GetGamesByLeagueAndRound(leagueID uuid.UUID, roundN
 	return games, nil
 }
 
-// gets pending games for a league
-func (r *gameRepositoryImpl) GetPendingGamesByLeague(leagueID uuid.UUID) ([]models.Game, error) {
+// gets scheduled games for a league
+func (r *gameRepositoryImpl) GetScheduledGamesByLeague(leagueID uuid.UUID) ([]models.Game, error) {
 	var games []models.Game
 	err := r.db.Preload("Player1").
 		Preload("Player1.User").
 		Preload("Player2").
 		Preload("Player2.User").
-		Where("league_id = ? AND status = ?", leagueID, enums.GameStatusPending).
+		Where("league_id = ? AND status = ?", leagueID, enums.GameStatusScheduled).
 		Order("round_number ASC, created_at ASC").
 		Find(&games).Error
 
 	if err != nil {
-		return nil, fmt.Errorf("(Error: GetPendingGamesByLeague) - failed to get pending games: %w", err)
+		return nil, fmt.Errorf("(Error: GetPendingGamesByLeague) - failed to get scheduled games: %w", err)
+	}
+	return games, nil
+}
+
+// gets scheduled games for a league
+func (r *gameRepositoryImpl) GetScheduledGamesByPlayer(playerID uuid.UUID) ([]models.Game, error) {
+	var games []models.Game
+	err := r.db.Preload("Player1").
+		Preload("Player1.User").
+		Preload("Player2").
+		Preload("Player2.User").
+		Where("player_id = ? AND status = ?", playerID, enums.GameStatusScheduled).
+		Order("round_number ASC, created_at ASC").
+		Find(&games).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("(Error: GetPendingGamesByLeague) - failed to get scheduled games: %w", err)
 	}
 	return games, nil
 }
@@ -246,7 +261,7 @@ func (r *gameRepositoryImpl) ReportGameResult(
 		"player1_wins":          player1Wins,
 		"player2_wins":          player2Wins,
 		"showdown_replay_links": replayLinks,
-		"status":                enums.GameStatusCompleted,
+		"status":                enums.GameStatusApprovalPending,
 	}
 
 	err := r.db.Model(&models.Game{}).
@@ -276,7 +291,7 @@ func (r *gameRepositoryImpl) DisputeGame(gameID uuid.UUID, reporterID uuid.UUID)
 	return nil
 }
 
-// resolves a disputed game (commissioner action)
+// resolves a disputed game (league staff action)
 func (r *gameRepositoryImpl) ResolveDisputedGame(
 	gameID uuid.UUID,
 	winnerID, loserID uuid.UUID,
@@ -341,22 +356,8 @@ func (r *gameRepositoryImpl) GetPlayerRecordInLeague(playerID, leagueID uuid.UUI
 	return wins, losses, nil
 }
 
-// gets current round number for a league (highest round with games)
-func (r *gameRepositoryImpl) GetCurrentRoundNumber(leagueID uuid.UUID) (int, error) {
-	var maxRound int
-	err := r.db.Model(&models.Game{}).
-		Select("COALESCE(MAX(round_number), 0)").
-		Where("league_id = ?", leagueID).
-		Scan(&maxRound).Error
-
-	if err != nil {
-		return 0, fmt.Errorf("(Error: GetCurrentRoundNumber) - failed to get current round: %w", err)
-	}
-	return maxRound, nil
-}
-
-// bulk creates games for a round (useful for scheduling)
-func (r *gameRepositoryImpl) CreateGamesForWeek(games []models.Game) error {
+// bulk creates games
+func (r *gameRepositoryImpl) CreateGames(games []*models.Game) error {
 	tx := r.db.Begin()
 	if tx.Error != nil {
 		return fmt.Errorf("(Error: CreateGamesForRound) - failed to start transaction: %w", tx.Error)
@@ -431,14 +432,14 @@ func (r *gameRepositoryImpl) DeleteGame(gameID uuid.UUID) error {
 }
 
 // gets games that need to be played by a specific player (pending games involving the player)
-func (r *gameRepositoryImpl) GetPendingGamesByPlayer(playerID uuid.UUID) ([]models.Game, error) {
+func (r *gameRepositoryImpl) GetScheduledGamesForPlayer(playerID uuid.UUID) ([]models.Game, error) {
 	var games []models.Game
 	err := r.db.Preload("League").
 		Preload("Player1").
 		Preload("Player1.User").
 		Preload("Player2").
 		Preload("Player2.User").
-		Where("(player1_id = ? OR player2_id = ?) AND status = ?", playerID, playerID, enums.GameStatusPending).
+		Where("(player1_id = ? OR player2_id = ?) AND status = ?", playerID, playerID, enums.GameStatusScheduled).
 		Order("round_number ASC, created_at ASC").
 		Find(&games).Error
 
