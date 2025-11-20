@@ -108,7 +108,11 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 		playersByGroup[i] = playersOfGroupX
 	}
 
-	seededPlayers, err := getSeededPlayers(league, playersByGroup)
+	seededPlayers, err := s.getSeededPlayers(league, playersByGroup)
+	if err != nil {
+		log.Printf("ERROR: (Service: GeneratePlayoffBracket): error seeding players for playoffs for league %s: %v", league.ID, err)
+		return err
+	}
 
 	return nil
 }
