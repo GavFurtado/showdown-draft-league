@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand/v2"
+	"sort"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
@@ -16,6 +17,7 @@ import (
 
 type GameService interface {
 	GenerateRegularSeasonGames(leagueID uuid.UUID) error
+	GeneratePlayoffBracket(leagueID uuid.UUID) error
 }
 
 type gameServiceImpl struct {
@@ -40,13 +42,13 @@ func NewGameService(
 func (s *gameServiceImpl) GenerateRegularSeasonGames(leagueID uuid.UUID) error {
 	league, err := s.fetchLeagueResource(leagueID)
 	if err != nil {
-		log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Couldn't fetch league %s: %v", leagueID, err)
+		log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Couldn't fetch league %s: %v\n", leagueID, err)
 		return err
 	}
 
 	// League needs to be in POST_DRAFT status and not a BRACKET_ONLY Season League
 	if league.Status != enums.LeagueStatusPostDraft && league.Format.SeasonType == enums.LeagueSeasonTypeBracketOnly {
-		log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - League %s not in valid state to generate season bracket: %v", leagueID, err)
+		log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - League %s not in valid state to generate season bracket: %v\n", leagueID, err)
 		return common.ErrInvalidState
 	}
 
@@ -56,7 +58,7 @@ func (s *gameServiceImpl) GenerateRegularSeasonGames(leagueID uuid.UUID) error {
 	for i := 0; i < league.Format.GroupCount; i++ {
 		players, err := s.playerRepo.GetPlayersByLeagueAndGroupNumber(league.ID, i+1)
 		if err != nil {
-			log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Repository error fetching Players by League %s with Group Number %d: %v", league.ID, i+1, err)
+			log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Repository error fetching Players by League %s with Group Number %d: %v\n", league.ID, i+1, err)
 			return common.ErrInternalService
 		}
 		playersByGroupNumber[i] = players
@@ -67,7 +69,7 @@ func (s *gameServiceImpl) GenerateRegularSeasonGames(leagueID uuid.UUID) error {
 		groupNumber := groupIndex + 1
 		games, err := s.generateRoundRobinGamesForGroup(league.ID, playersInGroup, groupNumber)
 		if err != nil {
-			log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Error generating round-robin games for group %d in league %s: %v", groupNumber, leagueID, err)
+			log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Error generating round-robin games for group %d in league %s: %v\n", groupNumber, leagueID, err)
 			return err
 		}
 		allGeneratedGames = append(allGeneratedGames, games...)
@@ -76,15 +78,113 @@ func (s *gameServiceImpl) GenerateRegularSeasonGames(leagueID uuid.UUID) error {
 	if len(allGeneratedGames) > 0 {
 		err = s.gameRepo.CreateGames(allGeneratedGames)
 		if err != nil {
-			log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Repository error creating games for league %s: %v", leagueID, err)
+			log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Repository error creating games for league %s: %v\n", leagueID, err)
 			return common.ErrInternalService
 		}
 	}
+	return nil
+}
+
+func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
+	league, err := s.fetchLeagueResource(leagueID)
+	if err != nil {
+		log.Printf("ERROR: (Service: GeneratePlayoffBracket) - Couldn't fetch league %s: %v\n", leagueID, err)
+		return err
+	}
+
+	if (league.Format.SeasonType == enums.LeagueSeasonTypeBracketOnly && league.Status != enums.LeagueStatusPostDraft) ||
+		(league.Format.SeasonType == enums.LeagueSeasonTypeHybrid && league.Status != enums.LeagueStatusPostRegularSeason) {
+		log.Printf("ERROR: (Service: GeneratePlayoffBracket) - League not in valid status to generate playoff bracket.\n")
+		return err
+	}
+
+	playersByGroup := make([][]models.Player, league.Format.GroupCount)
+	for i := 0; i < league.Format.GroupCount; i++ {
+		playersOfGroupX, err := s.playerRepo.GetPlayersByLeagueAndGroupNumber(league.ID, i+1)
+		if err != nil {
+			log.Printf("ERROR: (Service: GeneratePlayoffBracket): error fetching players of group %d for league %s: %v", i+1, league.ID, err)
+			return fmt.Errorf("failed to fetch players for group %d: %w", i+1, err)
+		}
+		playersByGroup[i] = playersOfGroupX
+	}
+
+	seededPlayers, err := getSeededPlayers(league, playersByGroup)
 
 	return nil
 }
 
 // PRIVATE HELPERS
+// getSeededPlayers prepares a list of players for playoff bracket generation.
+// It first sorts players within their respective groups. Then, it selects
+// a qualifying number from each group and interleaves them to determine
+// their overall seeding for the playoffs (e.g., 1st from Group A, 1st from Group B,
+// 2nd from Group A, 2nd from Group B, etc.).
+// It returns the final list of players who will participate in the bracket.
+func (s *gameServiceImpl) getSeededPlayers(league *models.League, playersByGroup [][]models.Player) ([]models.Player, error) {
+	var qualifyingPlayers []models.Player
+
+	// Determine how many players should qualify from each group.
+	// This assumes PlayoffParticipantCount is a multiple of GroupCount,
+	// or that any remainder is handled by league rules (e.g., wildcards, or simply fewer players).
+	// Validation for this divisibility should ideally happen at league creation/update.
+	numPlayersToQualifyPerGroup := league.Format.PlayoffParticipantCount / league.Format.GroupCount
+
+	// 1. Sort players within each group
+	for i := range playersByGroup {
+		// Ensure the group is not empty before attempting to sort
+		if len(playersByGroup[i]) == 0 { // should never be true
+			log.Printf("INFO: (Service: getSeededPlayers) - Encountered an empty player group %d for league %s. Skipping group.", i+1, league.ID)
+			continue
+		}
+		sortPlayers(playersByGroup[i]) // Sorts in place
+	}
+
+	// 2. Interleave the top qualifiers from each group
+	// Iterate through the 'rank' within each group
+	for rank := 0; rank < numPlayersToQualifyPerGroup; rank++ {
+		// Then iterate through each group to pick the player at the current rank
+		for groupIdx := 0; groupIdx < league.Format.GroupCount; groupIdx++ {
+			// Check if this group has a player at the current rank
+			if rank < len(playersByGroup[groupIdx]) { // should never be false
+				qualifyingPlayers = append(qualifyingPlayers, playersByGroup[groupIdx][rank])
+			}
+		}
+	}
+
+	// Ensure we have exactly PlayoffParticipantCount players.
+	// This check is crucial if numPlayersToQualifyPerGroup * GroupCount < PlayoffParticipantCount
+	// or if some groups had fewer players than expected.
+	if len(qualifyingPlayers) != league.Format.PlayoffParticipantCount { // should never be true
+		log.Printf("ERROR: (Service: getSeededPlayers) - Mismatch in qualified players count. Expected %d, got %d for league %s. This might indicate an issue with league configuration or player data.",
+			league.Format.PlayoffParticipantCount, len(qualifyingPlayers), league.ID)
+		return nil, common.ErrInsufficientPlayersForPlayoffs
+	}
+
+	return qualifyingPlayers, nil
+}
+
+// sortPlayers sorts (inplace) a slice of models.Player based on seeding criteria.
+// Primary sort: Wins (descending)
+// Secondary sort: Losses (ascending)
+// Tertiary sort: Player ID (arbitrary but consistent tie-breaker)
+func sortPlayers(players []models.Player) {
+	sort.Slice(players, func(i, j int) bool {
+		// Primary sort: More wins come first (descending)
+		if players[i].Wins != players[j].Wins {
+			return players[i].Wins > players[j].Wins
+		}
+
+		// Secondary sort: Fewer losses come first (ascending)
+		if players[i].Losses != players[j].Losses {
+			return players[i].Losses < players[j].Losses
+		}
+
+		// Tertiary sort (tie-breaker): Use player ID for consistent ordering
+		// (UUID comparison directly might not be stable, converting to string is safer for consistent sort)
+		return players[i].ID.String() < players[j].ID.String()
+	})
+}
+
 // generateRoundRobinGamesForGroup returns all the []*models.Game with Game.GroupNumber groupNumber,
 // and a shuffled Game.RoundNumber.
 // Does not persist to the database.
@@ -184,7 +284,7 @@ func (s *gameServiceImpl) generateRoundRobinGamesForGroup(leagueID uuid.UUID, pl
 
 	// Create a slice of actual RoundNumbers (1-indexed) and shuffle it.
 	actualRoundNumbers := make([]int, numRounds)
-	for i := 0; i < numRounds; i++ {
+	for i := range numRounds {
 		actualRoundNumbers[i] = i + 1
 	}
 	rand.Shuffle(numRounds, func(i, j int) {

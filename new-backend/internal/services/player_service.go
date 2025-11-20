@@ -139,7 +139,8 @@ func (s *playerServiceImpl) CreatePlayerHandler(input *common.PlayerCreateReques
 		return nil, fmt.Errorf("%w: failed to add player to league", common.ErrFailedToCreatePlayer)
 	}
 
-	league.NewPlayerGroupNumber = ((league.NewPlayerGroupNumber + 1) % league.Format.GroupCount) + 1 // extra +1 due to 1-based GroupNumbers
+	league.PlayerCount++
+	league.NewPlayerGroupNumber = ((league.NewPlayerGroupNumber + 1) % league.Format.GroupCount) + 1 // +1 due to 1-based GroupNumbers
 	if _, err = s.leagueRepo.UpdateLeague(league); err != nil {
 		log.Printf("Service: CreatePlayerHandler - Failed to update league %s after creating player for %s: %v", league.ID, input.UserID, err)
 		return nil, common.ErrInternalService

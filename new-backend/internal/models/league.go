@@ -19,6 +19,7 @@ type League struct {
 	EndDate             *time.Time         `gorm:"column:end_date" json:"EndDate"` // this is set when the league is cancelled or actualy ends, nil otherwise
 	RulesetDescription  string             `gorm:"type:text;column:ruleset_description" json:"RulesetDescription"`
 	Status              enums.LeagueStatus `gorm:"type:varchar(50);not null;default:'pending';column:status" json:"Status"`
+	PlayerCount         int                `gorm:"column:player_count" json:"PlayerCount"`
 	MaxPokemonPerPlayer int                `gorm:"not null;default:0;column:max_pokemon_per_player" json:"MaxPokemonPerPlayer"`
 	MinPokemonPerPlayer int                `gorm:"not null;default:0;column:min_pokemon_per_player" json:"MinPokemonPerPlayer"`
 	StartingDraftPoints int                `gorm:"not null;default:140;column:starting_draft_points" json:"StartingDraftPoints"`
@@ -71,7 +72,7 @@ func (f *LeagueFormat) Scan(value any) error {
 		return fmt.Errorf("failed to scan LeagueFormat: %v", value)
 	}
 
-	var m map[string]interface{}
+	var m map[string]any
 	if err := json.Unmarshal(b, &m); err != nil {
 		return err
 	}
@@ -87,9 +88,6 @@ func (f *LeagueFormat) Scan(value any) error {
 	}
 	if val, ok := m["group_count"].(float64); ok {
 		f.GroupCount = int(val)
-	}
-	if val, ok := m["games_per_opponent"].(float64); ok {
-		f.GamesPerOpponent = int(val)
 	}
 	if val, ok := m["playoff_type"].(string); ok {
 		f.PlayoffType = enums.LeaguePlayoffType(val)
@@ -143,7 +141,6 @@ func (f LeagueFormat) Value() (driver.Value, error) {
 		"draft_order_type":               f.DraftOrderType,
 		"season_type":                    f.SeasonType,
 		"group_count":                    f.GroupCount,
-		"games_per_opponent":             f.GamesPerOpponent,
 		"playoff_type":                   f.PlayoffType,
 		"playoff_participant_count":      f.PlayoffParticipantCount,
 		"playoff_byes_count":             f.PlayoffByesCount,

@@ -24,21 +24,22 @@ var (
 	ErrInvalidUpdateForPlayer = errors.New("players cannot update score or draft details directly")
 
 	// Business Logic Errors
-	ErrMaxLeagueCreationLimitReached = errors.New("maximum league creation limit reached")
-	ErrExceedsMaxAllowableGroupCount = errors.New("maximum group counts allowed is 2 for a league")
-	ErrInvalidInput                  = errors.New("invalid input/request")
-	ErrConflict                      = errors.New("record already exists. cannot make a duplicate")
-	ErrInvalidState                  = errors.New("league/draft is in invalid state/status for this operation")
-	ErrInsufficientDraftPoints       = errors.New("insufficient draft points to complete this operation")
-	ErrInsufficientTransferCredits   = errors.New("insufficient transfer credits to complete this operation") // Added this line
-	ErrPokemonAlreadyReleased        = errors.New("this pokemon has already been released")
-	ErrNoPlayerForDraft              = errors.New("not enough players to start draft")
-	ErrTooManyRequestedPicks         = errors.New("too many draft picks were requested")
-	ErrCannotSkipBelowMinimumRoster  = errors.New("skip action not allowed as your roster size will be too small")
-	ErrDraftPausedForIntervention    = errors.New("draft paused awaiting league staff intervention")
-	ErrInvalidDraftPosition          = errors.New("invalid draft position for player")
-	ErrDuplicateDraftPosition        = errors.New("duplicate draft position found")
-	ErrIncompleteDraftOrder          = errors.New("draft order is incomplete")
+	ErrMaxLeagueCreationLimitReached  = errors.New("maximum league creation limit reached")
+	ErrExceedsMaxAllowableGroupCount  = errors.New("maximum group counts allowed is 2 for a league")
+	ErrInvalidInput                   = errors.New("invalid input/request")
+	ErrConflict                       = errors.New("record already exists. cannot make a duplicate")
+	ErrInvalidState                   = errors.New("league/draft is in invalid state/status for this operation")
+	ErrInsufficientDraftPoints        = errors.New("insufficient draft points to complete this operation")
+	ErrInsufficientTransferCredits    = errors.New("insufficient transfer credits to complete this operation")
+	ErrPokemonAlreadyReleased         = errors.New("this pokemon has already been released")
+	ErrNoPlayerForDraft               = errors.New("not enough players to start draft")
+	ErrTooManyRequestedPicks          = errors.New("too many draft picks were requested")
+	ErrCannotSkipBelowMinimumRoster   = errors.New("skip action not allowed as your roster size will be too small")
+	ErrDraftPausedForIntervention     = errors.New("draft paused awaiting league staff intervention")
+	ErrInvalidDraftPosition           = errors.New("invalid draft position for player")
+	ErrDuplicateDraftPosition         = errors.New("duplicate draft position found")
+	ErrIncompleteDraftOrder           = errors.New("draft order is incomplete")
+	ErrInsufficientPlayersForPlayoffs = errors.New("insufficient players to start a playoff bracket") // should never happen due to previous validations
 
 	// Internal Service Errors
 	ErrInternalService = errors.New("internal service error")

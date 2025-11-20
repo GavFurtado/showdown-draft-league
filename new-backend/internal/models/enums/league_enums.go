@@ -14,15 +14,16 @@ type LeaguePlayoffType string
 type LeaguePlayoffSeedingType string
 
 const (
-	LeagueStatusPending        LeagueStatus = "PENDING"
-	LeagueStatusSetup          LeagueStatus = "SETUP"
-	LeagueStatusDrafting       LeagueStatus = "DRAFTING"
-	LeagueStatusPostDraft      LeagueStatus = "POST_DRAFT"
-	LeagueStatusTransferWindow LeagueStatus = "TRANSFER_WINDOW"
-	LeagueStatusRegularSeason  LeagueStatus = "REGULARSEASON"
-	LeagueStatusPlayoffs       LeagueStatus = "PLAYOFFS"
-	LeagueStatusCompleted      LeagueStatus = "COMPLETED"
-	LeagueStatusCancelled      LeagueStatus = "CANCELLED"
+	LeagueStatusPending           LeagueStatus = "PENDING"
+	LeagueStatusSetup             LeagueStatus = "SETUP"
+	LeagueStatusDrafting          LeagueStatus = "DRAFTING"
+	LeagueStatusPostDraft         LeagueStatus = "POST_DRAFT"
+	LeagueStatusTransferWindow    LeagueStatus = "TRANSFER_WINDOW"
+	LeagueStatusRegularSeason     LeagueStatus = "REGULAR_SEASON"
+	LeagueStatusPostRegularSeason LeagueStatus = "POST_REGULAR_SEASON"
+	LeagueStatusPlayoffs          LeagueStatus = "PLAYOFFS"
+	LeagueStatusCompleted         LeagueStatus = "COMPLETED"
+	LeagueStatusCancelled         LeagueStatus = "CANCELLED"
 )
 
 const (
@@ -55,6 +56,7 @@ var LeagueStatuses = []LeagueStatus{
 	LeagueStatusPostDraft,
 	LeagueStatusTransferWindow,
 	LeagueStatusRegularSeason,
+	LeagueStatusPostRegularSeason,
 	LeagueStatusPlayoffs,
 	LeagueStatusCompleted,
 	LeagueStatusCancelled,
