@@ -39,9 +39,9 @@ const (
 )
 
 const (
-	LeaguePlayoffSeedingTypeStandard LeaguePlayoffSeedingType = "STANDARD"
-	LeaguePlayoffSeedingTypeSeeded   LeaguePlayoffSeedingType = "SEEDED"
-	LeaguePlayoffSeedingTypeByesOnly LeaguePlayoffSeedingType = "BYES_ONLY"
+	LeaguePlayoffSeedingTypeStandard    LeaguePlayoffSeedingType = "STANDARD"
+	LeaguePlayoffSeedingTypeFullySeeded LeaguePlayoffSeedingType = "FULLY_SEEDED"
+	LeaguePlayoffSeedingTypeByesOnly    LeaguePlayoffSeedingType = "BYES_ONLY"
 )
 
 // ------------------------
@@ -202,7 +202,7 @@ func (pt *LeaguePlayoffType) Scan(value any) error {
 
 var LeaguePlayoffSeedingTypes = []LeaguePlayoffSeedingType{
 	LeaguePlayoffSeedingTypeStandard,
-	LeaguePlayoffSeedingTypeSeeded,
+	LeaguePlayoffSeedingTypeFullySeeded,
 	LeaguePlayoffSeedingTypeByesOnly,
 }
 

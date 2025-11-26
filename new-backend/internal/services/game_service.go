@@ -123,7 +123,10 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 		// Single Elim + Fully Seeded is an invalid league configuration
 		// STANDARD or BYES_ONLY are allowed
 		if league.Format.PlayoffSeedingType == enums.LeaguePlayoffSeedingTypeFullySeeded {
-			return fmt.Errorf("%w: %s and %s are incompatible", common.ErrInvalidLeagueConfiguration, enums.LeaguePlayoffTypeSingleElim, enums.LeaguePlayoffSeedingTypeFullySeeded)
+			return fmt.Errorf("%w: %s and %s are incompatible playoff options",
+				common.ErrInvalidLeagueConfiguration,
+				enums.LeaguePlayoffTypeSingleElim,
+				enums.LeaguePlayoffSeedingTypeFullySeeded)
 		}
 		games, err = s.generateSingleEliminationBracket(league, seededPlayers)
 	}
@@ -135,13 +138,16 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 // generateSingleEliminationBracket generates the games for the single elimination bracket
 // It takes into account changes introduced by various Format.PlayoffSeedingType
 // returns a slice of all the generated Games and an error if generation failed
-func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League, seededPlayers []models.Player) error {
+func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League, seededPlayers []models.Player) ([]models.Game, error) {
 	numParticipants := len(seededPlayers)
 	if numParticipants == 0 { // should already be validated by this point
-		return fmt.Errorf("No players provided for bracket generation")
+		return nil, fmt.Errorf("No players provided for bracket generation")
 	}
 
-	idealBracketSize := s.getSmallestPowerOfTwo(numParticipants)
+	// Each round must have a power of 2 # of participants
+	// If this is not the case, bye "psuedo-players" (they always lose) can be added to make it a power of 2 (i.e., naturalByesNeeded)
+	round1PlayerSlots := s.getSmallestPowerOfTwo(numParticipants) // the # of "leaf" nodes not accounting for byes (yet)
+	naturalByesNeeded := round1PlayerSlots - numParticipants
 
 }
 
@@ -151,7 +157,7 @@ func (s *gameServiceImpl) getSmallestPowerOfTwo(n int) int {
 	}
 	p := 1
 	for p <= n {
-		p = p << 1 // div by 2
+		p = p << 1 // p = p*2
 	}
 	return p
 }
