@@ -102,6 +102,10 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 		return err
 	}
 
+	if league.Format.PlayoffParticipantCount%2 == 1 {
+		return fmt.Errorf("cannot have odd number of participants for playoffs")
+	}
+
 	playersByGroup := make([][]models.Player, league.Format.GroupCount)
 	for i := 0; i < league.Format.GroupCount; i++ {
 		playersOfGroupX, err := s.playerRepo.GetPlayersByLeagueAndGroupNumber(league.ID, i+1)
@@ -128,7 +132,7 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 				enums.LeaguePlayoffTypeSingleElim,
 				enums.LeaguePlayoffSeedingTypeFullySeeded)
 		}
-		games, err = s.generateSingleEliminationBracket(league, seededPlayers)
+		generatedGames, err = s.generateSingleEliminationBracket(league, seededPlayers)
 	}
 
 	return nil
@@ -139,6 +143,7 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 // It takes into account changes introduced by various Format.PlayoffSeedingType
 // returns a slice of all the generated Games and an error if generation failed
 func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League, seededPlayers []models.Player) ([]models.Game, error) {
+	var generatedGames []models.Game
 	numParticipants := len(seededPlayers)
 	if numParticipants == 0 { // should already be validated by this point
 		return nil, fmt.Errorf("No players provided for bracket generation")
@@ -146,17 +151,69 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 
 	// Each round must have a power of 2 # of participants
 	// If this is not the case, bye "psuedo-players" (they always lose) can be added to make it a power of 2 (i.e., naturalByesNeeded)
-	round1PlayerSlots := s.getSmallestPowerOfTwo(numParticipants) // the # of "leaf" nodes not accounting for byes (yet)
+	seedingType := league.Format.PlayoffSeedingType
+	round1PlayerSlots := s.getClosestPowerOfTwo(numParticipants) // the # of "leaf" nodes not accounting for byes (yet)
 	naturalByesNeeded := round1PlayerSlots - numParticipants
 
+	if naturalByesNeeded > 0 && seedingType == enums.LeaguePlayoffSeedingTypeStandard {
+		return nil, fmt.Errorf("%w: Cannot construct single elimination bracket. Either add %d participants or enable 'byes' for %d players",
+			common.ErrInvalidLeagueConfiguration,
+			naturalByesNeeded, naturalByesNeeded)
+	}
+	if naturalByesNeeded != league.Format.PlayoffByesCount {
+		return nil, fmt.Errorf("%w: PlayoffByeCount is %d; ValidByeCount is %d", common.ErrInvalidLeagueConfiguration, league.Format.PlayoffByesCount, naturalByesNeeded)
+	}
+
+	// If byes are enabled, append null player objects to the player list
+	// resulting len(seededPlayers) will be a power of two
+	if seedingType == enums.LeaguePlayoffSeedingTypeByesOnly {
+		for naturalByesNeeded != 0 {
+			seededPlayers = append(seededPlayers, models.Player{ID: uuid.Nil})
+			naturalByesNeeded--
+		}
+	}
+
+	// First Round Game generation logic
+	// (the first round is handled separately due to the possibility of byes going into the following round)
+	gameNumber := 0
+	for l, r := 0, len(seededPlayers)-1; l <= r; l, r = l+1, r-1 {
+		roundNumber := 0
+		player1 := seededPlayers[l]
+		player2 := seededPlayers[r]
+		var bracketPositionStr string
+		if player2.ID != uuid.Nil || player1.ID != uuid.Nil { // if no byes in this game
+			gameNumber++
+			bracketPositionStr = fmt.Sprintf("Round %d: Game %d", roundNumber, gameNumber)
+		} else {
+			bracketPositionStr = fmt.Sprintf("Round %d: Bye Game", roundNumber)
+		}
+
+		newGame := models.Game{
+			LeagueID:        league.ID,
+			Player1ID:       player1.ID,
+			Player2ID:       player2.ID,
+			WinnerID:        nil,
+			LoserID:         nil,
+			Player1Wins:     0,
+			Player2Wins:     0,
+			RoundNumber:     roundNumber, // the first round
+			GroupNumber:     nil,
+			GameType:        enums.GameTypePlayoffSingleElim,
+			Status:          enums.GameStatusScheduled,
+			BracketPosition: &bracketPositionStr,
+		}
+	}
 }
 
-func (s *gameServiceImpl) getSmallestPowerOfTwo(n int) int {
+// getNextPowerOfTwo returns the smallest power of two greater than or equal to n.
+// Returns 1 if n is 0 or negative, as 1 is the smallest power of two relevant for bracket sizing.
+// e.g., for: n = 8, p = 8; n = 7, p = 8; n = 12, p = 16
+func (s *gameServiceImpl) getClosestPowerOfTwo(n int) int {
 	if n <= 0 {
 		return 1
 	}
 	p := 1
-	for p <= n {
+	for p < n {
 		p = p << 1 // p = p*2
 	}
 	return p
@@ -363,4 +420,9 @@ func (s *gameServiceImpl) fetchLeagueResource(leagueID uuid.UUID) (*models.Leagu
 		return nil, common.ErrInternalService
 	}
 	return league, nil
+}
+
+// isPowerOfTwo checks if a number is a power of two.
+func isPowerOfTwo(n int) bool {
+	return n > 0 && (n&(n-1) == 0)
 }

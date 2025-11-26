@@ -16,11 +16,16 @@ const (
 	GameStatusCompleted       GameStatus = "COMPLETED"
 	GameStatusDisputed        GameStatus = "DISPUTED"
 )
-
 const (
-	GameTypeRegularSeason GameType = "REGULAR_SEASON"
-	GameTypePlayoffUpper  GameType = "PLAYOFF_UPPER"
-	GameTypePlayoffLower  GameType = "PLAYOFF_LOWER"
+	// REGULAR_SEASON or HYBRID leagues
+	GameTypeRegularSeason     GameType = "REGULAR_SEASON"
+	GameTypePlayoffUpper      GameType = "PLAYOFF_UPPER"
+	GameTypePlayoffLower      GameType = "PLAYOFF_LOWER"
+	GameTypePlayoffSingleElim GameType = "PLAYOFF_SINGLEELIM"
+	// BRACKET_ONLY leagues
+	GameTypeTournamentSingleElim GameType = "TOURNAMENT_SINGLEELIM"
+	GameTypeTournamentUpper      GameType = "TOURNAMENT_UPPER"
+	GameTypeTournamentLower      GameType = "TOURNAMENT_LOWER"
 )
 
 var gameStatuses = []GameStatus{
@@ -28,6 +33,14 @@ var gameStatuses = []GameStatus{
 	GameStatusApprovalPending,
 	GameStatusCompleted,
 	GameStatusDisputed,
+}
+var gameTypes = []GameType{
+	GameTypePlayoffUpper,
+	GameTypePlayoffLower,
+	GameTypeRegularSeason,
+	GameTypeTournamentSingleElim,
+	GameTypeTournamentUpper,
+	GameTypeTournamentLower,
 }
 
 // IsValid checks if the GameStatus is one of the predefined valid statuses.
@@ -66,12 +79,6 @@ func (gt *GameStatus) Scan(value any) error {
 
 func (gt GameStatus) Normalize() GameStatus {
 	return GameStatus(strings.ToUpper(string(gt)))
-}
-
-var gameTypes = []GameType{
-	GameTypePlayoffUpper,
-	GameTypePlayoffLower,
-	GameTypeRegularSeason,
 }
 
 // IsValid checks if the GameStatus is one of the predefined valid statuses.
