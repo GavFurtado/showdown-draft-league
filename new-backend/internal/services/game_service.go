@@ -92,6 +92,10 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 		return err
 	}
 
+	if league.Format.PlayoffType == enums.LeaguePlayoffTypeNone {
+		return fmt.Errorf("playoffs are disabled for this league")
+	}
+
 	if (league.Format.SeasonType == enums.LeagueSeasonTypeBracketOnly && league.Status != enums.LeagueStatusPostDraft) ||
 		(league.Format.SeasonType == enums.LeagueSeasonTypeHybrid && league.Status != enums.LeagueStatusPostRegularSeason) {
 		log.Printf("ERROR: (Service: GeneratePlayoffBracket) - League not in valid status to generate playoff bracket.\n")
@@ -114,10 +118,44 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 		return err
 	}
 
+	var generatedGames []models.Game
+	if league.Format.PlayoffType == enums.LeaguePlayoffTypeSingleElim {
+		// Single Elim + Fully Seeded is an invalid league configuration
+		// STANDARD or BYES_ONLY are allowed
+		if league.Format.PlayoffSeedingType == enums.LeaguePlayoffSeedingTypeFullySeeded {
+			return fmt.Errorf("%w: %s and %s are incompatible", common.ErrInvalidLeagueConfiguration, enums.LeaguePlayoffTypeSingleElim, enums.LeaguePlayoffSeedingTypeFullySeeded)
+		}
+		games, err = s.generateSingleEliminationBracket(league, seededPlayers)
+	}
+
 	return nil
 }
 
 // PRIVATE HELPERS
+// generateSingleEliminationBracket generates the games for the single elimination bracket
+// It takes into account changes introduced by various Format.PlayoffSeedingType
+// returns a slice of all the generated Games and an error if generation failed
+func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League, seededPlayers []models.Player) error {
+	numParticipants := len(seededPlayers)
+	if numParticipants == 0 { // should already be validated by this point
+		return fmt.Errorf("No players provided for bracket generation")
+	}
+
+	idealBracketSize := s.getSmallestPowerOfTwo(numParticipants)
+
+}
+
+func (s *gameServiceImpl) getSmallestPowerOfTwo(n int) int {
+	if n <= 0 {
+		return 1
+	}
+	p := 1
+	for p <= n {
+		p = p << 1 // div by 2
+	}
+	return p
+}
+
 // getSeededPlayers prepares a list of players for playoff bracket generation.
 // It first sorts players within their respective groups. Then, it selects
 // a qualifying number from each group and interleaves them to determine

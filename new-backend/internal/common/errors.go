@@ -40,6 +40,7 @@ var (
 	ErrDuplicateDraftPosition         = errors.New("duplicate draft position found")
 	ErrIncompleteDraftOrder           = errors.New("draft order is incomplete")
 	ErrInsufficientPlayersForPlayoffs = errors.New("insufficient players to start a playoff bracket") // should never happen due to previous validations
+	ErrInvalidLeagueConfiguration     = errors.New("invalid league configuration")
 
 	// Internal Service Errors
 	ErrInternalService = errors.New("internal service error")
