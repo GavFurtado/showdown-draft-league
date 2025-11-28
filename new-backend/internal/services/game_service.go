@@ -126,6 +126,7 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 
 	var generatedGames []models.Game
 	if league.Format.PlayoffType == enums.LeaguePlayoffTypeSingleElim {
+		// Single Elimination
 		// Single Elim + Fully Seeded is an invalid league configuration
 		// STANDARD or BYES_ONLY are allowed
 		if league.Format.PlayoffSeedingType == enums.LeaguePlayoffSeedingTypeFullySeeded {
@@ -139,8 +140,15 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 			log.Printf("ERROR: (Service: GeneratePlayoffBracket) - Error generating single elimination bracket for league %s: %v\n", leagueID, err)
 			return err
 		}
+	} else {
+		// Double Elimination
+		// compatible with all types of PlayoffSeedingType
+		generatedGames, err = s.generateDoubleEliminationBracket(league, seededPlayers)
+		if err != nil {
+			log.Printf("ERROR: (Service: GeneratePlayoffBracket) - Error generating single elimination bracket for league %s: %v\n", leagueID, err)
+			return err
+		}
 	}
-
 	if len(generatedGames) > 0 {
 		err = s.gameRepo.CreateGames(generatedGames)
 		if err != nil {
@@ -153,6 +161,17 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 }
 
 // PRIVATE HELPERS
+
+func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League, seededPlayers []models.Player) ([]models.Game, error) {
+	var generatedGames []models.Game
+	numParticipants := len(seededPlayers)
+	if numParticipants == 0 { // should already be validated by this point
+		return nil, fmt.Errorf("No players provided for bracket generation")
+	}
+
+	return generatedGames, nil
+}
+
 // generateSingleEliminationBracket generates the games for the single elimination bracket
 // It takes into account changes introduced by various Format.PlayoffSeedingType
 // returns a slice of all the generated Games and an error if generation failed
