@@ -135,6 +135,18 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 				enums.LeaguePlayoffSeedingTypeFullySeeded)
 		}
 		generatedGames, err = s.generateSingleEliminationBracket(league, seededPlayers)
+		if err != nil {
+			log.Printf("ERROR: (Service: GeneratePlayoffBracket) - Error generating single elimination bracket for league %s: %v\n", leagueID, err)
+			return err
+		}
+	}
+
+	if len(generatedGames) > 0 {
+		err = s.gameRepo.CreateGames(generatedGames)
+		if err != nil {
+			log.Printf("ERROR: (Service: GeneratePlayoffBracket) - Repository error creating games for league %s: %v\n", leagueID, err)
+			return common.ErrInternalService
+		}
 	}
 
 	return nil
@@ -275,6 +287,12 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 			}
 		}
 		currentRoundGames = nextRoundGames
+	}
+
+	// rename the last game to "Grand Final"
+	if len(generatedGames) > 0 {
+		bracketPositionStr := "Grand Final"
+		generatedGames[len(generatedGames)-1].BracketPosition = &bracketPositionStr
 	}
 
 	return generatedGames, nil
