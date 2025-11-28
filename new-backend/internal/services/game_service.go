@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
+	"math/bits"
 	"math/rand/v2"
 	"sort"
 
@@ -32,6 +34,7 @@ func NewGameService(
 	playerRepo repositories.PlayerRepository,
 ) GameService {
 	return &gameServiceImpl{
+		gameRepo:   gameRepo,
 		leagueRepo: leagueRepo,
 		playerRepo: playerRepo,
 	}
@@ -175,20 +178,26 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 
 	// First Round Game generation logic
 	// (the first round is handled separately due to the possibility of byes going into the following round)
-	gameNumber := 0
+	var currentRoundGames []models.Game
+	roundNumber, gameNumberInRound := 1, 0
 	for l, r := 0, len(seededPlayers)-1; l <= r; l, r = l+1, r-1 {
-		roundNumber := 0
 		player1 := seededPlayers[l]
 		player2 := seededPlayers[r]
 		var bracketPositionStr string
-		if player2.ID != uuid.Nil || player1.ID != uuid.Nil { // if no byes in this game
-			gameNumber++
-			bracketPositionStr = fmt.Sprintf("Round %d: Game %d", roundNumber, gameNumber)
-		} else {
+		if player2.ID != uuid.Nil && player1.ID != uuid.Nil { // if no byes in this game
+			gameNumberInRound++
+			bracketPositionStr = fmt.Sprintf("Round %d: Game %d", roundNumber, gameNumberInRound)
+		} else { // if one of the players is a bye
+			// don't increment the gameNumber count
 			bracketPositionStr = fmt.Sprintf("Round %d: Bye Game", roundNumber)
 		}
 
+		// Create new game object
+		// Why uuid.New()? We generate the uuid here instead of letting the db do it
+		// because IDs are needed for other game objects. Technically isn't needed for
+		// round 1 but it's for consistency
 		newGame := models.Game{
+			ID:              uuid.New(),
 			LeagueID:        league.ID,
 			Player1ID:       player1.ID,
 			Player2ID:       player2.ID,
@@ -196,13 +205,59 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 			LoserID:         nil,
 			Player1Wins:     0,
 			Player2Wins:     0,
-			RoundNumber:     roundNumber, // the first round
+			RoundNumber:     roundNumber,
 			GroupNumber:     nil,
 			GameType:        enums.GameTypePlayoffSingleElim,
 			Status:          enums.GameStatusScheduled,
 			BracketPosition: &bracketPositionStr,
 		}
+		generatedGames = append(generatedGames, newGame)
+		currentRoundGames = append(currentRoundGames, newGame)
 	}
+
+	totalRounds := bits.Len(uint(len(seededPlayers))) - 1 // integer floor log 2
+	for roundNum := 2; roundNumber <= totalRounds; roundNumber++ {
+		var nextRoundGames []models.Game
+		gameNumberInRound := 0
+
+		// Each pair of games from the previous round feeds into one game in the new round
+		for i := 0; i < len(currentRoundGames); i += 2 {
+			gameNumberInRound++
+			bracketPositionStr := fmt.Sprintf("Round %d: Game %d", roundNum, gameNumberInRound)
+
+			newGamePlayer1ID := uuid.Nil
+			// for round 2 game, check if either of the round 1 games had a bye
+			// if yes, set the new round 2 game's player1ID to the valid player
+			if roundNum == 2 &&
+				(currentRoundGames[i].Player1ID == uuid.Nil || currentRoundGames[i].Player2ID == uuid.Nil) ||
+				(currentRoundGames[i+1].Player1ID == uuid.Nil || currentRoundGames[i+1].Player2ID == uuid.Nil) {
+				// set uuid of newGamePlayer1ID
+				// except if there's atleast 2 byes we have both, prev round games are currently bye games FUUUUUCCCCKKK
+				// well guess we have to do the less unified less cleaner approach of separating out the player's getting byes
+				// vs those that aren't
+			}
+
+			newGame := models.Game{
+				LeagueID:        league.ID,
+				Player1ID:       uuid.Nil,
+				Player2ID:       uuid.Nil,
+				WinnerID:        nil,
+				LoserID:         nil,
+				Player1Wins:     0,
+				Player2Wins:     0,
+				RoundNumber:     roundNumber,
+				GroupNumber:     nil,
+				GameType:        enums.GameTypePlayoffSingleElim,
+				Status:          enums.GameStatusScheduled,
+				BracketPosition: &bracketPositionStr,
+			}
+			nextRoundGames = append(nextRoundGames, newGame)
+			generatedGames = append(generatedGames, newGame)
+		}
+		currentRoundGames = nextRoundGames
+	}
+
+	return generatedGames, nil
 }
 
 // getNextPowerOfTwo returns the smallest power of two greater than or equal to n.
