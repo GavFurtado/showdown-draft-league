@@ -66,7 +66,7 @@ func (s *gameServiceImpl) GenerateRegularSeasonGames(leagueID uuid.UUID) error {
 		playersByGroupNumber[i] = players
 	}
 
-	var allGeneratedGames []*models.Game
+	var allGeneratedGames []models.Game
 	for groupIndex, playersInGroup := range playersByGroupNumber {
 		groupNumber := groupIndex + 1
 		games, err := s.generateRoundRobinGamesForGroup(league.ID, playersInGroup, groupNumber)
@@ -339,9 +339,9 @@ func (s *gameServiceImpl) getSeededPlayers(league *models.League, playersByGroup
 
 	// 2. Interleave the top qualifiers from each group
 	// Iterate through the 'rank' within each group
-	for rank := 0; rank < numPlayersToQualifyPerGroup; rank++ {
+	for rank := range numPlayersToQualifyPerGroup {
 		// Then iterate through each group to pick the player at the current rank
-		for groupIdx := 0; groupIdx < league.Format.GroupCount; groupIdx++ {
+		for groupIdx := range league.Format.GroupCount {
 			// Check if this group has a player at the current rank
 			if rank < len(playersByGroup[groupIdx]) { // should never be false
 				qualifyingPlayers = append(qualifyingPlayers, playersByGroup[groupIdx][rank])
@@ -388,7 +388,7 @@ func sortPlayers(players []models.Player) {
 // Does not persist to the database.
 // Uses the Circle Method algorithm. https://en.wikipedia.org/wiki/Round-robin_tournament#Circle_method
 // For groups with odd player counts, every round a player gets a bye (no game for that week)
-func (s *gameServiceImpl) generateRoundRobinGamesForGroup(leagueID uuid.UUID, players []models.Player, groupNumber int) ([]*models.Game, error) {
+func (s *gameServiceImpl) generateRoundRobinGamesForGroup(leagueID uuid.UUID, players []models.Player, groupNumber int) ([]models.Game, error) {
 	numActualPlayers := len(players)
 	if numActualPlayers < 2 {
 		// impossible since games cannot be scheduled in the first place
@@ -416,14 +416,14 @@ func (s *gameServiceImpl) generateRoundRobinGamesForGroup(leagueID uuid.UUID, pl
 	rotatingPlayers := make([]uuid.UUID, numPlayerInCircle-1)
 	copy(rotatingPlayers, playerIDsForSchedule[1:]) // rest of the players
 
-	var games []*models.Game // Game but with temporary group numbers that are later re-assigned
-	for RoundIdx := 0; RoundIdx < numRounds; RoundIdx++ {
+	var games []models.Game // Game but with temporary group numbers that are later re-assigned
+	for RoundIdx := range numRounds {
 		// Pairings for the current round
 
 		// Pair 1: Fixed Player vs Player opposite in the circle
 		playerOppositeID := rotatingPlayers[len(rotatingPlayers)/2]
 		if fixedPlayerID != uuid.Nil && playerOppositeID != uuid.Nil {
-			games = append(games, &models.Game{
+			games = append(games, models.Game{
 				LeagueID:    leagueID,
 				Player1ID:   fixedPlayerID,
 				Player2ID:   playerOppositeID,
@@ -452,7 +452,7 @@ func (s *gameServiceImpl) generateRoundRobinGamesForGroup(leagueID uuid.UUID, pl
 			p1ID := rotatingPlayers[i]
 			p2ID := rotatingPlayers[len(rotatingPlayers)-1-i] // opposite player of 'i'
 			if p1ID != uuid.Nil && p2ID != uuid.Nil {
-				games = append(games, &models.Game{
+				games = append(games, models.Game{
 					LeagueID:    leagueID,
 					Player1ID:   p1ID,
 					Player2ID:   p2ID,
@@ -513,9 +513,4 @@ func (s *gameServiceImpl) fetchLeagueResource(leagueID uuid.UUID) (*models.Leagu
 		return nil, common.ErrInternalService
 	}
 	return league, nil
-}
-
-// isPowerOfTwo checks if a number is a power of two.
-func isPowerOfTwo(n int) bool {
-	return n > 0 && (n&(n-1) == 0)
 }
