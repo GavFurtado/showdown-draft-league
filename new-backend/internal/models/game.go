@@ -29,9 +29,9 @@ type Game struct {
 	BracketPosition     *string          `gorm:"column:bracket_position" json:"BracketPosition"` // flavour text for the type of playoff game
 	ShowdownReplayLinks []string         `gorm:"type:jsonb;column:showdown_replay_links" binding:"url" json:"ShowdownReplayLinks"`
 
-	ReportingPlayerID uuid.UUID  `gorm:"type:uuid;not null;column:reporting_player_id" json:"ReportingPlayerID"`
-	WinnerToGameID    *uuid.UUID `gorm:"type:uuid;column:winner_to_game_id" json:"WinnerToGameID"`
-	LoserToGameID     *uuid.UUID `gorm:"type:uuid;column:loser_to_game_id" json:"LoserToGameID"`
+	ReportingPlayerID uuid.UUID `gorm:"type:uuid;not null;column:reporting_player_id" json:"ReportingPlayerID"`
+	WinnerToGameID    uuid.UUID `gorm:"type:uuid;column:winner_to_game_id" json:"WinnerToGameID"`
+	LoserToGameID     uuid.UUID `gorm:"type:uuid;column:loser_to_game_id" json:"LoserToGameID"`
 
 	CreatedAt time.Time      `json:"CreatedAt" gorm:"column:created_at"`
 	UpdatedAt time.Time      `json:"UpdatedAt" gorm:"column:updated_at"`

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math"
 	"math/bits"
 	"math/rand/v2"
 	"sort"
@@ -155,8 +154,8 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 	// Each round must have a power of 2 # of participants
 	// If this is not the case, bye "psuedo-players" (they always lose) can be added to make it a power of 2 (i.e., naturalByesNeeded)
 	seedingType := league.Format.PlayoffSeedingType
-	round1PlayerSlots := s.getClosestPowerOfTwo(numParticipants) // the # of "leaf" nodes not accounting for byes (yet)
-	naturalByesNeeded := round1PlayerSlots - numParticipants
+	nextPowerOfTwo := s.getClosestPowerOfTwo(numParticipants)
+	naturalByesNeeded := nextPowerOfTwo - numParticipants
 
 	if naturalByesNeeded > 0 && seedingType == enums.LeaguePlayoffSeedingTypeStandard {
 		return nil, fmt.Errorf("%w: Cannot construct single elimination bracket. Either add %d participants or enable 'byes' for %d players",
@@ -164,38 +163,38 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 			naturalByesNeeded, naturalByesNeeded)
 	}
 	if naturalByesNeeded != league.Format.PlayoffByesCount {
-		return nil, fmt.Errorf("%w: PlayoffByeCount is %d; ValidByeCount is %d", common.ErrInvalidLeagueConfiguration, league.Format.PlayoffByesCount, naturalByesNeeded)
+		return nil, fmt.Errorf("%w: Bye count is set to %d but valid is %d for %d participants", common.ErrInvalidLeagueConfiguration, league.Format.PlayoffByesCount, naturalByesNeeded, numParticipants)
 	}
 
-	// If byes are enabled, append null player objects to the player list
-	// resulting len(seededPlayers) will be a power of two
+	var playersGettingByes []models.Player
+	var playersInRound1 []models.Player
 	if seedingType == enums.LeaguePlayoffSeedingTypeByesOnly {
-		for naturalByesNeeded != 0 {
-			seededPlayers = append(seededPlayers, models.Player{ID: uuid.Nil})
-			naturalByesNeeded--
-		}
+		// The first 'PlayoffByesCount' players get byes
+		playersGettingByes = seededPlayers[:league.Format.PlayoffByesCount]
+		// The remaining players play in Round 1
+		playersInRound1 = seededPlayers[league.Format.PlayoffByesCount:]
+	} else {
+		// If no byes, all players are in Round 1
+		playersInRound1 = seededPlayers
 	}
 
 	// First Round Game generation logic
 	// (the first round is handled separately due to the possibility of byes going into the following round)
 	var currentRoundGames []models.Game
 	roundNumber, gameNumberInRound := 1, 0
-	for l, r := 0, len(seededPlayers)-1; l <= r; l, r = l+1, r-1 {
-		player1 := seededPlayers[l]
-		player2 := seededPlayers[r]
+	for l, r := 0, len(playersInRound1)-1; l <= r; l, r = l+1, r-1 {
+		player1 := playersInRound1[l]
+		player2 := playersInRound1[r]
 		var bracketPositionStr string
-		if player2.ID != uuid.Nil && player1.ID != uuid.Nil { // if no byes in this game
-			gameNumberInRound++
-			bracketPositionStr = fmt.Sprintf("Round %d: Game %d", roundNumber, gameNumberInRound)
-		} else { // if one of the players is a bye
-			// don't increment the gameNumber count
-			bracketPositionStr = fmt.Sprintf("Round %d: Bye Game", roundNumber)
-		}
+
+		gameNumberInRound++
+		bracketPositionStr = fmt.Sprintf("Round %d: Game %d", roundNumber, gameNumberInRound)
 
 		// Create new game object
-		// Why uuid.New()? We generate the uuid here instead of letting the db do it
-		// because IDs are needed for other game objects. Technically isn't needed for
-		// round 1 but it's for consistency
+		// NOTE: Why uuid.New()? Everywhere else we let db/gorm do it.
+		// because IDs are needed for other game objects.
+		// It isn't really needed for round 1 but
+		// left here for this explanation and for consistency
 		newGame := models.Game{
 			ID:              uuid.New(),
 			LeagueID:        league.ID,
@@ -215,32 +214,47 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 		currentRoundGames = append(currentRoundGames, newGame)
 	}
 
-	totalRounds := bits.Len(uint(len(seededPlayers))) - 1 // integer floor log 2
-	for roundNum := 2; roundNumber <= totalRounds; roundNumber++ {
+	// For subsequent rounds, we generate placeholder game objects
+	// with no player IDs filled in with exception to players
+	// that were granted a bye to round 2
+	totalRounds := bits.Len(uint(nextPowerOfTwo)) - 1 // integer log 2 (floor)
+	j := 0
+	for roundNumber := 2; roundNumber <= totalRounds; roundNumber++ {
 		var nextRoundGames []models.Game
 		gameNumberInRound := 0
 
 		// Each pair of games from the previous round feeds into one game in the new round
-		for i := 0; i < len(currentRoundGames); i += 2 {
+		i := 0
+		for i < len(currentRoundGames) {
 			gameNumberInRound++
-			bracketPositionStr := fmt.Sprintf("Round %d: Game %d", roundNum, gameNumberInRound)
+			bracketPositionStr := fmt.Sprintf("Round %d: Game %d", roundNumber, gameNumberInRound)
 
+			newGameID := uuid.New()
 			newGamePlayer1ID := uuid.Nil
-			// for round 2 game, check if either of the round 1 games had a bye
+
+			byeGranted := false
+			// for round 2 games, check the playersGettingByesArray
 			// if yes, set the new round 2 game's player1ID to the valid player
-			if roundNum == 2 &&
-				(currentRoundGames[i].Player1ID == uuid.Nil || currentRoundGames[i].Player2ID == uuid.Nil) ||
-				(currentRoundGames[i+1].Player1ID == uuid.Nil || currentRoundGames[i+1].Player2ID == uuid.Nil) {
+			if roundNumber == 2 && j < len(playersGettingByes) {
 				// set uuid of newGamePlayer1ID
-				// except if there's atleast 2 byes we have both, prev round games are currently bye games FUUUUUCCCCKKK
-				// well guess we have to do the less unified less cleaner approach of separating out the player's getting byes
-				// vs those that aren't
+				newGamePlayer1ID = playersGettingByes[j].ID
+				j++
+				byeGranted = true
+			}
+
+			// link the prev. round game(s) to this game
+			// by setting winnerToGameID for those game(s)
+			// 2 games when no bye is granted and 1 when bye is granted
+			currentRoundGames[i].WinnerToGameID = newGameID
+			if !byeGranted {
+				currentRoundGames[i+1].WinnerToGameID = newGameID
 			}
 
 			newGame := models.Game{
+				ID:              newGameID,
 				LeagueID:        league.ID,
-				Player1ID:       uuid.Nil,
-				Player2ID:       uuid.Nil,
+				Player1ID:       newGamePlayer1ID, // playerID with bye or placeholder uuid.Nil
+				Player2ID:       uuid.Nil,         // placeholder uuid.Nil
 				WinnerID:        nil,
 				LoserID:         nil,
 				Player1Wins:     0,
@@ -253,6 +267,12 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 			}
 			nextRoundGames = append(nextRoundGames, newGame)
 			generatedGames = append(generatedGames, newGame)
+
+			if byeGranted {
+				i += 1
+			} else {
+				i += 2
+			}
 		}
 		currentRoundGames = nextRoundGames
 	}
