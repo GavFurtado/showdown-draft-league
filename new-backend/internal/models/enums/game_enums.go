@@ -21,11 +21,13 @@ const (
 	GameTypeRegularSeason     GameType = "REGULAR_SEASON"
 	GameTypePlayoffUpper      GameType = "PLAYOFF_UPPER"
 	GameTypePlayoffLower      GameType = "PLAYOFF_LOWER"
+	GameTypePlayoffGrandFinal GameType = "GRAND_FINAL"
 	GameTypePlayoffSingleElim GameType = "PLAYOFF_SINGLEELIM"
 	// BRACKET_ONLY leagues
 	GameTypeTournamentSingleElim GameType = "TOURNAMENT_SINGLEELIM"
 	GameTypeTournamentUpper      GameType = "TOURNAMENT_UPPER"
 	GameTypeTournamentLower      GameType = "TOURNAMENT_LOWER"
+	GameTypeTournamentGrandFinal GameType = "GRAND_FINAL"
 )
 
 var gameStatuses = []GameStatus{
@@ -37,6 +39,8 @@ var gameStatuses = []GameStatus{
 var gameTypes = []GameType{
 	GameTypePlayoffUpper,
 	GameTypePlayoffLower,
+	GameTypePlayoffGrandFinal,
+	GameTypePlayoffSingleElim,
 	GameTypeRegularSeason,
 	GameTypeTournamentSingleElim,
 	GameTypeTournamentUpper,

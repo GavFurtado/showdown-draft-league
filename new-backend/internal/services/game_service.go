@@ -200,7 +200,6 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 	}
 
 	// First Round Game generation logic
-	// (the first round is handled separately due to the possibility of byes going into the following round)
 	var currentRoundGames []models.Game
 	roundNumber, gameNumberInRound := 1, 0
 	for l, r := 0, len(playersInRound1)-1; l <= r; l, r = l+1, r-1 {
@@ -238,7 +237,7 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 	// For subsequent rounds, we generate placeholder game objects
 	// with no player IDs filled in with exception to players
 	// that were granted a bye to round 2
-	totalRounds := bits.Len(uint(nextPowerOfTwo)) - 1 // integer log 2 (floor)
+	totalRounds := getLog2(nextPowerOfTwo)
 	j := 0
 	for roundNumber := 2; roundNumber <= totalRounds; roundNumber++ {
 		var nextRoundGames []models.Game
@@ -254,8 +253,8 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 			newGamePlayer1ID := uuid.Nil
 
 			byeGranted := false
-			// for round 2 games, check the playersGettingByesArray
-			// if yes, set the new round 2 game's player1ID to the valid player
+			// for round 2 games, check the playersGettingByes slice
+			// set the new round 2 game's player1ID to the valid player if it exists in the array
 			if roundNumber == 2 && j < len(playersGettingByes) {
 				// set uuid of newGamePlayer1ID
 				newGamePlayer1ID = playersGettingByes[j].ID
@@ -298,10 +297,11 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 		currentRoundGames = nextRoundGames
 	}
 
-	// rename the last game to "Grand Final"
+	// rename the last game to "Grand Final" and set the correct type
 	if len(generatedGames) > 0 {
 		bracketPositionStr := "Grand Final"
 		generatedGames[len(generatedGames)-1].BracketPosition = &bracketPositionStr
+		generatedGames[len(generatedGames)-1].GameType = enums.GameTypePlayoffGrandFinal
 	}
 
 	return generatedGames, nil
@@ -371,32 +371,227 @@ func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League
 				common.ErrInvalidLeagueConfiguration, byeCount, nPlayers_UB1)
 		}
 
+		playersStartingInUB1 = remainingPlayers[:nPlayers_UB1]
+		playersStartingInLB1 = remainingPlayers[nPlayers_UB1:] // nRemainingPlayers / 3
 	} else { // Standard seeding
+		playersStartingInUB1 = seededPlayers // All players start in UB Round 1
 		if !isPowerOfTwo(numParticipants) {
 			return nil, fmt.Errorf("%w: For STANDARD double elimination, number of participants must be a positive power of two", common.ErrInvalidLeagueConfiguration)
 		}
 	}
 
+	// This may or may not be calculated depending on seeding type, so we're recalculating it
+	var nEffectivePlayers_UB2 int
+	if seedingType == enums.LeaguePlayoffSeedingTypeStandard {
+		// For standard, all participants play in R1, so UB2 participants are half of total.
+		// numParticipants is already validated to be a power of two.
+		nEffectivePlayers_UB2 = numParticipants / 2
+	} else {
+		// For BYES_ONLY and FULLY_SEEDED, calculate based on byes and UB R1 players.
+		nEffectivePlayers_UB2 = len(playersGettingByes) + (len(playersStartingInUB1) / 2)
+	}
+	if nEffectivePlayers_UB2 <= 0 || !isPowerOfTwo(nEffectivePlayers_UB2) {
+		return nil, fmt.Errorf("%w: Internal error: Calculated effective players for Upper Bracket Round 2 (%d) is not a positive power of two. This indicates a logic flaw in seeding validation.",
+			common.ErrInternalService, nEffectivePlayers_UB2)
+	}
+
+	var currentUpperRoundGames []models.Game
+	var currentLowerRoundGames []models.Game
+
+	// First UB Round Game generation
+	ubRoundNumber, lbRoundNumber, gameNumberInRound := 1, 1, 0
+	for l, r := 0, len(playersStartingInUB1)-1; l <= r; l, r = l+1, r-1 {
+		player1 := playersStartingInUB1[l]
+		player2 := playersStartingInUB1[r]
+
+		gameNumberInRound++
+		bracketPositionStr := fmt.Sprintf("Upper Round %d: Game %d", ubRoundNumber, gameNumberInRound)
+
+		// Create new game object
+		newGame := models.Game{
+			ID:              uuid.New(),
+			LeagueID:        league.ID,
+			Player1ID:       player1.ID,
+			Player2ID:       player2.ID,
+			WinnerID:        nil,
+			LoserID:         nil,
+			Player1Wins:     0,
+			Player2Wins:     0,
+			RoundNumber:     ubRoundNumber,
+			GroupNumber:     nil,
+			GameType:        enums.GameTypePlayoffUpper,
+			Status:          enums.GameStatusScheduled,
+			BracketPosition: &bracketPositionStr,
+		}
+		generatedGames = append(generatedGames, newGame)
+		currentUpperRoundGames = append(currentUpperRoundGames, newGame)
+	}
+
+	// First LB Round Game Generation
+	gameNumberInRound = 0
+	for i := 0; i < len(currentUpperRoundGames); i++ { // one LB round 1 game for each UB round 1 game
+		gameNumberInRound++
+		bracketPositionStr := fmt.Sprintf("Lower Round %d: Game %d", lbRoundNumber, gameNumberInRound)
+
+		newGameID := uuid.New()
+		player1ID := uuid.Nil
+		if len(playersStartingInLB1) > 0 { // true, for FULLY_SEEDED DE brackets
+			player1ID = playersStartingInLB1[i].ID
+		}
+		player2ID := uuid.Nil
+
+		newGame := models.Game{
+			ID:              uuid.New(),
+			LeagueID:        league.ID,
+			Player1ID:       player1ID,
+			Player2ID:       player2ID,
+			WinnerID:        nil,
+			LoserID:         nil,
+			Player1Wins:     0,
+			Player2Wins:     0,
+			RoundNumber:     lbRoundNumber,
+			GroupNumber:     nil,
+			GameType:        enums.GameTypePlayoffLower,
+			Status:          enums.GameStatusScheduled,
+			BracketPosition: &bracketPositionStr,
+		}
+		currentLowerRoundGames = append(currentLowerRoundGames, newGame)
+		generatedGames = append(generatedGames, newGame)
+
+		// link the upper bracket game to this new Game
+		currentUpperRoundGames[i].LoserToGameID = newGameID
+	}
+
+	// Subsequent round generation for upper and lower bracket
+	totalUpperBracketRounds := getLog2(nextPowerOfTwo)
+	totalLowerBracketRounds := 2*getLog2(nEffectivePlayers_UB2) - 2 // is always greater than totalUpperBracketRounds
+	ubRoundNumber = 2
+	lbRoundNumber = 2
+	j := 0
+
+	ubGamesFromRound := make(map[int][]models.Game) // Key: ubRoundNumber, Value: slice of games from ubRoundNumber
+
+	// For every lower bracket game from round 2 onwards,
+	// we alternate between "Loser Enter" rounds and "Winner Play" rounds.
+	// In "Loser Enter" rounds, Losers from the UB round enter the LB
+	// In "Winner Play" rounds, the winners from previous LB round play against each other
+	loserEnterRound := true // LB Round 2 is always a "Loser Enter" round
+
+	// Loop until only one winner remains in UB and one in LB
+	for len(currentUpperRoundGames) > 1 || len(currentLowerRoundGames) > 1 {
+		// upper and lower bracket round pairs
+		var nextUpperRoundGames []models.Game
+		var nextLowerRoundGames []models.Game
+		gameNumberInRound = 0
+
+		// Upper Bracket round
+		i := 0
+		for ubRoundNumber <= totalUpperBracketRounds && i < len(currentUpperRoundGames) {
+			gameNumberInRound++
+			bracketPositionStr := fmt.Sprintf("Upper Round %d: Game %d", ubRoundNumber, gameNumberInRound)
+
+			newGameID := uuid.New()
+			player1ID := uuid.Nil
+			player2ID := uuid.Nil
+
+			// for round 2 games, check the playersGettingByes array
+			// set the new round 2 game's player1ID to the valid player if it exists in the array
+			byeGranted := false
+			if ubRoundNumber == 2 && len(playersGettingByes) != 0 && j < len(playersGettingByes) {
+				// set uuid of player1ID
+				player1ID = playersGettingByes[j].ID
+				j++
+				byeGranted = true
+			}
+
+			// link the previous round game(s) to this game
+			// by setting winnerToGameID for those game(s)
+			// 2 games when no bye is granted and 1 when bye is granted
+			currentUpperRoundGames[i].WinnerToGameID = newGameID
+			if !byeGranted {
+				currentUpperRoundGames[i+1].WinnerToGameID = newGameID
+			}
+
+			newGame := models.Game{
+				ID:              newGameID,
+				LeagueID:        league.ID,
+				Player1ID:       player1ID, // playerID with bye or placeholder uuid.Nil
+				Player2ID:       player2ID, // placeholder uuid.Nil
+				WinnerID:        nil,
+				LoserID:         nil,
+				Player1Wins:     0,
+				Player2Wins:     0,
+				RoundNumber:     ubRoundNumber,
+				GroupNumber:     nil,
+				GameType:        enums.GameTypePlayoffSingleElim,
+				Status:          enums.GameStatusScheduled,
+				BracketPosition: &bracketPositionStr,
+			}
+			nextUpperRoundGames = append(nextUpperRoundGames, newGame)
+			generatedGames = append(generatedGames, newGame)
+
+			// Store losers from this UB round for later LB rounds
+			ubLosersFromRound[ubRoundNumber] = append(ubLosersFromRound[ubRoundNumber], newGame)
+
+			// if a bye was granted, we fed one game of previous round to this new round game
+			// so we check the next one
+			if byeGranted {
+				i += 1
+			} else {
+				// if bye wasn't granted, we fed two games of the previous round to this game
+				// so we check the next pair of games
+				i += 2
+			}
+			currentUpperRoundGames = nextUpperRoundGames
+			ubRoundNumber++
+		}
+
+		// Lower Bracket round
+		i = 0
+		gameNumberInRound = 0
+		for i < len(currentLowerRoundGames) {
+			gameNumberInRound++
+			bracketPositionStr := fmt.Sprintf("Lower Round %d: Game %d", ubRoundNumber, gameNumberInRound)
+
+			newGameID := uuid.New()
+
+			// set the WinnerToGameID and/or LoserToGameID
+			// based on the type of lower bracket round
+			if loserEnterRound {
+
+			} else {
+
+			}
+
+			loserEnterRound = !loserEnterRound
+			lbRoundNumber++
+		}
+	}
 	return generatedGames, nil
 }
 
 // getNextPowerOfTwo returns the smallest power of two greater than or equal to n.
 // Returns 1 if n is 0 or negative, as 1 is the smallest power of two relevant for bracket sizing.
 // e.g., for: n = 8, p = 8; n = 7, p = 8; n = 12, p = 16
-func (s *gameServiceImpl) getClosestPowerOfTwo(n int) int {
-	if n <= 0 {
+func (s *gameServiceImpl) getClosestPowerOfTwo(N int) int {
+	if N <= 0 {
 		return 1
 	}
 	p := 1
-	for p < n {
+	for p < N {
 		p = p << 1 // p = p*2
 	}
 	return p
 }
 
+// getLog2 returns the floored integer log to the base 2 of N
+func getLog2(N int) int {
+	return bits.Len(uint(N)) - 1
+}
+
 // isPowerOfTwo checks if a number is a power of two.
-func isPowerOfTwo(n int) bool {
-	return n > 0 && (n&(n-1) == 0)
+func isPowerOfTwo(N int) bool {
+	return N > 0 && (N&(N-1) == 0)
 }
 
 // getSeededPlayers prepares a list of players for playoff bracket generation.
