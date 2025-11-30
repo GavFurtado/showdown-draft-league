@@ -162,16 +162,6 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 
 // PRIVATE HELPERS
 
-func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League, seededPlayers []models.Player) ([]models.Game, error) {
-	var generatedGames []models.Game
-	numParticipants := len(seededPlayers)
-	if numParticipants == 0 { // should already be validated by this point
-		return nil, fmt.Errorf("No players provided for bracket generation")
-	}
-
-	return generatedGames, nil
-}
-
 // generateSingleEliminationBracket generates the games for the single elimination bracket
 // It takes into account changes introduced by various Format.PlayoffSeedingType
 // returns a slice of all the generated Games and an error if generation failed
@@ -273,7 +263,7 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 				byeGranted = true
 			}
 
-			// link the prev. round game(s) to this game
+			// link the previous round game(s) to this game
 			// by setting winnerToGameID for those game(s)
 			// 2 games when no bye is granted and 1 when bye is granted
 			currentRoundGames[i].WinnerToGameID = newGameID
@@ -317,6 +307,79 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 	return generatedGames, nil
 }
 
+func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League, seededPlayers []models.Player) ([]models.Game, error) {
+	// Upper Bracket (UB); Lower Bracket (LB)
+	var generatedGames []models.Game
+	numParticipants := len(seededPlayers)
+	if numParticipants == 0 { // should already be validated by this point
+		return nil, fmt.Errorf("No players provided for bracket generation")
+	}
+
+	seedingType := league.Format.PlayoffSeedingType
+	byeCount := league.Format.PlayoffByesCount
+	nextPowerOfTwo := s.getClosestPowerOfTwo(numParticipants)
+	playersGettingByes := []models.Player{}
+	playersStartingInUB1 := []models.Player{}
+	playersStartingInLB1 := []models.Player{} // only for fully seeded brackets
+	remainingPlayers := []models.Player{}     // numParticipants - Format.PlayoffByeCount
+
+	if byeCount != 0 && seedingType == enums.LeaguePlayoffSeedingTypeStandard {
+		return nil, fmt.Errorf("%w: Bye count must be 0 for Standard Seeded brackets.", common.ErrInvalidLeagueConfiguration)
+	}
+
+	// initialize remainingPlayers and playersGettingByes
+	if byeCount > 0 {
+		playersGettingByes = seededPlayers[:byeCount]
+		remainingPlayers = seededPlayers[byeCount:]
+	} else {
+		remainingPlayers = seededPlayers
+	}
+
+	// initial validation of numParticipant
+	if seedingType == enums.LeaguePlayoffSeedingTypeByesOnly {
+		naturalByesNeeded := nextPowerOfTwo - numParticipants
+		if naturalByesNeeded != byeCount {
+			return nil, fmt.Errorf("%w: For BYES_ONLY Double Elimination with %d particpants, number of byes (Current: %d) allowed is %d.",
+				common.ErrInvalidLeagueConfiguration, numParticipants, byeCount, naturalByesNeeded)
+		}
+	} else if seedingType == enums.LeaguePlayoffSeedingTypeFullySeeded {
+		nPlayersGettingByes := len(playersGettingByes)
+		nRemainingPlayers := len(remainingPlayers) // nPlayers_UB1 + nPlayers_LB1
+
+		if nRemainingPlayers%3 != 0 {
+			return nil, fmt.Errorf("%w: For FULLY_SEEDED Double Elimination, number of players that don't get a bye (Current: %d) must be divisible by 3.",
+				common.ErrInvalidLeagueConfiguration, nRemainingPlayers)
+		}
+
+		nPlayers_UB1 := (2 * nRemainingPlayers) / 3
+		if nPlayers_UB1 <= 0 || nPlayers_UB1%2 != 0 { // Must be positive even number
+			return nil, fmt.Errorf("%w: For FULLY_SEEDED Double Elimination, number of players starting in Upper Bracket Round 1 (Current: %d) must be a positive even number",
+				common.ErrInvalidLeagueConfiguration, nPlayersGettingByes)
+		}
+
+		// Total effective player count in Upper Bracket Round 2
+		nEffectivePlayers_UB2 := byeCount + (nPlayers_UB1 / 2)
+		if nEffectivePlayers_UB2 <= 0 || !isPowerOfTwo(nEffectivePlayers_UB2) {
+			return nil, fmt.Errorf("%w: For FULLY_SEEDED Double Elimination, the total effective number of players in Upper Bracket 2 (Current: %d) must be a positive power of two",
+				common.ErrInvalidLeagueConfiguration, nEffectivePlayers_UB2)
+		}
+
+		// For balanced bracket structure, # of players in UB Round 1 must be atleast twice the # of byes
+		// Disallows brackets where more players start in UB Round 2 than UB Round 1 that are otherwise valid
+		if nPlayers_UB1 < 2*byeCount {
+			return nil, fmt.Errorf("%w: For FULLY_SEEDED double elimination, the number of players receiving byes (Current: %d) cannot exceed the number of players starting in Upper Bracket Round 1 (%d) to maintain a balanced bracket structure.",
+				common.ErrInvalidLeagueConfiguration, byeCount, nPlayers_UB1)
+		}
+
+	} else { // Standard seeding
+		if !isPowerOfTwo(numParticipants) {
+			return nil, fmt.Errorf("%w: For STANDARD double elimination, number of participants must be a positive power of two", common.ErrInvalidLeagueConfiguration)
+		}
+	}
+
+	return generatedGames, nil
+}
+
 // getNextPowerOfTwo returns the smallest power of two greater than or equal to n.
 // Returns 1 if n is 0 or negative, as 1 is the smallest power of two relevant for bracket sizing.
 // e.g., for: n = 8, p = 8; n = 7, p = 8; n = 12, p = 16
@@ -329,6 +392,11 @@ func (s *gameServiceImpl) getClosestPowerOfTwo(n int) int {
 		p = p << 1 // p = p*2
 	}
 	return p
+}
+
+// isPowerOfTwo checks if a number is a power of two.
+func isPowerOfTwo(n int) bool {
+	return n > 0 && (n&(n-1) == 0)
 }
 
 // getSeededPlayers prepares a list of players for playoff bracket generation.
@@ -408,22 +476,22 @@ func sortPlayers(players []models.Player) {
 // Uses the Circle Method algorithm. https://en.wikipedia.org/wiki/Round-robin_tournament#Circle_method
 // For groups with odd player counts, every round a player gets a bye (no game for that week)
 func (s *gameServiceImpl) generateRoundRobinGamesForGroup(leagueID uuid.UUID, players []models.Player, groupNumber int) ([]models.Game, error) {
-	numActualPlayers := len(players)
-	if numActualPlayers < 2 {
+	nActualPlayers := len(players)
+	if nActualPlayers < 2 {
 		// impossible since games cannot be scheduled in the first place
 		// as draft cannot be started there's just one player
 		// and games scheduling must happen after draft
 		return nil, nil
 	}
 
-	playerIDsForSchedule := make([]uuid.UUID, numActualPlayers)
+	playerIDsForSchedule := make([]uuid.UUID, nActualPlayers)
 	for i, p := range players {
 		playerIDsForSchedule[i] = p.ID
 	}
 
 	// if the group has an odd number of players, we create a dummy player
 	// with uuid.Nil to indicate a bye
-	if numActualPlayers%2 == 1 {
+	if nActualPlayers%2 == 1 {
 		playerIDsForSchedule = append(playerIDsForSchedule, uuid.Nil)
 	}
 
