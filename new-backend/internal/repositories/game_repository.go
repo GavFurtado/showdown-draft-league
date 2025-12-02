@@ -43,7 +43,7 @@ type GameRepository interface {
 	// gets player's win-loss record in a specific league
 	GetPlayerRecordInLeague(playerID, leagueID uuid.UUID) (wins, losses int64, err error)
 	// bulk creates games
-	CreateGames(games []models.Game) error
+	CreateGames(games []*models.Game) error
 	// updates player records after game completion (transaction)
 	UpdatePlayerRecordsAfterGame(
 		winnerID, loserID uuid.UUID,
@@ -357,7 +357,7 @@ func (r *gameRepositoryImpl) GetPlayerRecordInLeague(playerID, leagueID uuid.UUI
 }
 
 // bulk creates games
-func (r *gameRepositoryImpl) CreateGames(games []models.Game) error {
+func (r *gameRepositoryImpl) CreateGames(games []*models.Game) error {
 	tx := r.db.Begin()
 	if tx.Error != nil {
 		return fmt.Errorf("(Error: CreateGamesForRound) - failed to start transaction: %w", tx.Error)
@@ -371,7 +371,7 @@ func (r *gameRepositoryImpl) CreateGames(games []models.Game) error {
 	}()
 
 	for _, game := range games {
-		if err := tx.Create(game).Error; err != nil {
+		if err := tx.Create(&game).Error; err != nil {
 			tx.Rollback()
 			return fmt.Errorf("(Error: CreateGamesForRound) - failed to create game: %w", err)
 		}
