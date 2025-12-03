@@ -41,7 +41,7 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 	)
 
 	schedulerService := services.NewSchedulerService(
-		&u.TaskHeap{}, // Corrected: Initialize TaskHeap directly
+		&u.TaskHeap{},
 		repos.LeagueRepository,
 		repos.DraftRepository,
 	)
@@ -70,7 +70,7 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 		),
 		PokemonSpeciesService: services.NewPokemonSpeciesService(repos.PokemonSpeciesRepository),
 		SchedulerService:      schedulerService,
-		// GameService
+		GameService:           services.NewGameService(repos.GameRepository, repos.LeagueRepository, repos.PlayerRepository),
 	}
 }
 
@@ -84,5 +84,6 @@ func NewControllers(services *Services, repos *Repositories, cfg *config.Config,
 		LeaguePokemonController:  controllers.NewLeaguePokemonSpeciesController(services.LeaguePokemonService),
 		DraftedPokemonController: controllers.NewDraftedPokemonController(services.DraftedPokemonService),
 		DraftController:          controllers.NewDraftController(services.DraftService),
+		GameController:           controllers.NewGameController(services.GameService, services.RBACService),
 	}
 }

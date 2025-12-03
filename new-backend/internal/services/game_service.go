@@ -17,8 +17,15 @@ import (
 )
 
 type GameService interface {
+	GetGameByID(ID uuid.UUID) (models.Game, error)
+	GetGamesByLeague(leagueID uuid.UUID) ([]models.Game, error)
+	GetGamesByPlayer(playerID uuid.UUID) ([]models.Game, error)
 	GenerateRegularSeasonGames(leagueID uuid.UUID) error
 	GeneratePlayoffBracket(leagueID uuid.UUID) error
+
+	// New/Refactored methods
+	ReportGameResult(gameID uuid.UUID, dto *common.ReportGameDTO) error
+	FinalizeGameResult(gameID uuid.UUID, dto *common.FinalizeGameDTO) error
 }
 
 type gameServiceImpl struct {
@@ -37,6 +44,85 @@ func NewGameService(
 		leagueRepo: leagueRepo,
 		playerRepo: playerRepo,
 	}
+}
+
+func (s *gameServiceImpl) GetGameByID(ID uuid.UUID) (models.Game, error) {
+	return s.gameRepo.GetGameByID(ID)
+}
+
+func (s *gameServiceImpl) GetGamesByLeague(leagueID uuid.UUID) ([]models.Game, error) {
+	return s.gameRepo.GetGamesByLeague(leagueID)
+}
+
+func (s *gameServiceImpl) GetGamesByPlayer(playerID uuid.UUID) ([]models.Game, error) {
+	return s.gameRepo.GetGamesByPlayer(playerID)
+}
+
+// ReportGameResult allows a player to report the result of a game.
+func (s *gameServiceImpl) ReportGameResult(gameID uuid.UUID, dto *common.ReportGameDTO) error {
+	game, err := s.gameRepo.GetGameByID(gameID)
+	if err != nil {
+		return fmt.Errorf("ReportGameResult: failed to get game %s: %w", gameID, err)
+	}
+
+	// Determine loser ID
+	var loserID uuid.UUID
+	if dto.WinnerID == game.Player1ID {
+		loserID = game.Player2ID
+	} else if dto.WinnerID == game.Player2ID {
+		loserID = game.Player1ID
+	} else {
+		return common.ErrInvalidInput // Winner must be one of the players in the game
+	}
+
+	// Basic validation: reported player must be one of the game's participants
+	if dto.ReporterID != game.Player1ID && dto.ReporterID != game.Player2ID {
+		return fmt.Errorf("%w: reporter is not a participant in the game", common.ErrUnauthorized)
+	}
+
+	// Ensure winner and loser are distinct
+	if dto.WinnerID == loserID {
+		return fmt.Errorf("%w: winner and loser cannot be the same", common.ErrInvalidInput)
+	}
+
+	// Ensure scores are not tied if a winner is provided
+	if dto.Player1Wins == dto.Player2Wins {
+		return fmt.Errorf("%w: scores cannot be tied for a reported result", common.ErrInvalidInput)
+	}
+
+	if err := s.gameRepo.UpdateGameReport(gameID, loserID, dto); err != nil {
+		return fmt.Errorf("ReportGameResult: failed to update game report %s: %w", gameID, err)
+	}
+
+	return nil
+}
+
+// FinalizeGameResult allows league staff to approve, submit, or retroactively edit a game result.
+func (s *gameServiceImpl) FinalizeGameResult(gameID uuid.UUID, dto *common.FinalizeGameDTO) error {
+	// Fetch game to determine loser ID
+	game, err := s.gameRepo.GetGameByID(gameID)
+	if err != nil {
+		return fmt.Errorf("FinalizeGameResult: failed to get game %s: %w", gameID, err)
+	}
+
+	// Determine loser ID for the final result
+	var loserID uuid.UUID
+	if dto.WinnerID == game.Player1ID {
+		loserID = game.Player2ID
+	} else if dto.WinnerID == game.Player2ID {
+		loserID = game.Player1ID
+	} else {
+		return common.ErrInvalidInput // Winner must be one of the players in the game
+	}
+
+	// RBAC Check is handled in controller, service layer proceeds with business logic
+
+	err = s.gameRepo.FinalizeGameAndUpdateStats(gameID, loserID, dto)
+	if err != nil {
+		return fmt.Errorf("FinalizeGameResult: failed to finalize game and update stats for game %s: %w", gameID, err)
+	}
+
+	return nil
 }
 
 // GenerateRegularSeasonGames generates all the games of the regular season for every week assigning the correct RoundNumbers.
@@ -505,7 +591,6 @@ func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League
 			bracketPositionStr := fmt.Sprintf("Upper Round %d: Game %d", ubRoundNumber, gameNumberInRound)
 			newGameID := uuid.New()
 			player1ID := uuid.Nil
-			player2ID := uuid.Nil
 
 			// for round 2 games, check the playersGettingByes array
 			// set the new round 2 game's player1ID to the valid player if it exists in the array
@@ -528,8 +613,8 @@ func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League
 			newGame := &models.Game{
 				ID:              newGameID,
 				LeagueID:        league.ID,
-				Player1ID:       player1ID, // playerID with bye or placeholder uuid.Nil
-				Player2ID:       player2ID, // placeholder uuid.Nil
+				Player1ID:       player1ID,
+				Player2ID:       uuid.Nil, // placeholder uuid.Nil
 				WinnerID:        nil,
 				LoserID:         nil,
 				Player1Wins:     0,
@@ -913,4 +998,3 @@ func (s *gameServiceImpl) fetchLeagueResource(leagueID uuid.UUID) (*models.Leagu
 	}
 	return league, nil
 }
-

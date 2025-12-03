@@ -12,7 +12,7 @@ type GameType string
 
 const (
 	GameStatusScheduled       GameStatus = "SCHEDULED"
-	GameStatusApprovalPending GameStatus = "APPROVAL_PENDING"
+	GameStatusApprovalPending GameStatus = "APPROVAL_PENDING" // unused
 	GameStatusCompleted       GameStatus = "COMPLETED"
 	GameStatusDisputed        GameStatus = "DISPUTED"
 )

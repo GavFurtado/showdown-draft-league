@@ -78,6 +78,7 @@ func LeagueRBACMiddleware(
 		if currentUser.Role == "admin" {
 			log.Printf("LOG: [BYPASS: RBAC Middleware]: Skipped check for admin user %s (%s)\n", currentUser.DiscordUsername, currentUser.ID)
 			ctx.Next()
+			return
 		}
 
 		leagueIDStr := ctx.Param("leagueId")
@@ -88,20 +89,27 @@ func LeagueRBACMiddleware(
 		}
 
 		// Check if the user has the required permission for the league
-		// requires the right permission and have a valid player in the league
-		if ok, err := deps.RBACService.CanAccess(currentUser.ID, leagueID, requiredPermission); !ok {
-			if err != nil {
-				if err == common.ErrInternalService {
-					ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-					return
-				}
-				// some record not found error (atleast it should be)
-				log.Printf("(Error: LeagueRBACMiddleware) - %s", err.Error())
-				ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record Not Found"})
+		player, ok, err := deps.RBACService.CanAccess(currentUser.ID, leagueID, requiredPermission)
+		if err != nil {
+			if err == common.ErrInternalService {
+				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 				return
 			}
+			// some record not found error (atleast it should be)
+			log.Printf("(Error: LeagueRBACMiddleware) - %s", err.Error())
+			ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record Not Found"})
+			return
+		}
+		if !ok {
 			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Forbidden: Insufficient permissions for this league"})
 			return
+		}
+
+		// Set playerID and player role and player in the context for downstream handlers
+		if player != nil {
+			ctx.Set("playerID", player.ID)
+			ctx.Set("playerRole", player.Role)
+			ctx.Set("player", player)
 		}
 
 		ctx.Next()

@@ -70,6 +70,20 @@ func RegisterRoutes(
 				controllers.PlayerController.GetPlayersByLeague)
 			leagues.POST("/:leagueId/join", controllers.PlayerController.JoinLeague)
 
+			// Game Management Endpoints
+			games := leagues.Group("/:leagueId/games") // New games group
+			{
+				games.POST(
+					"/:gameId/report",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReportGame),
+					controllers.GameController.ReportGame)
+				games.PUT(
+					"/:gameId/finalize",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionFinalizeGame), // Requires staff permissions
+					controllers.GameController.FinalizeGame)
+			}
+
+
 			// not implmented yet
 			// leagues.DELETE("/:id/leave", playerController.LeaveLeague)
 

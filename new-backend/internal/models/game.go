@@ -30,6 +30,7 @@ type Game struct {
 	ShowdownReplayLinks []string         `gorm:"type:jsonb;column:showdown_replay_links" binding:"url" json:"ShowdownReplayLinks"`
 
 	ReportingPlayerID uuid.UUID `gorm:"type:uuid;not null;column:reporting_player_id" json:"ReportingPlayerID"`
+	ApproverID        *uuid.UUID `gorm:"type:uuid;column:approver_id" json:"ApproverID,omitempty"`
 	WinnerToGameID    uuid.UUID `gorm:"type:uuid;column:winner_to_game_id" json:"WinnerToGameID"`
 	LoserToGameID     uuid.UUID `gorm:"type:uuid;column:loser_to_game_id" json:"LoserToGameID"`
 
@@ -39,6 +40,7 @@ type Game struct {
 
 	// Relationships
 	ReportingPlayer Player  `gorm:"foreignKey:reporting_player_id;references:ID" json:"ReportingPlayer,omitempty"`
+	Approver        *User   `gorm:"foreignKey:ApproverID;references:id" json:"Approver,omitempty"`
 	League          League  `gorm:"foreignKey:league_id;references:id" json:"League,omitempty"`
 	Player1         *Player `gorm:"foreignKey:player1_id;references:ID" json:"Player1,omitempty"`
 	Player2         *Player `gorm:"foreignKey:player2_id;references:ID" json:"Player2,omitempty"`

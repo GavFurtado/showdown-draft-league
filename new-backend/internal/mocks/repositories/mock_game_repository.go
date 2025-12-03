@@ -10,20 +10,20 @@ type MockGameRepository struct {
 	mock.Mock
 }
 
-func (m *MockGameRepository) CreateGame(game *models.Game) (*models.Game, error) {
+func (m *MockGameRepository) CreateGame(game *models.Game) (models.Game, error) {
 	args := m.Called(game)
-	var result *models.Game
+	var result models.Game
 	if args.Get(0) != nil {
-		result = args.Get(0).(*models.Game)
+		result = args.Get(0).(models.Game)
 	}
 	return result, args.Error(1)
 }
 
-func (m *MockGameRepository) GetGameByID(id uuid.UUID) (*models.Game, error) {
+func (m *MockGameRepository) GetGameByID(id uuid.UUID) (models.Game, error) {
 	args := m.Called(id)
-	var result *models.Game
+	var result models.Game
 	if args.Get(0) != nil {
-		result = args.Get(0).(*models.Game)
+		result = args.Get(0).(models.Game)
 	}
 	return result, args.Error(1)
 }
@@ -143,4 +143,27 @@ func (m *MockGameRepository) GetPendingGamesByPlayer(playerID uuid.UUID) ([]mode
 		result = args.Get(0).([]models.Game)
 	}
 	return result, args.Error(1)
+}
+
+func (m *MockGameRepository) GetScheduledGamesByPlayer(playerID uuid.UUID) ([]models.Game, error) {
+	args := m.Called(playerID)
+	var result []models.Game
+	if args.Get(0) != nil {
+		result = args.Get(0).([]models.Game)
+	}
+	return result, args.Error(1)
+}
+
+func (m *MockGameRepository) GetScheduledGamesByLeague(leagueID uuid.UUID) ([]models.Game, error) {
+	args := m.Called(leagueID)
+	var result []models.Game
+	if args.Get(0) != nil {
+		result = args.Get(0).([]models.Game)
+	}
+	return result, args.Error(1)
+}
+
+func (m *MockGameRepository) CreateGames(games []*models.Game) error {
+	args := m.Called(games)
+	return args.Error(0)
 }
