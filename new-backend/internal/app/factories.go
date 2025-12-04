@@ -84,6 +84,6 @@ func NewControllers(services *Services, repos *Repositories, cfg *config.Config,
 		LeaguePokemonController:  controllers.NewLeaguePokemonSpeciesController(services.LeaguePokemonService),
 		DraftedPokemonController: controllers.NewDraftedPokemonController(services.DraftedPokemonService),
 		DraftController:          controllers.NewDraftController(services.DraftService),
-		GameController:           controllers.NewGameController(services.GameService, services.RBACService),
+		GameController:           controllers.NewGameController(services.GameService),
 	}
 }

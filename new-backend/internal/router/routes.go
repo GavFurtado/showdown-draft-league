@@ -70,9 +70,28 @@ func RegisterRoutes(
 				controllers.PlayerController.GetPlayersByLeague)
 			leagues.POST("/:leagueId/join", controllers.PlayerController.JoinLeague)
 
-			// Game Management Endpoints
-			games := leagues.Group("/:leagueId/games") // New games group
+			games := leagues.Group("/:leagueId/games")
 			{
+				games.POST(
+					"/generate-season",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateGame),
+					controllers.GameController.GenerateRegularSeasonGames)
+				games.POST(
+					"/generate-playoffs",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateGame),
+					controllers.GameController.GeneratePlayoffBracket)
+				games.GET(
+					"",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadGame),
+					controllers.GameController.GetGamesByLeague)
+				games.GET(
+					"/:gameId",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadGame),
+					controllers.GameController.GetGameByID)
+				games.GET(
+					"/player/:playerId",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadGame),
+					controllers.GameController.GetGamesByPlayer)
 				games.POST(
 					"/:gameId/report",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReportGame),
@@ -82,7 +101,6 @@ func RegisterRoutes(
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionFinalizeGame), // Requires staff permissions
 					controllers.GameController.FinalizeGame)
 			}
-
 
 			// not implmented yet
 			// leagues.DELETE("/:id/leave", playerController.LeaveLeague)

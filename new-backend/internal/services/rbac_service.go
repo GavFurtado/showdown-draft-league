@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 	"github.com/google/uuid"

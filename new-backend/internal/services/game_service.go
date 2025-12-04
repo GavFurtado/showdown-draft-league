@@ -46,16 +46,38 @@ func NewGameService(
 	}
 }
 
-func (s *gameServiceImpl) GetGameByID(ID uuid.UUID) (models.Game, error) {
-	return s.gameRepo.GetGameByID(ID)
+func (s *gameServiceImpl) GetGameByID(ID uuid.UUID) (*models.Game, error) {
+	game, err := s.gameRepo.GetGameByID(ID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("%w: %w", common.ErrGameNotFound, err)
+		}
+		return nil, fmt.Errorf("%w: %w", common.ErrInternalService, err)
+	}
+	return &game, nil
 }
 
 func (s *gameServiceImpl) GetGamesByLeague(leagueID uuid.UUID) ([]models.Game, error) {
-	return s.gameRepo.GetGamesByLeague(leagueID)
+	games, err := s.gameRepo.GetGamesByLeague(leagueID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("%w: %w", common.ErrGameNotFound, err)
+		}
+		return nil, fmt.Errorf("%w: %w", common.ErrInternalService, err)
+	}
+	return games, nil
 }
 
 func (s *gameServiceImpl) GetGamesByPlayer(playerID uuid.UUID) ([]models.Game, error) {
-	return s.gameRepo.GetGamesByPlayer(playerID)
+	games, err := s.gameRepo.GetGamesByPlayer(playerID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("%w: %w", common.ErrGameNotFound, err)
+		}
+		return nil, fmt.Errorf("%w: %w", common.ErrInternalService, err)
+	}
+
+	return games, nil
 }
 
 // ReportGameResult allows a player to report the result of a game.

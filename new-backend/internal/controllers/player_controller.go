@@ -34,7 +34,7 @@ type playerControllerImpl struct {
 	playerService services.PlayerService
 }
 
-func NewPlayerController(playerService services.PlayerService) *playerControllerImpl {
+func NewPlayerController(playerService services.PlayerService) PlayerController {
 	return &playerControllerImpl{
 		playerService: playerService,
 	}

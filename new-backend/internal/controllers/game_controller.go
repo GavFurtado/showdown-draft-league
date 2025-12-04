@@ -3,106 +3,229 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type GameController interface {
-	ReportGame(c *gin.Context)
-	FinalizeGame(c *gin.Context)
-	GetGameByID(c *gin.Context)
-	GetGamesByLeague(c *gin.Context)
-	GetGamesByPlayer(c *gin.Context)
-	GenerateRegularSeasonGames(c *gin.Context)
-	GeneratePlayoffBracket(c *gin.Context)
+	ReportGame(ctx *gin.Context)
+	FinalizeGame(ctx *gin.Context)
+	GetGameByID(ctx *gin.Context)
+	GetGamesByLeague(ctx *gin.Context)
+	GetGamesByPlayer(ctx *gin.Context)
+	GenerateRegularSeasonGames(ctx *gin.Context)
+	GeneratePlayoffBracket(ctx *gin.Context)
 }
 type gameControllerImpl struct {
 	gameService services.GameService
-	rbacService services.RBACService
 }
 
-func NewGameController(gameService services.GameService, rbacService services.RBACService) GameController {
+func NewGameController(
+	gameService services.GameService,
+) GameController {
 	return &gameControllerImpl{
 		gameService: gameService,
-		rbacService: rbacService,
 	}
 }
 
-// ReportGame handles a player reporting a game result.
-func (ctrl *gameControllerImpl) ReportGame(c *gin.Context) {
-	gameID, err := uuid.Parse(c.Param("gameId"))
+func (c *gameControllerImpl) GetGameByID(ctx *gin.Context) {
+	gameID, err := uuid.Parse(ctx.Param("gameId"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid game ID format"})
+		log.Printf("ERROR: (Controller: GetGameByID) - Error parsing gameId param: %v", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+	}
+	leagueID, _ := uuid.Parse(ctx.Param("leagueId"))
+
+	var game models.Game
+	if game, err = c.gameService.GetGameByID(gameID); err != nil {
+		log.Printf("ERROR: (Controller: GetGameByID) - Error fetching game (League %s) by ID %s: %v", leagueID, gameID, err)
+		switch {
+		case errors.Is(err, common.ErrGameNotFound):
+			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrGameNotFound.Error()})
+		case errors.Is(err, common.ErrInternalService):
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
+		}
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"game": game})
+}
+
+func (c *gameControllerImpl) GetGamesByLeague(ctx *gin.Context) {
+	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
+	if err != nil {
+		log.Printf("ERROR: (Controller: GetGamesByLeague) - Error parsing leagueId param: %v", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+	}
+
+	var games []models.Game
+	if games, err = c.gameService.GetGamesByLeague(leagueID); err != nil {
+		log.Printf("ERROR: (Controller: GetGamesByLeague) - Error fetching Games for League %s : %v", leagueID, err)
+		switch {
+		case errors.Is(err, common.ErrGameNotFound):
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Games not found for league"})
+		case errors.Is(err, common.ErrInternalService):
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
+		}
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"games": games})
+}
+
+func (c *gameControllerImpl) GetGamesByPlayer(ctx *gin.Context) {
+	playerID, err := uuid.Parse(ctx.Param("playerId"))
+	if err != nil {
+		log.Printf("ERROR: (Controller: GetGamesByPlayer) - Error parsing playerId param: %v", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+	}
+	leagueID, _ := uuid.Parse(ctx.Param("leagueId"))
+
+	var games []models.Game
+	if games, err = c.gameService.GetGamesByPlayer(playerID); err != nil {
+		log.Printf("ERROR: (Controller: GetGameByID) - Error fetching Games for League %s : %v", leagueID, err)
+		switch {
+		case errors.Is(err, gorm.ErrRecordNotFound):
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Player/Games not found for league"})
+		case errors.Is(err, common.ErrInternalService):
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
+		}
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"games": games})
+}
+
+// ReportGame handles a player reporting a game result.
+func (c *gameControllerImpl) ReportGame(ctx *gin.Context) {
+	gameID, err := uuid.Parse(ctx.Param("gameId"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
 		return
 	}
 
 	var dto common.ReportGameDTO
-	if err := c.ShouldBindJSON(&dto); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid request payload: %v", err)})
+	if err := ctx.ShouldBindJSON(&dto); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid request payload: %v", err)})
 		return
 	}
 
 	// reporterID is the current player
 	// arguably unecessary but idgaf
-	reporterIDStr, exists := c.Get("playerID")
+	reporterIDStr, exists := ctx.Get("playerID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Player ID not found in context"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Player ID not found in context"})
 		return
 	}
 	dto.ReporterID = reporterIDStr.(uuid.UUID)
 
-	if err := ctrl.gameService.ReportGameResult(gameID, &dto); err != nil {
+	if err := c.gameService.ReportGameResult(gameID, &dto); err != nil {
 		switch {
 		case errors.Is(err, common.ErrInvalidInput), errors.Is(err, common.ErrUnauthorized):
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		case errors.Is(err, common.ErrGameNotFound):
-			c.JSON(http.StatusNotFound, gin.H{"error": "Game not found"})
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Game not found"})
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to report game result: %v", err)})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to report game result: %v", err)})
 		}
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Game result reported successfully for approval"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "Game result reported successfully for approval"})
 }
 
 // FinalizeGame handles league staff finalizing a game result (approve, submit, or retroactively edit).
-func (ctrl *gameControllerImpl) FinalizeGame(c *gin.Context) {
-	gameID, err := uuid.Parse(c.Param("gameId"))
+func (c *gameControllerImpl) FinalizeGame(ctx *gin.Context) {
+	gameID, err := uuid.Parse(ctx.Param("gameId"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid game ID format"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid game ID format"})
 		return
 	}
 
 	var dto common.FinalizeGameDTO
-	if err := c.ShouldBindJSON(&dto); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid request payload: %v", err)})
+	if err := ctx.ShouldBindJSON(&dto); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid request payload: %v", err)})
 		return
 	}
 
-	finalizerIDStr, exists := c.Get("playerID")
+	finalizerIDStr, exists := ctx.Get("playerID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Player ID not found in context"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Player ID not found in context"})
 		return
 	}
 	finalizerID := finalizerIDStr.(uuid.UUID)
 	dto.FinalizerID = finalizerID
 
-	if err := ctrl.gameService.FinalizeGameResult(gameID, &dto); err != nil {
+	if err := c.gameService.FinalizeGameResult(gameID, &dto); err != nil {
 		switch {
 		case errors.Is(err, common.ErrInvalidInput):
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		case errors.Is(err, common.ErrGameNotFound):
-			c.JSON(http.StatusNotFound, gin.H{"error": "Game not found"})
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Game not found"})
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to finalize game result: %v", err)})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to finalize game result: %v", err)})
 		}
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Game result finalized successfully"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "Game result finalized successfully"})
+}
+
+func (c *gameControllerImpl) GenerateRegularSeasonGames(ctx *gin.Context) {
+	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
+	if err != nil {
+		log.Printf("ERROR: (Controller: GenerateRegularSeasonGames) - Error parsing leagueId param: %v", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		return
+	}
+
+	if err := c.gameService.GenerateRegularSeasonGames(leagueID); err != nil {
+		log.Printf("ERROR: (Controller: GenerateRegularSeasonGames) - Error generating regular season games for League %s : %v", leagueID, err)
+		switch {
+		case errors.Is(err, common.ErrUnauthorized):
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		case errors.Is(err, common.ErrLeagueNotFound):
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "League not found"})
+		case errors.Is(err, common.ErrInvalidInput):
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		default:
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to generate regular season games: %v", err)})
+		}
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Regular season games generated successfully"})
+}
+
+func (c *gameControllerImpl) GeneratePlayoffBracket(ctx *gin.Context) {
+	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
+	if err != nil {
+		log.Printf("ERROR: (Controller: GeneratePlayoffBracket) - Error parsing leagueId param: %v", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		return
+	}
+
+	if err := c.gameService.GeneratePlayoffBracket(leagueID); err != nil {
+		log.Printf("ERROR: (Controller: GeneratePlayoffBracket) - Error generating playoff bracket for League %s : %v", leagueID, err)
+		switch {
+		case errors.Is(err, common.ErrUnauthorized):
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		case errors.Is(err, common.ErrLeagueNotFound):
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "League not found"})
+		case errors.Is(err, common.ErrInvalidInput):
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		default:
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to generate playoff bracket: %v", err)})
+		}
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Playoff bracket generated successfully"})
 }

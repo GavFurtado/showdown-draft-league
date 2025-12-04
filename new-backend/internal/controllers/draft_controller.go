@@ -26,7 +26,7 @@ type draftControllerImpl struct {
 	draftService services.DraftService
 }
 
-func NewDraftController(draftService services.DraftService) *draftControllerImpl {
+func NewDraftController(draftService services.DraftService) DraftController {
 	return &draftControllerImpl{
 		draftService: draftService,
 	}

@@ -41,7 +41,7 @@ type draftedPokemonControllerImpl struct {
 	draftedPokemonService services.DraftedPokemonService
 }
 
-func NewDraftedPokemonController(draftedPokemonService services.DraftedPokemonService) *draftedPokemonControllerImpl {
+func NewDraftedPokemonController(draftedPokemonService services.DraftedPokemonService) DraftedPokemonController {
 	return &draftedPokemonControllerImpl{
 		draftedPokemonService: draftedPokemonService,
 	}
