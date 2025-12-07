@@ -19,13 +19,13 @@ func (m *MockGameRepository) CreateGame(game *models.Game) (models.Game, error) 
 	return result, args.Error(1)
 }
 
-func (m *MockGameRepository) GetGameByID(id uuid.UUID) (models.Game, error) {
+func (m *MockGameRepository) GetGameByID(id uuid.UUID) (*models.Game, error) {
 	args := m.Called(id)
 	var result models.Game
 	if args.Get(0) != nil {
 		result = args.Get(0).(models.Game)
 	}
-	return result, args.Error(1)
+	return &result, args.Error(1)
 }
 
 func (m *MockGameRepository) GetGamesByLeague(leagueID uuid.UUID) ([]models.Game, error) {

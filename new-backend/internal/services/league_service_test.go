@@ -51,8 +51,8 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 			PlayoffByesCount:         0,
 			PlayoffSeedingType:       "regular_season",
 			IsSnakeRoundDraft:        true,
-			AllowTrading:             true,
-			AllowTransferCredits:     false,
+			AllowTransfers:           true,
+			TransfersCostCredits:     false,
 			TransferCreditsPerWindow: 0,
 		},
 	}

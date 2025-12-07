@@ -198,5 +198,3 @@ func TestGameService_GeneratePlayoffBracket_ErrInvalidConfig(t *testing.T) {
 	mockPlayerRepo.AssertExpectations(t)
 	mockGameRepo.AssertNotCalled(t, "CreateGames")
 }
-
-

@@ -17,7 +17,7 @@ import (
 )
 
 type GameService interface {
-	GetGameByID(ID uuid.UUID) (models.Game, error)
+	GetGameByID(ID uuid.UUID) (*models.Game, error)
 	GetGamesByLeague(leagueID uuid.UUID) ([]models.Game, error)
 	GetGamesByPlayer(playerID uuid.UUID) ([]models.Game, error)
 	GenerateRegularSeasonGames(leagueID uuid.UUID) error

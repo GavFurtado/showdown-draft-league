@@ -268,6 +268,7 @@ func (s *draftedPokemonServiceImpl) GetNextDraftPickNumber(leagueID uuid.UUID) (
 	return nextPick, nil
 }
 
+// WARNING: DEPRECATED. Use DraftService.DropPokemon
 // ReleasePokemon releases a Pokemon back to free agents.
 func (s *draftedPokemonServiceImpl) ReleasePokemon(currentUser *models.User, draftedPokemonID uuid.UUID) error {
 	draftedPokemon, err := s.draftedPokemonRepo.GetDraftedPokemonByID(draftedPokemonID)
