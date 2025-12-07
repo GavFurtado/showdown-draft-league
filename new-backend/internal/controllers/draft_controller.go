@@ -16,8 +16,6 @@ type DraftController interface {
 	GetDraftByID(ctx *gin.Context)
 	GetDraftByLeagueID(ctx *gin.Context)
 	StartDraft(ctx *gin.Context)
-	StartTransferPeriod(ctx *gin.Context)
-	EndTransferPeriod(ctx *gin.Context)
 	MakePick(ctx *gin.Context)
 	SkipPick(ctx *gin.Context)
 }
@@ -119,40 +117,6 @@ func (dc *draftControllerImpl) StartDraft(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, draft)
-}
-
-// StartTransferPeriod handles the POST /api/leagues/:leagueId/transfers/start endpoint.
-// It initiates the transfer window for a specific league.
-func (dc *draftControllerImpl) StartTransferPeriod(c *gin.Context) {
-	leagueIDStr := c.Param("leagueId")
-	leagueID, err := uuid.Parse(leagueIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid league ID"})
-		return
-	}
-
-	if err := dc.draftService.StartTransferPeriod(leagueID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transfer period", "details": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Transfer period started successfully"})
-}
-
-func (dc *draftControllerImpl) EndTransferPeriod(c *gin.Context) {
-	leagueIDStr := c.Param("leagueId")
-	leagueID, err := uuid.Parse(leagueIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
-		return
-	}
-
-	if err := dc.draftService.EndTransferPeriod(leagueID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to end transfer period", "details": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Transfer period ended successfully"})
 }
 
 func (dc *draftControllerImpl) MakePick(c *gin.Context) {

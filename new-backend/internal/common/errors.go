@@ -22,6 +22,7 @@ var (
 
 	// Authorization errors
 	ErrUnauthorized           = errors.New("unauthorized: you do not have permission to perform this action")
+	ErrForbidden              = errors.New("this action is forbidden")
 	ErrInvalidUpdateForPlayer = errors.New("players cannot update score or draft details directly")
 
 	// Business Logic Errors

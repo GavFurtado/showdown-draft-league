@@ -31,6 +31,7 @@ type Services struct {
 	WebhookService        services.WebhookService
 	SchedulerService      services.SchedulerService
 	GameService           services.GameService
+	TransferService       services.TransferService
 }
 
 type Controllers struct {
@@ -43,4 +44,5 @@ type Controllers struct {
 	DraftedPokemonController controllers.DraftedPokemonController
 	DraftController          controllers.DraftController
 	GameController           controllers.GameController
+	TransferController       controllers.TransferController
 }

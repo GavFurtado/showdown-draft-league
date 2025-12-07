@@ -19,6 +19,7 @@ type SchedulerService interface {
 	DeregisterTask(taskID string)
 	Stop()
 	SetDraftService(draftService DraftService)
+	SetTransferService(transferService TransferService)
 }
 
 type schedulerServiceImpl struct {
@@ -30,6 +31,7 @@ type schedulerServiceImpl struct {
 	leagueRepo     repositories.LeagueRepository
 	draftRepo      repositories.DraftRepository
 	draftService   DraftService
+	transferService TransferService
 }
 
 func NewSchedulerService(
@@ -52,6 +54,11 @@ func NewSchedulerService(
 // This is set during application startup to break the circular dependency with DraftService.
 func (s *schedulerServiceImpl) SetDraftService(draftService DraftService) {
 	s.draftService = draftService
+}
+
+// SetTransferService injects the dependency needed for the scheduler to execute transfer-related tasks.
+func (s *schedulerServiceImpl) SetTransferService(transferService TransferService) {
+	s.transferService = transferService
 }
 
 // Start initializes the scheduler on application boot. It fetches all ongoing drafts
@@ -249,12 +256,12 @@ func (s *schedulerServiceImpl) executeTask(task *u.ScheduledTask) {
 	case u.TaskTypeTradingPeriodEnd:
 		if payload, ok := task.Payload.(u.PayloadTransferPeriodEnd); ok {
 			log.Printf("LOG: (SchedulerService: executeTask) - Transfer period end for LeagueID: %s\n", payload.LeagueID)
-			if s.draftService == nil {
-				log.Printf("ERROR: (SchedulerService: executeTask) - DraftService is not set. Cannot end transfer period for LeagueID: %s\n", payload.LeagueID)
+			if s.transferService == nil {
+				log.Printf("ERROR: (SchedulerService: executeTask) - TransferService is not set. Cannot end transfer period for LeagueID: %s\n", payload.LeagueID)
 				return
 			}
 
-			if err := s.draftService.EndTransferPeriod(payload.LeagueID); err != nil {
+			if err := s.transferService.EndTransferPeriod(payload.LeagueID); err != nil {
 				log.Printf("ERROR: (SchedulerService: executeTask) - error occured in EndTransferPeriod: %v\n", err)
 				return
 			}
@@ -265,11 +272,11 @@ func (s *schedulerServiceImpl) executeTask(task *u.ScheduledTask) {
 	case u.TaskTypeTradingPeriodStart:
 		if payload, ok := task.Payload.(u.PayloadTransferPeriodStart); ok {
 			log.Printf("LOG: (SchedulerService: executeTask) - Accrue credits for LeagueID: %s\n", payload.LeagueID)
-			if s.draftService == nil {
-				log.Printf("ERROR: (SchedulerService: executeTask) - DraftService is not set. Cannot start transfer period for LeagueID: %s\n", payload.LeagueID)
+			if s.transferService == nil {
+				log.Printf("ERROR: (SchedulerService: executeTask) - TransferService is not set. Cannot start transfer period for LeagueID: %s\n", payload.LeagueID)
 				return
 			}
-			if err := s.draftService.StartTransferPeriod(payload.LeagueID); err != nil {
+			if err := s.transferService.StartTransferPeriod(payload.LeagueID); err != nil {
 				log.Printf("ERROR: (SchedulerService: executeTask) - error occured in StartTransferPeriod: %v\n", err)
 				return
 			}

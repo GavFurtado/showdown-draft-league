@@ -43,7 +43,7 @@ func (c *gameControllerImpl) GetGameByID(ctx *gin.Context) {
 	}
 	leagueID, _ := uuid.Parse(ctx.Param("leagueId"))
 
-	var game models.Game
+	var game *models.Game
 	if game, err = c.gameService.GetGameByID(gameID); err != nil {
 		log.Printf("ERROR: (Controller: GetGameByID) - Error fetching game (League %s) by ID %s: %v", leagueID, gameID, err)
 		switch {

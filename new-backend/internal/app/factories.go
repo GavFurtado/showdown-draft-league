@@ -50,6 +50,15 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 	draftService.SetSchedulerService(schedulerService)
 	schedulerService.SetDraftService(draftService.(services.DraftService))
 
+	transferService := services.NewTransferService(
+		repos.DraftedPokemonRepository,
+		repos.LeaguePokemonRepository,
+		repos.LeagueRepository,
+		repos.PlayerRepository,
+	)
+	transferService.SetSchedulerService(schedulerService)
+	schedulerService.SetTransferService(transferService.(services.TransferService))
+
 	return &Services{
 		JWTService:           *jwtService,
 		UserService:          services.NewUserService(repos.UserRepository),
@@ -71,6 +80,7 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 		PokemonSpeciesService: services.NewPokemonSpeciesService(repos.PokemonSpeciesRepository),
 		SchedulerService:      schedulerService,
 		GameService:           services.NewGameService(repos.GameRepository, repos.LeagueRepository, repos.PlayerRepository),
+		TransferService:       transferService,
 	}
 }
 
@@ -85,5 +95,6 @@ func NewControllers(services *Services, repos *Repositories, cfg *config.Config,
 		DraftedPokemonController: controllers.NewDraftedPokemonController(services.DraftedPokemonService),
 		DraftController:          controllers.NewDraftController(services.DraftService),
 		GameController:           controllers.NewGameController(services.GameService),
+		TransferController:       controllers.NewTransferController(services.TransferService),
 	}
 }
