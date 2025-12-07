@@ -22,6 +22,7 @@ type PlayerService interface {
 	GetPlayersByLeagueHandler(leagueID, userID uuid.UUID) ([]models.Player, error)
 	GetPlayersByUserHandler(userID, currentUserID uuid.UUID) ([]models.Player, error)
 	GetPlayerWithFullRosterHandler(playerID, currentUserID uuid.UUID) (*models.Player, error)
+	GetPlayerRosterByWeek(playerID uuid.UUID, weekNumber int) ([]models.DraftedPokemon, error)
 
 	UpdatePlayerProfile(currentUser *models.User, playerID uuid.UUID, inLeagueName *string, teamName *string) (*models.Player, error)
 	UpdatePlayerDraftPoints(currentUser *models.User, playerID uuid.UUID, draftPoints *int) (*models.Player, error)
@@ -32,20 +33,23 @@ type PlayerService interface {
 }
 
 type playerServiceImpl struct {
-	playerRepo repositories.PlayerRepository
-	leagueRepo repositories.LeagueRepository
-	userRepo   repositories.UserRepository
+	playerRepo         repositories.PlayerRepository
+	leagueRepo         repositories.LeagueRepository
+	userRepo           repositories.UserRepository
+	draftedPokemonRepo repositories.DraftedPokemonRepository
 }
 
 func NewPlayerService(
 	playerRepo repositories.PlayerRepository,
 	leagueRepo repositories.LeagueRepository,
 	userRepo repositories.UserRepository,
+	draftedPokemonRepo repositories.DraftedPokemonRepository,
 ) PlayerService {
 	return &playerServiceImpl{
-		playerRepo: playerRepo,
-		leagueRepo: leagueRepo,
-		userRepo:   userRepo,
+		playerRepo:         playerRepo,
+		leagueRepo:         leagueRepo,
+		userRepo:           userRepo,
+		draftedPokemonRepo: draftedPokemonRepo,
 	}
 }
 
@@ -214,6 +218,40 @@ func (s *playerServiceImpl) GetPlayerWithFullRosterHandler(playerID, currentUser
 	}
 
 	return player, nil
+}
+
+// GetPlayerRosterByWeek retrieves a player's roster for a specific week.
+// It fetches all drafted pokemon for the player (including released ones)
+// and filters them based on their AcquiredWeek and ReleasedWeek.
+func (s *playerServiceImpl) GetPlayerRosterByWeek(playerID uuid.UUID, weekNumber int) ([]models.DraftedPokemon, error) {
+	// First, ensure the player exists
+	_, err := s.playerRepo.GetPlayerByID(playerID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, common.ErrPlayerNotFound
+		}
+		return nil, fmt.Errorf("%w: failed to retrieve player data: %v", common.ErrInternalService, err)
+	}
+
+	allDraftedPokemon, err := s.draftedPokemonRepo.GetAllDraftedPokemonByPlayer(playerID)
+	if err != nil {
+		return nil, fmt.Errorf("%w: failed to retrieve all drafted pokemon for player: %v", common.ErrInternalService, err)
+	}
+
+	var rosterForWeek []models.DraftedPokemon
+	for _, pokemon := range allDraftedPokemon {
+		// A pokemon is on the roster for weekNumber if:
+		// 1. It was acquired on or before the target week.
+		// 2. AND it was either not released, or released after the target week.
+		isAcquired := pokemon.AcquiredWeek <= weekNumber
+		isNotReleasedYet := !pokemon.IsReleased || (pokemon.ReleasedWeek != nil && *pokemon.ReleasedWeek > weekNumber)
+
+		if isAcquired && isNotReleasedYet {
+			rosterForWeek = append(rosterForWeek, pokemon)
+		}
+	}
+
+	return rosterForWeek, nil
 }
 
 // fails tests.. needs urgent rework

@@ -15,24 +15,49 @@ import (
 )
 
 type GameController interface {
+
 	ReportGame(ctx *gin.Context)
+
 	FinalizeGame(ctx *gin.Context)
+
 	GetGameByID(ctx *gin.Context)
+
 	GetGamesByLeague(ctx *gin.Context)
+
 	GetGamesByPlayer(ctx *gin.Context)
-	GenerateRegularSeasonGames(ctx *gin.Context)
+
+	StartRegularSeason(ctx *gin.Context)
+
 	GeneratePlayoffBracket(ctx *gin.Context)
-}
-type gameControllerImpl struct {
-	gameService services.GameService
+
 }
 
+type gameControllerImpl struct {
+
+	gameService services.GameService
+
+	leagueService services.LeagueService
+
+}
+
+
+
 func NewGameController(
+
 	gameService services.GameService,
+
+	leagueService services.LeagueService,
+
 ) GameController {
+
 	return &gameControllerImpl{
-		gameService: gameService,
+
+		gameService:   gameService,
+
+		leagueService: leagueService,
+
 	}
+
 }
 
 func (c *gameControllerImpl) GetGameByID(ctx *gin.Context) {
@@ -178,30 +203,34 @@ func (c *gameControllerImpl) FinalizeGame(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Game result finalized successfully"})
 }
 
-func (c *gameControllerImpl) GenerateRegularSeasonGames(ctx *gin.Context) {
+func (c *gameControllerImpl) StartRegularSeason(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
-		log.Printf("ERROR: (Controller: GenerateRegularSeasonGames) - Error parsing leagueId param: %v", err)
+		log.Printf("ERROR: (Controller: StartRegularSeason) - Error parsing leagueId param: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
 		return
 	}
 
-	if err := c.gameService.GenerateRegularSeasonGames(leagueID); err != nil {
-		log.Printf("ERROR: (Controller: GenerateRegularSeasonGames) - Error generating regular season games for League %s : %v", leagueID, err)
+	if err := c.leagueService.StartRegularSeason(leagueID); err != nil {
+		log.Printf("ERROR: (Controller: StartRegularSeason) - Error starting regular season for League %s : %v", leagueID, err)
 		switch {
 		case errors.Is(err, common.ErrUnauthorized):
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		case errors.Is(err, common.ErrLeagueNotFound):
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "League not found"})
+		case errors.Is(err, common.ErrInvalidState):
+			ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 		case errors.Is(err, common.ErrInvalidInput):
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		case errors.Is(err, common.ErrGamesAlreadyGenerated):
+			ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to generate regular season games: %v", err)})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to start regular season: %v", err)})
 		}
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Regular season games generated successfully"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "Regular season started successfully"})
 }
 
 func (c *gameControllerImpl) GeneratePlayoffBracket(ctx *gin.Context) {

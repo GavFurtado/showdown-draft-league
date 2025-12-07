@@ -3,6 +3,7 @@ package controllers
 import (
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/middleware"
@@ -248,20 +249,43 @@ func (c *playerControllerImpl) GetPlayerWithFullRoster(ctx *gin.Context) {
 		log.Printf("PlayerController: GetPlayersWithFullRoster - no user in context\n")
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrNoUserInContext.Error()})
 		return
-
 	}
 
-	// get param
 	playerIDStr := ctx.Param("id")
 	playerID, err := uuid.Parse(playerIDStr)
-	if err != nil { // if the str was "" (which btw idk how that happens), it's still handled here
+	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		return
+	}
+
+	weekStr := ctx.Query("week")
+	if weekStr != "" {
+		weekNumber, err := strconv.Atoi(weekStr)
+		if err != nil || weekNumber < 0 { // Week 0 is for pre-season draft
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid week number format. Must be a non-negative integer."})
+			return
+		}
+
+		roster, err := c.playerService.GetPlayerRosterByWeek(playerID, weekNumber)
+		if err != nil {
+			log.Printf("PlayerController: GetPlayerRosterByWeek - Error occurred in the Service Method")
+			switch err {
+			case common.ErrPlayerNotFound:
+				ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			case common.ErrInternalService:
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			default:
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "unexpected error"})
+			}
+			return
+		}
+		ctx.JSON(http.StatusOK, gin.H{"player_id": playerID, "week": weekNumber, "roster": roster})
 		return
 	}
 
 	player, err := c.playerService.GetPlayerWithFullRosterHandler(playerID, currentUser.ID)
 	if err != nil {
-		log.Printf("PlayerController: GetPlayersWithFullRoster - Error occured in the Service Method")
+		log.Printf("PlayerController: GetPlayersWithFullRoster - Error occurred in the Service Method")
 		switch err {
 		case common.ErrPlayerNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
@@ -270,11 +294,9 @@ func (c *playerControllerImpl) GetPlayerWithFullRoster(ctx *gin.Context) {
 		case common.ErrUnauthorized:
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		default:
-			// fallback
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unxpected error"})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "unexpected error"})
 		}
 		return
-
 	}
 
 	ctx.JSON(http.StatusOK, player)

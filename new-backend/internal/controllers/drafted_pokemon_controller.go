@@ -27,8 +27,6 @@ type DraftedPokemonController interface {
 	IsPokemonDrafted(ctx *gin.Context)
 	// GET next draft pick number for the league :leagueId (if league.Status == "DRAFTING")
 	GetNextDraftPickNumber(ctx *gin.Context)
-	// PATCH Marks a pokemon as Released
-	ReleasePokemon(ctx *gin.Context)
 	// GET the number of active draftedPokmon has made (how many pokemon on player's roster)
 	GetDraftedPokemonCountByPlayer(ctx *gin.Context)
 	// GET draft history for a league (all picks in order, including released and includes transfers).
@@ -225,41 +223,6 @@ func (c *draftedPokemonControllerImpl) GetNextDraftPickNumber(ctx *gin.Context) 
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"next_pick_number": nextPickNumber})
-}
-
-// PATCH api/leagues/:leagueId/drafted_pokemon/:id/release
-// Marks a drafted pokemon as released
-// player permission: rbac.PermissionCreateDraftedPokemon
-func (c *draftedPokemonControllerImpl) ReleasePokemon(ctx *gin.Context) {
-	currentUser, err := c.getUserFromContext(ctx)
-	if err != nil {
-		return // response already sent in this case
-	}
-
-	draftedPokemonID, err := uuid.Parse(ctx.Param("id"))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
-		return
-	}
-
-	if err := c.draftedPokemonService.ReleasePokemon(currentUser, draftedPokemonID); err != nil {
-		log.Printf("LOG: (DraftedPokemonController: ReleasePokemon) - Service method error: %v\n", err)
-		switch err {
-		case common.ErrDraftedPokemonNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrDraftedPokemonNotFound.Error()})
-		case common.ErrPlayerNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrPlayerNotFound.Error()})
-		case common.ErrPokemonAlreadyReleased:
-			ctx.JSON(http.StatusConflict, gin.H{"error": common.ErrDraftedPokemonNotFound.Error()})
-		case common.ErrUnauthorized:
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": common.ErrUnauthorized.Error()})
-		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
-		}
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"status": "operation success"})
 }
 
 // GET api/leagues/:leagueId/drafted_pokemon/count/:playerId

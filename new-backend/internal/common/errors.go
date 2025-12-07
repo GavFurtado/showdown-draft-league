@@ -43,6 +43,7 @@ var (
 	ErrIncompleteDraftOrder           = errors.New("draft order is incomplete")
 	ErrInsufficientPlayersForPlayoffs = errors.New("insufficient players to start a playoff bracket") // should never happen due to previous validations
 	ErrInvalidLeagueConfiguration     = errors.New("invalid league configuration")
+	ErrGamesAlreadyGenerated          = errors.New("games have already been generated for this league/season")
 
 	// Internal Service Errors
 	ErrInternalService = errors.New("internal service error")

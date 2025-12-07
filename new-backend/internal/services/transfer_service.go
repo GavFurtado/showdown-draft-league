@@ -215,7 +215,7 @@ func (s *transferServiceImpl) DropPokemon(currentUser *models.User, leagueID, dr
 		return common.ErrPokemonAlreadyReleased
 	}
 
-	err = s.draftedPokemonRepo.ReleasePokemonTransaction(draftedPokemonID, player, league.Format.DropCost)
+	err = s.draftedPokemonRepo.ReleasePokemonTransaction(draftedPokemonID, player, league.Format.DropCost, league.CurrentWeekNumber)
 	if err != nil {
 		log.Printf("LOG: (Error: TransferService.DropPokemon) - Failed to release pokemon with ID %s: %v", draftedPokemonID, err)
 		return common.ErrInternalService
@@ -273,6 +273,7 @@ func (s *transferServiceImpl) PickupFreeAgent(currentUser *models.User, leagueID
 		PokemonSpeciesID: leaguePokemon.PokemonSpeciesID,
 		LeaguePokemonID:  leaguePokemon.ID,
 		IsReleased:       false,
+		AcquiredWeek:     league.CurrentWeekNumber,
 	}
 
 	// Call the new repository transaction method

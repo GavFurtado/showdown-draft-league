@@ -39,6 +39,8 @@ type GameRepository interface {
 	GetCompletedGamesByLeague(leagueID uuid.UUID) ([]models.Game, error)
 	// gets disputed games for a league
 	GetDisputedGamesByLeague(leagueID uuid.UUID) ([]models.Game, error)
+	// checks if games of a specific type exist for a given league.
+	HasGames(leagueID uuid.UUID, gameType enums.GameType) (bool, error)
 
 	// New/Refactored methods for game updates
 	UpdateGameReport(gameID uuid.UUID, loserID uuid.UUID, dto *common.ReportGameDTO) error
@@ -193,6 +195,18 @@ func (r *gameRepositoryImpl) GetDisputedGamesByLeague(leagueID uuid.UUID) ([]mod
 		return nil, fmt.Errorf("(Error: GetDisputedGamesByLeague) - failed to get disputed games: %w", err)
 	}
 	return games, nil
+}
+
+// HasGames checks if any games of a specific type exist for a given league.
+func (r *gameRepositoryImpl) HasGames(leagueID uuid.UUID, gameType enums.GameType) (bool, error) {
+	var count int64
+	err := r.db.Model(&models.Game{}).
+		Where("league_id = ? AND game_type = ?", leagueID, gameType).
+		Count(&count).Error
+	if err != nil {
+		return false, fmt.Errorf("(Error: HasGames) - failed to check for existing games: %w", err)
+	}
+	return count > 0, nil
 }
 
 

@@ -26,9 +26,11 @@ type DraftedPokemonRepository interface {
 	// gets the next draft pick number for a league
 	GetNextDraftPickNumber(leagueID uuid.UUID) (int, error)
 	// releases a Pokemon back to free agents
-	ReleasePokemonTransaction(draftedPokemonID uuid.UUID, player *models.Player, dropCost int) error
+	ReleasePokemonTransaction(draftedPokemonID uuid.UUID, player *models.Player, dropCost int, releasedWeek int) error
 	// gets count of active Pokemon drafted by a player
 	GetDraftedPokemonCountByPlayer(playerID uuid.UUID) (int64, error)
+	// gets all Pokemon drafted by a specific player (including released)
+	GetAllDraftedPokemonByPlayer(playerID uuid.UUID) ([]models.DraftedPokemon, error)
 	// gets the actively drafted pokemon count by league
 	GetActiveDraftedPokemonCountByLeague(leagueID uuid.UUID) (int64, error)
 	// gets draft history for a league (all picks in order)
@@ -167,7 +169,7 @@ func (r *draftedPokemonRepositoryImpl) GetNextDraftPickNumber(leagueID uuid.UUID
 }
 
 // ReleasePokemonTransaction releases a Pokemon back to free agents in a transaction
-func (r *draftedPokemonRepositoryImpl) ReleasePokemonTransaction(draftedPokemonID uuid.UUID, player *models.Player, dropCost int) error {
+func (r *draftedPokemonRepositoryImpl) ReleasePokemonTransaction(draftedPokemonID uuid.UUID, player *models.Player, dropCost int, releasedWeek int) error {
 	tx := r.db.Begin()
 	if tx.Error != nil {
 		return fmt.Errorf("(Error: ReleasePokemonTransaction) - failed to start transaction: %w", tx.Error)
@@ -190,7 +192,7 @@ func (r *draftedPokemonRepositoryImpl) ReleasePokemonTransaction(draftedPokemonI
 	}
 
 	// 2. Update the drafted pokemon to be released
-	if err := tx.Model(&draftedPokemon).Update("is_released", true).Error; err != nil {
+	if err := tx.Model(&draftedPokemon).Updates(map[string]interface{}{"is_released": true, "released_week": releasedWeek}).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("(Error: ReleasePokemonTransaction) - failed to release pokemon: %w", err)
 	}
@@ -224,6 +226,22 @@ func (r *draftedPokemonRepositoryImpl) GetDraftedPokemonCountByPlayer(playerID u
 		return 0, fmt.Errorf("(Error: GetDraftedPokemonCountByPlayer) - failed to count drafted pokemon: %w", err)
 	}
 	return count, nil
+}
+
+// GetAllDraftedPokemonByPlayer gets all Pokemon drafted by a specific player (including released).
+func (r *draftedPokemonRepositoryImpl) GetAllDraftedPokemonByPlayer(playerID uuid.UUID) ([]models.DraftedPokemon, error) {
+	var draftedPokemon []models.DraftedPokemon
+	err := r.db.
+		Preload("PokemonSpecies").
+		Preload("LeaguePokemon").
+		Where("player_id = ?", playerID).
+		Order("acquired_week ASC, released_week ASC").
+		Find(&draftedPokemon).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("(Error: GetAllDraftedPokemonByPlayer) - failed to get all drafted pokemon by player: %w", err)
+	}
+	return draftedPokemon, nil
 }
 
 // GetDraftHistory gets draft history for a league (all picks in order)

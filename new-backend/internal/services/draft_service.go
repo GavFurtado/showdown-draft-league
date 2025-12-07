@@ -728,6 +728,7 @@ func (s *draftServiceImpl) executePickTransactions(
 			DraftRoundNumber: draftRoundNumber,
 			DraftPickNumber:  requestedPick.DraftPickNumber, // overall pick
 			IsReleased:       false,
+			AcquiredWeek:     0, // Pre-season draft week
 		}
 
 		allCreatedDraftedPokemon = append(allCreatedDraftedPokemon, createdDraftedPokemon)

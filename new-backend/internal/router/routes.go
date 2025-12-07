@@ -73,9 +73,9 @@ func RegisterRoutes(
 			games := leagues.Group("/:leagueId/games")
 			{
 				games.POST(
-					"/generate-season",
+					"/start-season",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateGame),
-					controllers.GameController.GenerateRegularSeasonGames)
+					controllers.GameController.StartRegularSeason)
 				games.POST(
 					"/generate-playoffs",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateGame),
@@ -176,10 +176,6 @@ func RegisterRoutes(
 					"/next_pick_number",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadDraft),
 					controllers.DraftedPokemonController.GetNextDraftPickNumber)
-				draftedPokemon.PATCH(
-					"/:id/release",
-					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateDraftedPokemon),
-					controllers.DraftedPokemonController.ReleasePokemon)
 				draftedPokemon.GET(
 					"/count/:playerId",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadDraftedPokemon),
@@ -236,29 +232,18 @@ func RegisterRoutes(
 			{
 
 				transfers.POST("/start",
-
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionStartTransferPeriod),
-
 					controllers.TransferController.StartTransferPeriod)
 
 				transfers.POST("/end",
-
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionEndTransferPeriod),
-
 					controllers.TransferController.EndTransferPeriod)
-
 				transfers.POST("/drop/:draftedPokemonId",
-
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateDraftedPokemon),
-
 					controllers.TransferController.DropPokemon)
-
 				transfers.POST("/pickup/:leaguePokemonId",
-
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateDraftedPokemon),
-
 					controllers.TransferController.PickupFreeAgent)
-
 			}
 
 		}

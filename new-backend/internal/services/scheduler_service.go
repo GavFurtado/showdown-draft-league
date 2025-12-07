@@ -20,18 +20,20 @@ type SchedulerService interface {
 	Stop()
 	SetDraftService(draftService DraftService)
 	SetTransferService(transferService TransferService)
+	SetLeagueService(leagueService LeagueService)
 }
 
 type schedulerServiceImpl struct {
-	tasks          *u.TaskHeap
-	taskMap        map[string]*u.ScheduledTask
-	taskChan       chan *u.ScheduledTask
-	rescheduleChan chan struct{}
-	stopChan       chan struct{}
-	leagueRepo     repositories.LeagueRepository
-	draftRepo      repositories.DraftRepository
-	draftService   DraftService
+	tasks           *u.TaskHeap
+	taskMap         map[string]*u.ScheduledTask
+	taskChan        chan *u.ScheduledTask
+	rescheduleChan  chan struct{}
+	stopChan        chan struct{}
+	leagueRepo      repositories.LeagueRepository
+	draftRepo       repositories.DraftRepository
+	draftService    DraftService
 	transferService TransferService
+	leagueService   LeagueService
 }
 
 func NewSchedulerService(
@@ -59,6 +61,11 @@ func (s *schedulerServiceImpl) SetDraftService(draftService DraftService) {
 // SetTransferService injects the dependency needed for the scheduler to execute transfer-related tasks.
 func (s *schedulerServiceImpl) SetTransferService(transferService TransferService) {
 	s.transferService = transferService
+}
+
+// SetLeagueService injects the dependency needed for the scheduler to execute league-related tasks.
+func (s *schedulerServiceImpl) SetLeagueService(leagueService LeagueService) {
+	s.leagueService = leagueService
 }
 
 // Start initializes the scheduler on application boot. It fetches all ongoing drafts
@@ -145,6 +152,29 @@ func (s *schedulerServiceImpl) Start() error {
 		s.taskMap[newTask.ID] = newTask
 	}
 
+	// Schedule LeagueWeeklyTick for ongoing regular season leagues
+	ongoingRegularSeasonLeagues, err := s.leagueRepo.GetAllLeaguesByStatus(enums.LeagueStatusRegularSeason)
+	if err != nil {
+		log.Printf("LOG: (SchedulerService: Start) - error fetching ongoing regular season leagues: %v\n", err)
+		return err
+	}
+
+	for _, league := range ongoingRegularSeasonLeagues {
+		// Calculate next tick to be 7 days from now. The ProcessWeeklyTick will handle its own rescheduling.
+		nextTickTime := time.Now().Add(7 * 24 * time.Hour)
+		newTask := &u.ScheduledTask{
+			ID:        fmt.Sprintf("%d_%s", u.TaskTypeLeagueWeeklyTick, league.ID),
+			ExecuteAt: nextTickTime,
+			Type:      u.TaskTypeLeagueWeeklyTick,
+			Payload: u.PayloadLeagueWeeklyTick{
+				LeagueID: league.ID,
+			},
+		}
+		s.tasks.Push(newTask)
+		s.taskMap[newTask.ID] = newTask
+		log.Printf("LOG: (SchedulerService: Start) - Rescheduled weekly tick for league %s to %s.\n", league.ID, nextTickTime.String())
+	}
+
 	log.Printf("LOG: (SchedulerService: Start) - Running Scheduler\n")
 	go s.runSchedulerLoop()
 
@@ -179,7 +209,7 @@ func (s *schedulerServiceImpl) runSchedulerLoop() {
 				// the task is not due yet; wait till due
 				waitDuration := nextTask.ExecuteAt.Sub(now)
 				timer = time.NewTimer(waitDuration)
-				log.Printf("LOG: (SchedulerService: runSchedulerLoop) - Task(s) are scheduled but not due. Task next due in: %s\n", waitDuration)
+				log.Printf("LOG: (SchedulerService: runSchedulerLoop) - Task(s) are scheduled but not due. Earliest due task in: %s\n", waitDuration)
 			}
 		} else {
 			// no tasks on the priority queue, wait for a task
@@ -282,6 +312,20 @@ func (s *schedulerServiceImpl) executeTask(task *u.ScheduledTask) {
 			}
 		} else {
 			log.Printf("ERROR: (SchedulerService: executeTask) - Invalid payload type for AccrueCredits task ID %s. Expected PayloadTransferCreditAccrual.\n", task.ID)
+		}
+	case u.TaskTypeLeagueWeeklyTick:
+		if payload, ok := task.Payload.(u.PayloadLeagueWeeklyTick); ok {
+			log.Printf("LOG: (SchedulerService: executeTask) - League weekly tick for LeagueID: %s\n", payload.LeagueID)
+			if s.leagueService == nil {
+				log.Printf("ERROR: (SchedulerService: executeTask) - LeagueService is not set. Cannot process weekly tick for LeagueID: %s\n", payload.LeagueID)
+				return
+			}
+			if err := s.leagueService.ProcessWeeklyTick(payload.LeagueID); err != nil {
+				log.Printf("ERROR: (SchedulerService: executeTask) - error occurred in ProcessWeeklyTick: %v\n", err)
+				return
+			}
+		} else {
+			log.Printf("ERROR: (SchedulerService: executeTask) - Invalid payload type for LeagueWeeklyTick task ID %s.\n", task.ID)
 		}
 	default:
 		log.Printf("ERROR: (SchedulerService: executeTask) - Unknown task type: %d for task ID %s\n", task.Type, task.ID)

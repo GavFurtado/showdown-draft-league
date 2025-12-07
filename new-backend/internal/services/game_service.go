@@ -26,12 +26,14 @@ type GameService interface {
 	// New/Refactored methods
 	ReportGameResult(gameID uuid.UUID, dto *common.ReportGameDTO) error
 	FinalizeGameResult(gameID uuid.UUID, dto *common.FinalizeGameDTO) error
+	SetLeagueService(leagueService LeagueService)
 }
 
 type gameServiceImpl struct {
-	gameRepo   repositories.GameRepository
-	leagueRepo repositories.LeagueRepository
-	playerRepo repositories.PlayerRepository
+	gameRepo    repositories.GameRepository
+	leagueRepo  repositories.LeagueRepository
+	playerRepo  repositories.PlayerRepository
+	leagueService LeagueService
 }
 
 func NewGameService(
@@ -44,6 +46,10 @@ func NewGameService(
 		leagueRepo: leagueRepo,
 		playerRepo: playerRepo,
 	}
+}
+
+func (s *gameServiceImpl) SetLeagueService(leagueService LeagueService) {
+	s.leagueService = leagueService
 }
 
 func (s *gameServiceImpl) GetGameByID(ID uuid.UUID) (*models.Game, error) {
@@ -154,6 +160,16 @@ func (s *gameServiceImpl) GenerateRegularSeasonGames(leagueID uuid.UUID) error {
 	if err != nil {
 		log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Couldn't fetch league %s: %v\n", leagueID, err)
 		return err
+	}
+
+	// Check if games have already been generated for this league
+	gamesExist, err := s.gameRepo.HasGames(leagueID, enums.GameTypeRegularSeason)
+	if err != nil {
+		log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Failed to check for existing games for league %s: %v\n", leagueID, err)
+		return common.ErrInternalService
+	}
+	if gamesExist {
+		return common.ErrGamesAlreadyGenerated
 	}
 
 	// League needs to be in POST_DRAFT status and not a BRACKET_ONLY Season League
