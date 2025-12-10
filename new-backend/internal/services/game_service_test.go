@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	mock_repos "github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
@@ -110,6 +111,7 @@ func TestGameService_GenerateRegularSeasonGames_Success(t *testing.T) {
 	}
 
 	mockLeagueRepo.On("GetLeagueByID", leagueID).Return(mockLeague, nil)
+	mockGameRepo.On("HasGames", leagueID, enums.GameTypeRegularSeason).Return(false, nil).Once()
 	mockPlayerRepo.On("GetPlayersByLeagueAndGroupNumber", leagueID, 1).Return(mockPlayers, nil)
 	// We expect 6 games for a 4-player round-robin.
 	mockGameRepo.On("CreateGames", mock.MatchedBy(func(games []*models.Game) bool {
@@ -126,6 +128,39 @@ func TestGameService_GenerateRegularSeasonGames_Success(t *testing.T) {
 	mockLeagueRepo.AssertExpectations(t)
 	mockPlayerRepo.AssertExpectations(t)
 	mockGameRepo.AssertExpectations(t)
+}
+
+func TestGameService_GenerateRegularSeasonGames_ErrGamesAlreadyGenerated(t *testing.T) {
+	// ARRANGE
+	mockLeagueRepo := new(mock_repos.MockLeagueRepository)
+	mockPlayerRepo := new(mock_repos.MockPlayerRepository)
+	mockGameRepo := new(mock_repos.MockGameRepository)
+
+	leagueID := uuid.New()
+	mockLeague := &models.League{
+		ID:     leagueID,
+		Status: enums.LeagueStatusPostDraft,
+		Format: &models.LeagueFormat{
+			SeasonType: enums.LeagueSeasonTypeHybrid,
+			GroupCount: 1,
+		},
+	}
+
+	mockLeagueRepo.On("GetLeagueByID", leagueID).Return(mockLeague, nil)
+	mockGameRepo.On("HasGames", leagueID, enums.GameTypeRegularSeason).Return(true, nil).Once()
+
+	gameService := services.NewGameService(mockGameRepo, mockLeagueRepo, mockPlayerRepo)
+
+	// ACT
+	err := gameService.GenerateRegularSeasonGames(leagueID)
+
+	// ASSERT
+	assert.Error(t, err)
+	assert.Equal(t, common.ErrGamesAlreadyGenerated, err)
+	mockLeagueRepo.AssertExpectations(t)
+	mockGameRepo.AssertExpectations(t)
+	mockPlayerRepo.AssertNotCalled(t, "GetPlayersByLeagueAndGroupNumber")
+	mockGameRepo.AssertNotCalled(t, "CreateGames")
 }
 
 func TestGameService_GenerateRegularSeasonGames_ErrInvalidState(t *testing.T) {
@@ -147,6 +182,8 @@ func TestGameService_GenerateRegularSeasonGames_ErrInvalidState(t *testing.T) {
 	}
 
 	mockLeagueRepo.On("GetLeagueByID", leagueID).Return(mockLeague, nil)
+	mockGameRepo.On("HasGames", leagueID, enums.GameTypeRegularSeason).Return(false, nil).Once() // Expect this check first
+
 	gameService := services.NewGameService(mockGameRepo, mockLeagueRepo, mockPlayerRepo)
 
 	// ACT
