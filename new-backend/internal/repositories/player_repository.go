@@ -101,12 +101,12 @@ func (r *playerRepositoryImpl) GetPlayersByLeague(leagueID uuid.UUID) ([]models.
 func (r *playerRepositoryImpl) GetPlayersByLeagueAndGroupNumber(leagueID uuid.UUID, groupNumber int) ([]models.Player, error) {
 	var players []models.Player
 	err := r.db.
-		Where("league_id = ? AND group_number = ?", leagueID).
+		Where("league_id = ? AND group_number = ?", leagueID, groupNumber).
 		Order("draft_position ASC").
 		Find(&players).Error
 
 	if err != nil {
-		return nil, fmt.Errorf("(Error: GetPlayersByLeague) - failed to get players: %w", err)
+		return nil, fmt.Errorf("(Error: GetPlayersByLeagueAndGroupNumber) - failed to get players: %w", err)
 	}
 	return players, nil
 }

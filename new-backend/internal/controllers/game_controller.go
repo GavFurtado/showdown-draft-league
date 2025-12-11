@@ -15,47 +15,27 @@ import (
 )
 
 type GameController interface {
-
 	ReportGame(ctx *gin.Context)
-
 	FinalizeGame(ctx *gin.Context)
-
 	GetGameByID(ctx *gin.Context)
-
 	GetGamesByLeague(ctx *gin.Context)
-
 	GetGamesByPlayer(ctx *gin.Context)
-
 	StartRegularSeason(ctx *gin.Context)
-
 	GeneratePlayoffBracket(ctx *gin.Context)
-
 }
 
 type gameControllerImpl struct {
-
-	gameService services.GameService
-
+	gameService   services.GameService
 	leagueService services.LeagueService
-
 }
 
-
-
 func NewGameController(
-
 	gameService services.GameService,
-
 	leagueService services.LeagueService,
-
 ) GameController {
-
 	return &gameControllerImpl{
-
 		gameService:   gameService,
-
 		leagueService: leagueService,
-
 	}
 
 }

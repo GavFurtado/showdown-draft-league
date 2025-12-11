@@ -30,9 +30,9 @@ type GameService interface {
 }
 
 type gameServiceImpl struct {
-	gameRepo    repositories.GameRepository
-	leagueRepo  repositories.LeagueRepository
-	playerRepo  repositories.PlayerRepository
+	gameRepo      repositories.GameRepository
+	leagueRepo    repositories.LeagueRepository
+	playerRepo    repositories.PlayerRepository
 	leagueService LeagueService
 }
 
@@ -853,7 +853,7 @@ func (s *gameServiceImpl) getSeededPlayers(league *models.League, playersByGroup
 	for i := range playersByGroup {
 		// Ensure the group is not empty before attempting to sort
 		if len(playersByGroup[i]) == 0 { // should never be true
-			log.Printf("INFO: (Service: getSeededPlayers) - Encountered an empty player group %d for league %s. Skipping group.", i+1, league.ID)
+			log.Printf("INFO: (Service: getSeededPlayers) - Encountered an empty player group %d for league %s. Skipping group.\n", i+1, league.ID)
 			continue
 		}
 		sortPlayers(playersByGroup[i]) // Sorts in place
@@ -875,7 +875,7 @@ func (s *gameServiceImpl) getSeededPlayers(league *models.League, playersByGroup
 	// This check is crucial if numPlayersToQualifyPerGroup * GroupCount < PlayoffParticipantCount
 	// or if some groups had fewer players than expected.
 	if len(qualifyingPlayers) != league.Format.PlayoffParticipantCount { // should never be true
-		log.Printf("ERROR: (Service: getSeededPlayers) - Mismatch in qualified players count. Expected %d, got %d for league %s. This might indicate an issue with league configuration or player data.",
+		log.Printf("ERROR: (Service: getSeededPlayers) - Mismatch in qualified players count. Expected %d, got %d for league %s. This might indicate an issue with league configuration or player data.\n",
 			league.Format.PlayoffParticipantCount, len(qualifyingPlayers), league.ID)
 		return nil, common.ErrInsufficientPlayersForPlayoffs
 	}
@@ -965,7 +965,7 @@ func (s *gameServiceImpl) generateRoundRobinGamesForGroup(leagueID uuid.UUID, pl
 			if byePlayerID == uuid.Nil {
 				byePlayerID = playerOppositeID
 			}
-			fmt.Printf("INFO: (Service: generateRoundRobinGamesForGroup) Player %s (league %s) of group %d got a bye.", byePlayerID, leagueID, groupNumber)
+			fmt.Printf("\nINFO: (Service: generateRoundRobinGamesForGroup): Player %s (league %s) of group %d got a bye.\n", byePlayerID, leagueID, groupNumber)
 		}
 
 		// Remaining Pairs: Pair rest of the players with their opposite

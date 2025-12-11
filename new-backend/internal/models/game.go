@@ -29,21 +29,21 @@ type Game struct {
 	BracketPosition     *string          `gorm:"column:bracket_position" json:"BracketPosition"` // flavour text for the type of playoff game
 	ShowdownReplayLinks []string         `gorm:"type:jsonb;column:showdown_replay_links" binding:"url" json:"ShowdownReplayLinks"`
 
-	ReportingPlayerID uuid.UUID `gorm:"type:uuid;not null;column:reporting_player_id" json:"ReportingPlayerID"`
+	ReportingPlayerID *uuid.UUID `gorm:"type:uuid;column:reporting_player_id" json:"ReportingPlayerID,omitempty"`
 	ApproverID        *uuid.UUID `gorm:"type:uuid;column:approver_id" json:"ApproverID,omitempty"`
-	WinnerToGameID    uuid.UUID `gorm:"type:uuid;column:winner_to_game_id" json:"WinnerToGameID"`
-	LoserToGameID     uuid.UUID `gorm:"type:uuid;column:loser_to_game_id" json:"LoserToGameID"`
+	WinnerToGameID    uuid.UUID  `gorm:"type:uuid;column:winner_to_game_id" json:"WinnerToGameID"`
+	LoserToGameID     uuid.UUID  `gorm:"type:uuid;column:loser_to_game_id" json:"LoserToGameID"`
 
 	CreatedAt time.Time      `json:"CreatedAt" gorm:"column:created_at"`
 	UpdatedAt time.Time      `json:"UpdatedAt" gorm:"column:updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index;column:deleted_at" json:"-"`
 
 	// Relationships
-	ReportingPlayer Player  `gorm:"foreignKey:reporting_player_id;references:ID" json:"ReportingPlayer,omitempty"`
+	ReportingPlayer *Player `gorm:"foreignKey:ReportingPlayerID;references:ID" json:"ReportingPlayer,omitempty"`
 	Approver        *User   `gorm:"foreignKey:ApproverID;references:id" json:"Approver,omitempty"`
-	League          League  `gorm:"foreignKey:league_id;references:id" json:"League,omitempty"`
+	League          *League `gorm:"foreignKey:league_id;references:id" json:"League,omitempty"`
 	Player1         *Player `gorm:"foreignKey:player1_id;references:ID" json:"Player1,omitempty"`
 	Player2         *Player `gorm:"foreignKey:player2_id;references:ID" json:"Player2,omitempty"`
-	Winner          Player  `gorm:"foreignKey:winner_id;references:ID" json:"Winner,omitempty"`
-	Loser           Player  `gorm:"foreignKey:loser_id;references:ID" json:"Loser,omitempty"`
+	Winner          *Player `gorm:"foreignKey:winner_id;references:ID" json:"Winner,omitempty"`
+	Loser           *Player `gorm:"foreignKey:loser_id;references:ID" json:"Loser,omitempty"`
 }

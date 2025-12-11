@@ -188,23 +188,15 @@ func RegisterRoutes(
 			}
 
 			// Draft Management Endpoints
-
 			draft := leagues.Group(":leagueId/draft")
 
 			{
-
 				draft.GET("/:draftId",
-
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadDraft),
-
 					controllers.DraftController.GetDraftByID)
-
 				draft.GET("/",
-
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadDraft),
-
 					controllers.DraftController.GetDraftByLeagueID)
-
 				draft.POST("/start",
 
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateDraft),
@@ -226,15 +218,11 @@ func RegisterRoutes(
 			}
 
 			// Transfer Management Endpoints
-
 			transfers := leagues.Group(":leagueId/transfers")
-
 			{
-
 				transfers.POST("/start",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionStartTransferPeriod),
 					controllers.TransferController.StartTransferPeriod)
-
 				transfers.POST("/end",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionEndTransferPeriod),
 					controllers.TransferController.EndTransferPeriod)
@@ -245,7 +233,6 @@ func RegisterRoutes(
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateDraftedPokemon),
 					controllers.TransferController.PickupFreeAgent)
 			}
-
 		}
 
 		users := api.Group("/users")
@@ -256,7 +243,6 @@ func RegisterRoutes(
 			users.PUT("/profile", controllers.UserController.UpdateProfile)
 			users.GET("/:id/players", controllers.PlayerController.GetPlayersByUser)
 		}
-
 	}
 }
 
