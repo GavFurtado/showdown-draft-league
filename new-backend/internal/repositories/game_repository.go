@@ -41,10 +41,8 @@ type GameRepository interface {
 	GetDisputedGamesByLeague(leagueID uuid.UUID) ([]models.Game, error)
 	// checks if games of a specific type exist for a given league.
 	HasGames(leagueID uuid.UUID, gameType enums.GameType) (bool, error)
-
-	// New/Refactored methods for game updates
 	UpdateGameReport(gameID uuid.UUID, loserID uuid.UUID, dto *common.ReportGameDTO) error
-	FinalizeGameAndUpdateStats(gameID uuid.UUID, loserID uuid.UUID, dto *common.FinalizeGameDTO) error
+	FinalizeGameAndUpdateStats(game *models.Game, loserID uuid.UUID, dto *common.FinalizeGameDTO) error
 }
 
 type gameRepositoryImpl struct {
@@ -75,7 +73,7 @@ func (r *gameRepositoryImpl) GetGameByID(id uuid.UUID) (models.Game, error) {
 		Preload("Winner").
 		Preload("Loser").
 		Preload("ReportingPlayer").
-		Preload("Approver"). // Add Approver preload
+		Preload("ApproverPlayer"). 
 		First(&game, "id = ?", id).Error
 
 	if err != nil {
@@ -209,7 +207,6 @@ func (r *gameRepositoryImpl) HasGames(leagueID uuid.UUID, gameType enums.GameTyp
 	return count > 0, nil
 }
 
-
 // marks a game as disputed
 func (r *gameRepositoryImpl) DisputeGame(gameID uuid.UUID, reporterID uuid.UUID) error {
 	updates := map[string]any{
@@ -226,7 +223,6 @@ func (r *gameRepositoryImpl) DisputeGame(gameID uuid.UUID, reporterID uuid.UUID)
 	}
 	return nil
 }
-
 
 // gets head-to-head record between two players
 func (r *gameRepositoryImpl) GetHeadToHeadRecord(player1ID, player2ID uuid.UUID) ([]models.Game, error) {
@@ -291,7 +287,6 @@ func (r *gameRepositoryImpl) CreateGames(games []*models.Game) error {
 	return tx.Commit().Error
 }
 
-
 // soft deletes a game
 func (r *gameRepositoryImpl) DeleteGame(gameID uuid.UUID) error {
 	err := r.db.Delete(&models.Game{}, "id = ?", gameID).Error
@@ -321,7 +316,7 @@ func (r *gameRepositoryImpl) UpdateGameReport(gameID uuid.UUID, loserID uuid.UUI
 }
 
 // FinalizeGameAndUpdateStats handles the entire process of finalizing a game within a single transaction.
-func (r *gameRepositoryImpl) FinalizeGameAndUpdateStats(gameID uuid.UUID, loserID uuid.UUID, dto *common.FinalizeGameDTO) error {
+func (r *gameRepositoryImpl) FinalizeGameAndUpdateStats(game *models.Game, loserID uuid.UUID, dto *common.FinalizeGameDTO) error {
 	tx := r.db.Begin()
 	if tx.Error != nil {
 		return fmt.Errorf("(Repository: FinalizeGameAndUpdateStats) - failed to begin transaction: %w", tx.Error)
@@ -333,31 +328,24 @@ func (r *gameRepositoryImpl) FinalizeGameAndUpdateStats(gameID uuid.UUID, loserI
 		}
 	}()
 
-	// Fetch current game state for comparison
-	var oldGame models.Game
-	if err := tx.First(&oldGame, "id = ?", gameID).Error; err != nil {
-		tx.Rollback()
-		return fmt.Errorf("FinalizeGameAndUpdateStats: failed to get game %s: %w", gameID, err)
-	}
-
 	// If game was already completed, revert old player stats
-	if oldGame.Status == enums.GameStatusCompleted && oldGame.WinnerID != nil && oldGame.LoserID != nil {
-		if err := r.decrementPlayerStats(tx, *oldGame.WinnerID, *oldGame.LoserID); err != nil {
+	if game.Status == enums.GameStatusCompleted && game.WinnerID != nil && game.LoserID != nil {
+		if err := r.decrementPlayerStats(tx, *game.WinnerID, *game.LoserID); err != nil {
 			tx.Rollback()
-			return fmt.Errorf("FinalizeGameAndUpdateStats: failed to decrement old player stats for game %s: %w", gameID, err)
+			return fmt.Errorf("FinalizeGameAndUpdateStats: failed to decrement old player stats for game %s: %w", game.ID, err)
 		}
 	}
 
 	// Update the game record with the final results
-	if err := r.finalizeGame(tx, gameID, loserID, dto); err != nil {
+	if err := r.finalizeGame(tx, game.ID, loserID, dto); err != nil {
 		tx.Rollback()
-		return fmt.Errorf("FinalizeGameAndUpdateStats: failed to finalize game %s: %w", gameID, err)
+		return fmt.Errorf("FinalizeGameAndUpdateStats: failed to finalize game %s: %w", game.ID, err)
 	}
 
 	// Apply new player stats
 	if err := r.incrementPlayerStats(tx, dto.WinnerID, loserID); err != nil {
 		tx.Rollback()
-		return fmt.Errorf("FinalizeGameAndUpdateStats: failed to increment new player stats for game %s: %w", gameID, err)
+		return fmt.Errorf("FinalizeGameAndUpdateStats: failed to increment new player stats for game %s: %w", game.ID, err)
 	}
 
 	return tx.Commit().Error
@@ -365,7 +353,7 @@ func (r *gameRepositoryImpl) FinalizeGameAndUpdateStats(gameID uuid.UUID, loserI
 
 // finalizeGame is a private helper to update the game record within a transaction.
 func (r *gameRepositoryImpl) finalizeGame(tx *gorm.DB, gameID uuid.UUID, loserID uuid.UUID, dto *common.FinalizeGameDTO) error {
-	updates := map[string]interface{}{
+	updates := map[string]any{
 		"winner_id":             dto.WinnerID,
 		"loser_id":              loserID,
 		"player1_wins":          dto.Player1Wins,

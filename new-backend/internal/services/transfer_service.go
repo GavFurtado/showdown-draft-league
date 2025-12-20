@@ -215,7 +215,17 @@ func (s *transferServiceImpl) DropPokemon(currentUser *models.User, leagueID, dr
 		return common.ErrPokemonAlreadyReleased
 	}
 
-	err = s.draftedPokemonRepo.ReleasePokemonTransaction(draftedPokemonID, player, league.Format.DropCost, league.CurrentWeekNumber)
+	// Check if dropping this pokemon would put the player below the minimum
+	currentPokemonCount, err := s.draftedPokemonRepo.GetDraftedPokemonCountByPlayer(player.ID)
+	if err != nil {
+		log.Printf("LOG: (Error: TransferService.DropPokemon) - could not get pokemon count for player %s: %v", player.ID, err)
+		return common.ErrInternalService
+	}
+	if currentPokemonCount <= int64(league.MinPokemonPerPlayer) {
+		return common.ErrBelowMinPokemon
+	}
+
+	err = s.draftedPokemonRepo.ReleasePokemonTransaction(draftedPokemon, player, league.Format.DropCost, league.CurrentWeekNumber)
 	if err != nil {
 		log.Printf("LOG: (Error: TransferService.DropPokemon) - Failed to release pokemon with ID %s: %v", draftedPokemonID, err)
 		return common.ErrInternalService
@@ -265,6 +275,16 @@ func (s *transferServiceImpl) PickupFreeAgent(currentUser *models.User, leagueID
 
 	if !leaguePokemon.IsAvailable {
 		return common.ErrConflict // Pokemon not available
+	}
+
+	// Check if picking up this pokemon would put the player above the maximum
+	currentPokemonCount, err := s.draftedPokemonRepo.GetDraftedPokemonCountByPlayer(player.ID)
+	if err != nil {
+		log.Printf("LOG: (Error: TransferService.PickupFreeAgent) - could not get pokemon count for player %s: %v", player.ID, err)
+		return common.ErrInternalService
+	}
+	if currentPokemonCount >= int64(league.MaxPokemonPerPlayer) {
+		return common.ErrAboveMaxPokemon
 	}
 
 	newDraftedPokemon := &models.DraftedPokemon{

@@ -92,7 +92,7 @@ func RegisterRoutes(
 					"/player/:playerId",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadGame),
 					controllers.GameController.GetGamesByPlayer)
-				games.POST(
+				games.PUT(
 					"/:gameId/report",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReportGame),
 					controllers.GameController.ReportGame)
@@ -233,6 +233,7 @@ func RegisterRoutes(
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateDraftedPokemon),
 					controllers.TransferController.PickupFreeAgent)
 			}
+
 		}
 
 		users := api.Group("/users")
@@ -243,6 +244,7 @@ func RegisterRoutes(
 			users.PUT("/profile", controllers.UserController.UpdateProfile)
 			users.GET("/:id/players", controllers.PlayerController.GetPlayersByUser)
 		}
+
 	}
 }
 

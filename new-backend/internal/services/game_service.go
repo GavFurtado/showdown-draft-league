@@ -23,7 +23,6 @@ type GameService interface {
 	GenerateRegularSeasonGames(leagueID uuid.UUID) error
 	GeneratePlayoffBracket(leagueID uuid.UUID) error
 
-	// New/Refactored methods
 	ReportGameResult(gameID uuid.UUID, dto *common.ReportGameDTO) error
 	FinalizeGameResult(gameID uuid.UUID, dto *common.FinalizeGameDTO) error
 	SetLeagueService(leagueService LeagueService)
@@ -90,7 +89,14 @@ func (s *gameServiceImpl) GetGamesByPlayer(playerID uuid.UUID) ([]models.Game, e
 func (s *gameServiceImpl) ReportGameResult(gameID uuid.UUID, dto *common.ReportGameDTO) error {
 	game, err := s.gameRepo.GetGameByID(gameID)
 	if err != nil {
-		return fmt.Errorf("ReportGameResult: failed to get game %s: %w", gameID, err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return common.ErrGameNotFound
+		}
+		return fmt.Errorf("%w: %s", common.ErrInternalService, err.Error())
+	}
+
+	if game.Status != enums.GameStatusScheduled {
+		return common.ErrConflict
 	}
 
 	// Determine loser ID
@@ -103,18 +109,16 @@ func (s *gameServiceImpl) ReportGameResult(gameID uuid.UUID, dto *common.ReportG
 		return common.ErrInvalidInput // Winner must be one of the players in the game
 	}
 
-	// Basic validation: reported player must be one of the game's participants
-	if dto.ReporterID != game.Player1ID && dto.ReporterID != game.Player2ID {
-		return fmt.Errorf("%w: reporter is not a participant in the game", common.ErrUnauthorized)
-	}
-
 	// Ensure winner and loser are distinct
 	if dto.WinnerID == loserID {
 		return fmt.Errorf("%w: winner and loser cannot be the same", common.ErrInvalidInput)
 	}
 
 	// Ensure scores are not tied if a winner is provided
-	if dto.Player1Wins == dto.Player2Wins {
+	if dto.Player1Wins == nil || dto.Player2Wins == nil {
+		return fmt.Errorf("%w: player wins must be provided", common.ErrInvalidInput)
+	}
+	if *dto.Player1Wins == *dto.Player2Wins {
 		return fmt.Errorf("%w: scores cannot be tied for a reported result", common.ErrInvalidInput)
 	}
 
@@ -130,7 +134,14 @@ func (s *gameServiceImpl) FinalizeGameResult(gameID uuid.UUID, dto *common.Final
 	// Fetch game to determine loser ID
 	game, err := s.gameRepo.GetGameByID(gameID)
 	if err != nil {
-		return fmt.Errorf("FinalizeGameResult: failed to get game %s: %w", gameID, err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return common.ErrGameNotFound
+		}
+		return fmt.Errorf("%w: %s", common.ErrInternalService, err.Error())
+	}
+
+	if !(game.Status == enums.GameStatusApprovalPending || game.Status == enums.GameStatusDisputed) {
+		return common.ErrConflict
 	}
 
 	// Determine loser ID for the final result
@@ -143,9 +154,17 @@ func (s *gameServiceImpl) FinalizeGameResult(gameID uuid.UUID, dto *common.Final
 		return common.ErrInvalidInput // Winner must be one of the players in the game
 	}
 
+	// Ensure scores are not tied
+	if dto.Player1Wins == nil || dto.Player2Wins == nil {
+		return fmt.Errorf("%w: player wins must be provided", common.ErrInvalidInput)
+	}
+	if *dto.Player1Wins == *dto.Player2Wins {
+		return fmt.Errorf("%w: scores cannot be tied for a finalized result", common.ErrInvalidInput)
+	}
+
 	// RBAC Check is handled in controller, service layer proceeds with business logic
 
-	err = s.gameRepo.FinalizeGameAndUpdateStats(gameID, loserID, dto)
+	err = s.gameRepo.FinalizeGameAndUpdateStats(&game, loserID, dto)
 	if err != nil {
 		return fmt.Errorf("FinalizeGameResult: failed to finalize game and update stats for game %s: %w", gameID, err)
 	}

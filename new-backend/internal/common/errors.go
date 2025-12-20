@@ -34,6 +34,8 @@ var (
 	ErrInsufficientDraftPoints        = errors.New("insufficient draft points to complete this operation")
 	ErrInsufficientTransferCredits    = errors.New("insufficient transfer credits to complete this operation")
 	ErrPokemonAlreadyReleased         = errors.New("this pokemon has already been released")
+	ErrBelowMinPokemon                = errors.New("dropping this pokemon would put you below the league's minimum")
+	ErrAboveMaxPokemon                = errors.New("picking up this pokemon would put you above the league's maximum")
 	ErrNoPlayerForDraft               = errors.New("not enough players to start draft")
 	ErrTooManyRequestedPicks          = errors.New("too many draft picks were requested")
 	ErrCannotSkipBelowMinimumRoster   = errors.New("skip action not allowed as your roster size will be too small")

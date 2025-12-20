@@ -8,6 +8,7 @@ import (
 )
 
 type Config struct {
+	Environment         string
 	DiscordClientID     string
 	DiscordClientSecret string
 	DiscordRedirectURI  string
@@ -27,6 +28,7 @@ func LoadConfig() *Config {
 	}
 
 	cfg := &Config{
+		Environment:         getEnv("ENV"),
 		DiscordClientID:     getEnv("DISCORD_CLIENT_ID"),
 		DiscordClientSecret: getEnv("DISCORD_CLIENT_SECRET"),
 		DiscordRedirectURI:  getEnv("DISCORD_REDIRECT_URI"),

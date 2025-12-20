@@ -40,7 +40,7 @@ type Game struct {
 
 	// Relationships
 	ReportingPlayer *Player `gorm:"foreignKey:ReportingPlayerID;references:ID" json:"ReportingPlayer,omitempty"`
-	Approver        *User   `gorm:"foreignKey:ApproverID;references:id" json:"Approver,omitempty"`
+	ApproverPlayer  *Player `gorm:"foreignKey:ApproverID;references:ID" json:"ApproverPlayer,omitempty"`
 	League          *League `gorm:"foreignKey:league_id;references:id" json:"League,omitempty"`
 	Player1         *Player `gorm:"foreignKey:player1_id;references:ID" json:"Player1,omitempty"`
 	Player2         *Player `gorm:"foreignKey:player2_id;references:ID" json:"Player2,omitempty"`

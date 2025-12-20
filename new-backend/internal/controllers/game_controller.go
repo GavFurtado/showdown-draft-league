@@ -118,6 +118,7 @@ func (c *gameControllerImpl) ReportGame(ctx *gin.Context) {
 
 	var dto common.ReportGameDTO
 	if err := ctx.ShouldBindJSON(&dto); err != nil {
+		log.Printf("ERROR: (Controller: ReportGame): Error binding request: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid request payload: %v", err)})
 		return
 	}
@@ -132,7 +133,10 @@ func (c *gameControllerImpl) ReportGame(ctx *gin.Context) {
 	dto.ReporterID = reporterIDStr.(uuid.UUID)
 
 	if err := c.gameService.ReportGameResult(gameID, &dto); err != nil {
+		log.Printf("ERROR: (Controller: FinalizeGameResult) - %s\n", err.Error())
 		switch {
+		case errors.Is(err, common.ErrConflict):
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "This game is either already finalized or is pending approval"})
 		case errors.Is(err, common.ErrInvalidInput), errors.Is(err, common.ErrUnauthorized):
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		case errors.Is(err, common.ErrGameNotFound):
@@ -169,7 +173,10 @@ func (c *gameControllerImpl) FinalizeGame(ctx *gin.Context) {
 	dto.FinalizerID = finalizerID
 
 	if err := c.gameService.FinalizeGameResult(gameID, &dto); err != nil {
+		log.Printf("ERROR: (Controller: FinalizeGameResult) - %s\n", err.Error())
 		switch {
+		case errors.Is(err, common.ErrConflict):
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Game status not valid to Finalize"})
 		case errors.Is(err, common.ErrInvalidInput):
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		case errors.Is(err, common.ErrGameNotFound):

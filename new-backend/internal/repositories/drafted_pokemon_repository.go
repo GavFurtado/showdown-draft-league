@@ -26,7 +26,7 @@ type DraftedPokemonRepository interface {
 	// gets the next draft pick number for a league
 	GetNextDraftPickNumber(leagueID uuid.UUID) (int, error)
 	// releases a Pokemon back to free agents
-	ReleasePokemonTransaction(draftedPokemonID uuid.UUID, player *models.Player, dropCost int, releasedWeek int) error
+	ReleasePokemonTransaction(draftedPokemon *models.DraftedPokemon, player *models.Player, dropCost int, releasedWeek int) error
 	// gets count of active Pokemon drafted by a player
 	GetDraftedPokemonCountByPlayer(playerID uuid.UUID) (int64, error)
 	// gets all Pokemon drafted by a specific player (including released)
@@ -69,6 +69,7 @@ func (r *draftedPokemonRepositoryImpl) GetDraftedPokemonByID(id uuid.UUID) (*mod
 		Preload("Player").
 		Preload("Player.User").
 		Preload("PokemonSpecies").
+		Preload("LeaguePokemon").
 		First(&draftedPokemon, "id = ?", id).Error
 
 	if err != nil {
@@ -169,7 +170,7 @@ func (r *draftedPokemonRepositoryImpl) GetNextDraftPickNumber(leagueID uuid.UUID
 }
 
 // ReleasePokemonTransaction releases a Pokemon back to free agents in a transaction
-func (r *draftedPokemonRepositoryImpl) ReleasePokemonTransaction(draftedPokemonID uuid.UUID, player *models.Player, dropCost int, releasedWeek int) error {
+func (r *draftedPokemonRepositoryImpl) ReleasePokemonTransaction(draftedPokemon *models.DraftedPokemon, player *models.Player, dropCost int, releasedWeek int) error {
 	tx := r.db.Begin()
 	if tx.Error != nil {
 		return fmt.Errorf("(Error: ReleasePokemonTransaction) - failed to start transaction: %w", tx.Error)
@@ -181,23 +182,16 @@ func (r *draftedPokemonRepositoryImpl) ReleasePokemonTransaction(draftedPokemonI
 		}
 	}()
 
-	// 1. Get the drafted pokemon to find the corresponding league_pokemon_id
-	var draftedPokemon models.DraftedPokemon
-	if err := tx.First(&draftedPokemon, "id = ?", draftedPokemonID).Error; err != nil {
-		tx.Rollback()
-		if err == gorm.ErrRecordNotFound {
-			return fmt.Errorf("(Error: ReleasePokemonTransaction) - drafted pokemon not found: %w", err)
-		}
-		return fmt.Errorf("(Error: ReleasePokemonTransaction) - failed to get drafted pokemon: %w", err)
-	}
-
-	// 2. Update the drafted pokemon to be released
-	if err := tx.Model(&draftedPokemon).Updates(map[string]interface{}{"is_released": true, "released_week": releasedWeek}).Error; err != nil {
+	// 1. Update the drafted pokemon to be released
+	if err := tx.Model(&draftedPokemon).Updates(map[string]any{
+		"is_released":   true,
+		"released_week": releasedWeek,
+	}).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("(Error: ReleasePokemonTransaction) - failed to release pokemon: %w", err)
 	}
 
-	// 3. Update the corresponding league pokemon to be available again
+	// 2. Update the corresponding league pokemon to be available again
 	if draftedPokemon.LeaguePokemonID != uuid.Nil {
 		if err := tx.Model(&models.LeaguePokemon{}).Where("id = ?", draftedPokemon.LeaguePokemonID).Update("is_available", true).Error; err != nil {
 			tx.Rollback()
@@ -205,7 +199,7 @@ func (r *draftedPokemonRepositoryImpl) ReleasePokemonTransaction(draftedPokemonI
 		}
 	}
 
-	// 4. Decrement player's TransferCredits
+	// 3. Decrement player's TransferCredits
 	player.TransferCredits -= dropCost
 	if err := tx.Save(player).Error; err != nil {
 		tx.Rollback()
