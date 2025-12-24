@@ -139,10 +139,7 @@ func (r *leagueRepositoryImpl) GetLeaguesByUser(userID uuid.UUID) ([]models.Leag
 
 // updates a league
 func (r *leagueRepositoryImpl) UpdateLeague(league *models.League) (*models.League, error) {
-	err := r.db.Select(
-		"name", "start_date", "end_date", "ruleset_description", "status",
-		"max_pokemon_per_player", "min_pokemon_per_player", "starting_draft_points", "format", "updated_at",
-	).Updates(league).Error
+	err := r.db.Updates(league).Error
 
 	if err != nil {
 		return nil, fmt.Errorf("(Error: UpdateLeague) - failed to update league: %v", err)

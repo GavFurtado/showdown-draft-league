@@ -59,18 +59,20 @@ func (s *schedulerServiceImpl) SetDraftService(draftService DraftService) {
 }
 
 // SetTransferService injects the dependency needed for the scheduler to execute transfer-related tasks.
+// This is set during application startup to break the circular dependency with TransferServer.
 func (s *schedulerServiceImpl) SetTransferService(transferService TransferService) {
 	s.transferService = transferService
 }
 
 // SetLeagueService injects the dependency needed for the scheduler to execute league-related tasks.
+// This is set during application startup to break the circular dependency with LeagueService.
 func (s *schedulerServiceImpl) SetLeagueService(leagueService LeagueService) {
 	s.leagueService = leagueService
 }
 
 // Start initializes the scheduler on application boot. It fetches all ongoing drafts
-// and active league phases from the database, reconstructs the necessary tasks (e.g.,
-// turn timeouts), and launches the main scheduling loop in a background goroutine.
+// and active league phases from the database, reconstructs the necessary tasks
+// (e.g.,turn timeouts), and launches the main scheduling loop in a background goroutine.
 func (s *schedulerServiceImpl) Start() error {
 	// fetch all ongoing drafts
 	drafts, err := s.draftRepo.GetAllDraftsByStatus(enums.DraftStatusOngoing)
@@ -160,19 +162,26 @@ func (s *schedulerServiceImpl) Start() error {
 	}
 
 	for _, league := range ongoingRegularSeasonLeagues {
-		// Calculate next tick to be 7 days from now. The ProcessWeeklyTick will handle its own rescheduling.
-		nextTickTime := time.Now().Add(7 * 24 * time.Hour)
-		newTask := &u.ScheduledTask{
-			ID:        fmt.Sprintf("%d_%s", u.TaskTypeLeagueWeeklyTick, league.ID),
-			ExecuteAt: nextTickTime,
-			Type:      u.TaskTypeLeagueWeeklyTick,
-			Payload: u.PayloadLeagueWeeklyTick{
-				LeagueID: league.ID,
-			},
+		if league.NextWeeklyTick != nil {
+			// If a tick is in the past, execute it immediately. Otherwise, schedule it for its designated time.
+			executeAt := *league.NextWeeklyTick
+			if executeAt.Before(time.Now()) {
+				log.Printf("LOG: (SchedulerService: Start) - Weekly tick for league %s is overdue. Scheduling for immediate execution.\n", league.ID)
+				executeAt = time.Now()
+			}
+
+			newTask := &u.ScheduledTask{
+				ID:        fmt.Sprintf("%d_%s", u.TaskTypeLeagueWeeklyTick, league.ID),
+				ExecuteAt: executeAt,
+				Type:      u.TaskTypeLeagueWeeklyTick,
+				Payload: u.PayloadLeagueWeeklyTick{
+					LeagueID: league.ID,
+				},
+			}
+			s.tasks.Push(newTask)
+			s.taskMap[newTask.ID] = newTask
+			log.Printf("LOG: (SchedulerService: Start) - Restored weekly tick for league %s, scheduled for %s.\n", league.ID, executeAt.String())
 		}
-		s.tasks.Push(newTask)
-		s.taskMap[newTask.ID] = newTask
-		log.Printf("LOG: (SchedulerService: Start) - Rescheduled weekly tick for league %s to %s.\n", league.ID, nextTickTime.String())
 	}
 
 	log.Printf("LOG: (SchedulerService: Start) - Running Scheduler\n")
@@ -184,7 +193,6 @@ func (s *schedulerServiceImpl) Start() error {
 // RegisterTask adds a new task to the scheduler. It is called by other services
 // to schedule a future action, such as the timeout for a draft turn.
 func (s *schedulerServiceImpl) RegisterTask(task *u.ScheduledTask) {
-
 	// add to the map for quick lookup and deregistration
 	s.taskMap[task.ID] = task
 	// send to the channel for the scheduler loop to pick up
@@ -195,7 +203,6 @@ func (s *schedulerServiceImpl) RegisterTask(task *u.ScheduledTask) {
 // runSchedulerLoop is the main loop of the scheduler that processes tasks.
 func (s *schedulerServiceImpl) runSchedulerLoop() {
 	var timer *time.Timer
-
 	for {
 		now := time.Now()
 		nextTask, exists := s.tasks.Peek()
@@ -234,6 +241,7 @@ func (s *schedulerServiceImpl) runSchedulerLoop() {
 			s.executeTask(task)
 			delete(s.taskMap, task.ID)
 		case <-s.stopChan:
+			// currently nothing sends a signal to this channel
 			// Stop() call was made
 			log.Printf("LOG: Scheduler received stop signal. Shutting Down. Scheduler can be restarted by restarting the server.\n")
 			if timer != nil {

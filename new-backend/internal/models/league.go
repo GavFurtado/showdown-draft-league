@@ -29,8 +29,10 @@ type League struct {
 	DeletedAt           gorm.DeletedAt     `gorm:"index;column:deleted_at" json:"-"`
 	DiscordWebhookURL   *string            `gorm:"column:discord_webhook_url" json:"DiscordWebhookURL"`
 	CurrentWeekNumber   int                `gorm:"not null;default:0;column:current_week_number" json:"CurrentWeekNumber"` // starts with 1, 0 is invalid and used when not relevant
+	NextWeeklyTick      *time.Time         `gorm:"type:timestamp with time zone;column:next_weekly_tick" json:"NextWeeklyTick"`
+	RegularSeasonStartDate *time.Time         `gorm:"type:timestamp with time zone;column:regular_season_start_date" json:"RegularSeasonStartDate"`
 
-	NewPlayerGroupNumber int `gorm:"default:1;column:new_player_group_count" json:"NewPlayerGroupCount"` // used to assign a group number for new players
+	NewPlayerGroupNumber int `gorm:"default:1;column:new_player_group_count" json:"NewPlayerGroupNumber"` // used to assign a group number for new players
 
 	// Relationships
 	Players []Player `gorm:"foreignKey:league_id" json:"Players,omitempty"`

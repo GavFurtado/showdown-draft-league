@@ -223,18 +223,26 @@ func (s *leagueServiceImpl) StartRegularSeason(leagueID uuid.UUID) error {
 		return fmt.Errorf("failed to generate regular season games: %w", err)
 	}
 
-	// 3. Update League Status and CurrentWeekNumber
+	// 3. Update League Status, CurrentWeekNumber, and RegularSeasonStartDate
+	now := time.Now()
 	league.Status = enums.LeagueStatusRegularSeason
 	league.CurrentWeekNumber = 1 // Season starts at Week 1
+	league.RegularSeasonStartDate = &now
 	if _, err := s.leagueRepo.UpdateLeague(league); err != nil {
-		log.Printf("ERROR: (LeagueService: StartRegularSeason) - Failed to update league %s status and current week number: %v\n", leagueID, err)
+		log.Printf("ERROR: (LeagueService: StartRegularSeason) - Failed to update league %s status, current week number, and regular season start date: %v\n", leagueID, err)
 		return fmt.Errorf("failed to update league status: %w", err)
 	}
-	log.Printf("LOG: (LeagueService: StartRegularSeason) - League %s status updated to REGULAR_SEASON, CurrentWeekNumber set to %d.\n", leagueID, league.CurrentWeekNumber)
+	log.Printf("LOG: (LeagueService: StartRegularSeason) - League %s status updated to REGULAR_SEASON, CurrentWeekNumber set to %d, RegularSeasonStartDate set to %s.\n", leagueID, league.CurrentWeekNumber, league.RegularSeasonStartDate.String())
 
 	// 4. Schedule the very first LeagueWeeklyTick
 	// The first tick should occur 7 days from now to advance to Week 2.
-	firstTickTime := time.Now().Add(7 * 24 * time.Hour)
+	firstTickTime := now.Add(7 * 24 * time.Hour)
+	league.NextWeeklyTick = &firstTickTime
+	if _, err := s.leagueRepo.UpdateLeague(league); err != nil {
+		log.Printf("ERROR: (LeagueService: StartRegularSeason) - Failed to update league %s with next weekly tick time: %v\n", leagueID, err)
+		return fmt.Errorf("failed to update league with next weekly tick time: %w", err)
+	}
+
 	firstTickTask := &utils.ScheduledTask{
 		ID:        fmt.Sprintf("%d_%s", utils.TaskTypeLeagueWeeklyTick, league.ID),
 		ExecuteAt: firstTickTime,
@@ -262,8 +270,9 @@ func (s *leagueServiceImpl) StartRegularSeason(leagueID uuid.UUID) error {
 	return nil
 }
 
-// ProcessWeeklyTick handles the automatic progression of a league's week,
-// managing the current week number and transfer windows.
+// ProcessWeeklyTick handles the automatic progression of a league's week.
+// It recalculates the current week number based on `RegularSeasonStartDate`
+// to ensure consistency even after server restarts or missed ticks.
 func (s *leagueServiceImpl) ProcessWeeklyTick(leagueID uuid.UUID) error {
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
@@ -271,42 +280,66 @@ func (s *leagueServiceImpl) ProcessWeeklyTick(leagueID uuid.UUID) error {
 		return common.ErrLeagueNotFound
 	}
 
-	// 1. Increment CurrentWeekNumber
-	league.CurrentWeekNumber++
-	log.Printf("LOG: (LeagueService: ProcessWeeklyTick) - League %s advanced to Week %d.\n", leagueID, league.CurrentWeekNumber)
+	if league.Status != enums.LeagueStatusRegularSeason {
+		log.Printf("INFO: (LeagueService: ProcessWeeklyTick) - League %s is not in REGULAR_SEASON. Skipping weekly tick. Status: %s\n", leagueID, league.Status)
+		return nil // Not an error, just not applicable
+	}
 
-	// 2. Schedule the next LeagueWeeklyTick
-	// Schedule for 7 days from now
-	nextTickTime := time.Now().Add(7 * 24 * time.Hour)
+	if league.RegularSeasonStartDate == nil {
+		log.Printf("ERROR: (LeagueService: ProcessWeeklyTick) - League %s has no RegularSeasonStartDate. Cannot process tick.\n", leagueID)
+		return fmt.Errorf("league %s is missing RegularSeasonStartDate", leagueID)
+	}
+
+	oldWeekNumber := league.CurrentWeekNumber
+	now := time.Now()
+
+	// Calculate the correct current week based on RegularSeasonStartDate
+	durationSinceSeasonStart := now.Sub(*league.RegularSeasonStartDate)
+	calculatedCurrentWeek := int(durationSinceSeasonStart.Hours()/(24*7)) + 1
+
+	if calculatedCurrentWeek > oldWeekNumber {
+		// Weeks were missed or it's a natural advancement. Update the CurrentWeekNumber.
+		log.Printf("INFO: (LeagueService: ProcessWeeklyTick) - Advancing week for league %s from %d to %d.\n", leagueID, oldWeekNumber, calculatedCurrentWeek)
+		league.CurrentWeekNumber = calculatedCurrentWeek
+	} else {
+		// System is already up-to-date. Log this and fall through to ensure next tick is scheduled correctly.
+		log.Printf("INFO: (LeagueService: ProcessWeeklyTick) - League %s: Already at or beyond calculated week %d (current: %d). Re-scheduling next tick.\n", leagueID, calculatedCurrentWeek, oldWeekNumber)
+	}
+
+	// Calculate and schedule the next LeagueWeeklyTick based on the CURRENT correct week
+	nextTickTime := league.RegularSeasonStartDate.Add(time.Duration(league.CurrentWeekNumber) * 7 * 24 * time.Hour)
+	league.NextWeeklyTick = &nextTickTime
+
+	// Save the updated league state BEFORE scheduling the task
+	if _, err := s.leagueRepo.UpdateLeague(league); err != nil {
+		log.Printf("ERROR: (LeagueService: ProcessWeeklyTick) - Failed to save updated league %s after weekly tick processing: %v\n", leagueID, err)
+		return fmt.Errorf("failed to save league after weekly tick: %w", err)
+	}
+
+	// Register the next tick task with the scheduler
 	nextTickTask := &utils.ScheduledTask{
 		ID:        fmt.Sprintf("%d_%s", utils.TaskTypeLeagueWeeklyTick, league.ID),
 		ExecuteAt: nextTickTime,
 		Type:      utils.TaskTypeLeagueWeeklyTick,
-		Payload: utils.PayloadLeagueWeeklyTick{
-			LeagueID: league.ID,
-		},
+		Payload:   utils.PayloadLeagueWeeklyTick{LeagueID: league.ID},
 	}
 	s.schedulerService.RegisterTask(nextTickTask)
+	log.Printf("LOG: (LeagueService: ProcessWeeklyTick) - Next weekly tick for league %s scheduled for %s (Start of Week %d).\n", leagueID, nextTickTime.String(), league.CurrentWeekNumber+1)
 
-	log.Printf("LOG: (LeagueService: ProcessWeeklyTick) - Next weekly tick for league %s scheduled for %s.\n", leagueID, nextTickTime.String())
-
-	// 3. Evaluate and manage transfer windows (now that week has advanced)
-	if league.Format.AllowTransfers {
-		weeksBetweenWindows := league.Format.TransferWindowFrequencyDays / 7
-		if weeksBetweenWindows > 0 && (league.CurrentWeekNumber-1)%weeksBetweenWindows == 0 {
-			// A transfer window should start at the beginning of this newly advanced week.
-			// Call StartTransferPeriod which will handle opening and scheduling its own closure.
-			log.Printf("LOG: (LeagueService: ProcessWeeklyTick) - Triggering transfer window for league %s for Week %d.\n", leagueID, league.CurrentWeekNumber)
-			if err := s.transferService.StartTransferPeriod(leagueID); err != nil {
-				log.Printf("ERROR: (LeagueService: ProcessWeeklyTick) - Failed to trigger transfer period for league %s: %v\n", leagueID, err)
+	// Check for transfer windows ONLY on a natural single-week advancement.
+	if calculatedCurrentWeek == oldWeekNumber+1 {
+		if league.Format.AllowTransfers {
+			weeksBetweenWindows := league.Format.TransferWindowFrequencyDays / 7
+			if weeksBetweenWindows > 0 && (league.CurrentWeekNumber-1)%weeksBetweenWindows == 0 {
+				log.Printf("LOG: (LeagueService: ProcessWeeklyTick) - Natural week advancement. Triggering transfer window for league %s for Week %d.\n", leagueID, league.CurrentWeekNumber)
+				if err := s.transferService.StartTransferPeriod(leagueID); err != nil {
+					log.Printf("ERROR: (LeagueService: ProcessWeeklyTick) - Failed to trigger transfer period for league %s: %v\n", leagueID, err)
+				}
 			}
 		}
-	}
-
-	// 4. Save the updated league AFTER all actions for the week are considered
-	if _, err := s.leagueRepo.UpdateLeague(league); err != nil {
-		log.Printf("ERROR: (LeagueService: ProcessWeeklyTick) - Failed to save updated league %s after weekly tick: %v\n", leagueID, err)
-		return fmt.Errorf("failed to save league after weekly tick: %w", err)
+	} else if calculatedCurrentWeek > oldWeekNumber {
+		// A multi-week jump occurred. Log it, but do not trigger any transfer windows.
+		log.Printf("WARN: (LeagueService: ProcessWeeklyTick) - League %s jumped from week %d to %d. Transfer window checks are bypassed for this tick.\n", leagueID, oldWeekNumber, calculatedCurrentWeek)
 	}
 
 	return nil
