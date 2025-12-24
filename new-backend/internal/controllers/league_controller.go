@@ -23,7 +23,7 @@ type leagueControllerImpl struct {
 	leagueService services.LeagueService
 }
 
-func NewLeagueController(leagueService services.LeagueService) *leagueControllerImpl {
+func NewLeagueController(leagueService services.LeagueService) LeagueController {
 	return &leagueControllerImpl{
 		leagueService: leagueService,
 	}

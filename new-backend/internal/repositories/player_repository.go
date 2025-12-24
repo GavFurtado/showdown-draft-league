@@ -17,6 +17,7 @@ type PlayerRepository interface {
 	GetPlayerByUserAndLeague(userID, leagueID uuid.UUID) (*models.Player, error)
 	// gets all players in a specific league
 	GetPlayersByLeague(leagueID uuid.UUID) ([]models.Player, error)
+	GetPlayersByLeagueAndGroupNumber(leagueID uuid.UUID, groupNumber int) ([]models.Player, error)
 	// gets all players for a specific user across all leagues
 	GetPlayersByUser(userID uuid.UUID) ([]models.Player, error)
 	UpdatePlayer(player *models.Player) (*models.Player, error)
@@ -60,7 +61,7 @@ func (r *playerRepositoryImpl) CreatePlayer(player *models.Player) (*models.Play
 // gets player by ID with preloaded relationships
 func (r *playerRepositoryImpl) GetPlayerByID(id uuid.UUID) (*models.Player, error) {
 	var player models.Player
-	err := r.db.Preload("User").
+	err := r.db.
 		First(&player, "id = ?", id).Error
 
 	if err != nil {
@@ -72,7 +73,7 @@ func (r *playerRepositoryImpl) GetPlayerByID(id uuid.UUID) (*models.Player, erro
 // gets player by user ID and league ID
 func (r *playerRepositoryImpl) GetPlayerByUserAndLeague(userID, leagueID uuid.UUID) (*models.Player, error) {
 	var player models.Player
-	err := r.db.Preload("User").
+	err := r.db.
 		Where("user_id = ? AND league_id = ?", userID, leagueID).
 		First(&player).Error
 
@@ -85,7 +86,7 @@ func (r *playerRepositoryImpl) GetPlayerByUserAndLeague(userID, leagueID uuid.UU
 // gets all players in a specific league
 func (r *playerRepositoryImpl) GetPlayersByLeague(leagueID uuid.UUID) ([]models.Player, error) {
 	var players []models.Player
-	err := r.db.Preload("User").
+	err := r.db.
 		Where("league_id = ?", leagueID).
 		Order("draft_position ASC").
 		Find(&players).Error
@@ -96,10 +97,24 @@ func (r *playerRepositoryImpl) GetPlayersByLeague(leagueID uuid.UUID) ([]models.
 	return players, nil
 }
 
+// gets all players in a specific league with a specific group number (1 or 2)
+func (r *playerRepositoryImpl) GetPlayersByLeagueAndGroupNumber(leagueID uuid.UUID, groupNumber int) ([]models.Player, error) {
+	var players []models.Player
+	err := r.db.
+		Where("league_id = ? AND group_number = ?", leagueID, groupNumber).
+		Order("draft_position ASC").
+		Find(&players).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("(Error: GetPlayersByLeagueAndGroupNumber) - failed to get players: %w", err)
+	}
+	return players, nil
+}
+
 // gets all players for a specific user across all leagues
 func (r *playerRepositoryImpl) GetPlayersByUser(userID uuid.UUID) ([]models.Player, error) {
 	var players []models.Player
-	err := r.db.Preload("League").
+	err := r.db.
 		Where("user_id = ?", userID).
 		Find(&players).Error
 
@@ -111,10 +126,7 @@ func (r *playerRepositoryImpl) GetPlayersByUser(userID uuid.UUID) ([]models.Play
 
 // updates player information
 func (r *playerRepositoryImpl) UpdatePlayer(player *models.Player) (*models.Player, error) {
-	err := r.db.Select(
-		"in_league_name", "team_name", "wins", "losses", "draft_points",
-		"draft_position", "updated_at",
-	).Updates(player).Error
+	err := r.db.Model(player).Select("*").Updates(player).Error
 
 	if err != nil {
 		return nil, fmt.Errorf("(Error: UpdatePlayer) - failed to update player: %w", err)
@@ -234,9 +246,6 @@ func (r *playerRepositoryImpl) GetPlayerWithFullRoster(playerID uuid.UUID) (*mod
 	var player models.Player
 	err := r.db.Preload("User").
 		Preload("League").
-		Preload("Roster").
-		Preload("Roster.DraftedPokemon").
-		Preload("Roster.DraftedPokemon.PokemonSpecies").
 		First(&player, "id = ?", playerID).Error
 
 	if err != nil {

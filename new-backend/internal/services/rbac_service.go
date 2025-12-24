@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 	"github.com/google/uuid"
@@ -13,7 +14,7 @@ import (
 
 // defines the interface for Role-Based Access Control operations.
 type RBACService interface {
-	CanAccess(userID uuid.UUID, leagueID uuid.UUID, requiredPermission rbac.Permission) (bool, error)
+	CanAccess(userID uuid.UUID, leagueID uuid.UUID, requiredPermission rbac.Permission) (*models.Player, bool, error)
 }
 
 type RBACServiceImpl struct {
@@ -32,17 +33,17 @@ func NewRBACService(leagueRepo repositories.LeagueRepository, userRepo repositor
 }
 
 // checks if a user has the required permission for a specific action.
-func (s *RBACServiceImpl) CanAccess(userID uuid.UUID, leagueID uuid.UUID, requiredPermission rbac.Permission) (bool, error) {
+func (s *RBACServiceImpl) CanAccess(userID uuid.UUID, leagueID uuid.UUID, requiredPermission rbac.Permission) (*models.Player, bool, error) {
 	player, err := s.playerRepo.GetPlayerByUserAndLeague(userID, leagueID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("LOG: (Service: CanAccess) - Player (User ID: %s) not found (likely not part of league or league doesn't exist).\n", userID)
-			return false, common.ErrLeagueNotFound
+			return nil, false, common.ErrLeagueNotFound
 		}
 		log.Printf("LOG: (Service: CanAccess) - failed to retrieve player (userID: %s; leagueID: %s\n", userID, leagueID)
-		return false, common.ErrInternalService
+		return nil, false, common.ErrInternalService
 	}
 
 	// check if the role matches the permission required
-	return player.Can(requiredPermission), nil
+	return player, player.Can(requiredPermission), nil
 }

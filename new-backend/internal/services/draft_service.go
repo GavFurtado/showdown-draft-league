@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math"
 	"math/rand"
 	"slices"
 	"time"
@@ -26,10 +25,6 @@ type DraftService interface {
 	MakePick(currentUser *models.User, leagueID uuid.UUID, input *common.DraftMakePickDTO) error
 	SkipTurn(currentUser *models.User, leagueID uuid.UUID) error
 	AutoSkipTurn(playerID, leagueID uuid.UUID) error
-	StartTransferPeriod(leagueID uuid.UUID) error
-	EndTransferPeriod(leagueID uuid.UUID) error
-	// DropFreeAgent(leagueID, draftedPokemonID uuid.UUID, currentUser *models.User) (*models.DraftedPokemon, error)
-	// PickupFreeAgent(leagueID, pokemonSpeciesID uuid.UUID, currentUser *models.User) (*models.DraftedPokemon, error)
 	SetSchedulerService(schedulerService SchedulerService)
 }
 
@@ -223,8 +218,9 @@ func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*m
 // - Checks that the requested Pokémon are available and affordable.
 // - Ensures the pick doesn't violate league roster rules (e.g., minimum roster size).
 // If all checks pass, it executes the pick as a transaction and advances the draft state.
-// MakePick makes one or more picks (if accumulated) in a league's draft when league;
-// Different from ForcePick, MakePick does all the required checks (there's a lot of checks) and validates the input
+// MakePick makes one or more picks (if accumulated) during drafting phase;
+// Different from ForcePick (not implemented yet),
+// MakePick does all the required checks (there's a lot of checks) and validates the input
 func (s *draftServiceImpl) MakePick(
 	currentUser *models.User,
 	leagueID uuid.UUID,
@@ -259,9 +255,8 @@ func (s *draftServiceImpl) MakePick(
 		return err
 	}
 
-	// early checks to prevent a potentially expensive check
+	// START early checks to prevent a expensive checks later
 	// check if it's the right player's turn
-
 	if currentTurnPlayerID := *draft.CurrentTurnPlayerID; currentTurnPlayerID != player.ID {
 		log.Printf("LOG: (DraftService: MakePick) - player %s tried to draft when it isn't their turn. Current Turn: Player %s\n", currentTurnPlayerID, *draft.CurrentTurnPlayerID)
 		return common.ErrUnauthorized
@@ -278,11 +273,10 @@ func (s *draftServiceImpl) MakePick(
 		log.Printf("LOG: (DraftService: MakePick) - (user %s) league %s is not in drafting status: %v", currentUser.ID, league.ID, err)
 		return common.ErrInvalidState
 	}
-
 	// END early checks
 
 	// fetch all the leaguePokemon requested
-	// potentially expensive
+	// expensive
 	allRequestedLeaguePokemon, err := s.fetchRequestedPokemon(league.ID, input)
 	if err != nil {
 		switch err {
@@ -321,6 +315,7 @@ func (s *draftServiceImpl) MakePick(
 		return err
 	}
 
+	// execute picks
 	err = s.executePickTransactions(draft, league, player, allRequestedLeaguePokemon, input, playerCount, totalRequestedCost)
 	if err != nil {
 		log.Printf("LOG: (DraftService: MakePick): (user %s; league %s) Batch transaction unsucessful: %v\n", currentUser.ID, league.ID, err)
@@ -348,11 +343,11 @@ func (s *draftServiceImpl) MakePick(
 		return nil
 	}
 
-	// deregister prev task before registering new one
+	// deregister previous task before registering new one
 	taskIDToDeregister := fmt.Sprintf("%d_%s", utils.TaskTypeDraftTurnTimeout, draft.LeagueID)
 	s.schedulerService.DeregisterTask(taskIDToDeregister)
 
-	// schedule the timer task if the draft hasn't completed
+	// schedule the timer task for the next player's turn if the draft hasn't completed
 	taskType := utils.TaskTypeDraftTurnTimeout
 	turnTimeLimit := draft.TurnTimeLimit
 	turnStartTime := draft.CurrentTurnStartTime
@@ -420,33 +415,40 @@ func (s *draftServiceImpl) SkipTurn(currentUser *models.User, leagueID uuid.UUID
 	// get all players to change set the CurrentPlayer's turn for the next one
 	allPlayers, err := s.playerRepo.GetPlayersByLeague(draft.LeagueID)
 	if err != nil {
-		log.Printf("DraftService: MakePick - Could not get all players in league %s: %v\n", league.ID, err)
+		log.Printf("LOG: (DraftService: SkipTurn) - Could not get all players in league %s: %v\n", league.ID, err)
 		return common.ErrInternalService
 	}
 
-	playerRosterSize, err := s.draftedPokemonRepo.GetDraftedPokemonCountByPlayer(player.ID)
+	effectiveSkipsInThisAction := 1 // One skip for the current turn
+	_, err = s.isSkipAllowed(player, effectiveSkipsInThisAction)
 	if err != nil {
-		log.Printf("DraftService: MakePick - Failed to get player %d roster size\n", player.ID)
+		log.Printf("LOG: (DraftService: SkipTurn) - Player %s cannot skip current turn's pick (%d) as it would violate minimum roster requirement. Skips left: %d.\n",
+			player.ID, draft.CurrentPickOnClock, player.SkipsLeft)
 		return err
 	}
 
-	// validate if this skip action is allowed
-	accumulatedPickCount := len(draft.PlayersWithAccumulatedPicks[player.ID])
-	_, skipsLeft, err := s.isSkipAllowed(league, false, accumulatedPickCount, 0)
-	if err != nil {
-		log.Printf("LOG: (DraftService: SkipTurn) - Player %s cannot skip current turn's pick (%d) as it would violate minimum roster requirement.\nRoster size: %d, Min. required: %d, Skips left: %d.\n",
-			player.ID, draft.CurrentPickOnClock, playerRosterSize, league.MinPokemonPerPlayer, skipsLeft)
-		return err
+	player.SkipsLeft -= effectiveSkipsInThisAction
+	log.Printf("DEBUG: (DraftService: SkipTurn) - Player %s SkipsLeft BEFORE DB update: %d\n", player.ID, player.SkipsLeft)
+	if _, err := s.playerRepo.UpdatePlayer(player); err != nil {
+		log.Printf("CRITICAL ERROR: (DraftService: SkipTurn) - Failed to update player %s skipsLeft in DB: %v\n", player.ID, err)
+		return common.ErrInternalService
 	}
+	// Re-fetch player to confirm DB state
+	updatedPlayer, err := s.playerRepo.GetPlayerByID(player.ID)
+	if err != nil {
+		log.Printf("CRITICAL ERROR: (DraftService: SkipTurn) - Failed to re-fetch player %s after update: %v\n", player.ID, err)
+		return common.ErrInternalService
+	}
+	log.Printf("DEBUG: (DraftService: SkipTurn) - Player %s SkipsLeft AFTER DB re-fetch: %d\n", updatedPlayer.ID, updatedPlayer.SkipsLeft)
 
 	draft, err = s.advanceDraftState(draft, league, player, allPlayers, len(allPlayers), false)
 	if err != nil {
-		log.Printf("LOG: (DraftService: MakePick) - Error occured when attempting to advance draft state for league %s: %v\n", league.ID, err)
+		log.Printf("LOG: (DraftService: SkipTurn) - Error occured when attempting to advance draft state for league %s: %v\n", league.ID, err)
 		return err
 	}
 
 	if draft.Status == enums.DraftStatusCompleted {
-		fmt.Printf("INFO: (DraftService: advanceDraftState) - Draft Action (for league %s) was successful and Draft was detected to be COMPLETED. DraftStatus updated to COMPLETED.\n", draft.LeagueID)
+		fmt.Printf("INFO: (DraftService: SkipTurn) - Draft Action (for league %s) was successful and Draft was detected to be COMPLETED. DraftStatus updated to COMPLETED.\n", draft.LeagueID)
 		taskIDToDeregister := fmt.Sprintf("%d_%s", utils.TaskTypeDraftTurnTimeout, draft.LeagueID)
 		s.schedulerService.DeregisterTask(taskIDToDeregister)
 		return nil
@@ -483,9 +485,9 @@ func (s *draftServiceImpl) AutoSkipTurn(playerID, leagueID uuid.UUID) error {
 	if err != nil {
 		switch err {
 		case common.ErrPlayerNotFound:
-			log.Printf("ERROR: (DraftService: autoSkipTurn) - Player %s in league %s not found: %v\n", playerID, leagueID, err)
+			log.Printf("ERROR: (DraftService: AutoSkipTurn) - Player %s in league %s not found: %v\n", playerID, leagueID, err)
 		case common.ErrInternalService:
-			log.Printf("ERROR: (DraftService: autoSkipTurn) - Error fetching player %s in league %s: %v\n", playerID, leagueID, err)
+			log.Printf("ERROR: (DraftService: AutoSkipTurn) - Error fetching player %s in league %s: %v\n", playerID, leagueID, err)
 		}
 		return err
 	}
@@ -493,10 +495,10 @@ func (s *draftServiceImpl) AutoSkipTurn(playerID, leagueID uuid.UUID) error {
 	if err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
-			log.Printf("LOG: (DraftService: autoSkipTurn) - (player %s) League %s not found: %v\n", playerID, leagueID, err)
+			log.Printf("LOG: (DraftService: AutoSkipTurn) - (player %s) League %s not found: %v\n", playerID, leagueID, err)
 			return common.ErrLeagueNotFound
 		default:
-			log.Printf("LOG: (DraftService: autoSkipTurn) - Could not fetch league %s: %v\n", leagueID, err)
+			log.Printf("LOG: (DraftService: AutoSkipTurn) - Could not fetch league %s: %v\n", leagueID, err)
 			return common.ErrInternalService
 		}
 	}
@@ -504,40 +506,53 @@ func (s *draftServiceImpl) AutoSkipTurn(playerID, leagueID uuid.UUID) error {
 	if err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
-			log.Printf("LOG: (DraftService: autoSkipTurn) - (player %s) Draft for leagueID %s not found: %v\n", playerID, leagueID, err)
+			log.Printf("LOG: (DraftService: AutoSkipTurn) - (player %s) Draft for leagueID %s not found: %v\n", playerID, leagueID, err)
 			return common.ErrDraftNotFound
 		default:
-			log.Printf("LOG: (DraftService: autoSkipTurn) - (player %s) Error fetching draft: %v\n", playerID, err)
+			log.Printf("LOG: (DraftService: AutoSkipTurn) - (player %s) Error fetching draft: %v\n", playerID, err)
 			return common.ErrInternalService
 		}
 	}
 
-	accumulatedPicksForPlayer := draft.PlayersWithAccumulatedPicks[playerID]
-
-	allowed, _, err := s.isSkipAllowed(league, false, len(accumulatedPicksForPlayer), 0)
+	effectiveSkipsInThisAction := 1
+	allowed, err := s.isSkipAllowed(player, effectiveSkipsInThisAction)
 	if !allowed {
-		// common.ErrCannotSkipBelowMinimumRoster
-		log.Printf("ERROR: (DraftService: autoSkipTurn) - Cannot auto skip for player %s, league %s: %v\n", playerID, leagueID, err)
+		log.Printf("ERROR: (DraftService: AutoSkipTurn) - Cannot auto skip for player %s, league %s: %v. Skips left: %d\n", playerID, leagueID, err, player.SkipsLeft)
 		// set Draft to PAUSED status, awaiting manual league staff intervention
 		draft.Status = enums.DraftStatusPaused
 		draft, err = s.draftRepo.UpdateDraft(draft)
 		if err != nil {
-			log.Printf("ERROR: (DraftService: autoSkipTurn) - Could not update draft %d status to PAUSED: %v\n", draft.ID, err)
+			log.Printf("ERROR: (DraftService: AutoSkipTurn) - Could not update draft %d status to PAUSED: %v\n", draft.ID, err)
 			return common.ErrInternalService
 		}
-		fmt.Printf("INFO: (DraftService: autoSkipTurn) - Draft for league %s paused. Awaiting Manual Intervention\n", leagueID)
+		fmt.Printf("INFO: (DraftService: AutoSkipTurn) - Draft for league %s paused. Awaiting Manual Intervention\n", leagueID)
 		return common.ErrDraftPausedForIntervention
 	}
 
+	player.SkipsLeft -= effectiveSkipsInThisAction
+	log.Printf("DEBUG: (DraftService: AutoSkipTurn) - Player %s SkipsLeft BEFORE DB update: %d\n", player.ID, player.SkipsLeft)
+	if _, err := s.playerRepo.UpdatePlayer(player); err != nil {
+		log.Printf("CRITICAL ERROR: (DraftService: SkipTurn) - Failed to update player %s skipsLeft in DB: %v\n", player.ID, err)
+		return common.ErrInternalService
+	}
+	// Re-fetch player to confirm DB state
+	updatedPlayer, err := s.playerRepo.GetPlayerByID(player.ID)
+	if err != nil {
+		log.Printf("CRITICAL ERROR: (DraftService: SkipTurn) - Failed to re-fetch player %s after update: %v\n", player.ID, err)
+		return common.ErrInternalService
+	}
+	log.Printf("DEBUG: (DraftService: SkipTurn) - Player %s SkipsLeft AFTER DB re-fetch: %d\n", updatedPlayer.ID, updatedPlayer.SkipsLeft)
+	log.Printf("DEBUG: (DraftService: AutoSkipTurn) - Player %s SkipsLeft updated to %d after auto-skip.\n", player.ID, player.SkipsLeft)
+
 	allPlayers, err := s.playerRepo.GetPlayersByLeague(leagueID)
 	if err != nil {
-		log.Printf("ERROR: (DraftService: autoSkipTurn) - Could not get all players in league %s: %v\n", leagueID, err)
+		log.Printf("ERROR: (DraftService: AutoSkipTurn) - Could not get all players in league %s: %v\n", leagueID, err)
 		return common.ErrInternalService
 	}
 
 	draft, err = s.advanceDraftState(draft, league, player, allPlayers, len(allPlayers), false)
 	if err != nil {
-		log.Printf("ERROR: (DraftService: autoSkipTurn) - could not advance draft")
+		log.Printf("ERROR: (DraftService: AutoSkipTurn) - could not advance draft")
 		return err
 	}
 
@@ -583,13 +598,15 @@ func (s *draftServiceImpl) advanceDraftState(
 	currentPickSlotUsed bool, // true if draft.CurrentPickOnClock was used in the request, false if skipped/implicitly skipped
 ) (*models.Draft, error) {
 	if !currentPickSlotUsed {
-		// i.e., a skip/implicit. append CurrentPickOnClock to accumulated picks for that player
+		// i.e., a skip/implicit skip. Append CurrentPickOnClock to
+		// accumulated picks for that player
+		log.Printf("DEBUG: (DraftService: advanceDraftState) - Player %s skipping pick %d. Current accumulated picks: %v\n", player.ID, draft.CurrentPickOnClock, draft.PlayersWithAccumulatedPicks[player.ID])
 		draft.PlayersWithAccumulatedPicks[player.ID] = append(draft.PlayersWithAccumulatedPicks[player.ID], draft.CurrentPickOnClock)
 	}
 
 	draft.CurrentPickOnClock++ // unconditonal increment
 
-	// check for draft completion
+	// Check for draft completion
 	isDraftCompleted, err := s.checkDraftCompletion(league, allPlayers)
 	if err != nil {
 		log.Printf("LOG: (DraftService: advanceDraftState) - Error checking draft completion for league %s: %v\\n", league.ID,
@@ -598,7 +615,7 @@ func (s *draftServiceImpl) advanceDraftState(
 	}
 
 	if isDraftCompleted {
-		// if the draft is completed, we update and save the final state and return early
+		// If the draft has completed, we update and save the final state and return early
 		// no further turn progression is needed
 
 		draft.Status = enums.DraftStatusCompleted
@@ -617,9 +634,10 @@ func (s *draftServiceImpl) advanceDraftState(
 			return nil, fmt.Errorf("failed to update league status on completion: %w", err)
 		}
 
-		return draft, nil // Draft completed, states saved. we're so done
+		return draft, nil // Draft completed, states saved. We're so done
 	}
 
+	// If draft is still ongoing,
 	// Recalculate CurrentRound and CurrentPickInRound based on draft.CurrentPickOnClock
 	draft.CurrentRound = ((draft.CurrentPickOnClock - 1) / int(playerCount)) + 1
 	draft.CurrentPickInRound = ((draft.CurrentPickOnClock - 1) % int(playerCount)) + 1
@@ -631,7 +649,7 @@ func (s *draftServiceImpl) advanceDraftState(
 			break
 		}
 	}
-	if currentPlayerIdx == -1 {
+	if currentPlayerIdx == -1 { // this is an impossible case
 		log.Printf("LOG: (DraftService: advanceDraftState) - Current player %s not found in allPlayers list. This should not happen. (Unreachable Control Flow)\\n", player.ID)
 		return nil, common.ErrInternalService
 	}
@@ -680,9 +698,10 @@ func (s *draftServiceImpl) executePickTransactions(
 	player *models.Player,
 	allRequestedPokemon []*models.LeaguePokemon,
 	input *common.DraftMakePickDTO,
-	playerCount int64, // yes i regret not realising int64 and int are different in postgres but not really in Go
+	playerCount int64,
 	totalRequestedCost int,
 ) error {
+	var err error
 	// create draftedPokemon records
 	var allCreatedDraftedPokemon []*models.DraftedPokemon
 	var leaguePokemonIDs []uuid.UUID
@@ -709,6 +728,7 @@ func (s *draftServiceImpl) executePickTransactions(
 			DraftRoundNumber: draftRoundNumber,
 			DraftPickNumber:  requestedPick.DraftPickNumber, // overall pick
 			IsReleased:       false,
+			AcquiredWeek:     0, // Pre-season draft week
 		}
 
 		allCreatedDraftedPokemon = append(allCreatedDraftedPokemon, createdDraftedPokemon)
@@ -721,14 +741,14 @@ func (s *draftServiceImpl) executePickTransactions(
 		}
 	}
 
-	err := s.draftedPokemonRepo.DraftPokemonBatchTransaction(allCreatedDraftedPokemon, player, leaguePokemonIDs, totalRequestedCost)
+	err = s.draftedPokemonRepo.DraftPokemonBatchTransaction(allCreatedDraftedPokemon, player, leaguePokemonIDs, totalRequestedCost)
 	if err != nil {
 		return err
 	}
 
 	// remove used up accumulated picks and update the draft model
 	// might look unoptimal. it is. but the slices aren't that big
-	// sort indices in descending order to avoid invalidating later indices
+	// Sort indices in descending order to avoid invalidating later indices
 	slices.SortFunc(accumulatedPickNumberIndicesToDelete, func(a, b int) int {
 		return b - a // Descending order
 	})
@@ -737,7 +757,6 @@ func (s *draftServiceImpl) executePickTransactions(
 	for _, index := range accumulatedPickNumberIndicesToDelete {
 		playerAccumulatedPicks = slices.Delete(playerAccumulatedPicks, index, index+1)
 	}
-	// update the draft object's map entry with the modified slice
 	draft.PlayersWithAccumulatedPicks[player.ID] = playerAccumulatedPicks
 
 	return nil
@@ -758,6 +777,7 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 
 	// 1. Validate requested pick numbers against valid slots
 	accumulatedPickNumbers := draft.PlayersWithAccumulatedPicks[playerID]
+	log.Printf("DEBUG: (DraftService: validatePicksAndCheckCurrentPickSlotUsed) - Player %s. Current Pick On Clock: %d. Accumulated Picks: %v\n", playerID, draft.CurrentPickOnClock, accumulatedPickNumbers)
 	validPickNumbersForPlayer := make([]int, len(accumulatedPickNumbers))
 	copy(validPickNumbersForPlayer, accumulatedPickNumbers) // we don't wanna directly append
 	validPickNumbersForPlayer = append(validPickNumbersForPlayer, draft.CurrentPickOnClock)
@@ -765,7 +785,6 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 	// track used accumulated picks within this batch to prevent double-usage
 	usedAccumulatedPicksInThisBatch := make(map[int]bool)
 	currentPickSlotUsed := false
-	accumulatedPickCount := len(accumulatedPickNumbers)
 
 	for _, requestedPick := range input.RequestedPicks {
 		// check if the requested pick number is a valid slot (current turn or accumulated)
@@ -797,12 +816,29 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 	}
 
 	// 3. "Skips Left" Preventative Validation
-	// this ensures the player doesn't implicitly skip their current turn's slot
+	// This ensures the player doesn't implicitly skip their current turn's slot
 	// if doing so would prevent them from meeting MinPokemonPerPlayer.
-	_, skipsAllowed, err := s.isSkipAllowed(league, currentPickSlotUsed, accumulatedPickCount, input.RequestedPickCount)
+
+	// Determine if the current "on-the-clock" pick slot is being used in this request.
+	// If not, it implies a skip of the current turn.
+	var err error
+	isCurrentTurnUsed := false
+	for _, requestedPick := range input.RequestedPicks {
+		if requestedPick.DraftPickNumber == draft.CurrentPickOnClock {
+			isCurrentTurnUsed = true
+			break
+		}
+	}
+
+	effectiveSkipsInThisAction := 0
+	if !isCurrentTurnUsed {
+		effectiveSkipsInThisAction = 1 // Current turn is implicitly skipped
+	}
+
+	_, err = s.isSkipAllowed(player, effectiveSkipsInThisAction)
 	if err != nil {
-		log.Printf("LOG: (DraftService: validatePicksAndCheckCurrentPickSlotUsed) - Player %s cannot implicitly skip current turn's pick (%d) as it would violate minimum roster requirement. Min required: %d, Skips left: %d.\n",
-			playerID, draft.CurrentPickOnClock, league.MinPokemonPerPlayer, skipsAllowed)
+		log.Printf("LOG: (DraftService: validatePicksAndCheckCurrentPickSlotUsed) - Player %s cannot implicitly skip current turn's pick (%d) as it would violate minimum roster requirement. Skips left: %d.\n",
+			playerID, draft.CurrentPickOnClock, player.SkipsLeft)
 		return false, err
 	}
 
@@ -812,53 +848,12 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 // isSkipAllowed checks if a player can skip (or implicit skip) their turn without making it impossible
 // to meet the league's minimum roster requirement.
 // returns true if allowed, false otherwise
-// also returns number of skips allowed
-func (s *draftServiceImpl) isSkipAllowed(
-	league *models.League,
-	currentPickSlotUsed bool, // true if the current "on-the-clock" pick slot was used in the request
-	accumulatedPickCountForPlayer int, // Accumulated picks *before* this turn's action
-	requestedPickCount int, // Number of picks the player is attempting to make in this request (0 for SkipTurn)
-) (bool, int, error) {
-	// Calculate the total "skip budget" for the entire draft.
-	// This is the number of optional picks a player can forgo without violating the minimum roster size.
-	totalSkipBudget := league.MaxPokemonPerPlayer - league.MinPokemonPerPlayer // if <0, invalid configuration of league
-	totalSkipBudget = int(math.Max(0, float64(totalSkipBudget)))               // still doing the check though
-
-	// Determine the total number of pick slots available to the player for this turn's action.
-	// This includes any accumulated picks and the current "on-the-clock" pick if it's not being explicitly used.
-	availablePickSlotsThisTurn := accumulatedPickCountForPlayer
-	if !currentPickSlotUsed { // If current turn's pick is NOT used, it's an available slot
-		availablePickSlotsThisTurn++
+// was previously a bigger function because we didn't have Player.SkipsLeft
+func (s *draftServiceImpl) isSkipAllowed(player *models.Player, effectiveSkipsInThisAction int) (bool, error) {
+	if player.SkipsLeft-effectiveSkipsInThisAction >= 0 {
+		return true, nil
 	}
-
-	// Calculate the number of "effective skips" this action represents.
-	// This is the number of available pick slots that are *not* being used.
-	// 1 if regular turn skip (auto or otherwise),
-	// `availablePickSlotsThisTurn` - `requestedPickCount` if implicit skip (MakePick)
-	var effectiveSkipsInThisAction int
-	if requestedPickCount > 0 { // This is a MakePick action
-		effectiveSkipsInThisAction = availablePickSlotsThisTurn - requestedPickCount
-	} else { // This is a SkipTurn or AutoSkipTurn action
-		effectiveSkipsInThisAction = 1 // One skip for the current turn
-	}
-	// Ensure effectiveSkipsInThisAction is not negative
-	// should be caught by other validation (and it is i'm pretty sure))
-	effectiveSkipsInThisAction = int(math.Max(0, float64(effectiveSkipsInThisAction)))
-
-	// The total number of skips the player will have made *after* this action.
-	totalSkipsAfterAction := accumulatedPickCountForPlayer + effectiveSkipsInThisAction
-
-	// Check if this action would exceed the total skip budget.
-	if totalSkipsAfterAction > totalSkipBudget {
-		return false, 0, common.ErrCannotSkipBelowMinimumRoster
-	}
-
-	// If we reach here, the action is allowed.
-	// Calculate the remaining skips after this one.
-	remainingSkips := totalSkipBudget - totalSkipsAfterAction
-	remainingSkips = int(math.Max(0, float64(remainingSkips))) // Ensure >=0
-
-	return true, remainingSkips, nil
+	return false, common.ErrCannotSkipBelowMinimumRoster
 }
 
 func (s *draftServiceImpl) getTotalCostForPicks(allRequestedPokemon []*models.LeaguePokemon) int {
@@ -892,6 +887,7 @@ func (s *draftServiceImpl) fetchPlayerResource(userID, leagueID uuid.UUID) (*mod
 		}
 		return nil, common.ErrInternalService
 	}
+	log.Printf("DEBUG: (DraftService: fetchPlayerResource) - Fetched player %s. SkipsLeft: %d\n", player.ID, player.SkipsLeft)
 	return player, nil
 }
 
@@ -980,117 +976,4 @@ func (s *draftServiceImpl) checkDraftCompletion(
 		}
 	}
 	return true, nil
-}
-
-// StartTransferPeriod begins the transfer window for a league. It updates the league status,
-// allocates transfer credits to players if enabled, and schedules the end of the window.
-func (s *draftServiceImpl) StartTransferPeriod(leagueID uuid.UUID) error {
-	// 1. Fetch the League
-	league, err := s.leagueRepo.GetLeagueByID(leagueID)
-	if err != nil {
-		log.Printf("ERROR: (DraftService: StartTransferPeriod) - Failed to fetch league %s: %v\n", leagueID, err)
-		return common.ErrLeagueNotFound
-	}
-
-	// 2. Validate Status
-	if league.Status != enums.LeagueStatusRegularSeason && league.Status != enums.LeagueStatusPostDraft {
-		log.Printf("WARN: (DraftService: StartTransferPeriod) - League %s is not in a valid state to start a transfer window. Status: %s\n", leagueID, league.Status)
-		return fmt.Errorf("invalid league status to start transfer window: %s", league.Status)
-	}
-
-	// 3. Update Player Credits (if applicable)
-	if league.Format.AllowTransferCredits {
-		players, err := s.playerRepo.GetPlayersByLeague(leagueID)
-		if err != nil {
-			log.Printf("ERROR: (DraftService: StartTransferPeriod) - Failed to get players for league %s: %v\n", leagueID, err)
-			return common.ErrInternalService
-		}
-
-		for _, player := range players {
-			player.TransferCredits += league.Format.TransferCreditsPerWindow
-			if player.TransferCredits > league.Format.TransferCreditCap {
-				player.TransferCredits = league.Format.TransferCreditCap
-			}
-			if _, err := s.playerRepo.UpdatePlayer(&player); err != nil {
-				// Log the error but continue trying to update other players
-				log.Printf("ERROR: (DraftService: StartTransferPeriod) - Failed to update transfer credits for player %s: %v\n", player.ID, err)
-			}
-		}
-	}
-
-	// 4. Update League Status
-	league.Status = enums.LeagueStatusTransferWindow
-	now := time.Now()
-	league.Format.NextTransferWindowStart = &now // The window starts now
-
-	// 5. Schedule EndTransferPeriod
-	windowEndTime := now.Add(time.Duration(league.Format.TransferWindowDuration) * time.Minute)
-	endTask := &utils.ScheduledTask{
-		ID:        fmt.Sprintf("%d_%s", utils.TaskTypeTradingPeriodEnd, league.ID),
-		ExecuteAt: windowEndTime,
-		Type:      utils.TaskTypeTradingPeriodEnd,
-		Payload: utils.PayloadTransferPeriodEnd{
-			LeagueID: league.ID,
-		},
-	}
-	s.schedulerService.RegisterTask(endTask)
-
-	// 6. Save Changes
-	if _, err := s.leagueRepo.UpdateLeague(league); err != nil {
-		log.Printf("ERROR: (DraftService: StartTransferPeriod) - Failed to update league %s status: %v\n", leagueID, err)
-		// Note: If this fails, the task is scheduled but the league status isn't updated.
-		// This could be improved with a transactional approach if necessary.
-		return common.ErrInternalService
-	}
-
-	log.Printf("LOG: (DraftService: StartTransferPeriod) - Transfer window started for league %s.\n", leagueID)
-	return nil
-}
-
-// EndTransferPeriod concludes the transfer window for a league. It updates the league status
-// and schedules the next transfer window to begin.
-func (s *draftServiceImpl) EndTransferPeriod(leagueID uuid.UUID) error {
-	// 1. Fetch the League
-	league, err := s.leagueRepo.GetLeagueByID(leagueID)
-	if err != nil {
-		log.Printf("ERROR: (DraftService: EndTransferPeriod) - Failed to fetch league %s: %v\n", leagueID, err)
-		return common.ErrLeagueNotFound
-	}
-
-	// 2. Validate Status
-	if league.Status != enums.LeagueStatusTransferWindow {
-		log.Printf("WARN: (DraftService: EndTransferPeriod) - League %s is not in a transfer window. Status: %s\n", leagueID, league.Status)
-		return fmt.Errorf("invalid league status to end transfer window: %s", league.Status)
-	}
-
-	// 3. Update League Status
-	league.Status = enums.LeagueStatusRegularSeason
-
-	// 4. Schedule next StartTransferPeriod
-	if league.Format.TransferWindowFrequencyDays > 0 {
-		nextWindowStartTime := time.Now().AddDate(0, 0, league.Format.TransferWindowFrequencyDays)
-		league.Format.NextTransferWindowStart = &nextWindowStartTime
-
-		startTask := &utils.ScheduledTask{
-			ID:        fmt.Sprintf("%d_%s", utils.TaskTypeTradingPeriodStart, league.ID),
-			ExecuteAt: nextWindowStartTime,
-			Type:      utils.TaskTypeTradingPeriodStart,
-			Payload: utils.PayloadTransferPeriodStart{
-				LeagueID: league.ID,
-			},
-		}
-		s.schedulerService.RegisterTask(startTask)
-	} else {
-		// If frequency is 0 or less, don't schedule a next window.
-		league.Format.NextTransferWindowStart = nil
-	}
-
-	// 5. Save Changes
-	if _, err := s.leagueRepo.UpdateLeague(league); err != nil {
-		log.Printf("ERROR: (DraftService: EndTransferPeriod) - Failed to update league %s: %v\n", leagueID, err)
-		return common.ErrInternalService
-	}
-
-	log.Printf("LOG: (DraftService: EndTransferPeriod) - Transfer window ended for league %s.\n", leagueID)
-	return nil
 }

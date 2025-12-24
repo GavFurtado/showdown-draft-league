@@ -47,6 +47,8 @@ const (
 	PermissionReadGame   Permission = "read:game"
 	PermissionUpdateGame Permission = "update:game"
 	PermissionDeleteGame Permission = "delete:game"
+	PermissionReportGame   Permission = "report:game"
+	PermissionFinalizeGame Permission = "finalize:game"
 
 	// User Permissions (for admin-like actions on users)
 	PermissionReadUser   Permission = "read:user"
@@ -87,6 +89,7 @@ func init() {
 		PermissionReleaseDraftedPokemon,
 		PermissionUpdatePlayer,
 		PermissionCreateDraftedPokemon,
+		PermissionReportGame,
 	)
 
 	// Moderator permissions inherit from Member and add more
@@ -103,6 +106,7 @@ func init() {
 		PermissionDeleteGame,
 		PermissionStartTransferPeriod,
 		PermissionEndTransferPeriod,
+		PermissionFinalizeGame,
 	)
 
 	// Owner permissions inherit from Moderator and add more

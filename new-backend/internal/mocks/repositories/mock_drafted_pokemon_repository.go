@@ -52,18 +52,22 @@ func (m *MockDraftedPokemonRepository) GetNextDraftPickNumber(leagueID uuid.UUID
 	args := m.Called(leagueID)
 	return args.Int(0), args.Error(1)
 }
-func (m *MockDraftedPokemonRepository) ReleasePokemon(id uuid.UUID) error {
-	args := m.Called(id)
+
+func (m *MockDraftedPokemonRepository) ReleasePokemonTransaction(draftedPokemonID uuid.UUID, player *models.Player, dropCost int, releasedWeek int) error {
+	args := m.Called(draftedPokemonID, player, dropCost, releasedWeek)
 	return args.Error(0)
 }
-func (m *MockDraftedPokemonRepository) ReDraftPokemon(draftedPokemonID, newPlayerID uuid.UUID, newPickNumber int) error {
-	args := m.Called(draftedPokemonID, newPlayerID, newPickNumber)
-	return args.Error(0)
-}
+
 func (m *MockDraftedPokemonRepository) GetDraftedPokemonCountByPlayer(playerID uuid.UUID) (int64, error) {
 	args := m.Called(playerID)
 	return args.Get(0).(int64), args.Error(1)
 }
+
+func (m *MockDraftedPokemonRepository) GetAllDraftedPokemonByPlayer(playerID uuid.UUID) ([]models.DraftedPokemon, error) {
+	args := m.Called(playerID)
+	return args.Get(0).([]models.DraftedPokemon), args.Error(1)
+}
+
 func (m *MockDraftedPokemonRepository) GetDraftHistory(leagueID uuid.UUID) ([]models.DraftedPokemon, error) {
 	args := m.Called(leagueID)
 	return args.Get(0).([]models.DraftedPokemon), args.Error(1)
@@ -87,7 +91,7 @@ func (m *MockDraftedPokemonRepository) DraftPokemonBatchTransaction(draftedPokem
 	return args.Error(0)
 }
 
-func (m *MockDraftedPokemonRepository) PickupFreeAgentTransaction(player *models.Player, newDraftedPokemon *models.DraftedPokemon, leaguePokemon *models.LeaguePokemon) error {
-	args := m.Called(player, newDraftedPokemon, leaguePokemon)
+func (m *MockDraftedPokemonRepository) PickupFreeAgentTransaction(player *models.Player, newDraftedPokemon *models.DraftedPokemon, leaguePokemon *models.LeaguePokemon, pickupCost int) error {
+	args := m.Called(player, newDraftedPokemon, leaguePokemon, pickupCost)
 	return args.Error(0)
 }

@@ -30,3 +30,11 @@ func (m *MockSchedulerService) Stop() {
 func (m *MockSchedulerService) SetDraftService(draftService services.DraftService) {
 	m.Called(draftService)
 }
+
+func (m *MockSchedulerService) SetTransferService(transferService services.TransferService) {
+	m.Called(transferService)
+}
+
+func (m *MockSchedulerService) SetLeagueService(leagueService services.LeagueService) {
+	m.Called(leagueService)
+}

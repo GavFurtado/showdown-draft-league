@@ -19,6 +19,7 @@ type League struct {
 	EndDate             *time.Time         `gorm:"column:end_date" json:"EndDate"` // this is set when the league is cancelled or actualy ends, nil otherwise
 	RulesetDescription  string             `gorm:"type:text;column:ruleset_description" json:"RulesetDescription"`
 	Status              enums.LeagueStatus `gorm:"type:varchar(50);not null;default:'pending';column:status" json:"Status"`
+	PlayerCount         int                `gorm:"column:player_count" json:"PlayerCount"`
 	MaxPokemonPerPlayer int                `gorm:"not null;default:0;column:max_pokemon_per_player" json:"MaxPokemonPerPlayer"`
 	MinPokemonPerPlayer int                `gorm:"not null;default:0;column:min_pokemon_per_player" json:"MinPokemonPerPlayer"`
 	StartingDraftPoints int                `gorm:"not null;default:140;column:starting_draft_points" json:"StartingDraftPoints"`
@@ -27,6 +28,11 @@ type League struct {
 	UpdatedAt           *time.Time         `gorm:"type:timestamp with time zone;column:updated_at" json:"UpdatedAt"`
 	DeletedAt           gorm.DeletedAt     `gorm:"index;column:deleted_at" json:"-"`
 	DiscordWebhookURL   *string            `gorm:"column:discord_webhook_url" json:"DiscordWebhookURL"`
+	CurrentWeekNumber   int                `gorm:"not null;default:0;column:current_week_number" json:"CurrentWeekNumber"` // starts with 1, 0 is invalid and used when not relevant
+	NextWeeklyTick      *time.Time         `gorm:"type:timestamp with time zone;column:next_weekly_tick" json:"NextWeeklyTick"`
+	RegularSeasonStartDate *time.Time         `gorm:"type:timestamp with time zone;column:regular_season_start_date" json:"RegularSeasonStartDate"`
+
+	NewPlayerGroupNumber int `gorm:"default:1;column:new_player_group_count" json:"NewPlayerGroupNumber"` // used to assign a group number for new players
 
 	// Relationships
 	Players []Player `gorm:"foreignKey:league_id" json:"Players,omitempty"`
@@ -40,17 +46,16 @@ type League struct {
 type LeagueFormat struct {
 	IsSnakeRoundDraft bool                   `json:"IsSnakeRoundDraft" gorm:"column:is_snake_round_draft"`
 	DraftOrderType    enums.DraftOrderType   `gorm:"default:'RANDOM'" json:"DraftOrderType"` // "PENDING", "RANDOM", "MANUAL"
-	SeasonType        enums.LeagueSeasonType `json:"SeasonType"`                             // "ROUND_ROBIN_ONLY", "PLAYOFFS_ONLY", "HYBRID"
-	GroupCount        int                    `json:"GroupCount"`                             // Relevant if SeasonType is "GROUPS"
-	GamesPerOpponent  int                    `json:"GamesPerOpponent"`                       // For round-robin or group stages
+	SeasonType        enums.LeagueSeasonType `json:"SeasonType"`                             // "ROUND_ROBIN_ONLY", "BRACKET_ONLY", "HYBRID"
+	GroupCount        int                    `json:"GroupCount"`
 
 	PlayoffType             enums.LeaguePlayoffType        `json:"PlayoffType"`             // "NONE", "SINGLE_ELIM", "DOUBLE_ELIM"
 	PlayoffParticipantCount int                            `json:"PlayoffParticipantCount"` // Number of teams that make playoffs
 	PlayoffByesCount        int                            `json:"PlayoffByesCount"`        // Number of teams getting a bye in playoffs
 	PlayoffSeedingType      enums.LeaguePlayoffSeedingType `json:"PlayoffSeedingType"`      // "STANDARD", "SEEDED", "BYES_ONLY"
 
-	AllowTrading                bool `json:"AllowTrading" gorm:"column:allow_trading"`
-	AllowTransferCredits        bool `json:"AllowTransferCredits" gorm:"column:allow_transfer_credits"`
+	AllowTransfers              bool `json:"AllowTransfers" gorm:"column:allow_transfers"`
+	TransfersCostCredits        bool `json:"TransfersCostCredits" gorm:"column:transfers_cost_credits"`
 	TransferCreditsPerWindow    int  `json:"TransferCreditsPerWindow" gorm:"column:transfer_credits_per_window"`
 	TransferCreditCap           int  `json:"TransferCreditCap" gorm:"column:transfer_credit_cap"`
 	TransferWindowFrequencyDays int  `json:"TransferWindowFrequencyDays" gorm:"column:transfer_window_frequency_days"`
@@ -69,7 +74,7 @@ func (f *LeagueFormat) Scan(value any) error {
 		return fmt.Errorf("failed to scan LeagueFormat: %v", value)
 	}
 
-	var m map[string]interface{}
+	var m map[string]any
 	if err := json.Unmarshal(b, &m); err != nil {
 		return err
 	}
@@ -86,9 +91,6 @@ func (f *LeagueFormat) Scan(value any) error {
 	if val, ok := m["group_count"].(float64); ok {
 		f.GroupCount = int(val)
 	}
-	if val, ok := m["games_per_opponent"].(float64); ok {
-		f.GamesPerOpponent = int(val)
-	}
 	if val, ok := m["playoff_type"].(string); ok {
 		f.PlayoffType = enums.LeaguePlayoffType(val)
 	}
@@ -101,11 +103,11 @@ func (f *LeagueFormat) Scan(value any) error {
 	if val, ok := m["playoff_seeding_type"].(string); ok {
 		f.PlayoffSeedingType = enums.LeaguePlayoffSeedingType(val)
 	}
-	if val, ok := m["allow_trading"].(bool); ok {
-		f.AllowTrading = val
+	if val, ok := m["allow_transfer"].(bool); ok {
+		f.AllowTransfers = val
 	}
-	if val, ok := m["allow_transfer_credits"].(bool); ok {
-		f.AllowTransferCredits = val
+	if val, ok := m["transfers_cost_credits"].(bool); ok {
+		f.TransfersCostCredits = val
 	}
 	if val, ok := m["transfer_credits_per_window"].(float64); ok {
 		f.TransferCreditsPerWindow = int(val)
@@ -141,13 +143,12 @@ func (f LeagueFormat) Value() (driver.Value, error) {
 		"draft_order_type":               f.DraftOrderType,
 		"season_type":                    f.SeasonType,
 		"group_count":                    f.GroupCount,
-		"games_per_opponent":             f.GamesPerOpponent,
 		"playoff_type":                   f.PlayoffType,
 		"playoff_participant_count":      f.PlayoffParticipantCount,
 		"playoff_byes_count":             f.PlayoffByesCount,
 		"playoff_seeding_type":           f.PlayoffSeedingType,
-		"allow_trading":                  f.AllowTrading,
-		"allow_transfer_credits":         f.AllowTransferCredits,
+		"allow_trading":                  f.AllowTransfers,
+		"allow_transfer_credits":         f.TransfersCostCredits,
 		"transfer_credits_per_window":    f.TransferCreditsPerWindow,
 		"transfer_credit_cap":            f.TransferCreditCap,
 		"transfer_window_frequency_days": f.TransferWindowFrequencyDays,

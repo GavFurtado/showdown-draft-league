@@ -14,15 +14,16 @@ type LeaguePlayoffType string
 type LeaguePlayoffSeedingType string
 
 const (
-	LeagueStatusPending        LeagueStatus = "PENDING"
-	LeagueStatusSetup          LeagueStatus = "SETUP"
-	LeagueStatusDrafting       LeagueStatus = "DRAFTING"
-	LeagueStatusPostDraft      LeagueStatus = "POST_DRAFT"
-	LeagueStatusTransferWindow LeagueStatus = "TRANSFER_WINDOW"
-	LeagueStatusRegularSeason  LeagueStatus = "REGULARSEASON"
-	LeagueStatusPlayoffs       LeagueStatus = "PLAYOFFS"
-	LeagueStatusCompleted      LeagueStatus = "COMPLETED"
-	LeagueStatusCancelled      LeagueStatus = "CANCELLED"
+	LeagueStatusPending           LeagueStatus = "PENDING"
+	LeagueStatusSetup             LeagueStatus = "SETUP"
+	LeagueStatusDrafting          LeagueStatus = "DRAFTING"
+	LeagueStatusPostDraft         LeagueStatus = "POST_DRAFT"
+	LeagueStatusTransferWindow    LeagueStatus = "TRANSFER_WINDOW"
+	LeagueStatusRegularSeason     LeagueStatus = "REGULAR_SEASON"
+	LeagueStatusPostRegularSeason LeagueStatus = "POST_REGULAR_SEASON"
+	LeagueStatusPlayoffs          LeagueStatus = "PLAYOFFS"
+	LeagueStatusCompleted         LeagueStatus = "COMPLETED"
+	LeagueStatusCancelled         LeagueStatus = "CANCELLED"
 )
 
 const (
@@ -38,9 +39,9 @@ const (
 )
 
 const (
-	LeaguePlayoffSeedingTypeStandard LeaguePlayoffSeedingType = "STANDARD"
-	LeaguePlayoffSeedingTypeSeeded   LeaguePlayoffSeedingType = "SEEDED"
-	LeaguePlayoffSeedingTypeByesOnly LeaguePlayoffSeedingType = "BYES_ONLY"
+	LeaguePlayoffSeedingTypeStandard    LeaguePlayoffSeedingType = "STANDARD"
+	LeaguePlayoffSeedingTypeFullySeeded LeaguePlayoffSeedingType = "FULLY_SEEDED"
+	LeaguePlayoffSeedingTypeByesOnly    LeaguePlayoffSeedingType = "BYES_ONLY"
 )
 
 // ------------------------
@@ -55,6 +56,7 @@ var LeagueStatuses = []LeagueStatus{
 	LeagueStatusPostDraft,
 	LeagueStatusTransferWindow,
 	LeagueStatusRegularSeason,
+	LeagueStatusPostRegularSeason,
 	LeagueStatusPlayoffs,
 	LeagueStatusCompleted,
 	LeagueStatusCancelled,
@@ -200,7 +202,7 @@ func (pt *LeaguePlayoffType) Scan(value any) error {
 
 var LeaguePlayoffSeedingTypes = []LeaguePlayoffSeedingType{
 	LeaguePlayoffSeedingTypeStandard,
-	LeaguePlayoffSeedingTypeSeeded,
+	LeaguePlayoffSeedingTypeFullySeeded,
 	LeaguePlayoffSeedingTypeByesOnly,
 }
 

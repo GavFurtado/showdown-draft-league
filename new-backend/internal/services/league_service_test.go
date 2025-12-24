@@ -44,15 +44,14 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 		StartDate:           startDate,
 		Format: models.LeagueFormat{
 			SeasonType:               "ROUND_ROBIN_ONLY",
-			GroupCount:               4,
-			GamesPerOpponent:         2,
+			GroupCount:               1, // Changed from 4 to 1
 			PlayoffType:              "single",
 			PlayoffParticipantCount:  4,
 			PlayoffByesCount:         0,
 			PlayoffSeedingType:       "regular_season",
 			IsSnakeRoundDraft:        true,
-			AllowTrading:             true,
-			AllowTransferCredits:     false,
+			AllowTransfers:           true,
+			TransfersCostCredits:     false,
 			TransferCreditsPerWindow: 0,
 		},
 	}
@@ -64,6 +63,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 			MaxPokemonPerPlayer: input.MaxPokemonPerPlayer,
 			StartingDraftPoints: input.StartingDraftPoints,
 			StartDate:           input.StartDate,
+			NewPlayerGroupNumber: 1, // Service sets this to 1 when GroupCount is 1
 			Format:              &input.Format,
 		}
 		createdLeague := *expectedLeague
@@ -76,6 +76,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 			TeamName:        fmt.Sprintf("%s's Team", input.Name),
 			IsParticipating: false,
 			DraftPoints:     1000,
+			GroupNumber:     1, // Service sets this to 1
 			Role:            rbac.PRoleOwner,
 		}
 		createdPlayer := *expectedOwnerPlayer
@@ -101,7 +102,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 		result, err := service.CreateLeague(testUserID, input)
 		assert.Error(t, err)
 		assert.Nil(t, result)
-		assert.Contains(t, err.Error(), "max league creation limit reached")
+		assert.Contains(t, err.Error(), common.ErrMaxLeagueCreationLimitReached.Error())
 
 		mockLeagueRepo.AssertExpectations(t)
 		mockLeagueRepo.AssertNotCalled(t, "CreateLeague")
@@ -143,6 +144,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 			MaxPokemonPerPlayer: input.MaxPokemonPerPlayer,
 			StartingDraftPoints: input.StartingDraftPoints,
 			StartDate:           input.StartDate,
+			NewPlayerGroupNumber: 1, // Must match the service's logic
 			Format:              &input.Format,
 		}
 		createdLeague := *expectedLeague
@@ -370,3 +372,4 @@ func TestLeagueService_GetLeaguesByUser(t *testing.T) {
 		mockLeagueRepo.AssertExpectations(t)
 	})
 }
+

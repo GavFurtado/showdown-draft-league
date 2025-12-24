@@ -8,7 +8,6 @@ import (
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -30,8 +29,6 @@ type DraftedPokemonService interface {
 	IsPokemonDrafted(leagueID uuid.UUID, pokemonSpeciesID int64) (bool, error)
 	// gets the next draft pick number for a league.
 	GetNextDraftPickNumber(leagueID uuid.UUID) (int, error)
-	// releases a Pokemon back to free agents.
-	ReleasePokemon(currentUser *models.User, draftedPokemonID uuid.UUID) error
 	// gets count of actively drafted Pokemon by a player.
 	GetDraftedPokemonCountByPlayer(currentUser *models.User, playerID uuid.UUID) (int64, error)
 	// gets draft history for a league (all picks in order, including released).
@@ -40,8 +37,6 @@ type DraftedPokemonService interface {
 	TradePokemon(currentUser *models.User, draftedPokemonID, newPlayerID uuid.UUID) error
 	// soft deletes a drafted Pokemon entry.
 	DeleteDraftedPokemon(currentUser *models.User, draftedPokemonID uuid.UUID) error
-	DropPokemon(currentUser *models.User, draftedPokemonID uuid.UUID) error
-	PickupFreeAgent(currentUser *models.User, leaguePokemonID uuid.UUID) error
 }
 
 type draftedPokemonServiceImpl struct {
@@ -70,95 +65,6 @@ func NewDraftedPokemonService(
 		pokemonSpeciesRepo: pokemonSpeciesRepo,
 		leaguePokemonRepo:  leaguePokemonRepo,
 	}
-}
-
-// isLeagueInTransferWindow checks if the specified league is currently in a transfer window.
-func (s *draftedPokemonServiceImpl) isLeagueInTransferWindow(leagueID uuid.UUID) (bool, error) {
-	league, err := s.leagueRepo.GetLeagueByID(leagueID)
-	if err != nil {
-		return false, common.ErrLeagueNotFound
-	}
-	return league.Status == enums.LeagueStatusTransferWindow, nil
-}
-
-// DropPokemon allows a user to drop a drafted Pokemon, making it a free agent.
-// This operation is only allowed during a transfer window and if the user owns the Pokemon.
-func (s *draftedPokemonServiceImpl) DropPokemon(currentUser *models.User, draftedPokemonID uuid.UUID) error {
-	draftedPokemon, err := s.draftedPokemonRepo.GetDraftedPokemonByID(draftedPokemonID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return common.ErrDraftedPokemonNotFound
-		}
-		return common.ErrInternalService
-	}
-
-	// Authorize user is owner of pokemon
-	player, err := s.playerRepo.GetPlayerByID(draftedPokemon.PlayerID)
-	if err != nil {
-		return common.ErrPlayerNotFound
-	}
-	if player.UserID != currentUser.ID {
-		return common.ErrUnauthorized
-	}
-
-	inWindow, err := s.isLeagueInTransferWindow(draftedPokemon.LeagueID)
-	if err != nil {
-		return err
-	}
-	if !inWindow {
-		return common.ErrInvalidState // Or a more specific "not in transfer window" error
-	}
-
-	return s.ReleasePokemon(currentUser, draftedPokemonID)
-}
-
-// PickupFreeAgent allows a user to pick up a released Pokemon (free agent) using transfer credits.
-// This operation is only allowed during a transfer window and if the player has enough credits.
-func (s *draftedPokemonServiceImpl) PickupFreeAgent(currentUser *models.User, leaguePokemonID uuid.UUID) error {
-	leaguePokemon, err := s.leaguePokemonRepo.GetLeaguePokemonByID(leaguePokemonID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return common.ErrLeaguePokemonNotFound
-		}
-		return common.ErrInternalService
-	}
-
-	inWindow, err := s.isLeagueInTransferWindow(leaguePokemon.LeagueID)
-	if err != nil {
-		return err
-	}
-	if !inWindow {
-		return common.ErrInvalidState // Or a more specific "not in transfer window" error
-	}
-
-	player, err := s.playerRepo.GetPlayerByUserAndLeague(currentUser.ID, leaguePokemon.LeagueID)
-	if err != nil {
-		return common.ErrPlayerNotFound
-	}
-
-	if player.TransferCredits <= 0 {
-		return common.ErrInsufficientTransferCredits
-	}
-
-	if !leaguePokemon.IsAvailable {
-		return common.ErrConflict // Pokemon not available
-	}
-
-	newDraftedPokemon := &models.DraftedPokemon{
-		LeagueID:         leaguePokemon.LeagueID,
-		PlayerID:         player.ID,
-		PokemonSpeciesID: leaguePokemon.PokemonSpeciesID,
-		LeaguePokemonID:  leaguePokemon.ID,
-		IsReleased:       false,
-	}
-
-	// Call the new repository transaction method
-	if err := s.draftedPokemonRepo.PickupFreeAgentTransaction(player, newDraftedPokemon, leaguePokemon); err != nil {
-		log.Printf("LOG: (Error: DraftedPokemonService.PickupFreeAgent) - Failed to complete pickup free agent transaction: %v", err)
-		return common.ErrInternalService
-	}
-
-	return nil
 }
 
 // GetDraftedPokemonByID gets drafted Pokemon by ID with relationships.
@@ -266,58 +172,6 @@ func (s *draftedPokemonServiceImpl) GetNextDraftPickNumber(leagueID uuid.UUID) (
 	}
 
 	return nextPick, nil
-}
-
-// ReleasePokemon releases a Pokemon back to free agents.
-func (s *draftedPokemonServiceImpl) ReleasePokemon(currentUser *models.User, draftedPokemonID uuid.UUID) error {
-	draftedPokemon, err := s.draftedPokemonRepo.GetDraftedPokemonByID(draftedPokemonID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return common.ErrDraftedPokemonNotFound
-		}
-		log.Printf("LOG: (Error: DraftedPokemonService.ReleasePokemon) - Error getting drafted pokemon %s for release: %v", draftedPokemonID, err)
-		return common.ErrInternalService
-	}
-
-	if draftedPokemon.IsReleased {
-		return common.ErrPokemonAlreadyReleased
-	}
-
-	// Get the player who owns this pokemon to check authorization
-	// otPlayer = Original Trainer Player. renamed from ownerPlayer to prevent confusion with player role owner
-	otPlayer, err := s.playerRepo.GetPlayerByID(draftedPokemon.PlayerID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return common.ErrPlayerNotFound
-		}
-		log.Printf("LOG: (Error: DraftedPokemonService.ReleasePokemon) - Error getting owner player %s for drafted pokemon %s: %v", draftedPokemon.PlayerID, draftedPokemonID, err)
-		return common.ErrInternalService
-	}
-
-	if currentUser.Role != "admin" {
-		currentPlayer, err := s.playerRepo.GetPlayerByUserAndLeague(currentUser.ID, draftedPokemon.LeagueID)
-		if err != nil {
-			if err == gorm.ErrRecordNotFound {
-				log.Printf("LOG: (Error: DraftedPokemonService.ReleasePokemon) - No player found for user %s in league %s: %v\n", currentUser.ID, draftedPokemon.LeagueID, err)
-				return common.ErrPlayerNotFound
-			}
-			log.Printf("LOG: (Error: DraftedPokemonService.ReleasePokemon) - Error fetching current player (league: %d) of user %s: %v\n", draftedPokemon.LeagueID, currentUser.ID, err)
-			return common.ErrInternalService
-		}
-
-		if currentUser.ID != otPlayer.UserID && currentPlayer.Role == rbac.PRoleMember {
-			log.Printf("LOG: (Error: DraftedPokemonService.ReleasePokemon) - Unauthorized attempt by user %s to release pokemon %s", currentUser.ID, draftedPokemonID)
-			return common.ErrUnauthorized
-		}
-	}
-
-	// If we reach this point, the user is authorized to release the pokemon.
-	err = s.draftedPokemonRepo.ReleasePokemon(draftedPokemonID)
-	if err != nil {
-		log.Printf("LOG: (Error: DraftedPokemonService.ReleasePokemon) - Failed to release pokemon with ID %s: %v", draftedPokemonID, err)
-		return common.ErrInternalService
-	}
-	return nil
 }
 
 // GetDraftedPokemonCountByPlayer gets count of actively drafted Pokemon by a player.

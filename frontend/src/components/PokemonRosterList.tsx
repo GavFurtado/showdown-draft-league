@@ -3,21 +3,22 @@ import { DraftedPokemon, LeaguePokemon } from '../api/data_interfaces';
 import { PokemonListItem } from './PokemonListItem';
 
 interface PokemonRosterListProps {
-  roster: (DraftedPokemon | LeaguePokemon)[];
-  rosterType: 'drafted' | 'pendingPick';
-  bgColor?: string;
-  onRemove?: (leaguePokemonId: string) => void;
-  showRemoveButton?: boolean;
+    roster: (DraftedPokemon | LeaguePokemon)[];
+    rosterType: 'drafted' | 'pendingPick';
+    bgColor?: string;
+    onRemove?: (leaguePokemonId: string) => void;
+    showRemoveButton?: boolean;
+    pickNumbersToUse?: number[];
 }
 
-export const PokemonRosterList = ({ roster, rosterType, bgColor, onRemove, showRemoveButton }: PokemonRosterListProps) => {
+export const PokemonRosterList = ({ roster, rosterType, bgColor, onRemove, showRemoveButton, pickNumbersToUse }: PokemonRosterListProps) => {
     if (roster.length === 0) {
         return <p className="text-text-secondary">No Pokémon on this roster.</p>;
     }
 
     return (
         <div className="flex flex-col space-y-2"> {/* Common wrapper styling */}
-            {roster.map((item, _) => {
+            {roster.map((item, index) => {
                 {/* console.log("PokemonRosterList:: roster item prop: ", item); */ }
 
                 return (
@@ -29,7 +30,7 @@ export const PokemonRosterList = ({ roster, rosterType, bgColor, onRemove, showR
                             : (item as LeaguePokemon).Cost}
                         leaguePokemonId={rosterType === 'drafted' ? (item as DraftedPokemon).LeaguePokemonID
                             : (item as LeaguePokemon).ID}
-                        pickNumber={rosterType === 'drafted' ? (item as DraftedPokemon).DraftPickNumber : undefined}
+                        pickNumber={rosterType === 'drafted' ? (item as DraftedPokemon).DraftPickNumber : pickNumbersToUse[index]}
                         bgColor={bgColor || "bg-gray-50"}
                         onRemove={onRemove}
                         showRemoveButton={showRemoveButton}

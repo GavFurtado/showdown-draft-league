@@ -12,6 +12,7 @@ var (
 	ErrDraftedPokemonNotFound = errors.New("drafted pokemon instance not found")
 	ErrLeaguePokemonNotFound  = errors.New("league pokemon instance not found")
 	ErrDraftNotFound          = errors.New("draft information not found for league")
+	ErrGameNotFound           = errors.New("game not found")
 
 	// Player creation specific errors
 	ErrUserAlreadyInLeague  = errors.New("user is already a player in this league")
@@ -21,23 +22,30 @@ var (
 
 	// Authorization errors
 	ErrUnauthorized           = errors.New("unauthorized: you do not have permission to perform this action")
+	ErrForbidden              = errors.New("this action is forbidden")
 	ErrInvalidUpdateForPlayer = errors.New("players cannot update score or draft details directly")
 
 	// Business Logic Errors
-	ErrMaxLeagueCreationLimitReached = errors.New("maximum league creation limit reached")
-	ErrInvalidInput                  = errors.New("invalid input/request")
-	ErrConflict                      = errors.New("record already exists. cannot make a duplicate")
-	ErrInvalidState                  = errors.New("league/draft is in invalid state/status for this operation")
-	ErrInsufficientDraftPoints       = errors.New("insufficient draft points to complete this operation")
-	ErrInsufficientTransferCredits   = errors.New("insufficient transfer credits to complete this operation") // Added this line
-	ErrPokemonAlreadyReleased        = errors.New("this pokemon has already been released")
-	ErrNoPlayerForDraft              = errors.New("not enough players to start draft")
-	ErrTooManyRequestedPicks         = errors.New("too many draft picks were requested")
-	ErrCannotSkipBelowMinimumRoster  = errors.New("skip action not allowed as your roster size will be too small")
-	ErrDraftPausedForIntervention    = errors.New("draft paused awaiting league staff intervention")
-	ErrInvalidDraftPosition          = errors.New("invalid draft position for player")
-	ErrDuplicateDraftPosition        = errors.New("duplicate draft position found")
-	ErrIncompleteDraftOrder          = errors.New("draft order is incomplete")
+	ErrMaxLeagueCreationLimitReached  = errors.New("maximum league creation limit reached")
+	ErrExceedsMaxAllowableGroupCount  = errors.New("maximum group counts allowed is 2 for a league")
+	ErrInvalidInput                   = errors.New("invalid input/request")
+	ErrConflict                       = errors.New("record already exists. cannot make a duplicate")
+	ErrInvalidState                   = errors.New("league/draft is in invalid state/status for this operation")
+	ErrInsufficientDraftPoints        = errors.New("insufficient draft points to complete this operation")
+	ErrInsufficientTransferCredits    = errors.New("insufficient transfer credits to complete this operation")
+	ErrPokemonAlreadyReleased         = errors.New("this pokemon has already been released")
+	ErrBelowMinPokemon                = errors.New("dropping this pokemon would put you below the league's minimum")
+	ErrAboveMaxPokemon                = errors.New("picking up this pokemon would put you above the league's maximum")
+	ErrNoPlayerForDraft               = errors.New("not enough players to start draft")
+	ErrTooManyRequestedPicks          = errors.New("too many draft picks were requested")
+	ErrCannotSkipBelowMinimumRoster   = errors.New("skip action not allowed as your roster size will be too small")
+	ErrDraftPausedForIntervention     = errors.New("draft paused awaiting league staff intervention")
+	ErrInvalidDraftPosition           = errors.New("invalid draft position for player")
+	ErrDuplicateDraftPosition         = errors.New("duplicate draft position found")
+	ErrIncompleteDraftOrder           = errors.New("draft order is incomplete")
+	ErrInsufficientPlayersForPlayoffs = errors.New("insufficient players to start a playoff bracket") // should never happen due to previous validations
+	ErrInvalidLeagueConfiguration     = errors.New("invalid league configuration")
+	ErrGamesAlreadyGenerated          = errors.New("games have already been generated for this league/season")
 
 	// Internal Service Errors
 	ErrInternalService = errors.New("internal service error")

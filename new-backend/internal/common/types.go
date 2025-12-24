@@ -113,3 +113,20 @@ type PokemonSpeciesListDTO struct {
 	Types        []string `json:"Types" gorm:"column:types"`
 	FrontDefault string   `json:"FrontDefault" gorm:"column:front_default"`
 }
+
+// -- Game Related --
+type ReportGameDTO struct {
+	ReporterID  uuid.UUID `json:"ReporterID" binding:"omitempty"`
+	WinnerID    uuid.UUID `json:"WinnerID" binding:"required"`
+	Player1Wins *int      `json:"Player1Wins" binding:"required,gte=0"`
+	Player2Wins *int      `json:"Player2Wins" binding:"required,gte=0"`
+	ReplayLinks []string  `json:"ReplayLinks" binding:"dive,url"`
+}
+
+type FinalizeGameDTO struct {
+	FinalizerID uuid.UUID `json:"FinalizerID" binding:"required"`
+	WinnerID    uuid.UUID `json:"WinnerID" binding:"required"`
+	Player1Wins *int      `json:"Player1Wins" binding:"required,gte=0"`
+	Player2Wins *int      `json:"Player2Wins" binding:"required,gte=0"`
+	ReplayLinks []string  `json:"ReplayLinks" binding:"dive,url"`
+}

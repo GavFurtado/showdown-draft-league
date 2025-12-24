@@ -112,3 +112,11 @@ func (m *MockPlayerRepository) IsUserInLeague(userID, leagueID uuid.UUID) (bool,
 	args := m.Called(userID, leagueID)
 	return args.Bool(0), args.Error(1)
 }
+
+func (m *MockPlayerRepository) GetPlayersByLeagueAndGroupNumber(leagueID uuid.UUID, groupNumber int) ([]models.Player, error) {
+	args := m.Called(leagueID, groupNumber)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]models.Player), args.Error(1)
+}

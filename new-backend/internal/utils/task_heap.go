@@ -10,6 +10,7 @@ const (
 	TaskTypeDraftTurnTimeout TaskType = iota
 	TaskTypeTradingPeriodEnd
 	TaskTypeTradingPeriodStart
+	TaskTypeLeagueWeeklyTick
 )
 
 func (t TaskType) String() string {
@@ -20,6 +21,8 @@ func (t TaskType) String() string {
 		return "TRADING_PERIOD_END"
 	case TaskTypeTradingPeriodStart:
 		return "TRADING_PERIOD_START"
+	case TaskTypeLeagueWeeklyTick:
+		return "LEAGUE_WEEKLY_TICK"
 	}
 	return ""
 }
@@ -42,6 +45,9 @@ type PayloadTransferPeriodEnd struct {
 	LeagueID uuid.UUID
 }
 type PayloadTransferPeriodStart struct {
+	LeagueID uuid.UUID
+}
+type PayloadLeagueWeeklyTick struct {
 	LeagueID uuid.UUID
 }
 

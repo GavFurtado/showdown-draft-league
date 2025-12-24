@@ -45,7 +45,7 @@ const Draftboard: React.FC = () => {
 
     const isMyTurn = currentDraft?.CurrentTurnPlayerID === currentPlayer?.ID;
     const accumulatedPicks = currentDraft?.PlayersWithAccumulatedPicks?.[currentPlayer?.ID || ''] || [];
-    const pickNumbersToUse = [currentDraft?.CurrentPickOnClock, ...accumulatedPicks].filter(n => n !== undefined) as number[];
+    const pickNumbersToUse = [...accumulatedPicks, currentDraft?.CurrentPickOnClock,].filter(n => n !== undefined) as number[];
     const numberOfPicksAvailable = pickNumbersToUse.length;
 
     const fetchPokemon = useCallback(async () => {
@@ -212,8 +212,7 @@ const Draftboard: React.FC = () => {
 
     const remainingPoints = currentPlayer?.DraftPoints ?? 0;
     const skipsAllowed = (currentLeague?.MaxPokemonPerPlayer ?? 0) - (currentLeague?.MinPokemonPerPlayer ?? 0);
-    const skipsUsed = accumulatedPicks.length;
-    const skipsLeft = skipsAllowed - skipsUsed;
+    const skipsLeft = currentPlayer?.SkipsLeft;
 
     if (leagueError || pokemonError) {
         return (
@@ -307,9 +306,9 @@ const Draftboard: React.FC = () => {
                                     {isMyTurn && (
                                         <div className="flex justify-between items-center">
                                             <span className="font-semibold">Action:</span>
-                                            <button onClick={handleSkipTurn} disabled={skipsLeft <= 0} className="flex flex-col items-center px-3 py-1.5 rounded-md transition-colors duration-150 disabled:bg-gray-300 disabled:cursor-not-allowed bg-yellow-500 text-white hover:bg-yellow-600">
+                                            <button onClick={handleSkipTurn} disabled={skipsLeft as number <= 0} className="flex flex-col items-center px-3 py-1.5 rounded-md transition-colors duration-150 disabled:bg-gray-300 disabled:cursor-not-allowed bg-yellow-500 text-white hover:bg-yellow-600">
                                                 <span className="font-medium">Skip Turn</span>
-                                                <span className="text-xs opacity-80">({skipsLeft} left)</span>
+                                                <span className="text-xs opacity-80">({skipsLeft}/{skipsAllowed} left)</span>
                                             </button>
                                         </div>
                                     )}
@@ -334,6 +333,7 @@ const Draftboard: React.FC = () => {
                                             onRemove={onDraft}
                                             showRemoveButton={true}
                                             bgColor="bg-yellow-100 border border-yellow-400"
+                                            pickNumbersToUse={pickNumbersToUse}
                                         />
                                         <hr className="my-2 border-gray-300" />
                                     </>

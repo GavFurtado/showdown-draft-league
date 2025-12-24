@@ -35,7 +35,7 @@ type pokemonSpeciesControllerImpl struct {
 	pokemonService services.PokemonSpeciesService
 }
 
-func NewPokemonSpeciesController(pokemonService services.PokemonSpeciesService) *pokemonSpeciesControllerImpl {
+func NewPokemonSpeciesController(pokemonService services.PokemonSpeciesService) PokemonSpeciesController {
 	return &pokemonSpeciesControllerImpl{
 		pokemonService: pokemonService,
 	}
