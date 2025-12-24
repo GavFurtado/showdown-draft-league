@@ -128,7 +128,7 @@ func (m *MockGameRepository) UpdateGameReport(gameID uuid.UUID, loserID uuid.UUI
 	return args.Error(0)
 }
 
-func (m *MockGameRepository) FinalizeGameAndUpdateStats(gameID uuid.UUID, loserID uuid.UUID, dto *common.FinalizeGameDTO) error {
-	args := m.Called(gameID, loserID, dto)
+func (m *MockGameRepository) FinalizeGameAndUpdateStats(game *models.Game, loserID uuid.UUID, dto *common.FinalizeGameDTO) error {
+	args := m.Called(game, loserID, dto)
 	return args.Error(0)
 }

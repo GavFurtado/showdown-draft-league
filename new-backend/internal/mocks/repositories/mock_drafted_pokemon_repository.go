@@ -53,8 +53,8 @@ func (m *MockDraftedPokemonRepository) GetNextDraftPickNumber(leagueID uuid.UUID
 	return args.Int(0), args.Error(1)
 }
 
-func (m *MockDraftedPokemonRepository) ReleasePokemonTransaction(draftedPokemonID uuid.UUID, player *models.Player, dropCost int, releasedWeek int) error {
-	args := m.Called(draftedPokemonID, player, dropCost, releasedWeek)
+func (m *MockDraftedPokemonRepository) ReleasePokemonTransaction(draftedPokemon *models.DraftedPokemon, player *models.Player, dropCost int, releasedWeek int) error {
+	args := m.Called(draftedPokemon, player, dropCost, releasedWeek)
 	return args.Error(0)
 }
 
