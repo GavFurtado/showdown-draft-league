@@ -56,7 +56,7 @@ const RosterDisplay = ({ player }: { player: Player }) => {
 
 // Main Teamsheets Page Component
 const Teamsheets: React.FC = () => {
-    const { currentLeague } = useLeague();
+    const { currentLeague, currentDraft, loading: leagueLoading } = useLeague();
     const [players, setPlayers] = useState<Player[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -120,6 +120,20 @@ const Teamsheets: React.FC = () => {
     useEffect(() => {
         fetchSelectedPlayerRoster();
     }, [fetchSelectedPlayerRoster]);
+
+
+    if (!leagueLoading && !currentDraft) {
+        return (
+            <Layout variant="full">
+                <div className="flex-grow flex items-center justify-center">
+                    <div className="bg-white p-8 rounded-lg shadow-md text-center">
+                        <h1 className="text-2xl font-bold text-gray-800 mb-4">Draft Not Started</h1>
+                        <p className="text-gray-600">The league has not yet begun and is being set up. This page is unavailable.</p>
+                    </div>
+                </div>
+            </Layout>
+        );
+    }
 
 
     return (

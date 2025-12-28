@@ -11,7 +11,7 @@ import { useDraftTimer } from '../hooks/useDraftTimer';
 import Modal from "../components/Modal";
 import { PokemonRosterList } from "../components/PokemonRosterList";
 import Layout from "../components/Layout";
-import FullScreenDraftModal from "../components/FullScreenDraftModal";
+import FullDraftView from "../components/FullDraftView";
 
 const defaultFilters: FilterState = {
     selectedTypes: [],
@@ -216,9 +216,24 @@ const Draftboard: React.FC = () => {
 
     if (leagueError || pokemonError) {
         return (
-            <div className="min-h-screen bg-background-main flex items-center justify-center">
-                <p className="text-xl text-red-600">Error: {leagueError || pokemonError}</p>
-            </div>
+            <Layout variant="full">
+                <div className="min-h-screen bg-background-main flex items-center justify-center">
+                    <p className="text-xl text-red-600">Error: {leagueError || pokemonError}</p>
+                </div>
+            </Layout>
+        );
+    }
+
+    if (!leagueLoading && !currentDraft) {
+        return (
+            <Layout variant="full">
+                <div className="flex-grow flex items-center justify-center">
+                    <div className="bg-white p-8 rounded-lg shadow-md text-center">
+                        <h1 className="text-2xl font-bold text-gray-800 mb-4">Draft Not Started</h1>
+                        <p className="text-gray-600">The league has not yet begun and is being set up. This page is unavailable.</p>
+                    </div>
+                </div>
+            </Layout>
         );
     }
 
@@ -268,8 +283,10 @@ const Draftboard: React.FC = () => {
                         </div>
                         <Filter updateFilter={updateFilter} filters={filters} resetAllFilters={resetAllFilters} />
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 h-auto rounded-2xl">
-                        {cardsToDisplay}
+                    <div className="w-full bg-background-tertiary p-4 rounded-lg shadow-md">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 h-auto rounded-2xl">
+                            {cardsToDisplay}
+                        </div>
                     </div>
                 </div>
 
@@ -280,13 +297,18 @@ const Draftboard: React.FC = () => {
                         {isInfoOpen ? 'Hide' : 'Show'} Draft Info
                     </button>
                     <div className={`${isInfoOpen ? 'block' : 'hidden'} md:block space-y-4`}>
+                        <div className="p-4 bg-background-surface rounded-lg shadow-md">
+                            <div className="flex justify-between items-center">
+                                <h2 className="text-lg font-bold">Full Draft</h2>
+                                <button className="text-sm bg-transparent border border-black p-2 rounded-md hover:border-accent-primary-hover hover:bg-accent-primary hover:text-white" onClick={() => setIsFullScreenModalOpen(!isFullScreenModalOpen)}>
+                                    Show
+                                </button>
+                            </div>
+                        </div>
                         {shouldShowDraftStatus && currentDraft && (
                             <div className="p-4 bg-background-surface rounded-lg shadow-md">
                                 <div className="flex justify-between items-center mb-2">
                                     <h2 className="text-lg font-bold">Draft Status</h2>
-                                    <button className="text-sm bg-transparent border border-black p-2 rounded-md hover:border-accent-primary-hover hover:bg-accent-primary hover:text-white" onClick={() => setIsFullScreenModalOpen(!isFullScreenModalOpen)}>
-                                        Show Full Draft
-                                    </button>
                                 </div>
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between items-center">
@@ -343,7 +365,7 @@ const Draftboard: React.FC = () => {
                                     <PokemonRosterList
                                         roster={draftedPokemon}
                                         rosterType="drafted"
-                                        bgColor="bg-gray-200"
+                                        bgColor="bg-background-tertiary"
                                     />
                                 ) : (
                                     !isMyTurn || pendingPicks.length === 0 && <p className="text-gray-600 p-2">Your team is empty.</p>
@@ -415,18 +437,14 @@ const Draftboard: React.FC = () => {
                     </div>
                 </Modal>
             )}
-            {isFullScreenModalOpen && (
-                <FullScreenDraftModal
-                    isOpen={isFullScreenModalOpen}
-                    onClose={() => setIsFullScreenModalOpen(false)}
-                    title="Full Draft View"
-                    leaguePlayers={leaguePlayers}
-                    draftHistory={draftHistory}
-                    currentDraft={currentDraft}
-                    currentPlayer={currentPlayer}
-                    currentLeague={currentLeague}
-                />
-            )}
+            <FullDraftView
+                isOpen={isFullScreenModalOpen}
+                onClose={() => setIsFullScreenModalOpen(false)}
+                leaguePlayers={leaguePlayers}
+                draftHistory={draftHistory}
+                draft={currentDraft}
+                league={currentLeague}
+            />
         </Layout>
     );
 }

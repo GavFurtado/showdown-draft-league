@@ -39,15 +39,6 @@ export interface UpdatePlayerInfoRequest {
     DraftPosition?: string
 }
 
-// PokemonSpecies related
-export interface PokemonSpecies {
-    Id: number,
-    Name: string,
-    Types: string[],
-    FrontDefault: string // url
-    OfficialArtwork?: string // url
-}
-
 // LeaguePokemon Related
 export interface LeaguePokemonCreateRequest {
     LeagueID: string
@@ -89,8 +80,4 @@ export interface MakePickRequest {
 export interface RequestedPick {
     LeaguePokemonID: string,
     DraftPickNumber: number
-}
-
-export interface PickupFreeAgentRequest {
-    PlayerId: string;
 }
