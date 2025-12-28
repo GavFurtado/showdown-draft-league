@@ -10,7 +10,6 @@ interface LeagueContextType {
     setCurrentLeague: (league: League | null) => void;
     currentDraft: Draft | null;
     currentPlayer: Player | null;
-    // myDiscordUser: DiscordUser | null; // Removed as it comes from UserContext
     loading: boolean;
     error: string | null;
     refetch: () => void;
@@ -74,7 +73,7 @@ export const LeagueProvider = ({ children }: LeagueProviderProps) => {
                     console.error("LeagueProvider: Error fetching draft data:", draftErr);
                 }
             }
-            
+
             let playerInCurrentLeague: Player | null = null;
             if (discordUser?.ID) { // Use discordUser from UserContext
                 const playerResponse = await getPlayerByUserIdAndLeagueId(leagueId, discordUser.ID);
@@ -152,12 +151,12 @@ export const useLeague = () => {
         // Return a default context when not within a LeagueProvider
         return {
             currentLeague: null,
-            setCurrentLeague: () => {},
+            setCurrentLeague: () => { },
             currentDraft: null,
             currentPlayer: null,
             loading: false,
             error: null,
-            refetch: () => {},
+            refetch: () => { },
         };
     }
     return context;

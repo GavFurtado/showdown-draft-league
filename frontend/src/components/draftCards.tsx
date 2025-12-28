@@ -147,7 +147,7 @@ export default function PokemonCard({ pokemon, cost, onImageError, leaguePokemon
                         <StatBar label="Att" value={pokemon.Stats.Attack} />
                         <StatBar label="Def" value={pokemon.Stats.Defense} />
                         <StatBar label="SpA" value={pokemon.Stats.SpecialAttack} />
-                        <StatBar label="SpD" value={pokemon.Stats.SpecialAttack} />
+                        <StatBar label="SpD" value={pokemon.Stats.SpecialDefense} />
                         <StatBar label="Spe" value={pokemon.Stats.Speed} />
                     </div>
                     <div className="text-left text-xs mt-4">

@@ -8,12 +8,12 @@ const pokemonTypes = [
 ];
 
 const pokemonStats = [
-    { key: 'HP', name: 'hp' },
-    { key: 'Attack', name: 'attack' },
-    { key: 'Defense', name: 'defense' },
-    { key: 'Sp. Attack', name: 'special-attack' },
-    { key: 'Sp. Defense', name: 'special-defense' },
-    { key: 'Speed', name: 'speed' },
+    { key: 'HP', name: 'Hp' },
+    { key: 'Attack', name: 'Attack' },
+    { key: 'Defense', name: 'Defense' },
+    { key: 'Sp. Attack', name: 'SpecialAttack' },
+    { key: 'Sp. Defense', name: 'SpecialDefense' },
+    { key: 'Speed', name: 'Speed' },
 ];
 
 interface FilterProps {
@@ -300,9 +300,9 @@ export default function Filter(props: FilterProps) {
 
             <button
                 onClick={resetAllFilters}
-                className={`py-1 px-3 rounded-md text-sm font-medium border hover:bg-accent-primary-hover hover:text-white hover:border-accent-primary transition-colors`}
+                className={`py-1 px-3 rounded-md text-sm font-medium border hover:bg-accent-primary-hover hover:text-white hover:border-black transition-colors`}
             >
-                <span className="hidden sm:inline">Clear All Filters</span>
+                <span className="hidden sm:inline">Clear Filters</span>
                 <span className="sm:hidden">Clear</span>
             </button>
         </div>

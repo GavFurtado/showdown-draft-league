@@ -47,23 +47,33 @@ export interface LeagueFormat {
 export interface League {
   ID: string; // UUID
   Name: string;
+
   StartDate: string; // ISO 8601 string
   EndDate: string | null; // ISO 8601 string
   NextWeeklyTick: string; // ISO 8601 string
   RegularSeasonStartDate: string; // ISO 8601 string
-  RulesetDescription: string;
+
+  CurrentWeekNumber: number;
   Status: LeagueStatus;
   MaxPokemonPerPlayer: number;
   MinPokemonPerPlayer: number;
   StartingDraftPoints: number;
   Format: LeagueFormat;
   PlayerCount: number;
+
+  RulesetDescription: string;
   DiscordWebhookURL: string | null;
+
+  CreatedAt?: string; // ISO 8601 string
+  UpdatedAt?: string; // ISO 8601 string
   // NewPlayerGroupNumber: number; // has no real use in the frontend
+
   // Relationships
   Players?: Player[];
-  // LeaguePokemon?: LeaguePokemon[];
-  // DraftedPokemon?: DraftedPokemon[];
+  // These next two are never populated by the backend
+  // Kept here to show relationships
+  DefinedPokemon?: LeaguePokemon[];
+  AllDraftedPokemon?: DraftedPokemon[];
 }
 
 // Draft related
