@@ -5,6 +5,7 @@ import { League } from '../api/data_interfaces';
 
 interface LeagueDropdownProps {
     currentLeague: League | null;
+    currentPlayer: Player | null; // Added currentPlayer
     userLeagues: League[];
     loading: boolean;
     error: string | null;
@@ -17,6 +18,7 @@ function mergeClasses(...classes: (string | boolean | undefined | null)[]) {
 
 export default function LeagueDropdown({
     currentLeague,
+    currentPlayer, // Added currentPlayer
     userLeagues,
     loading,
     error,
@@ -35,8 +37,19 @@ export default function LeagueDropdown({
             <div>
                 <MenuButton className="flex items-center rounded-md bg-gray-800 px-3 py-2 text-sm font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800 ml-1">
                     <span className="sr-only">Open league menu</span>
-                    {currentLeague ? currentLeague.Name : "Select League"}
-                    <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <div className="flex flex-col items-start">
+                        {currentLeague ? (
+                            <>
+                                <span>{currentLeague.Name}</span>
+                                {currentPlayer && (
+                                    <span className="text-xs text-gray-400">{currentPlayer.TeamName} ({currentPlayer.InLeagueName})</span>
+                                )}
+                            </>
+                        ) : (
+                            "Select League"
+                        )}
+                    </div>
+                    <svg className="h-5 w-5 ml-2 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.23 8.29a.75.75 0 01.02-1.06z" clipRule="evenodd" />
                     </svg>
                 </MenuButton>

@@ -97,7 +97,7 @@ export interface Draft {
     UpdatedAt?: string; // ISO 8601 string
     // Relationships
     League?: League;
-    CurrentTurnPlayer?: Player; // pretty sure this is preloaded by backend
+    CurrentTurnPlayer?: Player;
 }
 
 export type PlayerRole = "member" | "moderator" | "owner";
