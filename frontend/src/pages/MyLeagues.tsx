@@ -160,6 +160,8 @@ const MyLeagues: React.FC = () => {
                         Manage and view all the leagues you are participating in.
                     </p>
                 </div>
+                {/* TODO: make it so how many leagues the user has created is displayed 
+                   out of the max. that they can (set to 2 currently) */}
                 <div className="mt-4 sm:mt-0">
                     <button
                         type="button"
