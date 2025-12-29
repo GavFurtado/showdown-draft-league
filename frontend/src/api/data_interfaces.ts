@@ -221,3 +221,46 @@ export type PlayerPick = {
 export type PlayerAccumulatedPicks = {
   [playerId: string]: number[];
 };
+
+export type GameType = "GRAND_FINAL" | "REGULAR_SEASON" | "PLAYOFF_UPPER" | "PLAYOFF_LOWER" | "PLAYOFF_SINGLEELIM" | "TOURNAMENT_SINGLEELIM" | "TOURNAMENT_UPPER" | "TOURNAMENT_LOWER";
+export type GameStatus = "SCHEDULED" | "APPROVAL_PENDING" | "COMPLETED" | "DISPUTED";
+export interface Game {
+  ID: string; // UUID
+  LeagueID: string; // UUID
+
+  Player1ID: string; // UUID
+  Player2ID: string; // UUID
+
+  WinnerID?: string; // UUID
+  LoserID?: string; // UUID
+
+  Player1Wins: number;
+  Player2Wins: number;
+
+  RoundNumber: number;
+  GroupNumber?: number;
+
+  GameType: GameType;
+  GameStatus: GameStatus;
+
+  BracketPosition?: string;
+  ShowdownReplayLinks: string[];
+
+  ReportingPlayerID?: string; // UUID
+  ApproverID?: string; // UUID
+
+  WinnerToGameID: string; // UUID
+  LoserToGameID: string; // UUID
+
+  CreatedAt: string; // ISO 8601 string
+  UpdatedAt: string; // ISO 8601 string
+
+  // Relationships
+  ReportingPlayer?: Player;
+  ApproverPlayer?: Player;
+  League?: League; // never populated by the backend
+  Player1?: Player;
+  Player2?: Player;
+  Winner?: Player;
+  Loser?: Player;
+}
