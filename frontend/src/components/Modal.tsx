@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 
 interface ModalProps {
     isOpen: boolean;
@@ -9,13 +10,30 @@ interface ModalProps {
     showDefaultCloseButton?: boolean;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, showDefaultCloseButton = false,
+const Modal: React.FC<ModalProps> = ({
+    isOpen,
+    onClose,
+    title,
+    children,
+    showDefaultCloseButton = false,
     background = 'bg-background-surface',
     titleStyle = "text-lg font-bold text-text-primary" }) => {
+
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     if (!isOpen) return null;
     return (
         <div
-            className="fixed inset-0 overflow-y-auto h-full w-full"
+            className="bg-black/80 backdrop-blur-sm fixed inset-0 overflow- h-full w-full"
             style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
             id="my-modal"
         >

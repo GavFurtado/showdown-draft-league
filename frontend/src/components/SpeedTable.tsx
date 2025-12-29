@@ -7,7 +7,7 @@ interface SpeedTableProps {
 }
 
 const SpeedTable: React.FC<SpeedTableProps> = ({ roster }) => {
-    const [iVs, setIVs] = useState<number>(0);
+    const [iVs, setIVs] = useState<number>(31);
     const [level, setLevel] = useState<number>(100);
 
     const handleChangeIVs = (e: any) => {
@@ -43,7 +43,7 @@ const SpeedTable: React.FC<SpeedTableProps> = ({ roster }) => {
     };
 
     return (
-        <div className="w-full bg-background-surface p-4 rounded-lg shadow-md">
+        <div className="w-full bg-background-surface p-6 rounded-lg shadow-md">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="items-left text-2xl font-bold text-text-primary">Speed Benchmarks</h2>
                 <div className="flex items-center space-x-4">
@@ -81,9 +81,9 @@ const SpeedTable: React.FC<SpeedTableProps> = ({ roster }) => {
                             <th scope="col" className="px-2 py-4 text-text-on-nav text-left text-[10px] font-bold tracking-wider">Base Speed</th>
                             <th scope="col" className="px-2 py-4 text-text-on-nav text-left text-[10px] font-bold tracking-wider">0 EVs</th>
                             <th scope="col" className="px-2 py-4 text-text-on-nav text-left text-[10px] font-bold tracking-wider">252 EVs</th>
-                            <th scope="col" className="px-2 py-4 text-text-on-nav text-left text-[10px] font-bold tracking-wider">252 EVs|+Spe</th>
-                            <th scope="col" className="px-2 py-4 text-text-on-nav text-left text-[10px] font-bold tracking-wider">252 EVs|+Spe|Scarf(+1)</th>
-                            <th scope="col" className="px-2 py-4 text-text-on-nav text-left text-[10px] font-bold tracking-wider">252 EVs|+Spe|Tailwind(+2)</th>
+                            <th scope="col" className="px-2 py-4 text-left text-[11px] font-extrabold tracking-wider text-white">252 EVs|+Spe</th>
+                            <th scope="col" className="px-2 py-4 text-text-on-nav text-left text-[10px] font-bold tracking-wider">252 EVs|+Spe|+1 (Scarf)</th>
+                            <th scope="col" className="px-2 py-4 text-text-on-nav text-left text-[10px] font-bold tracking-wider">252 EVs|+Spe|+2 (Tailwind)</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white">
@@ -113,7 +113,7 @@ const SpeedTable: React.FC<SpeedTableProps> = ({ roster }) => {
                                     {calcSpeedStat(dp.PokemonSpecies.Stats.Speed, iVs, level, 252, "NEUTRAL", 1)}
                                 </td>
                                 <td
-                                    className="px-2 py-3 whitespace-nowrap text-left text-sm font-semibold text-gray-500"
+                                    className="px-2 py-3 whitespace-nowrap text-left text-sm font-bold text-indigo-700"
                                 >
                                     {calcSpeedStat(dp.PokemonSpecies.Stats.Speed, iVs, level, 252, "POSITIVE", 1)}
                                 </td>

@@ -10,6 +10,7 @@ import Draftboard from './pages/draftboard';
 import TeamSheets from './pages/teamsheets';
 import DraftHistory from './pages/DraftHistory';
 import JoinLeague from './pages/JoinLeague';
+import { DraftHistoryProvider } from './context/DraftHistoryContext';
 
 function App() {
     return (
@@ -51,19 +52,21 @@ function UserAndLeagueProviderWrapper() {
     return (
         <UserProvider>
             <LeagueProvider> {/* extracts leagueId from URL*/}
-                <Navbar />
-                <Routes>
-                    <Route path='dashboard' element={<Dashboard />} />
-                    <Route path='draftboard' element={<Draftboard />} />
-                    <Route path='teamsheets' element={<TeamSheets />} />
-                    <Route path='draft-history' element={<DraftHistory />} />
-                    {/* <Route path='standings' element={<Standings />} /> */}
+                <DraftHistoryProvider>
+                    <Navbar />
+                    <Routes>
+                        <Route path='dashboard' element={<Dashboard />} />
+                        <Route path='draftboard' element={<Draftboard />} />
+                        <Route path='teamsheets' element={<TeamSheets />} />
+                        <Route path='draft-history' element={<DraftHistory />} />
+                        {/* <Route path='standings' element={<Standings />} /> */}
 
-                    {/* --- League Staff Routes (Protected by league-specific roles) */}
-                    {/* placeholder examples */}
+                        {/* --- League Staff Routes (Protected by league-specific roles) */}
+                        {/* placeholder examples */}
 
-                    {/* <Route path='staff/edit-rules' element={<LeagueStaffRouteGuard role="owner"><EditRules /></LeagueStaffRouteGuard>} /> */}
-                </Routes>
+                        {/* <Route path='staff/edit-rules' element={<LeagueStaffRouteGuard role="owner"><EditRules /></LeagueStaffRouteGuard>} /> */}
+                    </Routes>
+                </DraftHistoryProvider>
             </LeagueProvider>
         </UserProvider>
     );

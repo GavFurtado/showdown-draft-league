@@ -54,7 +54,7 @@ export const DefensiveTypeChart: React.FC<DefensiveTypeChartProps> = ({ roster }
     }
 
     return (
-        <div className="bg-background-surface p-4 rounded-lg shadow-md">
+        <div className="bg-background-surface p-6 rounded-lg shadow-md">
             <h2 className="text-2xl font-bold text-text-primary mb-4 pb-2">Defensive Type Chart</h2>
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-700 table-fixed">

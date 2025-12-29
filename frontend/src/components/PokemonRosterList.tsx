@@ -30,7 +30,7 @@ export const PokemonRosterList = ({ roster, rosterType, bgColor, onRemove, showR
                             : (item as LeaguePokemon).Cost}
                         leaguePokemonId={rosterType === 'drafted' ? (item as DraftedPokemon).LeaguePokemonID
                             : (item as LeaguePokemon).ID}
-                        pickNumber={rosterType === 'drafted' ? (item as DraftedPokemon).DraftPickNumber : pickNumbersToUse[index]}
+                        pickNumber={rosterType === 'drafted' ? (item as DraftedPokemon).DraftPickNumber : (pickNumbersToUse as number[])[index]}
                         bgColor={bgColor || "bg-gray-50"}
                         onRemove={onRemove}
                         showRemoveButton={showRemoveButton}

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { DraftedPokemon } from '../api/data_interfaces';
+import { DraftedPokemon, PokemonStat } from '../api/data_interfaces';
 import PokemonCard from './draftCards';
 import { formatPokemonName, formatAbilityName } from '../utils/nameFormatter';
 import ToggleSwitch from './ToggleSwitch'; // Ensure this import is present
@@ -13,7 +13,7 @@ interface TeamPokemonViewProps {
 }
 
 const TeamPokemonView: React.FC<TeamPokemonViewProps> = ({ roster }) => {
-    const [isTableView, setIsCardView] = useState(false);
+    const [isCardView, setIsCardView] = useState(false);
     const [currentlyFlippedCardId, setCurrentlyFlippedCardId] = useState<string | null>(null);
 
     const handleCardFlip = useCallback((pokemonId: string) => {
@@ -25,6 +25,14 @@ const TeamPokemonView: React.FC<TeamPokemonViewProps> = ({ roster }) => {
         e.currentTarget.src = `https://placehold.co/150x150/cccccc/333333?text=No+Image`;
     }, []);
 
+
+    const calcBST = (s: PokemonStat) =>
+        s.Hp +
+        s.Attack +
+        s.Defense +
+        s.SpecialAttack +
+        s.SpecialDefense +
+        s.Speed;
     const renderTable = () => (
         <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -34,6 +42,7 @@ const TeamPokemonView: React.FC<TeamPokemonViewProps> = ({ roster }) => {
                         <th scope="col" className="px-2 py-4 text-text-on-nav text-left text-[10px] font-bold uppercase tracking-wider">Types</th>
                         <th scope="col" className="px-2 py-4 text-text-on-nav text-left text-[10px] font-bold uppercase tracking-wider">Abilities</th>
                         <th scope="col" className="px-2 py-4 text-text-on-nav text-left text-[10px] font-bold uppercase tracking-wider">Cost</th>
+                        <th scope="col" className="px-2 py-4 text-text-on-nav text-left text-[10px] font-bold uppercase tracking-wider">BST</th>
                         <th scope="col" className="px-2 py-4 text-text-on-nav text-left text-[10px] font-bold uppercase tracking-wider">HP</th>
                         <th scope="col" className="px-2 py-4 text-text-on-nav text-left text-[10px] font-bold uppercase tracking-wider">Att</th>
                         <th scope="col" className="px-2 py-4 text-text-on-nav text-left text-[10px] font-bold uppercase tracking-wider">Def</th>
@@ -43,45 +52,92 @@ const TeamPokemonView: React.FC<TeamPokemonViewProps> = ({ roster }) => {
                     </tr>
                 </thead>
                 <tbody className="bg-white">
-                    {roster.map(dp => (
-                        <tr key={dp.ID} className='border-b border-gray-900/10'>
-                            <td className="px-2 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                                <div className="flex items-center">
-                                    <img src={dp.PokemonSpecies.Sprites.FrontDefault} alt={dp.PokemonSpecies.Name} className="h-8 w-8 mr-2" />
-                                    <span className={dp.PokemonSpecies.Name.length > 14 ? 'text-xs' : 'text-sm'}>
-                                        {formatPokemonName(dp.PokemonSpecies.Name)}
-                                    </span>
-                                </div>
-                            </td>
-                            <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500">{dp.PokemonSpecies.Types.map(formatTypeName).join(', ')}</td>
-                            <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500">
-                                {dp.PokemonSpecies.Abilities.map(ability => (
-                                    <div key={ability.Name} className={ability.IsHidden ? 'italic text-gray-400' : ''}>
-                                        {formatAbilityName(ability.Name)}
+                    {roster.map(dp => {
+                        const s = dp.PokemonSpecies.Stats;
+                        const bst = calcBST(s);
+
+                        return (
+                            <tr key={dp.ID} className="border-b border-gray-900/10">
+                                <td className="px-2 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    <div className="flex items-center">
+                                        <img
+                                            src={dp.PokemonSpecies.Sprites.FrontDefault}
+                                            alt={dp.PokemonSpecies.Name}
+                                            className="h-8 w-8 mr-2"
+                                        />
+                                        <span className={dp.PokemonSpecies.Name.length > 14 ? 'text-xs' : 'text-sm'}>
+                                            {formatPokemonName(dp.PokemonSpecies.Name)}
+                                        </span>
                                     </div>
-                                ))}
-                            </td>
-                            <td className="px-2 py-3 whitespace-nowrap text-sm font-semibold text-gray-500">{dp.LeaguePokemon.Cost}</td>
-                            <td className="px-2 py-3 whitespace-nowrap text-sm font-semibold text-gray-500">{dp.PokemonSpecies.Stats.Hp}</td>
-                            <td className="px-2 py-3 whitespace-nowrap text-sm font-semibold text-gray-500">{dp.PokemonSpecies.Stats.Attack}</td>
-                            <td className="px-2 py-3 whitespace-nowrap text-sm font-semibold text-gray-500">{dp.PokemonSpecies.Stats.Defense}</td>
-                            <td className="px-2 py-3 whitespace-nowrap text-sm font-semibold text-gray-500">{dp.PokemonSpecies.Stats.SpecialAttack}</td>
-                            <td className="px-2 py-3 whitespace-nowrap text-sm font-semibold text-gray-500">{dp.PokemonSpecies.Stats.SpecialDefense}</td>
-                            <td className="px-2 py-3 whitespace-nowrap text-sm font-semibold text-gray-500">{dp.PokemonSpecies.Stats.Speed}</td>
-                        </tr>
-                    ))}
+                                </td>
+
+                                <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500">
+                                    {dp.PokemonSpecies.Types.map(formatTypeName).join(', ')}
+                                </td>
+
+                                <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500">
+                                    {dp.PokemonSpecies.Abilities.map(ability => (
+                                        <div
+                                            key={ability.Name}
+                                            className={ability.IsHidden ? 'italic text-gray-400' : ''}
+                                        >
+                                            {formatAbilityName(ability.Name)}
+                                        </div>
+                                    ))}
+                                </td>
+
+                                <td className="px-2 py-3 whitespace-nowrap text-sm font-semibold text-gray-500">
+                                    {dp.LeaguePokemon.Cost}
+                                </td>
+
+                                <td className="px-2 py-3 whitespace-nowrap text-sm font-semibold text-gray-500">{bst}</td>
+                                <td className="px-2 py-3 whitespace-nowrap text-sm font-semibold text-gray-500">{s.Hp}</td>
+                                <td className="px-2 py-3 whitespace-nowrap text-sm font-semibold text-gray-500">{s.Attack}</td>
+                                <td className="px-2 py-3 whitespace-nowrap text-sm font-semibold text-gray-500">{s.Defense}</td>
+                                <td className="px-2 py-3 whitespace-nowrap text-sm font-semibold text-gray-500">{s.SpecialAttack}</td>
+                                <td className="px-2 py-3 whitespace-nowrap text-sm font-semibold text-gray-500">{s.SpecialDefense}</td>
+                                <td className="px-2 py-3 whitespace-nowrap text-sm font-semibold text-gray-500">{s.Speed}</td>
+
+                            </tr>
+                        );
+                    })}
+
                     {roster.length > 0 && (
                         <tr className="bg-gray-100">
                             <td className="px-2 py-3 whitespace-nowrap text-sm font-bold">Averages</td>
                             <td className="px-2 py-3 whitespace-nowrap text-sm text-text-secondary"></td>
                             <td className="px-2 py-3 whitespace-nowrap text-sm text-text-secondary"></td>
-                            <td className="px-2 py-3 whitespace-nowrap text-sm text-text-secondary">{(roster.reduce((sum, dp) => sum + dp.LeaguePokemon.Cost, 0) / roster.length).toFixed(1)}</td>
-                            <td className="px-2 py-3 whitespace-nowrap text-sm text-text-secondary">{(roster.reduce((sum, dp) => sum + dp.PokemonSpecies.Stats.Hp, 0) / roster.length).toFixed(1)}</td>
-                            <td className="px-2 py-3 whitespace-nowrap text-sm text-text-secondary">{(roster.reduce((sum, dp) => sum + dp.PokemonSpecies.Stats.Attack, 0) / roster.length).toFixed(1)}</td>
-                            <td className="px-2 py-3 whitespace-nowrap text-sm text-text-secondary">{(roster.reduce((sum, dp) => sum + dp.PokemonSpecies.Stats.Defense, 0) / roster.length).toFixed(1)}</td>
-                            <td className="px-2 py-3 whitespace-nowrap text-sm text-text-secondary">{(roster.reduce((sum, dp) => sum + dp.PokemonSpecies.Stats.SpecialAttack, 0) / roster.length).toFixed(1)}</td>
-                            <td className="px-2 py-3 whitespace-nowrap text-sm text-text-secondary">{(roster.reduce((sum, dp) => sum + dp.PokemonSpecies.Stats.SpecialDefense, 0) / roster.length).toFixed(1)}</td>
-                            <td className="px-2 py-3 whitespace-nowrap text-sm text-text-secondary">{(roster.reduce((sum, dp) => sum + dp.PokemonSpecies.Stats.Speed, 0) / roster.length).toFixed(1)}</td>
+
+                            <td className="px-2 py-3 whitespace-nowrap text-sm text-text-secondary">
+                                {(roster.reduce((sum, dp) => sum + dp.LeaguePokemon.Cost, 0) / roster.length).toFixed(1)}
+                            </td>
+                            <td className="px-2 py-3 whitespace-nowrap text-sm text-text-secondary">
+                                {(
+                                    roster.reduce(
+                                        (sum, dp) => sum + calcBST(dp.PokemonSpecies.Stats),
+                                        0
+                                    ) / roster.length
+                                ).toFixed(1)}
+                            </td>
+                            <td className="px-2 py-3 whitespace-nowrap text-sm text-text-secondary">
+                                {(roster.reduce((sum, dp) => sum + dp.PokemonSpecies.Stats.Hp, 0) / roster.length).toFixed(1)}
+                            </td>
+                            <td className="px-2 py-3 whitespace-nowrap text-sm text-text-secondary">
+                                {(roster.reduce((sum, dp) => sum + dp.PokemonSpecies.Stats.Attack, 0) / roster.length).toFixed(1)}
+                            </td>
+                            <td className="px-2 py-3 whitespace-nowrap text-sm text-text-secondary">
+                                {(roster.reduce((sum, dp) => sum + dp.PokemonSpecies.Stats.Defense, 0) / roster.length).toFixed(1)}
+                            </td>
+                            <td className="px-2 py-3 whitespace-nowrap text-sm text-text-secondary">
+                                {(roster.reduce((sum, dp) => sum + dp.PokemonSpecies.Stats.SpecialAttack, 0) / roster.length).toFixed(1)}
+                            </td>
+                            <td className="px-2 py-3 whitespace-nowrap text-sm text-text-secondary">
+                                {(roster.reduce((sum, dp) => sum + dp.PokemonSpecies.Stats.SpecialDefense, 0) / roster.length).toFixed(1)}
+                            </td>
+                            <td className="px-2 py-3 whitespace-nowrap text-sm text-text-secondary">
+                                {(roster.reduce((sum, dp) => sum + dp.PokemonSpecies.Stats.Speed, 0) / roster.length).toFixed(1)}
+                            </td>
+
                         </tr>
                     )}
                 </tbody>
@@ -115,17 +171,17 @@ const TeamPokemonView: React.FC<TeamPokemonViewProps> = ({ roster }) => {
     );
 
     return (
-        <div className="bg-background-surface p-4 rounded-lg shadow-md">
+        <div className="bg-background-surface p-6 rounded-lg shadow-md">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-text-primary">Pokémon Roster Details</h2>
                 <ToggleSwitch
-                    isOn={isTableView}
-                    onToggle={() => setIsCardView(!isTableView)}
-                    label={isTableView ? "View as Table  " : "View as Table "}
+                    isOn={isCardView}
+                    onToggle={() => setIsCardView(!isCardView)}
+                    label="View as Cards"
                 />
             </div>
             {roster.length > 0 ? (
-                isTableView ? renderTable() : renderCardGrid()
+                isCardView ? renderCardGrid() : renderTable()
             ) : (
                 <p className="text-text-secondary">No Pokémon to display in this view.</p>
             )}

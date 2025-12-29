@@ -23,7 +23,7 @@ interface GlobalNavLinksProps {
 
 export default function GlobalNavLinks({ user, currentPage }: GlobalNavLinksProps) {
     return (
-        <div className="flex space-x-4">
+        <div className="flex space-x-2">
             {globalNavigation.map((item) => (
                 <Link
                     key={item.name}

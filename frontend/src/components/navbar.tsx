@@ -76,12 +76,12 @@ export default function NavBar({ page }: NavBarProps) {
     return (
         <>
             {/* Top Level Navbar */}
-            <Disclosure as="nav" className="bg-[#2D3142]">
+            <Disclosure as="nav" className="bg-background-primary">
                 {/* <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8"> */}
                 <div className="mx-auto px-2 sm:px-6 lg:px-8">
                     <div className="relative flex h-16 items-center justify-between">
                         {/* Left Section: Logo & League Dropdown */}
-                        <div className="flex items-center">
+                        <div className="flex items-center mr-2">
                             <img alt="Logo" src={logoPic} className="h-8 w-auto" />
                             <LeagueDropdown
                                 currentLeague={currentLeague}
@@ -98,7 +98,7 @@ export default function NavBar({ page }: NavBarProps) {
                         </div>
 
                         {/* Right Section: User Info & Logout */}
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-1 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
                             <UserAuthSection
                                 user={user}
                                 discordUser={discordUser}

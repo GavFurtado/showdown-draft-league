@@ -10,7 +10,6 @@ interface LeagueContextType {
     setCurrentLeague: (league: League | null) => void;
     currentDraft: Draft | null;
     currentPlayer: Player | null;
-    // myDiscordUser: DiscordUser | null; // Removed as it comes from UserContext
     loading: boolean;
     error: string | null;
     refetch: () => void;
@@ -61,8 +60,19 @@ export const LeagueProvider = ({ children }: LeagueProviderProps) => {
 
         try {
             const leagueData = await getLeagueById(leagueId);
-            const draftData = await getDraftByLeagueID(leagueId);
-            // const discordUserData = await getMyDiscordDetails(); // Removed
+
+            let draftData = null;
+            try {
+                const draftResponse = await getDraftByLeagueID(leagueId);
+                draftData = draftResponse.data;
+            } catch (draftErr) {
+                if (axios.isAxiosError(draftErr) && draftErr.response?.status === 404) {
+                    console.info("No draft found for this league yet, continuing without it.");
+                } else {
+                    // For other errors, we might still want to log them but not break the main flow
+                    console.error("LeagueProvider: Error fetching draft data:", draftErr);
+                }
+            }
 
             let playerInCurrentLeague: Player | null = null;
             if (discordUser?.ID) { // Use discordUser from UserContext
@@ -70,7 +80,7 @@ export const LeagueProvider = ({ children }: LeagueProviderProps) => {
                 playerInCurrentLeague = playerResponse.data;
             }
 
-            let currentDraftWithPlayer = draftData.data;
+            let currentDraftWithPlayer = draftData;
             if (currentDraftWithPlayer && currentDraftWithPlayer.CurrentTurnPlayerID) {
                 try {
                     const turnPlayerResponse = await getPlayerById(leagueId, currentDraftWithPlayer.CurrentTurnPlayerID);
@@ -84,11 +94,11 @@ export const LeagueProvider = ({ children }: LeagueProviderProps) => {
                 ...prevState,
                 currentLeague: leagueData.data,
                 currentDraft: currentDraftWithPlayer,
-                // myDiscordUser: discordUserData.data, // Removed
                 currentPlayer: playerInCurrentLeague,
                 loading: false,
                 error: null,
             }));
+
 
         } catch (err) {
             let errorMessage = "A network or unknown error occurred while fetching league data.";
@@ -141,12 +151,12 @@ export const useLeague = () => {
         // Return a default context when not within a LeagueProvider
         return {
             currentLeague: null,
-            setCurrentLeague: () => {},
+            setCurrentLeague: () => { },
             currentDraft: null,
             currentPlayer: null,
             loading: false,
             error: null,
-            refetch: () => {},
+            refetch: () => { },
         };
     }
     return context;

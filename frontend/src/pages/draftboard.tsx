@@ -3,15 +3,16 @@ import Filter from "../components/filter"
 import { useState, useEffect, useCallback } from "react"
 import { formatPokemonName } from "../utils/nameFormatter";
 import { FilterState, DraftCardProps, LeaguePokemon, DraftedPokemon, Player } from "../api/data_interfaces"
-import { getAllLeaguePokmeon, makePick, getDraftedPokemonByPlayer, skipPick, getPlayersByLeague, getDraftHistory } from "../api/api"
-import { useLeague } from "../context/LeagueContext"
+import { getAllLeaguePokmeon, makePick, getDraftedPokemonByPlayer, skipPick, getPlayersByLeague } from "../api/api"
+import { useDraftHistory } from "../context/DraftHistoryContext";
+import { useLeague } from "../context/LeagueContext";
+import Layout from "../components/Layout";
+import FullDraftView from "../components/FullDraftView";
 import { WishlistDisplay } from "../components/WishlistDisplay"
 import { useWishlist } from '../hooks/useWishlist';
 import { useDraftTimer } from '../hooks/useDraftTimer';
 import Modal from "../components/Modal";
 import { PokemonRosterList } from "../components/PokemonRosterList";
-import Layout from "../components/Layout";
-import FullScreenDraftModal from "../components/FullScreenDraftModal";
 
 const defaultFilters: FilterState = {
     selectedTypes: [],
@@ -26,6 +27,7 @@ const Draftboard: React.FC = () => {
     const { currentLeague, currentDraft, currentPlayer, refetch: refetchLeague, loading: leagueLoading, error: leagueError } = useLeague();
     const { wishlist, addPokemonToWishlist, removePokemonFromWishlist, clearWishlist, isPokemonInWishlist } = useWishlist(currentLeague?.ID || '');
     const { timeRemaining, shouldShowDraftStatus, nextTurnInXTurns } = useDraftTimer(currentDraft, currentLeague, currentPlayer, currentLeague?.Players);
+    const { draftHistory } = useDraftHistory();
 
     const [allPokemon, setAllPokemon] = useState<LeaguePokemon[]>([]);
     const [cards, setCards] = useState<LeaguePokemon[]>([]);
@@ -40,7 +42,6 @@ const Draftboard: React.FC = () => {
     const [isInfoOpen, setIsInfoOpen] = useState(false);
     const [pendingPicks, setPendingPicks] = useState<LeaguePokemon[]>([]);
     const [isFullScreenModalOpen, setIsFullScreenModalOpen] = useState(false);
-    const [draftHistory, setDraftHistory] = useState<DraftedPokemon[]>([]);
     const [leaguePlayers, setLeaguePlayers] = useState<Player[]>([]);
 
     const isMyTurn = currentDraft?.CurrentTurnPlayerID === currentPlayer?.ID;
@@ -77,17 +78,6 @@ const Draftboard: React.FC = () => {
         }
     }, [currentLeague, currentPlayer]);
 
-    const fetchDraftHistory = useCallback(async () => {
-        if (currentLeague) {
-            try {
-                const response = await getDraftHistory(currentLeague.ID);
-                setDraftHistory(response.data);
-            } catch (error) {
-                console.error("Failed to fetch draft history:", error);
-            }
-        }
-    }, [currentLeague]);
-
     useEffect(() => {
         fetchPokemon();
         fetchDraftedPokemon();
@@ -100,12 +90,6 @@ const Draftboard: React.FC = () => {
                 .catch(error => console.error("Failed to fetch league players:", error));
         }
     }, [currentLeague?.ID]);
-
-    useEffect(() => {
-        if (isFullScreenModalOpen) {
-            fetchDraftHistory();
-        }
-    }, [isFullScreenModalOpen, fetchDraftHistory]);
 
     const handleCardFlip = useCallback((pokemonId: string) => {
         setCurrentlyFlippedCardId(prevId => (prevId === pokemonId ? null : pokemonId));
@@ -216,9 +200,24 @@ const Draftboard: React.FC = () => {
 
     if (leagueError || pokemonError) {
         return (
-            <div className="min-h-screen bg-background-main flex items-center justify-center">
-                <p className="text-xl text-red-600">Error: {leagueError || pokemonError}</p>
-            </div>
+            <Layout variant="full">
+                <div className="min-h-screen bg-background-main flex items-center justify-center">
+                    <p className="text-xl text-red-600">Error: {leagueError || pokemonError}</p>
+                </div>
+            </Layout>
+        );
+    }
+
+    if (!leagueLoading && !currentDraft) {
+        return (
+            <Layout variant="full">
+                <div className="grow flex items-center justify-center">
+                    <div className="bg-white p-8 rounded-lg shadow-md text-center">
+                        <h1 className="text-2xl font-bold text-gray-800 mb-4">Draft Not Started</h1>
+                        <p className="text-gray-600">The league has not yet begun and is being set up. This page is unavailable.</p>
+                    </div>
+                </div>
+            </Layout>
         );
     }
 
@@ -257,19 +256,21 @@ const Draftboard: React.FC = () => {
                         <div className="relative flex text-black">
                             <input
                                 type="search"
-                                className="placeholder:text-black relative m-0 block flex-auto rounded border border-solid 
-                                border-black bg-transparent bg-clip-padding px-3 py-[0.25rem] text-base font-normal leading-[1.6]
-                                text-surface outline-none transition duration-200 ease-in-out focus:z-[3] focus:border-primary 
+                                className="placeholder:text-black relative m-0 block flex-auto rounded-md border border-solid 
+                                border-black bg-clip-padding px-3 py-1 text-base font-mono
+                                text-surface outline-none transition duration-200 ease-in-out focus:z-3 focus:border-primary 
                                 focus:shadow-inset focus:outline-none motion-reduce:transition-none"
                                 placeholder="Search" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                            <span className="flex items-center whitespace-nowrap px-3 py-[0.25rem] text-surface [&>svg]:h-5 [&>svg]:w-5" id="button-addon2">
+                            <span className="flex whitespace-nowrap px-1.5 py-1 text-surface [&>svg]:h-5 [&>svg]:w-5" id="button-addon2">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="black"><path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
                             </span>
                         </div>
                         <Filter updateFilter={updateFilter} filters={filters} resetAllFilters={resetAllFilters} />
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 h-auto rounded-2xl">
-                        {cardsToDisplay}
+                    <div className="w-full bg-background-tertiary p-4 rounded-lg shadow-md">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 h-auto rounded-2xl">
+                            {cardsToDisplay}
+                        </div>
                     </div>
                 </div>
 
@@ -280,13 +281,17 @@ const Draftboard: React.FC = () => {
                         {isInfoOpen ? 'Hide' : 'Show'} Draft Info
                     </button>
                     <div className={`${isInfoOpen ? 'block' : 'hidden'} md:block space-y-4`}>
+                        <div className="p-4 bg-background-surface rounded-lg shadow-md">
+                            <div className="flex justify-center items-center">
+                                <button className="text-sm bg-transparent border border-black w-full font-bold px-4 py-2 rounded-md hover:bg-accent-primary-hover hover:text-white" onClick={() => setIsFullScreenModalOpen(!isFullScreenModalOpen)}>
+                                    Show Full Draft
+                                </button>
+                            </div>
+                        </div>
                         {shouldShowDraftStatus && currentDraft && (
                             <div className="p-4 bg-background-surface rounded-lg shadow-md">
                                 <div className="flex justify-between items-center mb-2">
                                     <h2 className="text-lg font-bold">Draft Status</h2>
-                                    <button className="text-sm bg-transparent border border-black p-2 rounded-md hover:border-accent-primary-hover hover:bg-accent-primary hover:text-white" onClick={() => setIsFullScreenModalOpen(!isFullScreenModalOpen)}>
-                                        Show Full Draft
-                                    </button>
                                 </div>
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between items-center">
@@ -343,7 +348,7 @@ const Draftboard: React.FC = () => {
                                     <PokemonRosterList
                                         roster={draftedPokemon}
                                         rosterType="drafted"
-                                        bgColor="bg-gray-200"
+                                        bgColor="bg-background-tertiary"
                                     />
                                 ) : (
                                     !isMyTurn || pendingPicks.length === 0 && <p className="text-gray-600 p-2">Your team is empty.</p>
@@ -415,18 +420,14 @@ const Draftboard: React.FC = () => {
                     </div>
                 </Modal>
             )}
-            {isFullScreenModalOpen && (
-                <FullScreenDraftModal
-                    isOpen={isFullScreenModalOpen}
-                    onClose={() => setIsFullScreenModalOpen(false)}
-                    title="Full Draft View"
-                    leaguePlayers={leaguePlayers}
-                    draftHistory={draftHistory}
-                    currentDraft={currentDraft}
-                    currentPlayer={currentPlayer}
-                    currentLeague={currentLeague}
-                />
-            )}
+            <FullDraftView
+                isOpen={isFullScreenModalOpen}
+                onClose={() => setIsFullScreenModalOpen(false)}
+                leaguePlayers={leaguePlayers}
+                draftHistory={draftHistory}
+                draft={currentDraft}
+                league={currentLeague}
+            />
         </Layout>
     );
 }

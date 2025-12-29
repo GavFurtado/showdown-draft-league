@@ -1,7 +1,3 @@
-export type PlayerAccumulatedPicks = {
-  [playerId: string]: number[];
-};
-
 export interface DiscordUser {
   ID: string;
   Username: string;
@@ -10,9 +6,9 @@ export interface DiscordUser {
 }
 
 export interface User {
-  ID: string; // uuid.UUID
-  DiscordID: string; // uuid.UUID
-  DiscordUsername: string; // uuid.UUID
+  ID: string; // UUID
+  DiscordID: string; // UUID
+  DiscordUsername: string; // UUID
   DiscordAvatarUrl: string;
   ShowdownUsername: string;
   Role: 'user' | 'admin';
@@ -20,7 +16,7 @@ export interface User {
   UpdatedAt: string; // ISO 8601 string
 }
 
-// League enums
+// League Enums
 export type LeagueStatus = "PENDING" | "SETUP" | "DRAFTING" | "POST_DRAFT" | "TRANSFER_WINDOW" | "REGULARSEASON" | "PLAYOFFS" | "COMPLETED" | "CANCELLED";
 export type DraftOrderType = "PENDING" | "RANDOM" | "MANUAL";
 export type LeagueSeasonType = "ROUND_ROBIN_ONLY" | "PLAYOFFS_ONLY" | "HYBRID";
@@ -37,7 +33,7 @@ export interface LeagueFormat {
   PlayoffParticipantCount: number;
   PlayoffByesCount: number;
   PlayoffSeedingType: LeaguePlayoffSeedingType;
-  AllowTrading: boolean;
+  AllowTransfers: boolean;
   AllowTransferCredits: boolean;
   TransferCreditsPerWindow: number;
   TransferCreditCap: number;
@@ -49,22 +45,35 @@ export interface LeagueFormat {
 }
 
 export interface League {
-  ID: string; // uuid.UUID
+  ID: string; // UUID
   Name: string;
+
   StartDate: string; // ISO 8601 string
   EndDate: string | null; // ISO 8601 string
-  RulesetDescription: string;
+  NextWeeklyTick: string; // ISO 8601 string
+  RegularSeasonStartDate: string; // ISO 8601 string
+
+  CurrentWeekNumber: number;
   Status: LeagueStatus;
   MaxPokemonPerPlayer: number;
   MinPokemonPerPlayer: number;
   StartingDraftPoints: number;
   Format: LeagueFormat;
+  PlayerCount: number;
+
+  RulesetDescription: string;
   DiscordWebhookURL: string | null;
-  // NewPlayerGroupNumber: number; // has no real use in the frontend; still in json because yes
+
+  CreatedAt?: string; // ISO 8601 string
+  UpdatedAt?: string; // ISO 8601 string
+  // NewPlayerGroupNumber: number; // has no real use in the frontend
+
   // Relationships
   Players?: Player[];
-  // LeaguePokemon?: LeaguePokemon[];
-  // DraftedPokemon?: DraftedPokemon[];
+  // These next two are never populated by the backend
+  // Kept here to show relationships
+  DefinedPokemon?: LeaguePokemon[];
+  AllDraftedPokemon?: DraftedPokemon[];
 }
 
 // Draft related
@@ -109,8 +118,8 @@ export interface Player {
 }
 
 export interface LeaguePokemon {
-  ID: string; // uuid.UUID
-  LeagueId: string; // uuid.UUID
+  ID: string; // UUID
+  LeagueId: string; // UUID
   PokemonSpeciesId: number;
   Cost: number;
   IsAvailable: boolean;
@@ -182,7 +191,7 @@ export interface WishlistDisplayProps {
   removePokemonFromWishlist: (pokemonId: string) => void;
   clearWishlist: () => void;
   isMyTurn: boolean; // New prop
-  onDraft: (leaguePokemonId: string) => void; // New prop
+  onDraft: (leaguePokemonId: string) => void;
 }
 
 export interface DraftedPokemon {
@@ -194,6 +203,8 @@ export interface DraftedPokemon {
   DraftRoundNumber: number;
   DraftPickNumber: number;
   IsReleased: boolean;
+  AcquiredWeek: number;
+  ReleasedWeek: number;
   CreatedAt: string;
   UpdatedAt: string;
   League: League;
@@ -205,4 +216,8 @@ export interface DraftedPokemon {
 export type PlayerPick = {
   pickNumber: number;
   pokemon: DraftedPokemon | null;
+};
+
+export type PlayerAccumulatedPicks = {
+  [playerId: string]: number[];
 };
