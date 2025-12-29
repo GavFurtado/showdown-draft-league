@@ -128,7 +128,7 @@ const Teamsheets: React.FC = () => {
                                         className={`px-3 py-1 rounded-md text-sm transition-all duration-150 border shadow-sm ${viewWeek === week
                                             ? 'border-accent-primary bg-accent-primary text-text-on-accent font-bold shadow-inner'
                                             : 'border-gray-200 bg-white text-text-primary hover:text-white hover:bg-accent-primary-hover'
-                                            }`}
+                                        }`}
                                     >
                                         RS W{week}
                                     </button>

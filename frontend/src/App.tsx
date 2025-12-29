@@ -11,6 +11,7 @@ import TeamSheets from './pages/Teamsheets';
 import DraftHistory from './pages/DraftHistory';
 import JoinLeague from './pages/JoinLeague';
 import { DraftHistoryProvider } from './context/DraftHistoryContext';
+import MyLeagues from './pages/MyLeagues';
 
 function App() {
     return (
@@ -24,7 +25,7 @@ function App() {
                 {/* --- Protected Global Routes (user must be logged in) --- */}
                 {/* this route would list all leagues the user is a part off */}
                 <Route element={<UserProviderWrapper />}>
-                    <Route path='/my-leagues' element={null} />
+                    <Route path='/my-leagues' element={<MyLeagues />} />
                     <Route path='/:leagueId/join' element={<JoinLeague />} />
                 </Route>
 

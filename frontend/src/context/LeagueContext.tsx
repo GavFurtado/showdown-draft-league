@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { League, Draft, Player } from '../api/data_interfaces';
 import { getLeagueById, getDraftByLeagueID, getPlayerById, getPlayerByUserIdAndLeagueId } from '../api/api';
 import axios from 'axios';
@@ -32,7 +32,7 @@ interface LeagueState {
 
 export const LeagueProvider = ({ children }: LeagueProviderProps) => {
     const { leagueId } = useParams<{ leagueId: string }>();
-    const { user, discordUser, loading: userLoading, error: userError } = useUser(); // Consume UserContext
+    const { discordUser, loading: userLoading, error: userError } = useUser(); // Consume UserContext
 
     const [state, setState] = useState<LeagueState>({
         currentLeague: null,
@@ -61,7 +61,7 @@ export const LeagueProvider = ({ children }: LeagueProviderProps) => {
         try {
             const leagueData = await getLeagueById(leagueId);
 
-            let draftData = null;
+            let draftData: Draft | null = null;
             try {
                 const draftResponse = await getDraftByLeagueID(leagueId);
                 draftData = draftResponse.data;

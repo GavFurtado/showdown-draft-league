@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { User, DiscordUser } from '../api/data_interfaces';
-import { getUserMe, getMyDiscordDetails, logout as apiLogout } from '../api/api';
+import { getMyDiscordDetails, logout as apiLogout, getMyProfile } from '../api/api';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -31,7 +31,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
                 setLoading(true);
                 setError(null);
 
-                const userResponse = await getUserMe();
+                const userResponse = await getMyProfile();
                 setUser(userResponse.data);
 
                 const discordResponse = await getMyDiscordDetails();

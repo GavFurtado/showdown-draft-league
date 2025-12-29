@@ -247,61 +247,61 @@ export function getPokemonDefensiveProfile(type1: Type, type2: Type | null, abil
     for (const ability of abilitiesToFactorIn) {
         didAbilityMatter = true;
         switch (ability.Name) {
-            case "dry-skin":
+        case "dry-skin":
                 defensiveProfile[Type.WATER]! *= Effectiveness.IMMUNE;
-                affectedTypes.push(Type.WATER)
-                affectedTypes.push(Type.FIRE)
-                break;
-            case "earth-eater":
-            case "levitate":
+            affectedTypes.push(Type.WATER)
+            affectedTypes.push(Type.FIRE)
+            break;
+        case "earth-eater":
+        case "levitate":
                 defensiveProfile[Type.GROUND]! *= Effectiveness.IMMUNE;
-                affectedTypes.push(Type.GROUND)
-                break;
-            case "flash-fire":
+            affectedTypes.push(Type.GROUND)
+            break;
+        case "flash-fire":
                 defensiveProfile[Type.FIRE]! *= Effectiveness.IMMUNE;
-                affectedTypes.push(Type.FIRE)
-                break;
-            case "lightning-rod":
-            case "volt-absorb":
+            affectedTypes.push(Type.FIRE)
+            break;
+        case "lightning-rod":
+        case "volt-absorb":
                 defensiveProfile[Type.ELECTRIC]! *= Effectiveness.IMMUNE;
-                affectedTypes.push(Type.ELECTRIC)
-                break;
-            case "sap-sipper":
+            affectedTypes.push(Type.ELECTRIC)
+            break;
+        case "sap-sipper":
                 defensiveProfile[Type.GRASS]! *= Effectiveness.IMMUNE;
-                affectedTypes.push(Type.GRASS)
-                break;
-            case "storm-drain":
-            case "water-absorb":
+            affectedTypes.push(Type.GRASS)
+            break;
+        case "storm-drain":
+        case "water-absorb":
                 defensiveProfile[Type.WATER]! *= Effectiveness.IMMUNE;
-                affectedTypes.push(Type.WATER)
-                break;
-            case "purifying-salt":
+            affectedTypes.push(Type.WATER)
+            break;
+        case "purifying-salt":
                 defensiveProfile[Type.GHOST]! *= Effectiveness.NOT_VERY_EFFECTIVE;
-                affectedTypes.push(Type.GHOST)
-                break;
-            case "thick-fat":
+            affectedTypes.push(Type.GHOST)
+            break;
+        case "thick-fat":
                 defensiveProfile[Type.FIRE]! *= Effectiveness.NOT_VERY_EFFECTIVE;
                 defensiveProfile[Type.ICE]! *= Effectiveness.NOT_VERY_EFFECTIVE;
-                affectedTypes.push(Type.FIRE)
-                affectedTypes.push(Type.ICE)
-                break;
-            case "wonder-guard":
-                Object.keys(defensiveProfile).forEach((key: string) => {
-                    const attackingType = key as Type;
-                    const currentEffectiveness = defensiveProfile[attackingType] ?? Effectiveness.NEUTRAL;
-                    // If the current effectiveness is 1.0 (NEUTRAL) or less, make it IMMUNE
-                    if (currentEffectiveness <= Effectiveness.NEUTRAL) {
-                        // add to affectedTypes only if the effectiveness actually changes
-                        if (defensiveProfile[attackingType] !== Effectiveness.IMMUNE) {
-                            affectedTypes.push(attackingType);
-                        }
-                        defensiveProfile[attackingType] = Effectiveness.IMMUNE;
+            affectedTypes.push(Type.FIRE)
+            affectedTypes.push(Type.ICE)
+            break;
+        case "wonder-guard":
+            Object.keys(defensiveProfile).forEach((key: string) => {
+                const attackingType = key as Type;
+                const currentEffectiveness = defensiveProfile[attackingType] ?? Effectiveness.NEUTRAL;
+                // If the current effectiveness is 1.0 (NEUTRAL) or less, make it IMMUNE
+                if (currentEffectiveness <= Effectiveness.NEUTRAL) {
+                    // add to affectedTypes only if the effectiveness actually changes
+                    if (defensiveProfile[attackingType] !== Effectiveness.IMMUNE) {
+                        affectedTypes.push(attackingType);
                     }
-                });
-                break;
-            default:
-                console.log("WHAT THE HELLY!!! An unconsidered ability to factor in made it into the ability checks for defensive profile calculations: ", ability);
-                break;
+                    defensiveProfile[attackingType] = Effectiveness.IMMUNE;
+                }
+            });
+            break;
+        default:
+            console.log("WHAT THE HELLY!!! An unconsidered ability to factor in made it into the ability checks for defensive profile calculations: ", ability);
+            break;
         }
     }
 
