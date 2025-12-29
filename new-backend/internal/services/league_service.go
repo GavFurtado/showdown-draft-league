@@ -173,8 +173,7 @@ func (s *leagueServiceImpl) GetLeagueByIDForUser(userID, leagueID uuid.UUID) (*m
 	return league, nil
 }
 
-// TODO: rename to Owner
-// gets all Leagues where userID is the commissioner
+// gets all Leagues where userID is the owner
 func (s *leagueServiceImpl) GetLeaguesByCommissioner(
 	userID uuid.UUID,
 	currentUser *models.User,

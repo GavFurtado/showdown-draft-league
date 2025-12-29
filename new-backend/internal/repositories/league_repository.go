@@ -78,7 +78,6 @@ func (r *leagueRepositoryImpl) GetLeagueByID(leagueID uuid.UUID) (*models.League
 	// Preload will load the associated relationships as opposed to lazy loading
 	var league models.League
 
-	// Removed Preload("CommissionerUser") as it no longer exists
 	err := r.db.
 		Preload("Players").
 		Preload("Players.User").

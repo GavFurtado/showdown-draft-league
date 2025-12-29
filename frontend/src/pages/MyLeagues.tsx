@@ -27,7 +27,7 @@ const LeagueCard: React.FC<{ league: League }> = ({ league }) => {
     return (
         <Link
             to={`/league/${league.ID}/dashboard`}
-            className="block bg-background-surface overflow-hidden rounded-lg shadow hover:shadow-md transition-shadow duration-200 border border-gray-200"
+            className="block bg-background-surface overflow-hidden rounded-lg shadow-md hover:shadow-accent-primary-hover transition-shadow duration-200 border border-gray-200"
         >
             <div className="px-4 py-5 sm:p-6">
                 <div className="flex justify-between items-start mb-4">
@@ -83,7 +83,28 @@ const MyLeagues: React.FC = () => {
                 setUserLeaguesLoading(true);
                 setUserLeaguesError(null);
                 const response = await getMyLeagues();
-                setUserLeagues(response.data);
+
+                // Sort leagues by status in descending order
+                // Order: CANCELLED -> COMPLETED -> PLAYOFFS -> REGULAR_SEASON -> ... -> PENDING
+                const statusPriority: { [key: string]: number } = {
+                    "CANCELLED": -2,
+                    "COMPLETED": -1,
+                    "PENDING": 0,
+                    "SETUP": 1,
+                    "DRAFTING": 2,
+                    "POST_DRAFT": 3,
+                    "TRANSFER_WINDOW": 4,
+                    "REGULAR_SEASON": 5,
+                    "PLAYOFFS": 6,
+                };
+
+                const sortedLeagues = response.data.sort((a, b) => {
+                    const priorityA = statusPriority[a.Status] ?? -1;
+                    const priorityB = statusPriority[b.Status] ?? -1;
+                    return priorityB - priorityA;
+                });
+
+                setUserLeagues(sortedLeagues);
             } catch (err) {
                 if (axios.isAxiosError(err) && err.response) {
                     setUserLeaguesError(err.response.data.error || "Failed to load user's leagues.");
@@ -152,6 +173,7 @@ const MyLeagues: React.FC = () => {
             </div>
 
             {userLeaguesLoading ? (
+                // Placeholder card esique loading
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {[1, 2, 3].map((i) => (
                         <div key={i} className="animate-pulse bg-white rounded-lg shadow p-6 h-48 border border-gray-200">

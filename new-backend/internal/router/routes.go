@@ -65,7 +65,7 @@ func RegisterRoutes(
 				controllers.LeagueController.GetLeague)
 			leagues.GET(
 				"/:leagueId/players",
-				// temporarily commented until limited non league rbac route is implemented
+				// middleware temporarily commented until limited non league rbac route is implemented
 				// middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
 				controllers.PlayerController.GetPlayersByLeague)
 			leagues.POST("/:leagueId/join", controllers.PlayerController.JoinLeague)
@@ -89,15 +89,15 @@ func RegisterRoutes(
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadGame),
 					controllers.GameController.GetGameByID)
 				games.GET(
-					"/player/:playerId",
+					"/players/:playerId",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadGame),
 					controllers.GameController.GetGamesByPlayer)
 				games.PUT(
-					"/:gameId/report",
+					"/report/:gameId",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReportGame),
 					controllers.GameController.ReportGame)
 				games.PUT(
-					"/:gameId/finalize",
+					"/finalize/:gameId",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionFinalizeGame), // Requires staff permissions
 					controllers.GameController.FinalizeGame)
 			}
