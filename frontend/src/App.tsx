@@ -1,13 +1,13 @@
 import './index.css';
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
-import Login from "./pages/login";
 import Navbar from "./components/navbar";
-import Dashboard from './pages/dashboard';
 
 import { LeagueProvider } from './context/LeagueContext';
 import { UserProvider } from './context/UserContext';
-import Draftboard from './pages/draftboard';
-import TeamSheets from './pages/teamsheets';
+import Dashboard from './pages/Dashboard';
+import Login from "./pages/Login";
+import Draftboard from './pages/Draftboard';
+import TeamSheets from './pages/Teamsheets';
 import DraftHistory from './pages/DraftHistory';
 import JoinLeague from './pages/JoinLeague';
 import { DraftHistoryProvider } from './context/DraftHistoryContext';
@@ -63,7 +63,6 @@ function UserAndLeagueProviderWrapper() {
 
                         {/* --- League Staff Routes (Protected by league-specific roles) */}
                         {/* placeholder examples */}
-
                         {/* <Route path='staff/edit-rules' element={<LeagueStaffRouteGuard role="owner"><EditRules /></LeagueStaffRouteGuard>} /> */}
                     </Routes>
                 </DraftHistoryProvider>
