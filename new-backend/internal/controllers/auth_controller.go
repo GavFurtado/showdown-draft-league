@@ -31,7 +31,7 @@ func NewAuthController(
 	}
 }
 
-// NOTE: the skip to frontend dashboard could maybe cause problems in edge case scenarios i haven't thought of (probably)
+// NOTE: the skip to frontend my-leagues page could maybe cause problems in edge case scenarios i haven't thought of (probably)
 func (c *AuthController) Login(ctx *gin.Context) {
 	// 1. Check for existing JWT cookie
 	token, err := ctx.Cookie("token")
@@ -40,7 +40,7 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		if userID, err := c.authService.VerifyToken(token); err == nil {
 			// 3. Valid token -> go straight to frontend dashboard
 			log.Printf("user already authenticated: %s\n", userID)
-			ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/dashboard", c.cfg.AppBaseURL))
+			ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/my-leagues", c.cfg.AppBaseURL))
 			return
 		}
 	}

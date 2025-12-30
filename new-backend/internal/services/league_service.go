@@ -24,7 +24,9 @@ type LeagueService interface {
 	GetLeaguesByCommissioner(userID uuid.UUID, currentUser *models.User) ([]models.League, error)
 	// fetches all Leagues where the given userID is a player.
 	GetLeaguesByUser(userID uuid.UUID, currentUser *models.User) ([]models.League, error)
+
 	ProcessWeeklyTick(leagueID uuid.UUID) error
+
 	SetSchedulerService(schedulerService SchedulerService)
 	SetGameService(gameService GameService)
 	SetTransferService(transferService TransferService)
@@ -99,7 +101,7 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueC
 
 	newPlayerGroupNumber := 1
 	if input.Format.GroupCount > 1 {
-		// owner is first player and auto assigned 1. So next player will have to be group 2
+		// Owner is the first player and auto assigned 1. So, next player will have to be group 2
 		// will need to be changed if we decide to make use of Player.IsParticapating
 		newPlayerGroupNumber = 2
 	}
@@ -109,7 +111,7 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueC
 		RulesetDescription:   input.RulesetDescription,
 		MaxPokemonPerPlayer:  input.MaxPokemonPerPlayer,
 		StartingDraftPoints:  input.StartingDraftPoints,
-		StartDate:            input.StartDate,
+		StartDate:            time.Now(),
 		NewPlayerGroupNumber: newPlayerGroupNumber,
 		Format: &models.LeagueFormat{
 			SeasonType:                  input.Format.SeasonType,

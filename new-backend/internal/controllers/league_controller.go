@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -45,21 +46,26 @@ func (ctrl *leagueControllerImpl) CreateLeague(ctx *gin.Context) {
 		return
 	}
 
-	log.Printf("(CreateLeague) - Received league creation request: %v", req)
+	fmt.Printf("INFO: (Controller: CreateLeague) - Received league creation request: %v", req)
 
 	league, err := ctrl.leagueService.CreateLeague(currentUser.ID, &req)
 	if err != nil {
 		log.Printf("(Error: CreateLeague) - Service failed: %v\n", err)
 		// Check for specific service errors to return appropriate HTTP status
-		if err.Error() == fmt.Sprintf("max league creation limit reached: %d", 2) {
+		switch {
+		case errors.Is(err, common.ErrMaxLeagueCreationLimitReached):
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrMaxLeagueCreationLimitReached.Error()})
+		case errors.Is(err, common.ErrExceedsMaxAllowableGroupCount):
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrExceedsMaxAllowableGroupCount.Error()})
+		case errors.Is(err, common.ErrInvalidLeagueConfiguration):
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
+		default:
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create league"})
 		}
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create league"})
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, league)
+	ctx.JSON(http.StatusOK, league)
 }
 
 // GET /api/leagues/:id

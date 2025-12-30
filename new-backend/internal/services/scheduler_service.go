@@ -217,16 +217,16 @@ func (s *schedulerServiceImpl) runSchedulerLoop() {
 	var timer *time.Timer
 	for {
 		now := time.Now()
-		nextTask, exists := s.tasks.Peek()
+		upcomingTask, exists := s.tasks.Peek()
 
 		if exists { // if there was a task
-			if nextTask.ExecuteAt.Before(now) {
+			if upcomingTask.ExecuteAt.Before(now) {
 				// task is overdue; execute now
 				log.Printf("LOG: (SchedulerService: runSchedulerLoop) - A task is overdue. Executing now...\n")
 				timer = time.NewTimer(0) // fire new timer immediately to execute task
 			} else {
 				// the task is not due yet; wait till due
-				waitDuration := nextTask.ExecuteAt.Sub(now)
+				waitDuration := upcomingTask.ExecuteAt.Sub(now)
 				timer = time.NewTimer(waitDuration)
 				log.Printf("LOG: (SchedulerService: runSchedulerLoop) - Task(s) are scheduled but not due. Earliest due task in: %s\n", waitDuration)
 			}

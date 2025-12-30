@@ -22,7 +22,7 @@ type League struct {
 	PlayerCount            int                `gorm:"column:player_count" json:"PlayerCount"`
 	MaxPokemonPerPlayer    int                `gorm:"not null;default:0;column:max_pokemon_per_player" json:"MaxPokemonPerPlayer"`
 	MinPokemonPerPlayer    int                `gorm:"not null;default:0;column:min_pokemon_per_player" json:"MinPokemonPerPlayer"`
-	StartingDraftPoints    int                `gorm:"not null;default:140;column:starting_draft_points" json:"StartingDraftPoints"`
+	StartingDraftPoints    int                `gorm:"not null;default:100;column:starting_draft_points" json:"StartingDraftPoints"`
 	Format                 *LeagueFormat      `gorm:"type:jsonb;column:format" json:"Format,omitempty"`
 	CreatedAt              *time.Time         `gorm:"type:timestamp with time zone;column:created_at" json:"CreatedAt"`
 	UpdatedAt              *time.Time         `gorm:"type:timestamp with time zone;column:updated_at" json:"UpdatedAt"`
@@ -62,7 +62,7 @@ type LeagueFormat struct {
 	TransferWindowDuration      int  `json:"TransferWindowDuration" gorm:"column:transfer_window_duration"`
 	DropCost                    int  `json:"DropCost" gorm:"column:drop_cost"`
 	PickupCost                  int  `json:"PickupCost" gorm:"column:pickup_cost"`
-	// NextTransferWindowStart stores the next occurence of a trasnfer window
+	// NextTransferWindowStart stores the next occurence of a transfer window
 	// if league is in a transfer window, NextTransferWindowStart will store the start time of the window
 	// NextTransferWindowStart is updated at the *end* of a transfer window or when the season/bracket starts
 	NextTransferWindowStart *time.Time `gorm:"type:timestamp with time zone;column:next_transfer_window_start" json:"NextTransferWindowStart"`
