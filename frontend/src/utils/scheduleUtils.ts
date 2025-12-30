@@ -4,9 +4,9 @@ import { Game } from '../api/data_interfaces';
 export const sortGamesBySchedule = (games: Game[]): Game[] => {
     return [...games].sort((a, b) => {
         // Priority to non-completed games
-        if (a.GameStatus !== 'COMPLETED' && b.GameStatus === 'COMPLETED') return -1;
-        if (a.GameStatus === 'COMPLETED' && b.GameStatus !== 'COMPLETED') return 1;
-        
+        if (a.Status !== 'COMPLETED' && b.Status === 'COMPLETED') return -1;
+        if (a.Status === 'COMPLETED' && b.Status !== 'COMPLETED') return 1;
+
         // Then by week (round number)
         return a.RoundNumber - b.RoundNumber;
     });

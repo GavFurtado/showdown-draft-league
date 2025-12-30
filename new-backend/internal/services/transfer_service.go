@@ -155,6 +155,8 @@ func (s *transferServiceImpl) EndTransferPeriod(leagueID uuid.UUID) error {
 	} else {
 		// If frequency is 0 or less, don't schedule a next window.
 		league.Format.NextTransferWindowStart = nil
+		league.Format.AllowTransfers = false
+		league.Format.TransfersCostCredits = false
 	}
 
 	// 5. Save Changes

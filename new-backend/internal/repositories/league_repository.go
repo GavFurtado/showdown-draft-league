@@ -223,7 +223,7 @@ func (r *leagueRepositoryImpl) GetAllLeaguesByStatus(status enums.LeagueStatus) 
 // retrieves all leagues that allow transfer credits.
 func (r *leagueRepositoryImpl) GetLeaguesThatAllowTransferCredits() ([]models.League, error) {
 	var leagues []models.League
-	// Preload the LeagueFormat to access AllowTransferCredits
+	// Preload the LeagueFormat to access AllowTransfer
 	if err := r.db.Where("format->>'allow_transfers' = ?", "true").Find(&leagues).Error; err != nil {
 		return nil, err
 	}

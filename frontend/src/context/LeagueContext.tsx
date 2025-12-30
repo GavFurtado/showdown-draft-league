@@ -60,6 +60,7 @@ export const LeagueProvider = ({ children }: LeagueProviderProps) => {
 
         try {
             const leagueData = await getLeagueById(leagueId);
+            // console.log("League in Context: ", leagueData.data)
 
             let draftData: Draft | null = null;
             try {

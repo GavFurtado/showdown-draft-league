@@ -1,11 +1,11 @@
 import { Menu, MenuButton, MenuItem, MenuItems, Transition } from '@headlessui/react';
 import { Link } from 'react-router-dom';
 import { Fragment } from 'react';
-import { League } from '../api/data_interfaces';
+import { League, Player } from '../api/data_interfaces';
 
 interface LeagueDropdownProps {
     currentLeague: League | null;
-    currentPlayer: Player | null; // Added currentPlayer
+    currentPlayer: Player | null;
     userLeagues: League[];
     loading: boolean;
     error: string | null;
@@ -18,7 +18,7 @@ function mergeClasses(...classes: (string | boolean | undefined | null)[]) {
 
 export default function LeagueDropdown({
     currentLeague,
-    currentPlayer, // Added currentPlayer
+    currentPlayer,
     userLeagues,
     loading,
     error,

@@ -63,16 +63,16 @@ interface PlayerPaneProps {
 
 const PlayerPane: React.FC<PlayerPaneProps> = ({ player, picks, position, authenticatedPlayerId, onClockPlayerId, currentPickNumbersOnClock }: PlayerPaneProps) => {
     const isOnClock = player?.ID === onClockPlayerId;
-    console.log(`PlayerPane: player ID: ${player?.ID}, onClockPlayerId: ${onClockPlayerId}, isOnClock: ${isOnClock}`);
+    // console.log(`PlayerPane: player ID: ${player?.ID}, onClockPlayerId: ${onClockPlayerId}, isOnClock: ${isOnClock}`);
     const getTransform = () => {
         switch (position) {
-        case 'left':
-            return 'translateX(30%) translateZ(100px) scale(0.7) rotateY(15deg)';
-        case 'right':
-            return 'translateX(-30%) translateZ(100px) scale(0.7) rotateY(-15deg)';
-        case 'center':
-        default:
-            return 'translateX(0) translateZ(-100px) scale(1)';
+            case 'left':
+                return 'translateX(30%) translateZ(100px) scale(0.7) rotateY(15deg)';
+            case 'right':
+                return 'translateX(-30%) translateZ(100px) scale(0.7) rotateY(-15deg)';
+            case 'center':
+            default:
+                return 'translateX(0) translateZ(-100px) scale(1)';
         }
     };
 
@@ -144,17 +144,17 @@ const FullScreenDraftModal: React.FC<FullScreenDraftModalProps> = ({ isOpen, onC
 
         const handleKeyDown = (event: KeyboardEvent) => {
             switch (event.key) {
-            case 'ArrowLeft':
-                handlePreviousPlayer();
-                break;
-            case 'ArrowRight':
-                handleNextPlayer();
-                break;
-            case 'Escape':
-                onClose();
-                break;
-            default:
-                break;
+                case 'ArrowLeft':
+                    handlePreviousPlayer();
+                    break;
+                case 'ArrowRight':
+                    handleNextPlayer();
+                    break;
+                case 'Escape':
+                    onClose();
+                    break;
+                default:
+                    break;
             }
         };
 

@@ -36,7 +36,7 @@ export interface LeagueFormat {
     PlayoffByesCount: number;
     PlayoffSeedingType: LeaguePlayoffSeedingType;
     AllowTransfers: boolean;
-    AllowTransferCredits: boolean;
+    TransfersCostCredits: boolean;
     TransferCreditsPerWindow: number;
     TransferCreditCap: number;
     TransferWindowFrequencyDays: number;
@@ -243,7 +243,7 @@ export interface Game {
     GroupNumber?: number;
 
     GameType: GameType;
-    GameStatus: GameStatus;
+    Status: GameStatus;
 
     BracketPosition?: string;
     ShowdownReplayLinks: string[];

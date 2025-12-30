@@ -92,7 +92,7 @@ const Dashboard: React.FC = () => {
                             <h2 className="text-2xl font-bold leading-7 text-text-primary sm:truncate sm:text-3xl sm:tracking-tight">
                                 {currentLeague.Name}
                             </h2>
-                            <p className="mt-1 text-sm text-text-secondary">
+                            <p className="mt-1 ml-0.5 text-sm text-text-secondary">
                                 Season Status: <span className="font-medium text-text-primary">{currentLeague.Status.replace('_', ' ')}</span>
                             </p>
                             <div className="mt-2">
@@ -160,19 +160,33 @@ const Dashboard: React.FC = () => {
                                     {currentLeague.Format.AllowTransfers && (
                                         <>
                                             <div className="sm:col-span-1">
+                                                <dt className="text-sm font-medium text-text-secondary">Transfer Window Frequency</dt>
+                                                <dd className="mt-1 text-sm text-text-primary">
+                                                    Every {currentLeague.Format.TransferWindowFrequencyDays} days
+                                                </dd>
+                                            </div>
+                                            <div className="sm:col-span-1">
+                                                <dt className="text-sm font-medium text-text-secondary">Transfer Window Duration</dt>
+                                                <dd className="mt-1 text-sm text-text-primary">
+                                                    {currentLeague.Format.TransferWindowDuration} hours
+                                                </dd>
+                                            </div>
+                                            <div className="sm:col-span-1">
                                                 <dt className="text-sm font-medium text-text-secondary">Transfer Credits</dt>
                                                 <dd className="mt-1 text-sm text-text-primary">
-                                                    {currentLeague.Format.AllowTransferCredits
+                                                    {currentLeague.Format.TransfersCostCredits
                                                         ? `${currentLeague.Format.TransferCreditsPerWindow} per window (Cap: ${currentLeague.Format.TransferCreditCap})`
                                                         : "Unlimited"}
                                                 </dd>
                                             </div>
-                                            <div className="sm:col-span-1">
-                                                <dt className="text-sm font-medium text-text-secondary">Transfer Costs</dt>
-                                                <dd className="mt-1 text-sm text-text-primary">
-                                                    Drop: {currentLeague.Format.DropCost}, Pickup: {currentLeague.Format.PickupCost}
-                                                </dd>
-                                            </div>
+                                            {currentLeague.Format.TransfersCostCredits && (
+                                                <div className="sm:col-span-1">
+                                                    <dt className="text-sm font-medium text-text-secondary">Transfer Costs</dt>
+                                                    <dd className="mt-1 text-sm text-text-primary">
+                                                        Drop: {currentLeague.Format.DropCost}, Pickup: {currentLeague.Format.PickupCost}
+                                                    </dd>
+                                                </div>
+                                            )}
                                         </>
                                     )}
                                 </dl>

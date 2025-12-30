@@ -10,6 +10,7 @@ interface DashboardScheduleProps {
 export const DashboardSchedule: React.FC<DashboardScheduleProps> = ({ games, currentPlayerId }) => {
     // Filter for active or upcoming games using utility
     const displayGames = getUpcomingGames(games, 3);
+    // console.log(displayGames);
 
     if (displayGames.length === 0) {
         return <div className="text-text-secondary text-sm p-4">No upcoming games scheduled.</div>;
@@ -20,14 +21,15 @@ export const DashboardSchedule: React.FC<DashboardScheduleProps> = ({ games, cur
             <div className="grow overflow-y-auto">
                 {displayGames.map((game) => {
                     const isPlayer1 = game.Player1ID === currentPlayerId;
-                    const opponentName = isPlayer1 ? game.Player2?.TeamName || "Opponent" : game.Player1?.TeamName || "Opponent";
-                    const opponentCoach = isPlayer1 ? game.Player2?.InLeagueName : game.Player1?.InLeagueName;
+                    const opponentTeamName = isPlayer1 ? game.Player2?.TeamName || "Opponent" : game.Player1?.TeamName || "Opponent";
+                    const opponentPlayerName = isPlayer1 ? game.Player2?.InLeagueName : game.Player1?.InLeagueName;
+                    {/* console.log(`Game (ID: ${game.ID}) Status: ${game.Status}`) */ }
 
                     // Determine status badge
                     let statusColor = "bg-gray-100 text-gray-800";
-                    if (game.GameStatus === "SCHEDULED") statusColor = "bg-blue-100 text-blue-800";
-                    if (game.GameStatus === "COMPLETED") statusColor = "bg-green-100 text-green-800";
-                    if (game.GameStatus === "DISPUTED") statusColor = "bg-red-100 text-red-800";
+                    if (game.Status === "SCHEDULED") statusColor = "bg-blue-100 text-blue-800";
+                    if (game.Status === "COMPLETED") statusColor = "bg-green-100 text-green-800";
+                    if (game.Status === "DISPUTED") statusColor = "bg-red-100 text-red-800";
 
                     return (
                         <div key={game.ID} className="p-4 hover:bg-gray-50 transition-colors">
@@ -36,15 +38,15 @@ export const DashboardSchedule: React.FC<DashboardScheduleProps> = ({ games, cur
                                     Week {game.RoundNumber}
                                 </span>
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusColor}`}>
-                                    {game.GameStatus}
+                                    {game.Status}
                                 </span>
                             </div>
                             <div className="flex items-center justify-between mt-2">
                                 <div>
-                                    <p className="text-sm font-medium text-text-primary">vs. {opponentName}</p>
-                                    <p className="text-xs text-text-secondary">{opponentCoach}</p>
+                                    <p className="text-sm font-medium text-text-primary">vs. {opponentTeamName}</p>
+                                    <p className="text-xs text-text-secondary">{opponentPlayerName}</p>
                                 </div>
-                                {game.GameStatus === 'COMPLETED' ? (
+                                {game.Status === 'COMPLETED' ? (
                                     <div className="text-sm font-bold text-text-primary">
                                         {isPlayer1 ? game.Player1Wins : game.Player2Wins} - {isPlayer1 ? game.Player2Wins : game.Player1Wins}
                                     </div>

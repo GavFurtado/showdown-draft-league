@@ -92,6 +92,10 @@ func (s *schedulerServiceImpl) Start() error {
 	// Leagues in regular season or those that are bracket only; No transfer credit accrual during playoffs planned
 	var leaguesInSeasonOrBracketOnly []*models.League
 	for _, league := range leagues {
+		if league.Format == nil {
+			log.Printf("WARN: (SchedulerService: Start) - League %s has nil Format. Skipping.\n", league.ID)
+			continue
+		}
 		if league.Status == enums.LeagueStatusTransferWindow {
 			leaguesInTransferWindow = append(leaguesInTransferWindow, &league)
 		} else if league.Status == enums.LeagueStatusRegularSeason {
@@ -123,6 +127,10 @@ func (s *schedulerServiceImpl) Start() error {
 	}
 
 	for _, league := range leaguesInTransferWindow {
+		if league.Format.NextTransferWindowStart == nil {
+			log.Printf("WARN: (SchedulerService: Start) - League %s is in TransferWindow but NextTransferWindowStart is nil. Skipping.\n", league.ID)
+			continue
+		}
 		windowStartTime := league.Format.NextTransferWindowStart
 		windowDuration := league.Format.TransferWindowDuration
 		windowEndTime := windowStartTime.Add(time.Duration(windowDuration) * time.Minute)
@@ -140,6 +148,10 @@ func (s *schedulerServiceImpl) Start() error {
 	}
 
 	for _, league := range leaguesInSeasonOrBracketOnly {
+		if league.Format.NextTransferWindowStart == nil {
+			log.Printf("WARN: (SchedulerService: Start) - League %s is in Season/Bracket but NextTransferWindowStart is nil. Skipping.\n", league.ID)
+			continue
+		}
 		nextWindowStartTime := league.Format.NextTransferWindowStart
 
 		newTask := &u.ScheduledTask{
