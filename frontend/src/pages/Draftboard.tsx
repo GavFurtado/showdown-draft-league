@@ -212,7 +212,7 @@ const Draftboard: React.FC = () => {
         return (
             <Layout variant="full">
                 <div className="grow flex items-center justify-center">
-                    <div className="bg-white p-8 rounded-lg shadow-md text-center">
+                    <div className="bg-white p-8 rounded-lg shadow-md text-center mt-2">
                         <h1 className="text-2xl font-bold text-gray-800 mb-4">Draft Not Started</h1>
                         <p className="text-gray-600">The league has not yet begun and is being set up. This page is unavailable.</p>
                     </div>

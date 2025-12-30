@@ -54,7 +54,7 @@ const Teamsheets: React.FC = () => {
                 if (!initialPlayer && sortedPlayers.length > 0) {
                     initialPlayer = sortedPlayers[0];
                 }
-                
+
                 // Only set if we found something (or defaulted)
                 if (initialPlayer) {
                     setSelectedPlayer(initialPlayer);
@@ -78,7 +78,7 @@ const Teamsheets: React.FC = () => {
     // Handle hash changes (back/forward navigation)
     useEffect(() => {
         if (players.length === 0) return;
-        
+
         const hash = location.hash.replace('#', '');
         if (hash) {
             const found = players.find(p => getPlayerSlug(p.InLeagueName) === hash);
@@ -110,7 +110,7 @@ const Teamsheets: React.FC = () => {
         return (
             <Layout variant="full">
                 <div className="grow flex items-center justify-center">
-                    <div className="bg-white p-8 rounded-lg shadow-md text-center">
+                    <div className="bg-white p-8 rounded-lg shadow-md text-center mt-2">
                         <h1 className="text-2xl font-bold text-gray-800 mb-4">Draft Not Started</h1>
                         <p className="text-gray-600">The league has not yet begun and is being set up. This page is unavailable.</p>
                     </div>
@@ -166,7 +166,7 @@ const Teamsheets: React.FC = () => {
                                         className={`px-3 py-1 rounded-md text-sm transition-all duration-150 border shadow-sm ${viewWeek === week
                                             ? 'border-accent-primary bg-accent-primary text-text-on-accent font-bold shadow-inner'
                                             : 'border-gray-200 bg-white text-text-primary hover:text-white hover:bg-accent-primary-hover'
-                                        }`}
+                                            }`}
                                     >
                                         RS W{week}
                                     </button>

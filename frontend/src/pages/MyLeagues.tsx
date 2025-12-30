@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import axios from "axios";
 import { PlusIcon, UserGroupIcon, CalendarIcon, TrophyIcon } from "@heroicons/react/24/outline";
@@ -7,7 +7,7 @@ import { PlusIcon, UserGroupIcon, CalendarIcon, TrophyIcon } from "@heroicons/re
 import Layout from "../components/Layout";
 import { League } from "../api/data_interfaces";
 import { useUser } from "../context/UserContext";
-import { getMyLeagues } from "../api/api";
+import { getMyLeagues, getMyPlayers } from "../api/api";
 
 const LeagueCard: React.FC<{ league: League }> = ({ league }) => {
     const statusColors = {
@@ -68,6 +68,7 @@ const MyLeagues: React.FC = () => {
     const [userLeaguesLoading, setUserLeaguesLoading] = useState<boolean>(true);
     const [userLeaguesError, setUserLeaguesError] = useState<string | null>(null);
     const { user } = useUser();
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchUserLeagues = async () => {
@@ -131,7 +132,7 @@ const MyLeagues: React.FC = () => {
     }, [user]);
 
     const handleCreateLeague = () => {
-        alert("Create League feature is coming soon!");
+        navigate("/create-league");
     };
 
     if (userLeaguesError) {

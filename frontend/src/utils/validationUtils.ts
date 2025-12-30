@@ -5,10 +5,22 @@ export const isValidUsername = (username: string): boolean => {
     return regex.test(username);
 };
 
-// Sanitizes input to remove potential script tags (basic)
-// Note: React handles most XSS protection, but this can be useful for other contexts
+// Checks if a string contains any HTML-like tags (< or >)
+export const containsHtml = (input: string): boolean => {
+    return /[<>]/.test(input);
+};
+
+// Checks for characters that could be problematic (e.g., % for SQL LIKE, \ for escaping)
+export const containsForbiddenChars = (input: string): boolean => {
+    return /[%\\]/.test(input);
+};
+
+// Sanitizes input to remove all HTML tags and specific problematic characters like '%'
+// This is used for general text fields to prevent basic XSS and SQL LIKE issues
 export const sanitizeInput = (input: string): string => {
-    return input.replace(/<[^>]*>?/gm, '');
+    return input
+        .replace(/<[^>]*>?/gm, '') // Remove all HTML tags
+        .replace(/%/g, '');        // Remove % character
 };
 
 // Validates a basic email format

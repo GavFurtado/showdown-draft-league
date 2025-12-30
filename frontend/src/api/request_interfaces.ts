@@ -17,8 +17,8 @@ export interface LeagueCreateRequest {
     Name: string;
     RulesetDescription: string;
     MaxPokemonPerPlayer: number;
+    MinPokemonPerPlayer: number;
     StartingDraftPoints: number;
-    StartDate: string;
     Format: LeagueFormat;
 }
 

@@ -23,18 +23,19 @@ export type LeagueStatus = "PENDING" | "SETUP" | "DRAFTING" | "POST_DRAFT" | "TR
 export type DraftOrderType = "PENDING" | "RANDOM" | "MANUAL";
 export type LeagueSeasonType = "ROUND_ROBIN_ONLY" | "PLAYOFFS_ONLY" | "HYBRID";
 export type LeaguePlayoffType = "NONE" | "SINGLE_ELIM" | "DOUBLE_ELIM";
-export type LeaguePlayoffSeedingType = "STANDARD" | "SEEDED" | "BYES_ONLY";
+export type LeaguePlayoffSeedingType = "STANDARD" | "FULLY_SEEDED" | "BYES_ONLY";
 
 export interface LeagueFormat {
     IsSnakeRoundDraft: boolean;
     DraftOrderType: DraftOrderType;
     SeasonType: LeagueSeasonType;
     GroupCount: number;
-    GamesPerOpponent: number;
+
     PlayoffType: LeaguePlayoffType;
     PlayoffParticipantCount: number;
     PlayoffByesCount: number;
     PlayoffSeedingType: LeaguePlayoffSeedingType;
+
     AllowTransfers: boolean;
     TransfersCostCredits: boolean;
     TransferCreditsPerWindow: number;
@@ -43,6 +44,7 @@ export interface LeagueFormat {
     TransferWindowDuration: number;
     DropCost: number;
     PickupCost: number;
+
     NextTransferWindowStart?: string; // ISO 8601 string
 }
 

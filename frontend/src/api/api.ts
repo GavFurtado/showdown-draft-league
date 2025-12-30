@@ -37,6 +37,8 @@ export const getMyLeagues = () =>
     api.get<League[]>('/api/users/me/leagues');
 export const updateUserProfile = (data: UpdateUserProfileRequest) =>
     api.put<User>('/api/users/profile', data);
+export const getMyPlayers = () =>
+    api.get<Player[]>('/api/users/me/players');
 export const getPlayersByUserId = (id: string) =>
     api.get<Player[]>(`/api/users/${id}/players`);
 

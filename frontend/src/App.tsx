@@ -10,6 +10,7 @@ import Draftboard from './pages/Draftboard';
 import TeamSheets from './pages/Teamsheets';
 import DraftHistory from './pages/DraftHistory';
 import JoinLeague from './pages/JoinLeague';
+import CreateLeague from './pages/CreateLeague';
 import { DraftHistoryProvider } from './context/DraftHistoryContext';
 import MyLeagues from './pages/MyLeagues';
 
@@ -26,6 +27,7 @@ function App() {
                 {/* this route would list all leagues the user is a part off */}
                 <Route element={<UserProviderWrapper />}>
                     <Route path='/my-leagues' element={<MyLeagues />} />
+                    <Route path='/create-league' element={<CreateLeague />} />
                     <Route path='/:leagueId/join' element={<JoinLeague />} />
                 </Route>
 
