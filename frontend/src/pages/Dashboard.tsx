@@ -4,14 +4,15 @@ import { useLeague } from '../context/LeagueContext';
 import { PokemonRosterList } from '../components/PokemonRosterList';
 import { DashboardStandings } from '../components/DashboardStandings';
 import { DashboardSchedule } from '../components/DashboardSchedule';
+import PlayerProfileModal from '../components/PlayerProfileModal';
 import { Player, DraftedPokemon, Game } from '../api/data_interfaces';
 import { getPlayersByLeague, getDraftedPokemonByPlayer, getGamesByPlayer } from '../api/api';
 import { Link } from 'react-router-dom';
 import { getPlayerSlug } from '../utils/nameFormatter';
-import { Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { Cog6ToothIcon, ClipboardDocumentIcon, PencilSquareIcon, CheckIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 
 const Dashboard: React.FC = () => {
-    const { currentLeague, currentPlayer, loading: leagueLoading, error: leagueError } = useLeague();
+    const { currentLeague, currentPlayer, refreshLeague, loading: leagueLoading, error: leagueError } = useLeague();
 
     const [players, setPlayers] = useState<Player[]>([]);
     const [roster, setRoster] = useState<DraftedPokemon[]>([]);
@@ -19,6 +20,12 @@ const Dashboard: React.FC = () => {
 
     const [loadingData, setLoadingData] = useState(true);
     const [showSettings, setShowSettings] = useState(false);
+
+    // Invite Link State
+    const [copied, setCopied] = useState(false);
+
+    // Update Player Modal State
+    const [showPlayerModal, setShowPlayerModal] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -50,6 +57,14 @@ const Dashboard: React.FC = () => {
             fetchData();
         }
     }, [currentLeague, currentPlayer]);
+
+    const handleCopyInvite = () => {
+        if (!currentLeague) return;
+        const inviteUrl = `${window.location.origin}/${currentLeague.ID}/join`;
+        navigator.clipboard.writeText(inviteUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
 
     if (leagueLoading) {
@@ -83,6 +98,8 @@ const Dashboard: React.FC = () => {
         );
     }
 
+    const showSetupButtons = currentLeague.Status === 'PENDING' || currentLeague.Status === 'SETUP';
+
     return (
         <Layout variant="container">
             <div className="space-y-6">
@@ -92,17 +109,29 @@ const Dashboard: React.FC = () => {
                             <h2 className="text-2xl font-bold leading-7 text-text-primary sm:truncate sm:text-3xl sm:tracking-tight">
                                 {currentLeague.Name}
                             </h2>
-                            <p className="mt-1 ml-0.5 text-sm text-text-secondary">
-                                Season Status: <span className="font-medium text-text-primary">{currentLeague.Status.replace('_', ' ')}</span>
-                            </p>
+                            <div className="mt-1 flex items-center gap-4">
+                                <p className="text-sm text-text-secondary">
+                                    Season Status: <span className="font-medium text-text-primary">{currentLeague.Status.replace('_', ' ')}</span>
+                                </p>
+                                {showSetupButtons && (
+                                    <button
+                                        onClick={handleCopyInvite}
+                                        className="inline-flex items-center gap-1 text-xs font-bold text-accent-primary hover:text-accent-primary-hover transition-colors"
+                                    >
+                                        {copied ? <CheckIcon className="h-3 w-3" /> : <ClipboardDocumentIcon className="h-3 w-3" />}
+                                        {copied ? 'Copied Link!' : 'Copy Invite Link'}
+                                    </button>
+                                )}
+                            </div>
                             <div className="mt-2">
                                 <button
                                     type="button"
                                     onClick={() => setShowSettings(!showSettings)}
-                                    className="inline-flex items-center rounded-md bg-white px-2 py-1 text-xs font-semibold text-text-primary shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                                    className="inline-flex items-center rounded-md bg-white px-2 py-1 text-xs font-semibold text-text-primary shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-all"
                                 >
                                     <Cog6ToothIcon className="-ml-0.5 mr-1.5 h-4 w-4 text-gray-400" aria-hidden="true" />
                                     View League Details
+                                    <ChevronDownIcon className={`ml-1.5 h-3 w-3 text-gray-400 transition-transform duration-200 ${showSettings ? 'rotate-180' : ''}`} aria-hidden="true" />
                                 </button>
                             </div>
                         </div>
@@ -111,6 +140,18 @@ const Dashboard: React.FC = () => {
                                 <div className="text-right">
                                     <div className="text-lg font-bold text-text-primary">{currentPlayer.TeamName}</div>
                                     <div className="text-sm text-text-secondary">{currentPlayer.InLeagueName}</div>
+                                    {showSetupButtons && (
+                                        <div className="mt-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPlayerModal(true)}
+                                                className="inline-flex items-center rounded-md bg-white px-2 py-1 text-xs font-semibold text-text-primary shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-all"
+                                            >
+                                                <PencilSquareIcon className="-ml-0.5 mr-1.5 h-4 w-4 text-gray-400" aria-hidden="true" />
+                                                Edit Player
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -255,6 +296,20 @@ const Dashboard: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Player Profile Modal */}
+            {currentPlayer && currentLeague && (
+                <PlayerProfileModal
+                    isOpen={showPlayerModal}
+                    onClose={() => setShowPlayerModal(false)}
+                    leagueId={currentLeague.ID}
+                    playerId={currentPlayer.ID}
+                    leagueName={currentLeague.Name}
+                    initialInLeagueName={currentPlayer.InLeagueName}
+                    initialTeamName={currentPlayer.TeamName}
+                    onSuccess={() => {}}
+                />
+            )}
         </Layout>
     );
 };

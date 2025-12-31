@@ -1,8 +1,10 @@
 package utils
 
 import (
-	"github.com/google/uuid"
+	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type TaskType int // not a string like my other enums cuz it's not going into the db
@@ -90,4 +92,11 @@ func (heap *TaskHeap) Pop() any {
 	task.Index = -1   // mark as removed
 	*heap = old[:n-1] // remove last element
 	return task
+}
+
+func (heap TaskHeap) Print() {
+	fmt.Printf("TaskHeap (len=%d):\n", heap.Len())
+	for i, task := range heap {
+		fmt.Printf("  [%d] ID: %s, Type: %s, ExecuteAt: %s, Payload: %+v\n", i, task.ID, task.Type, task.ExecuteAt.Format(time.RFC3339), task.Payload)
+	}
 }

@@ -25,12 +25,13 @@ type LeagueService interface {
 	// fetches all Leagues where the given userID is a player.
 	GetLeaguesByUser(userID uuid.UUID, currentUser *models.User) ([]models.League, error)
 
+	StartRegularSeason(leagueID uuid.UUID) error
+
 	ProcessWeeklyTick(leagueID uuid.UUID) error
 
 	SetSchedulerService(schedulerService SchedulerService)
 	SetGameService(gameService GameService)
 	SetTransferService(transferService TransferService)
-	StartRegularSeason(leagueID uuid.UUID) error
 }
 
 type leagueServiceImpl struct {
@@ -110,9 +111,12 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueC
 		Name:                 input.Name,
 		RulesetDescription:   input.RulesetDescription,
 		MaxPokemonPerPlayer:  input.MaxPokemonPerPlayer,
+		MinPokemonPerPlayer:  input.MinPokemonPerPlayer,
 		StartingDraftPoints:  input.StartingDraftPoints,
+		Status:               enums.LeagueStatusSetup,
 		StartDate:            time.Now(),
 		NewPlayerGroupNumber: newPlayerGroupNumber,
+		PlayerCount:          1,
 		Format: &models.LeagueFormat{
 			SeasonType:                  input.Format.SeasonType,
 			GroupCount:                  input.Format.GroupCount,

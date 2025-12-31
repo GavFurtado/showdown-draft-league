@@ -37,7 +37,7 @@ type LeagueRepository interface {
 	// retrieves all leagues with a specific status.
 	GetAllLeaguesByStatus(status enums.LeagueStatus) ([]models.League, error)
 	// retrieves all leagues that allow transfer credits.
-	GetLeaguesThatAllowTransferCredits() ([]models.League, error)
+	GetLeaguesThatAllowTransfers() ([]models.League, error)
 }
 
 type leagueRepositoryImpl struct {
@@ -221,7 +221,7 @@ func (r *leagueRepositoryImpl) GetAllLeaguesByStatus(status enums.LeagueStatus) 
 }
 
 // retrieves all leagues that allow transfer credits.
-func (r *leagueRepositoryImpl) GetLeaguesThatAllowTransferCredits() ([]models.League, error) {
+func (r *leagueRepositoryImpl) GetLeaguesThatAllowTransfers() ([]models.League, error) {
 	var leagues []models.League
 	// Preload the LeagueFormat to access AllowTransfer
 	if err := r.db.Where("format->>'allow_transfers' = ?", "true").Find(&leagues).Error; err != nil {

@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import Modal from '../components/Modal';
-import { createLeague, updatePlayerProfile, getPlayersByLeague } from '../api/api';
-import { LeagueCreateRequest, LeagueFormat, UpdatePlayerInfoRequest } from '../api/request_interfaces';
-import { League } from '../api/data_interfaces';
+import PlayerProfileModal from '../components/PlayerProfileModal';
+import { createLeague, getPlayersByLeague } from '../api/api';
+import { LeagueCreateRequest, UpdatePlayerInfoRequest } from '../api/request_interfaces';
+import { League, LeagueFormat } from '../api/data_interfaces';
 import { useUser } from '../context/UserContext';
 import { ChevronRightIcon, ChevronLeftIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import { sanitizeInput, containsHtml, containsForbiddenChars } from '../utils/validationUtils';
@@ -18,7 +19,7 @@ const initialFormat: LeagueFormat = {
     PlayoffType: "NONE",
     PlayoffParticipantCount: 4,
     PlayoffByesCount: 0,
-    PlayoffSeedingType: "FULLY_SEEDED",
+    PlayoffSeedingType: "STANDARD",
     AllowTransfers: true,
     TransfersCostCredits: true,
     TransferCreditsPerWindow: 2,
@@ -77,7 +78,8 @@ const CreateLeague: React.FC = () => {
     // Post-creation Modal State
     const [createdLeague, setCreatedLeague] = useState<League | null>(null);
     const [showPlayerModal, setShowPlayerModal] = useState(false);
-    const [playerData, setPlayerData] = useState<UpdatePlayerInfoRequest>({
+    const [newPlayerId, setNewPlayerId] = useState<string>('');
+    const [initialPlayerData, setInitialPlayerData] = useState({
         InLeagueName: "",
         TeamName: ""
     });
@@ -94,6 +96,12 @@ const CreateLeague: React.FC = () => {
             setFormData(prev => ({ ...prev, MinPokemonPerPlayer: prev.MaxPokemonPerPlayer }));
         }
     }, [formData.MaxPokemonPerPlayer]);
+
+    React.useEffect(() => {
+        if (formData.Format.PlayoffType === "SINGLE_ELIM" && formData.Format.PlayoffSeedingType === "FULLY_SEEDED") {
+            updateFormat("PlayoffSeedingType", "STANDARD");
+        }
+    }, [formData.Format.PlayoffType]);
 
     const updateFormat = (field: keyof LeagueFormat, value: any) => {
         setFormData(prev => ({
@@ -190,7 +198,6 @@ const CreateLeague: React.FC = () => {
         setError(null);
 
         try {
-            // Final sanitize check
             const payload = {
                 ...formData,
                 Name: sanitizeInput(formData.Name),
@@ -202,13 +209,22 @@ const CreateLeague: React.FC = () => {
             const newLeague = response.data as League;
             setCreatedLeague(newLeague);
 
-            // Pre-fill player modal defaults
-            setPlayerData({
-                InLeagueName: user.ShowdownUsername || user.DiscordUsername,
-                TeamName: `${user.DiscordUsername}'s Team`
-            });
+            // Fetch the automatically created player profile
+            const playersResponse = await getPlayersByLeague(newLeague.ID);
+            const players = playersResponse.data as any[];
+            const myPlayer = players.find((p: any) => p.UserID === user.ID);
 
-            setShowPlayerModal(true);
+            if (myPlayer) {
+                setNewPlayerId(myPlayer.ID);
+                setInitialPlayerData({
+                    InLeagueName: user.ShowdownUsername || user.DiscordUsername,
+                    TeamName: `${user.DiscordUsername}'s Team`
+                });
+                setShowPlayerModal(true);
+            } else {
+                // Fallback if player not found immediately
+                navigate(`/league/${newLeague.ID}/dashboard`);
+            }
         } catch (err: any) {
             console.error("Failed to create league", err);
             setError(err.response?.data?.error || "Failed to create league. Please try again.");
@@ -217,45 +233,9 @@ const CreateLeague: React.FC = () => {
         }
     };
 
-    const handlePlayerSetupSubmit = async () => {
-        if (!createdLeague || !user) return;
+    // --- Render Steps ---
+    // (Rest of the render functions remain same...)
 
-        if (containsHtml(playerData.InLeagueName || "") || containsHtml(playerData.TeamName || "")) {
-            setError("HTML tags (<, >) are not allowed in names.");
-            return;
-        }
-        if (containsForbiddenChars(playerData.InLeagueName || "") || containsForbiddenChars(playerData.TeamName || "")) {
-            setError("The '%' and '\\' characters are not allowed.");
-            return;
-        }
-
-        setLoading(true);
-        try {
-            const playersResponse = await getPlayersByLeague(createdLeague.ID);
-            const players = playersResponse.data as any[];
-            const myPlayer = players.find((p: any) => p.UserID === user.ID);
-
-            if (!myPlayer) {
-                throw new Error("Could not find your player profile in the new league.");
-            }
-
-            // Sanitize player info
-            const cleanPlayerName = sanitizeInput(playerData.InLeagueName || "");
-            const cleanTeamName = sanitizeInput(playerData.TeamName || "");
-
-            await updatePlayerProfile(createdLeague.ID, myPlayer.ID, {
-                InLeagueName: cleanPlayerName,
-                TeamName: cleanTeamName
-            });
-
-            navigate(`/league/${createdLeague.ID}/dashboard`);
-        } catch (err: any) {
-            console.error("Failed to update player profile", err);
-            setError(err.response?.data?.error || "League created, but failed to set up player profile.");
-        } finally {
-            setLoading(false);
-        }
-    };
 
     // --- Render Steps ---
 
@@ -353,7 +333,7 @@ const CreateLeague: React.FC = () => {
                         <input
                             type="number"
                             min={0}
-                            max={18}
+                            max={formData.MaxPokemonPerPlayer}
                             value={formData.MinPokemonPerPlayer}
                             onChange={(e) => updateField("MinPokemonPerPlayer", parseInt(e.target.value))}
                             className="w-full rounded-xl border-gray-300 bg-gray-50 p-3 border shadow-sm"
@@ -518,7 +498,7 @@ const CreateLeague: React.FC = () => {
                             <input
                                 type="number"
                                 min={0}
-                                max={formData.Format.PlayoffParticipantCount}
+                                max={formData.Format.PlayoffParticipantCount - 1}
                                 value={formData.Format.PlayoffSeedingType === "STANDARD" ? 0 : formData.Format.PlayoffByesCount}
                                 disabled={formData.Format.PlayoffSeedingType === "STANDARD"}
                                 onChange={(e) => updateFormat("PlayoffByesCount", parseInt(e.target.value))}
@@ -754,47 +734,23 @@ const CreateLeague: React.FC = () => {
             </div>
 
             {/* Player Setup Modal */}
-            <Modal
-                isOpen={showPlayerModal}
-                onClose={() => { }}
-                title={<span className="text-xl font-bold text-text-primary">Create Your Coach Profile</span>}
-                showDefaultCloseButton={false}
-            >
-                <div className="space-y-6 pt-2">
-                    <p className="text-text-secondary">
-                        Welcome to <strong>{formData.Name}</strong>! Before we head to the dashboard, let's set up your team identity.
-                    </p>
-                    <div>
-                        <label className="block text-sm font-bold text-text-primary mb-1">Coach Name</label>
-                        <input
-                            type="text"
-                            value={playerData.InLeagueName}
-                            onChange={(e) => setPlayerData({ ...playerData, InLeagueName: e.target.value })}
-                            className="w-full rounded-xl border-gray-300 bg-gray-50 focus:bg-white focus:border-accent-primary p-3 border shadow-sm"
-                            placeholder="Your Name"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-text-primary mb-1">Team Name</label>
-                        <input
-                            type="text"
-                            value={playerData.TeamName}
-                            onChange={(e) => setPlayerData({ ...playerData, TeamName: e.target.value })}
-                            className="w-full rounded-xl border-gray-300 bg-gray-50 focus:bg-white focus:border-accent-primary p-3 border shadow-sm"
-                            placeholder="e.g. Driftveil Druddigons"
-                        />
-                    </div>
-                    <div className="flex justify-end pt-4">
-                        <button
-                            onClick={handlePlayerSetupSubmit}
-                            disabled={loading}
-                            className="bg-accent-primary text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:bg-accent-primary-hover transition-all"
-                        >
-                            {loading ? 'Setting up...' : 'Enter League'}
-                        </button>
-                    </div>
-                </div>
-            </Modal>
+            {createdLeague && (
+                <PlayerProfileModal
+                    isOpen={showPlayerModal}
+                    onClose={() => navigate(`/league/${createdLeague.ID}/dashboard`)}
+                    leagueId={createdLeague.ID}
+                    playerId={newPlayerId}
+                    leagueName={createdLeague.Name}
+                    initialInLeagueName={initialPlayerData.InLeagueName}
+                    initialTeamName={initialPlayerData.TeamName}
+                    onSuccess={() => navigate(`/league/${createdLeague.ID}/dashboard`)}
+                    description={
+                        <p className="text-text-secondary text-sm">
+                            League created successfully! Now, let's set up your identity for this league.
+                        </p>
+                    }
+                />
+            )}
 
         </Layout>
     );

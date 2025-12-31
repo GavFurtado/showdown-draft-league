@@ -18,7 +18,7 @@ type League struct {
 	StartDate              time.Time          `gorm:"not null;column:start_date" json:"StartDate"`
 	EndDate                *time.Time         `gorm:"column:end_date" json:"EndDate"` // this is set when the league is cancelled or actualy ends, nil otherwise
 	RulesetDescription     string             `gorm:"type:text;column:ruleset_description" json:"RulesetDescription"`
-	Status                 enums.LeagueStatus `gorm:"type:varchar(50);not null;default:'pending';column:status" json:"Status"`
+	Status                 enums.LeagueStatus `gorm:"type:varchar(50);not null;default:'PENDING';column:status" json:"Status"`
 	PlayerCount            int                `gorm:"column:player_count" json:"PlayerCount"`
 	MaxPokemonPerPlayer    int                `gorm:"not null;default:0;column:max_pokemon_per_player" json:"MaxPokemonPerPlayer"`
 	MinPokemonPerPlayer    int                `gorm:"not null;default:0;column:min_pokemon_per_player" json:"MinPokemonPerPlayer"`
