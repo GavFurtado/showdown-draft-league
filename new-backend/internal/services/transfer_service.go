@@ -70,6 +70,7 @@ func (s *transferServiceImpl) StartTransferPeriod(leagueID uuid.UUID) error {
 	}
 
 	// 3. Update Player Credits (if applicable)
+	didAllPlayersAccrueCredits := true
 	if league.Format.TransfersCostCredits {
 		players, err := s.playerRepo.GetPlayersByLeague(leagueID)
 		if err != nil {
@@ -84,7 +85,8 @@ func (s *transferServiceImpl) StartTransferPeriod(leagueID uuid.UUID) error {
 			}
 			if _, err := s.playerRepo.UpdatePlayer(&player); err != nil {
 				// Log the error but continue trying to update other players
-				log.Printf("ERROR: (TransferService: StartTransferPeriod) - Failed to update transfer credits for player %s: %v\n", player.ID, err)
+				log.Printf("ERROR: (TransferService: StartTransferPeriod) - Failed to update transfer credits for player %s (%s): %v\n", player.InLeagueName, player.ID, err)
+				didAllPlayersAccrueCredits = false
 			}
 		}
 	}
@@ -95,12 +97,12 @@ func (s *transferServiceImpl) StartTransferPeriod(leagueID uuid.UUID) error {
 	league.Format.NextTransferWindowStart = &now // The window starts now
 
 	// 5. Schedule EndTransferPeriod
-	windowEndTime := now.Add(time.Duration(league.Format.TransferWindowDuration) * time.Minute)
-	taskID := fmt.Sprintf("%d_%s", utils.TaskTypeTradingPeriodEnd, league.ID)
+	windowEndTime := now.Add(time.Duration(league.Format.TransferWindowDuration) * time.Hour)
+	taskID := fmt.Sprintf("%d_%s", utils.TaskTypeTransferPeriodEnd, league.ID)
 	endTask := &utils.ScheduledTask{
 		ID:        taskID,
 		ExecuteAt: windowEndTime,
-		Type:      utils.TaskTypeTradingPeriodEnd,
+		Type:      utils.TaskTypeTransferPeriodEnd,
 		Payload: utils.PayloadTransferPeriodEnd{
 			LeagueID: league.ID,
 		},
@@ -114,7 +116,15 @@ func (s *transferServiceImpl) StartTransferPeriod(leagueID uuid.UUID) error {
 		return common.ErrInternalService
 	}
 
-	log.Printf("LOG: (TransferService: StartTransferPeriod) - Transfer window started for league %s.\n", leagueID)
+	if !league.Format.TransfersCostCredits {
+		log.Printf("LOG: (TransferService: StartTransferPeriod) - Transfer window started for league %s.\n", leagueID)
+	} else {
+		if !didAllPlayersAccrueCredits {
+			log.Printf("LOG: (TransferService: StartTransferPeriod) - Transfer window started for league %s but there was an error in credit accrual for one or more players.\n", leagueID)
+		} else {
+			log.Printf("LOG: (TransferService: StartTransferPeriod) - Transfer window started for league %s and all players accrued credits.\n", leagueID)
+		}
+	}
 	return nil
 }
 
@@ -138,14 +148,14 @@ func (s *transferServiceImpl) EndTransferPeriod(leagueID uuid.UUID) error {
 	league.Status = enums.LeagueStatusRegularSeason
 
 	// 4. Schedule next StartTransferPeriod
-	taskID := fmt.Sprintf("%d_%s", utils.TaskTypeTradingPeriodStart, league.ID)
+	taskID := fmt.Sprintf("%d_%s", utils.TaskTypeTransferPeriodStart, league.ID)
 	if league.Format.TransferWindowFrequencyDays > 0 {
 		nextWindowStartTime := time.Now().AddDate(0, 0, league.Format.TransferWindowFrequencyDays)
 		league.Format.NextTransferWindowStart = &nextWindowStartTime
 
 		startTask := &utils.ScheduledTask{
 			ID:        taskID,
-			Type:      utils.TaskTypeTradingPeriodStart,
+			Type:      utils.TaskTypeTransferPeriodStart,
 			ExecuteAt: nextWindowStartTime,
 			Payload: utils.PayloadTransferPeriodStart{
 				LeagueID: league.ID,

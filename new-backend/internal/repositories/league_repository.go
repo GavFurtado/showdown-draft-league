@@ -36,6 +36,8 @@ type LeagueRepository interface {
 	GetLeagueStatus(leagueID uuid.UUID) (enums.LeagueStatus, error)
 	// retrieves all leagues with a specific status.
 	GetAllLeaguesByStatus(status enums.LeagueStatus) ([]models.League, error)
+	// retrieves all leagues with any of the specified statuses.
+	GetLeaguesByStatuses(statuses []enums.LeagueStatus) ([]models.League, error)
 	// retrieves all leagues that allow transfer credits.
 	GetLeaguesThatAllowTransfers() ([]models.League, error)
 }
@@ -48,6 +50,15 @@ func NewLeagueRepository(db *gorm.DB) LeagueRepository {
 	return &leagueRepositoryImpl{
 		db: db,
 	}
+}
+
+// retrieves all leagues with any of the specified statuses.
+func (r *leagueRepositoryImpl) GetLeaguesByStatuses(statuses []enums.LeagueStatus) ([]models.League, error) {
+	var leagues []models.League
+	if err := r.db.Where("status IN ?", statuses).Find(&leagues).Error; err != nil {
+		return nil, err
+	}
+	return leagues, nil
 }
 
 // create a new league

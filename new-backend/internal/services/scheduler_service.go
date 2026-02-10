@@ -88,13 +88,14 @@ func (s *schedulerServiceImpl) Start() error {
 		return err
 	}
 
-	// Schedule LeagueWeeklyTick for ongoing regular season leagues
-	ongoingRegularSeasonLeagues, err := s.leagueRepo.GetAllLeaguesByStatus(enums.LeagueStatusRegularSeason)
+	// Schedule LeagueWeeklyTick for ongoing regular season leagues and leagues currently in transfer window
+	// If the server restarts during a transfer window, we still need to make sure the next tick is scheduled.
+	ongoingLeagues, err := s.leagueRepo.GetLeaguesByStatuses([]enums.LeagueStatus{enums.LeagueStatusRegularSeason, enums.LeagueStatusTransferWindow})
 	if err != nil {
-		log.Printf("LOG: (SchedulerService: Start) - error fetching ongoing regular season leagues: %v\n", err)
+		log.Printf("LOG: (SchedulerService: Start) - error fetching ongoing regular season/transfer window leagues: %v\n", err)
 		return err
 	}
-	for _, league := range ongoingRegularSeasonLeagues {
+	for _, league := range ongoingLeagues {
 		if league.NextWeeklyTick != nil {
 			// If a tick is in the past, execute it immediately. Otherwise, schedule it for its designated time.
 			executeAt := *league.NextWeeklyTick
@@ -165,9 +166,9 @@ func (s *schedulerServiceImpl) Start() error {
 		windowEndTime := windowStartTime.Add(time.Duration(windowDuration) * time.Minute)
 
 		newTask := &u.ScheduledTask{
-			ID:        fmt.Sprintf("%d_%s", u.TaskTypeTradingPeriodEnd, league.ID),
+			ID:        fmt.Sprintf("%d_%s", u.TaskTypeTransferPeriodEnd, league.ID),
 			ExecuteAt: windowEndTime,
-			Type:      u.TaskTypeTradingPeriodEnd,
+			Type:      u.TaskTypeTransferPeriodEnd,
 			Payload: u.PayloadTransferPeriodEnd{
 				LeagueID: league.ID,
 			},
@@ -184,9 +185,9 @@ func (s *schedulerServiceImpl) Start() error {
 		nextWindowStartTime := league.Format.NextTransferWindowStart
 
 		newTask := &u.ScheduledTask{
-			ID:        fmt.Sprintf("%d_%s", u.TaskTypeTradingPeriodStart, league.ID),
+			ID:        fmt.Sprintf("%d_%s", u.TaskTypeTransferPeriodStart, league.ID),
 			ExecuteAt: *nextWindowStartTime,
-			Type:      u.TaskTypeTradingPeriodStart,
+			Type:      u.TaskTypeTransferPeriodStart,
 			Payload: u.PayloadTransferPeriodStart{
 				LeagueID: league.ID,
 			},
@@ -303,7 +304,7 @@ func (s *schedulerServiceImpl) executeTask(task *u.ScheduledTask) {
 			log.Printf("ERROR: (SchedulerService: executeTask) - Invalid payload type for DraftTurnTimeout task ID %s\n", task.ID)
 		}
 
-	case u.TaskTypeTradingPeriodEnd:
+	case u.TaskTypeTransferPeriodEnd:
 		if payload, ok := task.Payload.(u.PayloadTransferPeriodEnd); ok {
 			log.Printf("LOG: (SchedulerService: executeTask) - Transfer period end for LeagueID: %s\n", payload.LeagueID)
 			if s.transferService == nil {
@@ -319,9 +320,9 @@ func (s *schedulerServiceImpl) executeTask(task *u.ScheduledTask) {
 			log.Printf("ERROR: (SchedulerService: executeTask) - Invalid payload type for TransferPeriodEnd task ID %s\n", task.ID)
 		}
 
-	case u.TaskTypeTradingPeriodStart:
+	case u.TaskTypeTransferPeriodStart:
 		if payload, ok := task.Payload.(u.PayloadTransferPeriodStart); ok {
-			log.Printf("LOG: (SchedulerService: executeTask) - Accrue credits for LeagueID: %s\n", payload.LeagueID)
+			log.Printf("LOG: (SchedulerService: executeTask) - Transfer Window Start for LeagueID: %s\n", payload.LeagueID)
 			if s.transferService == nil {
 				log.Printf("ERROR: (SchedulerService: executeTask) - TransferService is not set. Cannot start transfer period for LeagueID: %s\n", payload.LeagueID)
 				return
@@ -331,7 +332,7 @@ func (s *schedulerServiceImpl) executeTask(task *u.ScheduledTask) {
 				return
 			}
 		} else {
-			log.Printf("ERROR: (SchedulerService: executeTask) - Invalid payload type for AccrueCredits task ID %s. Expected PayloadTransferCreditAccrual.\n", task.ID)
+			log.Printf("ERROR: (SchedulerService: executeTask) - Invalid payload type for StartTransferPeriod task ID %s. Expected PayloadTransferCreditAccrual.\n", task.ID)
 		}
 	case u.TaskTypeLeagueWeeklyTick:
 		if payload, ok := task.Payload.(u.PayloadLeagueWeeklyTick); ok {

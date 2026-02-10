@@ -12,7 +12,7 @@ import { getPlayerSlug } from '../utils/nameFormatter';
 import { Cog6ToothIcon, ClipboardDocumentIcon, PencilSquareIcon, CheckIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 
 const Dashboard: React.FC = () => {
-    const { currentLeague, currentPlayer, refreshLeague, loading: leagueLoading, error: leagueError } = useLeague();
+    const { currentLeague, currentPlayer, loading: leagueLoading, error: leagueError } = useLeague();
 
     const [players, setPlayers] = useState<Player[]>([]);
     const [roster, setRoster] = useState<DraftedPokemon[]>([]);
@@ -307,7 +307,7 @@ const Dashboard: React.FC = () => {
                     leagueName={currentLeague.Name}
                     initialInLeagueName={currentPlayer.InLeagueName}
                     initialTeamName={currentPlayer.TeamName}
-                    onSuccess={() => {}}
+                    onSuccess={() => { }}
                 />
             )}
         </Layout>
