@@ -13,23 +13,23 @@ import (
 
 // League defines the structure of a League
 type League struct {
-	ID                  uuid.UUID          `gorm:"type:uuid;primaryKey;default:gen_random_uuid();column:id" json:"ID"`
-	Name                string             `gorm:"not null;column:name" json:"Name"`
-	StartDate           time.Time          `gorm:"not null;column:start_date" json:"StartDate"`
-	EndDate             *time.Time         `gorm:"column:end_date" json:"EndDate"` // this is set when the league is cancelled or actualy ends, nil otherwise
-	RulesetDescription  string             `gorm:"type:text;column:ruleset_description" json:"RulesetDescription"`
-	Status              enums.LeagueStatus `gorm:"type:varchar(50);not null;default:'pending';column:status" json:"Status"`
-	PlayerCount         int                `gorm:"column:player_count" json:"PlayerCount"`
-	MaxPokemonPerPlayer int                `gorm:"not null;default:0;column:max_pokemon_per_player" json:"MaxPokemonPerPlayer"`
-	MinPokemonPerPlayer int                `gorm:"not null;default:0;column:min_pokemon_per_player" json:"MinPokemonPerPlayer"`
-	StartingDraftPoints int                `gorm:"not null;default:140;column:starting_draft_points" json:"StartingDraftPoints"`
-	Format              *LeagueFormat      `gorm:"type:jsonb;column:format" json:"Format,omitempty"`
-	CreatedAt           *time.Time         `gorm:"type:timestamp with time zone;column:created_at" json:"CreatedAt"`
-	UpdatedAt           *time.Time         `gorm:"type:timestamp with time zone;column:updated_at" json:"UpdatedAt"`
-	DeletedAt           gorm.DeletedAt     `gorm:"index;column:deleted_at" json:"-"`
-	DiscordWebhookURL   *string            `gorm:"column:discord_webhook_url" json:"DiscordWebhookURL"`
-	CurrentWeekNumber   int                `gorm:"not null;default:0;column:current_week_number" json:"CurrentWeekNumber"` // starts with 1, 0 is invalid and used when not relevant
-	NextWeeklyTick      *time.Time         `gorm:"type:timestamp with time zone;column:next_weekly_tick" json:"NextWeeklyTick"`
+	ID                     uuid.UUID          `gorm:"type:uuid;primaryKey;default:gen_random_uuid();column:id" json:"ID"`
+	Name                   string             `gorm:"not null;column:name" json:"Name"`
+	StartDate              time.Time          `gorm:"not null;column:start_date" json:"StartDate"`
+	EndDate                *time.Time         `gorm:"column:end_date" json:"EndDate"` // this is set when the league is cancelled or actualy ends, nil otherwise
+	RulesetDescription     string             `gorm:"type:text;column:ruleset_description" json:"RulesetDescription"`
+	Status                 enums.LeagueStatus `gorm:"type:varchar(50);not null;default:'PENDING';column:status" json:"Status"`
+	PlayerCount            int                `gorm:"column:player_count" json:"PlayerCount"`
+	MaxPokemonPerPlayer    int                `gorm:"not null;default:0;column:max_pokemon_per_player" json:"MaxPokemonPerPlayer"`
+	MinPokemonPerPlayer    int                `gorm:"not null;default:0;column:min_pokemon_per_player" json:"MinPokemonPerPlayer"`
+	StartingDraftPoints    int                `gorm:"not null;default:100;column:starting_draft_points" json:"StartingDraftPoints"`
+	Format                 *LeagueFormat      `gorm:"type:jsonb;column:format" json:"Format,omitempty"`
+	CreatedAt              *time.Time         `gorm:"type:timestamp with time zone;column:created_at" json:"CreatedAt"`
+	UpdatedAt              *time.Time         `gorm:"type:timestamp with time zone;column:updated_at" json:"UpdatedAt"`
+	DeletedAt              gorm.DeletedAt     `gorm:"index;column:deleted_at" json:"-"`
+	DiscordWebhookURL      *string            `gorm:"column:discord_webhook_url" json:"DiscordWebhookURL"`
+	CurrentWeekNumber      int                `gorm:"not null;default:0;column:current_week_number" json:"CurrentWeekNumber"` // starts with 1, 0 is invalid and used when not relevant
+	NextWeeklyTick         *time.Time         `gorm:"type:timestamp with time zone;column:next_weekly_tick" json:"NextWeeklyTick"`
 	RegularSeasonStartDate *time.Time         `gorm:"type:timestamp with time zone;column:regular_season_start_date" json:"RegularSeasonStartDate"`
 
 	NewPlayerGroupNumber int `gorm:"default:1;column:new_player_group_count" json:"NewPlayerGroupNumber"` // used to assign a group number for new players
@@ -62,7 +62,7 @@ type LeagueFormat struct {
 	TransferWindowDuration      int  `json:"TransferWindowDuration" gorm:"column:transfer_window_duration"`
 	DropCost                    int  `json:"DropCost" gorm:"column:drop_cost"`
 	PickupCost                  int  `json:"PickupCost" gorm:"column:pickup_cost"`
-	// NextTransferWindowStart stores the next occurence of a trasnfer window
+	// NextTransferWindowStart stores the next occurence of a transfer window
 	// if league is in a transfer window, NextTransferWindowStart will store the start time of the window
 	// NextTransferWindowStart is updated at the *end* of a transfer window or when the season/bracket starts
 	NextTransferWindowStart *time.Time `gorm:"type:timestamp with time zone;column:next_transfer_window_start" json:"NextTransferWindowStart"`
@@ -103,7 +103,7 @@ func (f *LeagueFormat) Scan(value any) error {
 	if val, ok := m["playoff_seeding_type"].(string); ok {
 		f.PlayoffSeedingType = enums.LeaguePlayoffSeedingType(val)
 	}
-	if val, ok := m["allow_transfer"].(bool); ok {
+	if val, ok := m["allow_transfers"].(bool); ok {
 		f.AllowTransfers = val
 	}
 	if val, ok := m["transfers_cost_credits"].(bool); ok {
@@ -147,8 +147,8 @@ func (f LeagueFormat) Value() (driver.Value, error) {
 		"playoff_participant_count":      f.PlayoffParticipantCount,
 		"playoff_byes_count":             f.PlayoffByesCount,
 		"playoff_seeding_type":           f.PlayoffSeedingType,
-		"allow_trading":                  f.AllowTransfers,
-		"allow_transfer_credits":         f.TransfersCostCredits,
+		"allow_transfers":                f.AllowTransfers,
+		"transfers_cost_credits":         f.TransfersCostCredits,
 		"transfer_credits_per_window":    f.TransferCreditsPerWindow,
 		"transfer_credit_cap":            f.TransferCreditCap,
 		"transfer_window_frequency_days": f.TransferWindowFrequencyDays,

@@ -85,6 +85,7 @@ export default function NavBar({ page }: NavBarProps) {
                             <img alt="Logo" src={logoPic} className="h-8 w-auto" />
                             <LeagueDropdown
                                 currentLeague={currentLeague}
+                                currentPlayer={currentPlayer} // Pass currentPlayer
                                 userLeagues={userLeagues}
                                 loading={userLeaguesLoading}
                                 error={userLeaguesError}

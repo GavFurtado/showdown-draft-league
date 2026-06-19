@@ -24,11 +24,14 @@ type LeagueService interface {
 	GetLeaguesByCommissioner(userID uuid.UUID, currentUser *models.User) ([]models.League, error)
 	// fetches all Leagues where the given userID is a player.
 	GetLeaguesByUser(userID uuid.UUID, currentUser *models.User) ([]models.League, error)
+
+	StartRegularSeason(leagueID uuid.UUID) error
+
 	ProcessWeeklyTick(leagueID uuid.UUID) error
+
 	SetSchedulerService(schedulerService SchedulerService)
 	SetGameService(gameService GameService)
 	SetTransferService(transferService TransferService)
-	StartRegularSeason(leagueID uuid.UUID) error
 }
 
 type leagueServiceImpl struct {
@@ -99,7 +102,7 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueC
 
 	newPlayerGroupNumber := 1
 	if input.Format.GroupCount > 1 {
-		// owner is first player and auto assigned 1. So next player will have to be group 2
+		// Owner is the first player and auto assigned 1. So, next player will have to be group 2
 		// will need to be changed if we decide to make use of Player.IsParticapating
 		newPlayerGroupNumber = 2
 	}
@@ -108,9 +111,12 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueC
 		Name:                 input.Name,
 		RulesetDescription:   input.RulesetDescription,
 		MaxPokemonPerPlayer:  input.MaxPokemonPerPlayer,
+		MinPokemonPerPlayer:  input.MinPokemonPerPlayer,
 		StartingDraftPoints:  input.StartingDraftPoints,
-		StartDate:            input.StartDate,
+		Status:               enums.LeagueStatusSetup,
+		StartDate:            time.Now(),
 		NewPlayerGroupNumber: newPlayerGroupNumber,
+		PlayerCount:          1,
 		Format: &models.LeagueFormat{
 			SeasonType:                  input.Format.SeasonType,
 			GroupCount:                  input.Format.GroupCount,
@@ -173,8 +179,7 @@ func (s *leagueServiceImpl) GetLeagueByIDForUser(userID, leagueID uuid.UUID) (*m
 	return league, nil
 }
 
-// TODO: rename to Owner
-// gets all Leagues where userID is the commissioner
+// gets all Leagues where userID is the owner
 func (s *leagueServiceImpl) GetLeaguesByCommissioner(
 	userID uuid.UUID,
 	currentUser *models.User,

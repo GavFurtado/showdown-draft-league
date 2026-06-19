@@ -321,6 +321,10 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 	nextPowerOfTwo := s.getClosestPowerOfTwo(numParticipants)
 	naturalByesNeeded := nextPowerOfTwo - numParticipants
 
+	if league.Format.PlayoffSeedingType == enums.LeaguePlayoffSeedingTypeFullySeeded {
+		return nil, fmt.Errorf("%w: FULLY_SEEDED brackets not supported for single elimination. Use BYES_ONLY", common.ErrInvalidLeagueConfiguration)
+	}
+
 	if naturalByesNeeded > 0 && seedingType == enums.LeaguePlayoffSeedingTypeStandard {
 		return nil, fmt.Errorf("%w: Cannot construct single elimination bracket. Either add %d participants or enable 'byes' for %d players",
 			common.ErrInvalidLeagueConfiguration,

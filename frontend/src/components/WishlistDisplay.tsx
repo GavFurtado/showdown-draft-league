@@ -6,7 +6,7 @@ import { PokemonListItem } from './PokemonListItem';
 
 export const WishlistDisplay: React.FC<WishlistDisplayProps> = ({ allPokemon, wishlist, removePokemonFromWishlist, clearWishlist, isMyTurn, onDraft }) => {
 
-    console.log("WishlistDisplay: current wishlist state", wishlist);
+    // console.log("WishlistDisplay: current wishlist state", wishlist);
 
     const wishlistedPokemon = allPokemon.filter(lp => wishlist.includes(lp.ID));
     const getTotalCostOfWishlistedPokemon = (wishlistedPokemon: LeaguePokemon[]) => {

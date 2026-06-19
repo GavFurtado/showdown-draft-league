@@ -29,7 +29,8 @@ export default [
             ...tsPlugin.configs.recommended.rules,
             ...reactHooks.configs.recommended.rules,
             'indent': ['error', 4],
-            'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+            'no-unused-vars': 'off',
+            '@typescript-eslint/no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
             'react-refresh/only-export-components': [
                 'warn',
                 { allowConstantExport: true },

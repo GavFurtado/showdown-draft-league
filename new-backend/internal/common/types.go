@@ -1,8 +1,6 @@
 package common
 
 import (
-	"time"
-
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/google/uuid"
 )
@@ -22,7 +20,6 @@ type LeagueCreateRequestDTO struct {
 	MaxPokemonPerPlayer int                 `json:"MaxPokemonPerPlayer" binding:"gte=1,max=20" gorm:"column:max_pokemon_per_player"`
 	MinPokemonPerPlayer int                 `json:"MinPokemonPerPlayer" binding:"gte=0,max=20" gorm:"column:min_pokemon_per_player"`
 	StartingDraftPoints int                 `json:"StartingDraftPoints" binding:"gte=20,max=150" gorm:"column:starting_draft_points"`
-	StartDate           time.Time           `json:"StartDate" binding:"required" gorm:"column:start_date"`
 	Format              models.LeagueFormat `json:"Format" gorm:"column:format"`
 }
 

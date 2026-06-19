@@ -133,7 +133,7 @@ func (c *gameControllerImpl) ReportGame(ctx *gin.Context) {
 	dto.ReporterID = reporterIDStr.(uuid.UUID)
 
 	if err := c.gameService.ReportGameResult(gameID, &dto); err != nil {
-		log.Printf("ERROR: (Controller: FinalizeGameResult) - %s\n", err.Error())
+		log.Printf("ERROR: (Controller: ReportGame) - %s\n", err.Error())
 		switch {
 		case errors.Is(err, common.ErrConflict):
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "This game is either already finalized or is pending approval"})

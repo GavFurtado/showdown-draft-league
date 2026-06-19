@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Draft, League, Player } from '../api/data_interfaces';
+import { calculateTurnsUntilNextPick } from '../utils/draftUtils';
 
 export const useDraftTimer = (currentDraft: Draft | null | undefined, currentLeague: League | null | undefined, currentPlayer: Player | null | undefined, allPlayers: Player[] | undefined) => {
     const [timeRemaining, setTimeRemaining] = useState<string>('');
@@ -38,37 +39,7 @@ export const useDraftTimer = (currentDraft: Draft | null | undefined, currentLea
     let nextTurnInXTurns: number | null = null;
 
     if (currentDraft && currentLeague && currentPlayer && allPlayers && allPlayers.length > 0) {
-        const currentOverallPick = currentDraft.CurrentPickOnClock;
-        const maxRounds = currentLeague.MaxPokemonPerPlayer; // Assuming MaxPokemonPerPlayer is total rounds
-        const numPlayers = allPlayers.length;
-
-        // IMPORTANT: This assumes allPlayers is already sorted by initial draft order.
-        // If not, this calculation will be incorrect. The backend League model has Players []Player,
-        // but no explicit order. For now, we assume the order in allPlayers is the initial draft order.
-        const playersInDraftOrder = allPlayers;
-
-        let foundNextPick = false;
-        // Start searching from the current overall pick + 1
-        for (let overallPick = currentOverallPick + 1; overallPick <= maxRounds * numPlayers; overallPick++) {
-            const round = Math.ceil(overallPick / numPlayers);
-            const pickInRoundIndex = (overallPick - 1) % numPlayers;
-
-            let roundOrder: (Player | undefined)[] = [];
-            if (currentLeague.Format.IsSnakeRoundDraft && round % 2 === 0) {
-                roundOrder = [...playersInDraftOrder].reverse();
-            } else {
-                roundOrder = [...playersInDraftOrder];
-            }
-
-            const playerPicking = roundOrder[pickInRoundIndex];
-            if (!playerPicking) continue;
-
-            if (playerPicking && playerPicking.ID === currentPlayer.ID) {
-                nextTurnInXTurns = (overallPick - currentOverallPick) - 1;
-                foundNextPick = true;
-                break;
-            }
-        }
+        nextTurnInXTurns = calculateTurnsUntilNextPick(currentDraft, currentLeague, currentPlayer, allPlayers);
     }
 
     return { timeRemaining, shouldShowDraftStatus, nextTurnInXTurns };

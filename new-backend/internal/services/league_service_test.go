@@ -34,14 +34,12 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 	)
 
 	testUserID := uuid.New()
-	startDate := time.Now()
 
 	input := &common.LeagueCreateRequestDTO{
 		Name:                "Test League",
 		RulesetDescription:  "Test rules",
 		MaxPokemonPerPlayer: 6,
 		StartingDraftPoints: 1000,
-		StartDate:           startDate,
 		Format: models.LeagueFormat{
 			SeasonType:               "ROUND_ROBIN_ONLY",
 			GroupCount:               1, // Changed from 4 to 1
@@ -58,13 +56,13 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 
 	t.Run("Successfully creates league and owner player", func(t *testing.T) {
 		expectedLeague := &models.League{
-			Name:                input.Name,
-			RulesetDescription:  input.RulesetDescription,
-			MaxPokemonPerPlayer: input.MaxPokemonPerPlayer,
-			StartingDraftPoints: input.StartingDraftPoints,
-			StartDate:           input.StartDate,
+			Name:                 input.Name,
+			RulesetDescription:   input.RulesetDescription,
+			MaxPokemonPerPlayer:  input.MaxPokemonPerPlayer,
+			StartingDraftPoints:  input.StartingDraftPoints,
+			StartDate:            time.Now(),
 			NewPlayerGroupNumber: 1, // Service sets this to 1 when GroupCount is 1
-			Format:              &input.Format,
+			Format:               &input.Format,
 		}
 		createdLeague := *expectedLeague
 		createdLeague.ID = uuid.New()
@@ -139,13 +137,13 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 
 	t.Run("Fails if CreatePlayer returns error", func(t *testing.T) {
 		expectedLeague := &models.League{
-			Name:                input.Name,
-			RulesetDescription:  input.RulesetDescription,
-			MaxPokemonPerPlayer: input.MaxPokemonPerPlayer,
-			StartingDraftPoints: input.StartingDraftPoints,
-			StartDate:           input.StartDate,
+			Name:                 input.Name,
+			RulesetDescription:   input.RulesetDescription,
+			MaxPokemonPerPlayer:  input.MaxPokemonPerPlayer,
+			StartingDraftPoints:  input.StartingDraftPoints,
+			StartDate:            time.Now(),
 			NewPlayerGroupNumber: 1, // Must match the service's logic
-			Format:              &input.Format,
+			Format:               &input.Format,
 		}
 		createdLeague := *expectedLeague
 		createdLeague.ID = uuid.New()
@@ -372,4 +370,3 @@ func TestLeagueService_GetLeaguesByUser(t *testing.T) {
 		mockLeagueRepo.AssertExpectations(t)
 	})
 }
-

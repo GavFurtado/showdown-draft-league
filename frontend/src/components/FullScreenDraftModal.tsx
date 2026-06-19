@@ -63,7 +63,7 @@ interface PlayerPaneProps {
 
 const PlayerPane: React.FC<PlayerPaneProps> = ({ player, picks, position, authenticatedPlayerId, onClockPlayerId, currentPickNumbersOnClock }: PlayerPaneProps) => {
     const isOnClock = player?.ID === onClockPlayerId;
-    console.log(`PlayerPane: player ID: ${player?.ID}, onClockPlayerId: ${onClockPlayerId}, isOnClock: ${isOnClock}`);
+    // console.log(`PlayerPane: player ID: ${player?.ID}, onClockPlayerId: ${onClockPlayerId}, isOnClock: ${isOnClock}`);
     const getTransform = () => {
         switch (position) {
             case 'left':

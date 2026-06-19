@@ -36,8 +36,10 @@ type LeagueRepository interface {
 	GetLeagueStatus(leagueID uuid.UUID) (enums.LeagueStatus, error)
 	// retrieves all leagues with a specific status.
 	GetAllLeaguesByStatus(status enums.LeagueStatus) ([]models.League, error)
+	// retrieves all leagues with any of the specified statuses.
+	GetLeaguesByStatuses(statuses []enums.LeagueStatus) ([]models.League, error)
 	// retrieves all leagues that allow transfer credits.
-	GetLeaguesThatAllowTransferCredits() ([]models.League, error)
+	GetLeaguesThatAllowTransfers() ([]models.League, error)
 }
 
 type leagueRepositoryImpl struct {
@@ -48,6 +50,15 @@ func NewLeagueRepository(db *gorm.DB) LeagueRepository {
 	return &leagueRepositoryImpl{
 		db: db,
 	}
+}
+
+// retrieves all leagues with any of the specified statuses.
+func (r *leagueRepositoryImpl) GetLeaguesByStatuses(statuses []enums.LeagueStatus) ([]models.League, error) {
+	var leagues []models.League
+	if err := r.db.Where("status IN ?", statuses).Find(&leagues).Error; err != nil {
+		return nil, err
+	}
+	return leagues, nil
 }
 
 // create a new league
@@ -78,7 +89,6 @@ func (r *leagueRepositoryImpl) GetLeagueByID(leagueID uuid.UUID) (*models.League
 	// Preload will load the associated relationships as opposed to lazy loading
 	var league models.League
 
-	// Removed Preload("CommissionerUser") as it no longer exists
 	err := r.db.
 		Preload("Players").
 		Preload("Players.User").
@@ -222,9 +232,9 @@ func (r *leagueRepositoryImpl) GetAllLeaguesByStatus(status enums.LeagueStatus) 
 }
 
 // retrieves all leagues that allow transfer credits.
-func (r *leagueRepositoryImpl) GetLeaguesThatAllowTransferCredits() ([]models.League, error) {
+func (r *leagueRepositoryImpl) GetLeaguesThatAllowTransfers() ([]models.League, error) {
 	var leagues []models.League
-	// Preload the LeagueFormat to access AllowTransferCredits
+	// Preload the LeagueFormat to access AllowTransfer
 	if err := r.db.Where("format->>'allow_transfers' = ?", "true").Find(&leagues).Error; err != nil {
 		return nil, err
 	}

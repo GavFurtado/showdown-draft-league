@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useLeague } from '../context/LeagueContext';
 import { getPlayersByLeague } from '../api/api';
@@ -9,11 +10,14 @@ import { DefensiveTypeChart } from '../components/DefensiveTypeChart';
 import TeamPokemonView from '../components/TeamPokemonView';
 import SpeedTable from '../components/SpeedTable';
 import { useDraftHistory } from '../context/DraftHistoryContext';
+import { getPlayerSlug } from '../utils/nameFormatter';
 
 // Main Teamsheets Page Component
 const Teamsheets: React.FC = () => {
     const { currentLeague, currentDraft, loading: leagueLoading } = useLeague();
     const { draftHistory, loading: historyLoading, error: historyError } = useDraftHistory();
+    const location = useLocation();
+    const navigate = useNavigate();
 
     const [players, setPlayers] = useState<Player[]>([]);
     const [loading, setLoading] = useState(true);
@@ -38,9 +42,24 @@ const Teamsheets: React.FC = () => {
                 const sortedPlayers = response.data.sort((a: Player, b: Player) => a.InLeagueName.localeCompare(b.InLeagueName));
                 setPlayers(sortedPlayers);
 
-                if (sortedPlayers.length > 0) {
-                    setSelectedPlayer(sortedPlayers[0]);
+                // Initial selection based on hash
+                const hash = location.hash.replace('#', '');
+                let initialPlayer = null;
+
+                if (hash) {
+                    initialPlayer = sortedPlayers.find(p => getPlayerSlug(p.InLeagueName) === hash) || null;
                 }
+
+                // Default to first player if no hash match or no hash
+                if (!initialPlayer && sortedPlayers.length > 0) {
+                    initialPlayer = sortedPlayers[0];
+                }
+
+                // Only set if we found something (or defaulted)
+                if (initialPlayer) {
+                    setSelectedPlayer(initialPlayer);
+                }
+
             } catch (err) {
                 if (axios.isAxiosError(err) && err.response) {
                     setError(err.response.data.error || "Failed to load players.");
@@ -54,7 +73,26 @@ const Teamsheets: React.FC = () => {
         };
 
         fetchPlayers();
-    }, [currentLeague?.ID]);
+    }, [currentLeague?.ID]); // location.hash is handled by a separate effect for updates
+
+    // Handle hash changes (back/forward navigation)
+    useEffect(() => {
+        if (players.length === 0) return;
+
+        const hash = location.hash.replace('#', '');
+        if (hash) {
+            const found = players.find(p => getPlayerSlug(p.InLeagueName) === hash);
+            if (found && found.ID !== selectedPlayer?.ID) {
+                setSelectedPlayer(found);
+            }
+        }
+    }, [location.hash, players]);
+
+    const handlePlayerClick = (player: Player) => {
+        setSelectedPlayer(player);
+        navigate(`#${getPlayerSlug(player.InLeagueName)}`);
+    };
+
 
     const selectedPlayerRoster = useMemo(() => {
         if (!selectedPlayer || !draftHistory) {
@@ -72,7 +110,7 @@ const Teamsheets: React.FC = () => {
         return (
             <Layout variant="full">
                 <div className="grow flex items-center justify-center">
-                    <div className="bg-white p-8 rounded-lg shadow-md text-center">
+                    <div className="bg-white p-8 rounded-lg shadow-md text-center mt-2">
                         <h1 className="text-2xl font-bold text-gray-800 mb-4">Draft Not Started</h1>
                         <p className="text-gray-600">The league has not yet begun and is being set up. This page is unavailable.</p>
                     </div>
@@ -93,7 +131,7 @@ const Teamsheets: React.FC = () => {
                         {players.map(player => (
                             <li key={player.ID}>
                                 <button
-                                    onClick={() => setSelectedPlayer(player)}
+                                    onClick={() => handlePlayerClick(player)}
                                     className={`w-full text-left p-3 rounded-lg transition-all duration-150 border shadow-sm ${selectedPlayer?.ID === player.ID
                                         ? 'border-accent-primary bg-accent-primary text-text-on-accent font-semibold shadow-inner'
                                         : 'border-gray-200 bg-white text-text-primary hover:text-white hover:bg-accent-primary-hover'}`}>

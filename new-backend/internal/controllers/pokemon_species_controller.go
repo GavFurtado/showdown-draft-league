@@ -59,7 +59,6 @@ func (c *pokemonSpeciesControllerImpl) GetAllPokemonSpecies(ctx *gin.Context) {
 
 // GET api/pokemon_species/:id
 // GetPokemonSpeciesByID returns a PokemonSpecies by it's internal ID
-// NOTE: this currently
 func (c *pokemonSpeciesControllerImpl) GetPokemonSpeciesByID(ctx *gin.Context) {
 	pokemonIDstr := ctx.Param("id")
 	pokemonID, err := strconv.ParseInt(pokemonIDstr, 10, 64)

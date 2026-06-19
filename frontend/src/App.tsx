@@ -1,16 +1,18 @@
 import './index.css';
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
-import Login from "./pages/login";
 import Navbar from "./components/navbar";
-import Dashboard from './pages/dashboard';
 
 import { LeagueProvider } from './context/LeagueContext';
 import { UserProvider } from './context/UserContext';
-import Draftboard from './pages/draftboard';
-import TeamSheets from './pages/teamsheets';
+import Dashboard from './pages/Dashboard';
+import Login from "./pages/Login";
+import Draftboard from './pages/Draftboard';
+import TeamSheets from './pages/Teamsheets';
 import DraftHistory from './pages/DraftHistory';
 import JoinLeague from './pages/JoinLeague';
+import CreateLeague from './pages/CreateLeague';
 import { DraftHistoryProvider } from './context/DraftHistoryContext';
+import MyLeagues from './pages/MyLeagues';
 
 function App() {
     return (
@@ -24,7 +26,8 @@ function App() {
                 {/* --- Protected Global Routes (user must be logged in) --- */}
                 {/* this route would list all leagues the user is a part off */}
                 <Route element={<UserProviderWrapper />}>
-                    <Route path='/my-leagues' element={null} />
+                    <Route path='/my-leagues' element={<MyLeagues />} />
+                    <Route path='/create-league' element={<CreateLeague />} />
                     <Route path='/:leagueId/join' element={<JoinLeague />} />
                 </Route>
 
@@ -63,7 +66,6 @@ function UserAndLeagueProviderWrapper() {
 
                         {/* --- League Staff Routes (Protected by league-specific roles) */}
                         {/* placeholder examples */}
-
                         {/* <Route path='staff/edit-rules' element={<LeagueStaffRouteGuard role="owner"><EditRules /></LeagueStaffRouteGuard>} /> */}
                     </Routes>
                 </DraftHistoryProvider>

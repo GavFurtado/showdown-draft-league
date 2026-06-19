@@ -1,5 +1,4 @@
 import React from 'react';
-import { DraftedPokemon } from '../api/data_interfaces';
 import Layout from '../components/Layout';
 import { format } from 'date-fns';
 import { formatPokemonName } from '../utils/nameFormatter';
@@ -18,7 +17,7 @@ const DraftHistory: React.FC = () => {
         return (
             <Layout variant="full">
                 <div className="grow flex items-center justify-center">
-                    <div className="bg-white p-8 rounded-lg shadow-md text-center">
+                    <div className="bg-white p-8 rounded-lg shadow-md text-center mt-2">
                         <h1 className="text-2xl font-bold text-gray-800 mb-4">Draft Not Started</h1>
                         <p className="text-gray-600">The league has not yet begun and is being set up. This page is unavailable.</p>
                     </div>
@@ -84,7 +83,7 @@ const DraftHistory: React.FC = () => {
                                             <tr key={item.ID}>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center">
-                                                        <div className="flex-shrink-0 h-10 w-10">
+                                                        <div className="shrink-0 h-10 w-10">
                                                             <img className="h-10 w-10 rounded-full" src={item.PokemonSpecies.Sprites.FrontDefault || item.PokemonSpecies.Sprites.OfficialArtwork || '/placeholder-roster.png'} alt={item.PokemonSpecies.Name} />
                                                         </div>
                                                         <div className="ml-4">
