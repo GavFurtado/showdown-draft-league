@@ -127,7 +127,7 @@ func (dc *draftControllerImpl) MakePick(c *gin.Context) {
 		return
 	}
 
-	var input requests.DraftMakePickRequest
+	var input requests.DraftMakePickRequestDTO
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": types.ErrInvalidInput.Error()})
 		return

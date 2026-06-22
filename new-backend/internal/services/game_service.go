@@ -24,8 +24,8 @@ type GameService interface {
 	GenerateRegularSeasonGames(leagueID uuid.UUID) error
 	GeneratePlayoffBracket(leagueID uuid.UUID) error
 
-	ReportGameResult(gameID uuid.UUID, dto *requests.ReportGameRequest) error
-	FinalizeGameResult(gameID uuid.UUID, dto *requests.FinalizeGameRequest) error
+	ReportGameResult(gameID uuid.UUID, dto *requests.ReportGameRequestDTO) error
+	FinalizeGameResult(gameID uuid.UUID, dto *requests.FinalizeGameRequestDTO) error
 	SetLeagueService(leagueService LeagueService)
 }
 
@@ -87,7 +87,7 @@ func (s *gameServiceImpl) GetGamesByPlayer(playerID uuid.UUID) ([]models.Game, e
 }
 
 // ReportGameResult allows a player to report the result of a game.
-func (s *gameServiceImpl) ReportGameResult(gameID uuid.UUID, dto *requests.ReportGameRequest) error {
+func (s *gameServiceImpl) ReportGameResult(gameID uuid.UUID, dto *requests.ReportGameRequestDTO) error {
 	game, err := s.gameRepo.GetGameByID(gameID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -131,7 +131,7 @@ func (s *gameServiceImpl) ReportGameResult(gameID uuid.UUID, dto *requests.Repor
 }
 
 // FinalizeGameResult allows league staff to approve, submit, or retroactively edit a game result.
-func (s *gameServiceImpl) FinalizeGameResult(gameID uuid.UUID, dto *requests.FinalizeGameRequest) error {
+func (s *gameServiceImpl) FinalizeGameResult(gameID uuid.UUID, dto *requests.FinalizeGameRequestDTO) error {
 	// Fetch game to determine loser ID
 	game, err := s.gameRepo.GetGameByID(gameID)
 	if err != nil {

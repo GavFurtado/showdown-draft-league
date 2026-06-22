@@ -1,7 +1,7 @@
 package mock_services
 
 import (
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/google/uuid"
@@ -13,7 +13,7 @@ type MockPlayerService struct {
 	mock.Mock
 }
 
-func (m *MockPlayerService) CreatePlayerHandler(input *types.PlayerCreateRequest) (*models.Player, error) {
+func (m *MockPlayerService) CreatePlayerHandler(input *requests.PlayerCreateRequestDTO) (*models.Player, error) {
 	args := m.Called(input)
 	var result *models.Player
 	if args.Get(0) != nil {

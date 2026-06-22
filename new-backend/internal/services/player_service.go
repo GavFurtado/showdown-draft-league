@@ -16,7 +16,7 @@ import (
 )
 
 type PlayerService interface {
-	CreatePlayerHandler(input *requests.PlayerCreateRequest) (*models.Player, error)
+	CreatePlayerHandler(input *requests.PlayerCreateRequestDTO) (*models.Player, error)
 
 	GetPlayerByIDHandler(playerID uuid.UUID, currentUser *models.User) (*models.Player, error)
 	GetPlayerByUserIDAndLeagueID(userID uuid.UUID, leagueID uuid.UUID) (*models.Player, error)
@@ -54,7 +54,7 @@ func NewPlayerService(
 	}
 }
 
-func (s *playerServiceImpl) CreatePlayerHandler(input *requests.PlayerCreateRequest) (*models.Player, error) {
+func (s *playerServiceImpl) CreatePlayerHandler(input *requests.PlayerCreateRequestDTO) (*models.Player, error) {
 	// fetch League and User details
 	league, err := s.leagueRepo.GetLeagueByID(input.LeagueID)
 	if err != nil {
@@ -156,7 +156,6 @@ func (s *playerServiceImpl) CreatePlayerHandler(input *requests.PlayerCreateRequ
 }
 
 func (s *playerServiceImpl) GetPlayerByIDHandler(playerID uuid.UUID, currentUser *models.User) (*models.Player, error) {
-
 	player, err := s.playerRepo.GetPlayerByID(playerID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -197,7 +196,6 @@ func (s *playerServiceImpl) GetPlayersByLeagueHandler(leagueID, userID uuid.UUID
 func (s *playerServiceImpl) GetPlayersByUserHandler(
 	userID, currentUserID uuid.UUID,
 ) ([]models.Player, error) {
-
 	players, err := s.playerRepo.GetPlayersByUser(userID)
 	if err != nil {
 		log.Printf("Service: GetPlayersByUserHandler - Failed to retrieve players for user %s: %v", userID, err)
@@ -349,7 +347,6 @@ func (s *playerServiceImpl) UpdatePlayerDraftPoints(
 	playerID uuid.UUID,
 	draftPoints *int,
 ) (*models.Player, error) {
-
 	// Fetch the player to verify league context and authorization
 	existingPlayer, err := s.playerRepo.GetPlayerByID(playerID)
 	if err != nil {

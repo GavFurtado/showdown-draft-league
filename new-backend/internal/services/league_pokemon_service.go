@@ -15,9 +15,9 @@ import (
 
 type LeaguePokemonService interface {
 	GetAllPokemonInLeague(currentUser *models.User, leagueID uuid.UUID) ([]models.LeaguePokemon, error)
-	CreatePokemonForLeague(currentUser *models.User, input *requests.LeaguePokemonCreateRequest) (*models.LeaguePokemon, error)
-	BatchCreatePokemonForLeague(currentUser *models.User, inputs []requests.LeaguePokemonCreateRequest) ([]models.LeaguePokemon, error)
-	UpdateLeaguePokemon(currentUser *models.User, input *requests.LeaguePokemonUpdateRequest) (*models.LeaguePokemon, error)
+	CreatePokemonForLeague(currentUser *models.User, input *requests.LeaguePokemonCreateRequestDTO) (*models.LeaguePokemon, error)
+	BatchCreatePokemonForLeague(currentUser *models.User, inputs []requests.LeaguePokemonCreateRequestDTO) ([]models.LeaguePokemon, error)
+	UpdateLeaguePokemon(currentUser *models.User, input *requests.LeaguePokemonUpdateRequestDTO) (*models.LeaguePokemon, error)
 
 	// Consider implementing service methods for GetAvailablePokemonByLeague
 }
@@ -60,7 +60,6 @@ func (s *leaguePokemonServiceImpl) getLeagueByID(leagueID, currentUserID uuid.UU
 
 func (s *leaguePokemonServiceImpl) getPokemonSpeciesByID(pokemonSpeciesID int64) (*models.PokemonSpecies, error) {
 	pokemon, err := s.pokemonSpeciesRepo.GetPokemonSpeciesByID(pokemonSpeciesID)
-
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("(Service: getPokemonSpeciesByID) - pokemon %d species not found: %v\n", pokemonSpeciesID, err)
@@ -99,7 +98,7 @@ func (s *leaguePokemonServiceImpl) GetAllPokemonInLeague(currentUser *models.Use
 // Player Permission required: rbac.PermissionCreateLeaguePokemon
 func (s *leaguePokemonServiceImpl) CreatePokemonForLeague(
 	currentUser *models.User,
-	input *requests.LeaguePokemonCreateRequest,
+	input *requests.LeaguePokemonCreateRequestDTO,
 ) (*models.LeaguePokemon, error) {
 	league, err := s.getLeagueByID(input.LeagueID, currentUser.ID)
 	if err != nil {
@@ -138,7 +137,7 @@ func (s *leaguePokemonServiceImpl) CreatePokemonForLeague(
 // Player Permission required: rbac.PermissionCreateLeaguePokemon
 func (s *leaguePokemonServiceImpl) BatchCreatePokemonForLeague(
 	currentUser *models.User,
-	inputs []requests.LeaguePokemonCreateRequest,
+	inputs []requests.LeaguePokemonCreateRequestDTO,
 ) ([]models.LeaguePokemon, error) {
 	if len(inputs) == 0 {
 		return []models.LeaguePokemon{}, nil
@@ -196,7 +195,7 @@ func (s *leaguePokemonServiceImpl) BatchCreatePokemonForLeague(
 // Player Permission required: rbac.PermissionUpdateLeaguePokemon
 func (s *leaguePokemonServiceImpl) UpdateLeaguePokemon(
 	currentUser *models.User,
-	input *requests.LeaguePokemonUpdateRequest,
+	input *requests.LeaguePokemonUpdateRequestDTO,
 ) (*models.LeaguePokemon, error) {
 	existingLeaguePokemon, err := s.leaguePokemonRepo.GetLeaguePokemonByID(input.LeaguePokemonID)
 	if err != nil {

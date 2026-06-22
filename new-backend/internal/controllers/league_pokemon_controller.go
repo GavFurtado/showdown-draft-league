@@ -46,7 +46,7 @@ func (c *leaguePokemonControllerImpl) CreatePokemonForLeague(ctx *gin.Context) {
 		return
 	}
 
-	var req requests.LeaguePokemonCreateRequest
+	var req requests.LeaguePokemonCreateRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
@@ -83,7 +83,7 @@ func (c *leaguePokemonControllerImpl) BatchCreatePokemonForLeague(ctx *gin.Conte
 		return
 	}
 
-	var req []requests.LeaguePokemonCreateRequest
+	var req []requests.LeaguePokemonCreateRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
@@ -120,7 +120,7 @@ func (c *leaguePokemonControllerImpl) UpdateLeaguePokemon(ctx *gin.Context) {
 		return
 	}
 
-	var req requests.LeaguePokemonUpdateRequest
+	var req requests.LeaguePokemonUpdateRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 	}

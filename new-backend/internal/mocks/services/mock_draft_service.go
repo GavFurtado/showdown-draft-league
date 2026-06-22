@@ -40,7 +40,7 @@ func (m *MockDraftService) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*m
 	return result, args.Error(1)
 }
 
-func (m *MockDraftService) MakePick(currentUser *models.User, leagueID uuid.UUID, input *requests.DraftMakePickRequest) error {
+func (m *MockDraftService) MakePick(currentUser *models.User, leagueID uuid.UUID, input *requests.DraftMakePickRequestDTO) error {
 	args := m.Called(currentUser, leagueID, input)
 	return args.Error(0)
 }

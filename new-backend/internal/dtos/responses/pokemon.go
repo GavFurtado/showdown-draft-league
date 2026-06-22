@@ -1,6 +1,6 @@
 package responses
 
-type PokemonSpeciesListResponse struct {
+type PokemonSpeciesListResponseDTO struct {
 	ID           int64    `json:"ID"`
 	Name         string   `json:"Name"`
 	Types        []string `json:"Types"`

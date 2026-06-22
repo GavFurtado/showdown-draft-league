@@ -7,11 +7,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	mock_repos "github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 )
 
 func TestGameService_GeneratePlayoffBracket_Correct(t *testing.T) {
@@ -32,7 +32,7 @@ func TestGameService_GeneratePlayoffBracket_Correct(t *testing.T) {
 	mockLeague := &models.League{
 		ID:     leagueID,
 		Status: enums.LeagueStatusPostRegularSeason,
-		Format: &models.LeagueFormat{
+		Format: &types.LeagueFormat{
 			SeasonType:              enums.LeagueSeasonTypeHybrid,
 			PlayoffType:             enums.LeaguePlayoffTypeSingleElim,
 			PlayoffSeedingType:      enums.LeaguePlayoffSeedingTypeStandard,
@@ -104,7 +104,7 @@ func TestGameService_GenerateRegularSeasonGames_Success(t *testing.T) {
 	mockLeague := &models.League{
 		ID:     leagueID,
 		Status: enums.LeagueStatusPostDraft,
-		Format: &models.LeagueFormat{
+		Format: &types.LeagueFormat{
 			SeasonType: enums.LeagueSeasonTypeHybrid,
 			GroupCount: 1,
 		},
@@ -140,7 +140,7 @@ func TestGameService_GenerateRegularSeasonGames_ErrGamesAlreadyGenerated(t *test
 	mockLeague := &models.League{
 		ID:     leagueID,
 		Status: enums.LeagueStatusPostDraft,
-		Format: &models.LeagueFormat{
+		Format: &types.LeagueFormat{
 			SeasonType: enums.LeagueSeasonTypeHybrid,
 			GroupCount: 1,
 		},
@@ -175,7 +175,7 @@ func TestGameService_GenerateRegularSeasonGames_ErrInvalidState(t *testing.T) {
 	mockLeague := &models.League{
 		ID:     leagueID,
 		Status: enums.LeagueStatusDrafting,
-		Format: &models.LeagueFormat{
+		Format: &types.LeagueFormat{
 			SeasonType: enums.LeagueSeasonTypeBracketOnly,
 			GroupCount: 1,
 		},
@@ -212,7 +212,7 @@ func TestGameService_GeneratePlayoffBracket_ErrInvalidConfig(t *testing.T) {
 	mockLeague := &models.League{
 		ID:     leagueID,
 		Status: enums.LeagueStatusPostRegularSeason,
-		Format: &models.LeagueFormat{
+		Format: &types.LeagueFormat{
 			SeasonType:              enums.LeagueSeasonTypeHybrid,
 			PlayoffType:             enums.LeaguePlayoffTypeSingleElim,
 			PlayoffSeedingType:      enums.LeaguePlayoffSeedingTypeFullySeeded,

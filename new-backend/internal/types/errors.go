@@ -26,7 +26,6 @@ var (
 
 	// Business Logic Errors
 	ErrMaxLeagueCreationLimitReached  = errors.New("maximum league creation limit reached")
-	ErrExceedsMaxAllowableGroupCount  = errors.New("maximum group counts allowed is 2 for a league")
 	ErrInvalidInput                   = errors.New("invalid input/request")
 	ErrConflict                       = errors.New("record already exists. cannot make a duplicate")
 	ErrInvalidState                   = errors.New("league/draft is in invalid state/status for this operation")
@@ -45,6 +44,7 @@ var (
 	ErrInsufficientPlayersForPlayoffs = errors.New("insufficient players to start a playoff bracket")
 	ErrInvalidLeagueConfiguration     = errors.New("invalid league configuration")
 	ErrGamesAlreadyGenerated          = errors.New("games have already been generated for this league/season")
+	ErrExceedsMaxAllowableGroupCount  = errors.New("requested group count exceeds max allowed group count ")
 
 	// Internal Service Errors
 	ErrInternalService = errors.New("internal service error")

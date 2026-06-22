@@ -15,7 +15,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// defines the interface for league-related business logic.
+// LeagueService defines the interface for league-related business logic.
 type LeagueService interface {
 	// handles the business logic for creating a new league.
 	CreateLeague(userID uuid.UUID, req *requests.LeagueCreateRequestDTO) (*models.League, error)
@@ -167,7 +167,6 @@ func (s *leagueServiceImpl) GetLeaguesByCommissioner(
 	userID uuid.UUID,
 	currentUser *models.User,
 ) ([]models.League, error) {
-
 	leagues, err := s.leagueRepo.GetLeaguesByOwner(userID)
 	if err != nil {
 		log.Printf("(Error: LeagueService.GetLeaguesByCommissioner) - Failed to get commissioner leagues for user %s: %v\n", userID, err)
@@ -179,7 +178,6 @@ func (s *leagueServiceImpl) GetLeaguesByCommissioner(
 
 // fetches all Leagues where the given userID is a player.
 func (s *leagueServiceImpl) GetLeaguesByUser(userID uuid.UUID, currentUser *models.User) ([]models.League, error) {
-
 	leagues, err := s.leagueRepo.GetLeaguesByUser(userID)
 	if err != nil {
 		log.Printf("(Error: LeagueService.GetLeaguesByUser) - Failed to get leagues for user %s: %v\n", userID, err)

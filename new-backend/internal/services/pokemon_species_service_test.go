@@ -4,10 +4,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/responses"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -107,7 +108,7 @@ func TestPokemonSpeciesService_GetAllPokemonSpecies(t *testing.T) {
 			{ID: 1, Name: "Pikachu", Types: models.StringArray{"electric"}, Sprites: models.Sprites{FrontDefault: "url"}},
 			{ID: 2, Name: "Charmander", Types: models.StringArray{"fire"}, Sprites: models.Sprites{FrontDefault: "url2"}},
 		}
-		expectedDTOs := []types.PokemonSpeciesListDTO{
+		expectedDTOs := []responses.PokemonSpeciesListResponseDTO{
 			{ID: 1, Name: "Pikachu", Types: []string{"electric"}, FrontDefault: "url"},
 			{ID: 2, Name: "Charmander", Types: []string{"fire"}, FrontDefault: "url2"},
 		}

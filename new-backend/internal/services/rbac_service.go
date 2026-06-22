@@ -4,15 +4,15 @@ import (
 	"errors"
 	"log"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-// defines the interface for Role-Based Access Control operations.
+// RBACService defines the interface for Role-Based Access Control operations.
 type RBACService interface {
 	CanAccess(userID uuid.UUID, leagueID uuid.UUID, requiredPermission rbac.Permission) (*models.Player, bool, error)
 }
@@ -32,7 +32,7 @@ func NewRBACService(leagueRepo repositories.LeagueRepository, userRepo repositor
 	}
 }
 
-// checks if a user has the required permission for a specific action.
+// CanAccess checks if a user has the required permission for a specific action.
 func (s *RBACServiceImpl) CanAccess(userID uuid.UUID, leagueID uuid.UUID, requiredPermission rbac.Permission) (*models.Player, bool, error) {
 	player, err := s.playerRepo.GetPlayerByUserAndLeague(userID, leagueID)
 	if err != nil {

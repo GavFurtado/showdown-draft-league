@@ -12,7 +12,7 @@ import (
 )
 
 type PokemonSpeciesService interface {
-	GetAllPokemonSpecies() ([]responses.PokemonSpeciesListResponse, error) // Updated return type
+	GetAllPokemonSpecies() ([]responses.PokemonSpeciesListResponseDTO, error) // Updated return type
 	ListPokemonSpecies(filter string) ([]models.PokemonSpecies, error)
 	GetPokemonSpeciesByID(id int64) (*models.PokemonSpecies, error)
 	GetPokemonSpeciesByName(name string) (*models.PokemonSpecies, error)
@@ -35,16 +35,16 @@ func NewPokemonSpeciesService(
 }
 
 // retrieves all pokemon species.
-func (s *pokemonServiceImpl) GetAllPokemonSpecies() ([]responses.PokemonSpeciesListResponse, error) { // Updated return type
+func (s *pokemonServiceImpl) GetAllPokemonSpecies() ([]responses.PokemonSpeciesListResponseDTO, error) { // Updated return type
 	allPokemon, err := s.pokemonRepo.GetAllPokemonSpecies()
 	if err != nil {
 		log.Printf("(Error: PokemonSpeciesService.GetAllPokemonSpecies) - Failed to get all pokemon species: %v", err)
 		return nil, types.ErrInternalService
 	}
 
-	var pokemonDTOs []responses.PokemonSpeciesListResponse
+	var pokemonDTOs []responses.PokemonSpeciesListResponseDTO
 	for _, pokemon := range allPokemon {
-		pokemonDTOs = append(pokemonDTOs, responses.PokemonSpeciesListResponse{
+		pokemonDTOs = append(pokemonDTOs, responses.PokemonSpeciesListResponseDTO{
 			ID:           pokemon.ID,
 			Name:         pokemon.Name,
 			Types:        pokemon.Types,

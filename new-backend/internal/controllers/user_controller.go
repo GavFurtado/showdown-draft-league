@@ -79,7 +79,7 @@ func (ctrl *UserController) UpdateProfile(ctx *gin.Context) {
 		return
 	}
 
-	var req requests.UserUpdateProfileRequest
+	var req requests.UserUpdateProfileRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Missing field(s) in the payload"})
 		return
@@ -115,5 +115,5 @@ func (ctrl *UserController) GetMyLeagues(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, leagues) // lets hope i didn't screw up the json tags
+	ctx.JSON(http.StatusOK, leagues)
 }

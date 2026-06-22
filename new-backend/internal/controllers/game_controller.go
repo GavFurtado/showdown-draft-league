@@ -116,7 +116,7 @@ func (c *gameControllerImpl) ReportGame(ctx *gin.Context) {
 		return
 	}
 
-	var dto requests.ReportGameRequest
+	var dto requests.ReportGameRequestDTO
 	if err := ctx.ShouldBindJSON(&dto); err != nil {
 		log.Printf("ERROR: (Controller: ReportGame): Error binding request: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid request payload: %v", err)})
@@ -158,7 +158,7 @@ func (c *gameControllerImpl) FinalizeGame(ctx *gin.Context) {
 		return
 	}
 
-	var dto requests.FinalizeGameRequest
+	var dto requests.FinalizeGameRequestDTO
 	if err := ctx.ShouldBindJSON(&dto); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid request payload: %v", err)})
 		return

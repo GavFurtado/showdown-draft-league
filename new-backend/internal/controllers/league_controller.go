@@ -41,7 +41,7 @@ func (ctrl *leagueControllerImpl) CreateLeague(ctx *gin.Context) {
 		return
 	}
 
-	var req requests.LeagueCreateRequest
+	var req requests.LeagueCreateRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return

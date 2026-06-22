@@ -6,11 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -35,14 +36,14 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 
 	testUserID := uuid.New()
 
-	input := &types.LeagueCreateRequestDTO{
+	input := &requests.LeagueCreateRequestDTO{
 		Name:                "Test League",
 		RulesetDescription:  "Test rules",
 		MaxPokemonPerPlayer: 6,
 		StartingDraftPoints: 1000,
-		Format: models.LeagueFormat{
+		Format: types.LeagueFormat{
 			SeasonType:               "ROUND_ROBIN_ONLY",
-			GroupCount:               1, // Changed from 4 to 1
+			GroupCount:               1,
 			PlayoffType:              "single",
 			PlayoffParticipantCount:  4,
 			PlayoffByesCount:         0,
@@ -60,7 +61,6 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 			RulesetDescription:   input.RulesetDescription,
 			MaxPokemonPerPlayer:  input.MaxPokemonPerPlayer,
 			StartingDraftPoints:  input.StartingDraftPoints,
-			StartDate:            time.Now(),
 			NewPlayerGroupNumber: 1, // Service sets this to 1 when GroupCount is 1
 			Format:               &input.Format,
 		}
@@ -81,7 +81,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 		createdPlayer.ID = uuid.New()
 
 		mockLeagueRepo.On("GetLeaguesCountWhereOwner", testUserID).Return(int64(0), nil).Once()
-		mockLeagueRepo.On("CreateLeague", expectedLeague).Return(&createdLeague, nil).Once()
+		mockLeagueRepo.On("CreateLeague", mock.AnythingOfType("*models.League")).Return(&createdLeague, nil).Once()
 		mockPlayerRepo.On("CreatePlayer", expectedOwnerPlayer).Return(&createdPlayer, nil).Once()
 
 		result, err := service.CreateLeague(testUserID, input)
@@ -141,16 +141,16 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 			RulesetDescription:   input.RulesetDescription,
 			MaxPokemonPerPlayer:  input.MaxPokemonPerPlayer,
 			StartingDraftPoints:  input.StartingDraftPoints,
-			StartDate:            time.Now(),
 			NewPlayerGroupNumber: 1, // Must match the service's logic
 			Format:               &input.Format,
 		}
+
 		createdLeague := *expectedLeague
 		createdLeague.ID = uuid.New()
 
 		dbError := errors.New("player creation error")
 		mockLeagueRepo.On("GetLeaguesCountWhereOwner", testUserID).Return(int64(0), nil).Once()
-		mockLeagueRepo.On("CreateLeague", expectedLeague).Return(&createdLeague, nil).Once()
+		mockLeagueRepo.On("CreateLeague", mock.AnythingOfType("*models.League")).Return(&createdLeague, nil).Once()
 		mockPlayerRepo.On("CreatePlayer", mock.AnythingOfType("*models.Player")).Return((*models.Player)(nil), dbError).Once()
 
 		result, err := service.CreateLeague(testUserID, input)

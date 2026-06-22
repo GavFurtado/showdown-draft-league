@@ -1,7 +1,7 @@
 package mock_services
 
 import (
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/google/uuid"
@@ -42,12 +42,12 @@ func (m *MockGameService) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 	return args.Error(0)
 }
 
-func (m *MockGameService) ReportGameResult(gameID uuid.UUID, dto *types.ReportGameDTO) error {
+func (m *MockGameService) ReportGameResult(gameID uuid.UUID, dto *requests.ReportGameRequestDTO) error {
 	args := m.Called(gameID, dto)
 	return args.Error(0)
 }
 
-func (m *MockGameService) FinalizeGameResult(gameID uuid.UUID, dto *types.FinalizeGameDTO) error {
+func (m *MockGameService) FinalizeGameResult(gameID uuid.UUID, dto *requests.FinalizeGameRequestDTO) error {
 	args := m.Called(gameID, dto)
 	return args.Error(0)
 }

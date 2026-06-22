@@ -17,7 +17,7 @@ import (
 type UserService interface {
 	GetMyProfileHandler(userID uuid.UUID) (*models.User, error)
 	GetMyDiscordDetailsHandler(userID uuid.UUID) (*responses.DiscordUserResponse, error)
-	UpdateProfileHandler(userID uuid.UUID, req requests.UserUpdateProfileRequest) (*models.User, error)
+	UpdateProfileHandler(userID uuid.UUID, req requests.UserUpdateProfileRequestDTO) (*models.User, error)
 	GetMyLeaguesHandler(userID uuid.UUID) ([]*models.League, error)
 }
 
@@ -65,7 +65,7 @@ func (s *userServiceImpl) GetMyDiscordDetailsHandler(userID uuid.UUID) (*respons
 }
 
 // updates profile with request fields
-func (s *userServiceImpl) UpdateProfileHandler(userID uuid.UUID, input requests.UserUpdateProfileRequest) (*models.User, error) {
+func (s *userServiceImpl) UpdateProfileHandler(userID uuid.UUID, input requests.UserUpdateProfileRequestDTO) (*models.User, error) {
 	log.Printf("UserService: UpdateProfileHandler called for user %s with request: %+v", userID, input)
 
 	user, err := s.userRepo.GetUserByID(userID)

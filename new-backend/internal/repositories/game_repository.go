@@ -42,9 +42,9 @@ type GameRepository interface {
 	// checks if games of a specific type exist for a given league.
 	HasGames(leagueID uuid.UUID, gameType enums.GameType) (bool, error)
 
-	UpdateGameReport(gameID uuid.UUID, loserID uuid.UUID, dto *requests.ReportGameRequest) error
+	UpdateGameReport(gameID uuid.UUID, loserID uuid.UUID, dto *requests.ReportGameRequestDTO) error
 
-	FinalizeGameAndUpdateStats(game *models.Game, loserID uuid.UUID, dto *requests.FinalizeGameRequest) error
+	FinalizeGameAndUpdateStats(game *models.Game, loserID uuid.UUID, dto *requests.FinalizeGameRequestDTO) error
 }
 
 type gameRepositoryImpl struct {
@@ -77,7 +77,6 @@ func (r *gameRepositoryImpl) GetGameByID(id uuid.UUID) (models.Game, error) {
 		Preload("ReportingPlayer").
 		Preload("ApproverPlayer").
 		First(&game, "id = ?", id).Error
-
 	if err != nil {
 		return game, fmt.Errorf("(Error: GetGameByID) - failed to get game: %w", err)
 	}
@@ -94,7 +93,6 @@ func (r *gameRepositoryImpl) GetGamesByLeague(leagueID uuid.UUID) ([]models.Game
 		Where("league_id = ?", leagueID).
 		Order("round_number ASC, created_at ASC").
 		Find(&games).Error
-
 	if err != nil {
 		return nil, fmt.Errorf("(Error: GetGamesByLeague) - failed to get games by league: %w", err)
 	}
@@ -111,7 +109,6 @@ func (r *gameRepositoryImpl) GetGamesByPlayer(playerID uuid.UUID) ([]models.Game
 		Where("player1_id = ? OR player2_id = ?", playerID, playerID).
 		Order("round_number ASC, created_at ASC").
 		Find(&games).Error
-
 	if err != nil {
 		return nil, fmt.Errorf("(Error: GetGamesByPlayer) - failed to get games by player: %w", err)
 	}
@@ -127,7 +124,6 @@ func (r *gameRepositoryImpl) GetGamesByLeagueAndRound(leagueID uuid.UUID, roundN
 		Where("league_id = ? AND game_type = ? AND round_number = ?", leagueID, enums.GameTypeRegularSeason, roundNumber).
 		Order("created_at ASC").
 		Find(&games).Error
-
 	if err != nil {
 		return nil, fmt.Errorf("(Error: GetGamesByLeagueAndRound) - failed to get games by league and round: %w", err)
 	}
@@ -142,7 +138,6 @@ func (r *gameRepositoryImpl) GetScheduledGamesByLeague(leagueID uuid.UUID) ([]mo
 		Where("league_id = ? AND status = ?", leagueID, enums.GameStatusScheduled).
 		Order("round_number ASC, created_at ASC").
 		Find(&games).Error
-
 	if err != nil {
 		return nil, fmt.Errorf("(Error: GetPendingGamesByLeague) - failed to get scheduled games: %w", err)
 	}
@@ -157,7 +152,6 @@ func (r *gameRepositoryImpl) GetScheduledGamesByPlayer(playerID uuid.UUID) ([]mo
 		Where("(player1_id = ? OR player2_id = ?) AND status = ?", playerID, playerID, enums.GameStatusScheduled).
 		Order("round_number ASC, created_at ASC").
 		Find(&games).Error
-
 	if err != nil {
 		return nil, fmt.Errorf("(Error: GetPendingGamesByPlayer) - failed to get scheduled games: %w", err)
 	}
@@ -174,7 +168,6 @@ func (r *gameRepositoryImpl) GetCompletedGamesByLeague(leagueID uuid.UUID) ([]mo
 		Where("league_id = ? AND status = ?", leagueID, enums.GameStatusCompleted).
 		Order("round_number ASC, updated_at DESC").
 		Find(&games).Error
-
 	if err != nil {
 		return nil, fmt.Errorf("(Error: GetCompletedGamesByLeague) - failed to get completed games: %w", err)
 	}
@@ -190,7 +183,6 @@ func (r *gameRepositoryImpl) GetDisputedGamesByLeague(leagueID uuid.UUID) ([]mod
 		Where("league_id = ? AND status = ?", leagueID, enums.GameStatusDisputed).
 		Order("updated_at DESC").
 		Find(&games).Error
-
 	if err != nil {
 		return nil, fmt.Errorf("(Error: GetDisputedGamesByLeague) - failed to get disputed games: %w", err)
 	}
@@ -219,7 +211,6 @@ func (r *gameRepositoryImpl) DisputeGame(gameID uuid.UUID, reporterID uuid.UUID)
 	err := r.db.Model(&models.Game{}).
 		Where("id = ?", gameID).
 		Updates(updates).Error
-
 	if err != nil {
 		return fmt.Errorf("(Repository: DisputeGame) - failed to dispute game: %w", err)
 	}
@@ -237,7 +228,6 @@ func (r *gameRepositoryImpl) GetHeadToHeadRecord(player1ID, player2ID uuid.UUID)
 		Where("status = ?", enums.GameStatusCompleted).
 		Order("updated_at DESC").
 		Find(&games).Error
-
 	if err != nil {
 		return nil, fmt.Errorf("(Error: GetHeadToHeadRecord) - failed to get head-to-head record: %w", err)
 	}
@@ -298,8 +288,8 @@ func (r *gameRepositoryImpl) DeleteGame(gameID uuid.UUID) error {
 	return nil
 }
 
-func (r *gameRepositoryImpl) UpdateGameReport(gameID uuid.UUID, loserID uuid.UUID, dto *requests.ReportGameRequest) error {
-	updates := map[string]interface{}{
+func (r *gameRepositoryImpl) UpdateGameReport(gameID uuid.UUID, loserID uuid.UUID, dto *requests.ReportGameRequestDTO) error {
+	updates := map[string]any{
 		"winner_id":             dto.WinnerID,
 		"loser_id":              loserID,
 		"player1_wins":          dto.Player1Wins,
@@ -318,7 +308,7 @@ func (r *gameRepositoryImpl) UpdateGameReport(gameID uuid.UUID, loserID uuid.UUI
 }
 
 // FinalizeGameAndUpdateStats handles the entire process of finalizing a game within a single transaction.
-func (r *gameRepositoryImpl) FinalizeGameAndUpdateStats(game *models.Game, loserID uuid.UUID, dto *requests.FinalizeGameRequest) error {
+func (r *gameRepositoryImpl) FinalizeGameAndUpdateStats(game *models.Game, loserID uuid.UUID, dto *requests.FinalizeGameRequestDTO) error {
 	tx := r.db.Begin()
 	if tx.Error != nil {
 		return fmt.Errorf("(Repository: FinalizeGameAndUpdateStats) - failed to begin transaction: %w", tx.Error)
@@ -354,7 +344,7 @@ func (r *gameRepositoryImpl) FinalizeGameAndUpdateStats(game *models.Game, loser
 }
 
 // finalizeGame is a private helper to update the game record within a transaction.
-func (r *gameRepositoryImpl) finalizeGame(tx *gorm.DB, gameID uuid.UUID, loserID uuid.UUID, dto *requests.FinalizeGameRequest) error {
+func (r *gameRepositoryImpl) finalizeGame(tx *gorm.DB, gameID uuid.UUID, loserID uuid.UUID, dto *requests.FinalizeGameRequestDTO) error {
 	updates := map[string]any{
 		"winner_id":             dto.WinnerID,
 		"loser_id":              loserID,

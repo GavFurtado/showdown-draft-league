@@ -3,12 +3,13 @@ package services_test
 import (
 	"testing"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	mock_repositories "github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/repositories"
 	mock_services "github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/services"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -64,7 +65,7 @@ func TestDraftService_MakePick(t *testing.T) {
 			Status:              enums.LeagueStatusDrafting,
 			MinPokemonPerPlayer: 1,
 			MaxPokemonPerPlayer: 12,
-			Format:              &models.LeagueFormat{IsSnakeRoundDraft: true},
+			Format:              &types.LeagueFormat{IsSnakeRoundDraft: true},
 		}
 		localPlayer := &models.Player{ID: playerID, UserID: userID, LeagueID: leagueID, DraftPoints: 100}
 		localDraft := &models.Draft{
@@ -74,9 +75,9 @@ func TestDraftService_MakePick(t *testing.T) {
 			CurrentTurnPlayerID:         &playerID,
 			PlayersWithAccumulatedPicks: make(models.PlayerAccumulatedPicks),
 		}
-		localInput := &types.DraftMakePickDTO{
+		localInput := &requests.DraftMakePickRequestDTO{
 			RequestedPickCount: 1,
-			RequestedPicks: []types.RequestedPick{
+			RequestedPicks: []requests.RequestedPickDTO{
 				{LeaguePokemonID: leaguePokemonID, DraftPickNumber: 1},
 			},
 		}
@@ -124,7 +125,7 @@ func TestDraftService_MakePick(t *testing.T) {
 			Status:              enums.LeagueStatusDrafting,
 			MinPokemonPerPlayer: 1,
 			MaxPokemonPerPlayer: 12,
-			Format:              &models.LeagueFormat{IsSnakeRoundDraft: true},
+			Format:              &types.LeagueFormat{IsSnakeRoundDraft: true},
 		}
 		localPlayer := &models.Player{ID: playerID, UserID: userID, LeagueID: leagueID, DraftPoints: 100}
 		localDraft := &models.Draft{
@@ -133,9 +134,9 @@ func TestDraftService_MakePick(t *testing.T) {
 			CurrentPickOnClock:  1,
 			CurrentTurnPlayerID: &otherPlayerID, // Not the current player's turn
 		}
-		localInput := &types.DraftMakePickDTO{
+		localInput := &requests.DraftMakePickRequestDTO{
 			RequestedPickCount: 1,
-			RequestedPicks: []types.RequestedPick{
+			RequestedPicks: []requests.RequestedPickDTO{
 				{LeaguePokemonID: leaguePokemonID, DraftPickNumber: 1},
 			},
 		}
@@ -170,9 +171,9 @@ func TestDraftService_MakePick(t *testing.T) {
 			CurrentTurnPlayerID:         &playerID,
 			PlayersWithAccumulatedPicks: make(models.PlayerAccumulatedPicks),
 		}
-		localInput := &types.DraftMakePickDTO{
+		localInput := &requests.DraftMakePickRequestDTO{
 			RequestedPickCount: 1,
-			RequestedPicks: []types.RequestedPick{
+			RequestedPicks: []requests.RequestedPickDTO{
 				{LeaguePokemonID: leaguePokemonID, DraftPickNumber: 1},
 			},
 		}
@@ -202,7 +203,7 @@ func TestDraftService_MakePick(t *testing.T) {
 			Status:              enums.LeagueStatusDrafting,
 			MinPokemonPerPlayer: 1,
 			MaxPokemonPerPlayer: 12,
-			Format:              &models.LeagueFormat{IsSnakeRoundDraft: true},
+			Format:              &types.LeagueFormat{IsSnakeRoundDraft: true},
 		}
 		localPlayer := &models.Player{ID: playerID, UserID: userID, LeagueID: leagueID, DraftPoints: 100}
 		localDraft := &models.Draft{
@@ -212,9 +213,9 @@ func TestDraftService_MakePick(t *testing.T) {
 			CurrentTurnPlayerID:         &playerID,
 			PlayersWithAccumulatedPicks: make(models.PlayerAccumulatedPicks),
 		}
-		localInput := &types.DraftMakePickDTO{
+		localInput := &requests.DraftMakePickRequestDTO{
 			RequestedPickCount: 1,
-			RequestedPicks: []types.RequestedPick{
+			RequestedPicks: []requests.RequestedPickDTO{
 				{LeaguePokemonID: leaguePokemonID, DraftPickNumber: 1},
 			},
 		}
@@ -250,7 +251,7 @@ func TestDraftService_MakePick(t *testing.T) {
 			Status:              enums.LeagueStatusDrafting,
 			MinPokemonPerPlayer: 1,
 			MaxPokemonPerPlayer: 12,
-			Format:              &models.LeagueFormat{IsSnakeRoundDraft: true},
+			Format:              &types.LeagueFormat{IsSnakeRoundDraft: true},
 		}
 		localPlayer := &models.Player{ID: playerID, UserID: userID, LeagueID: leagueID, DraftPoints: 20} // Not enough points
 		localDraft := &models.Draft{
@@ -260,9 +261,9 @@ func TestDraftService_MakePick(t *testing.T) {
 			CurrentTurnPlayerID:         &playerID,
 			PlayersWithAccumulatedPicks: make(models.PlayerAccumulatedPicks),
 		}
-		localInput := &types.DraftMakePickDTO{
+		localInput := &requests.DraftMakePickRequestDTO{
 			RequestedPickCount: 1,
-			RequestedPicks: []types.RequestedPick{
+			RequestedPicks: []requests.RequestedPickDTO{
 				{LeaguePokemonID: leaguePokemonID, DraftPickNumber: 1},
 			},
 		}

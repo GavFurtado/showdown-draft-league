@@ -23,7 +23,7 @@ type DraftService interface {
 	GetDraftByID(draftID uuid.UUID) (*models.Draft, error)
 	GetDraftByLeagueID(leagueID uuid.UUID) (*models.Draft, error)
 	StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*models.Draft, error)
-	MakePick(currentUser *models.User, leagueID uuid.UUID, input *requests.DraftMakePickRequest) error
+	MakePick(currentUser *models.User, leagueID uuid.UUID, input *requests.DraftMakePickRequestDTO) error
 	SkipTurn(currentUser *models.User, leagueID uuid.UUID) error
 	AutoSkipTurn(playerID, leagueID uuid.UUID) error
 	SetSchedulerService(schedulerService SchedulerService)
@@ -225,7 +225,7 @@ func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*m
 func (s *draftServiceImpl) MakePick(
 	currentUser *models.User,
 	leagueID uuid.UUID,
-	input *requests.DraftMakePickRequest,
+	input *requests.DraftMakePickRequestDTO,
 ) error {
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
@@ -698,7 +698,7 @@ func (s *draftServiceImpl) executePickTransactions(
 	league *models.League,
 	player *models.Player,
 	allRequestedPokemon []*models.LeaguePokemon,
-	input *requests.DraftMakePickRequest,
+	input *requests.DraftMakePickRequestDTO,
 	playerCount int64,
 	totalRequestedCost int,
 ) error {
@@ -738,7 +738,6 @@ func (s *draftServiceImpl) executePickTransactions(
 			draft.PlayersWithAccumulatedPicks[player.ID], requestedPick.DraftPickNumber,
 		); accumPickIndex != -1 {
 			accumulatedPickNumberIndicesToDelete = append(accumulatedPickNumberIndicesToDelete, accumPickIndex)
-
 		}
 	}
 
@@ -771,7 +770,7 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 	draft *models.Draft,
 	player *models.Player,
 	league *models.League,
-	input *requests.DraftMakePickRequest,
+	input *requests.DraftMakePickRequestDTO,
 	totalRequestedCost int,
 ) (bool, error) {
 	playerID := *draft.CurrentTurnPlayerID // validated earlier to match currentPlayer
@@ -895,7 +894,7 @@ func (s *draftServiceImpl) fetchPlayerResource(userID, leagueID uuid.UUID) (*mod
 // fetchRequestedPokemon retrieves a list of LeaguePokemon by their IDs, ensuring they are
 // all available to be drafted. It returns service-specific errors for not found or
 // already drafted pokemon.
-func (s *draftServiceImpl) fetchRequestedPokemon(leagueID uuid.UUID, input *requests.DraftMakePickRequest) ([]*models.LeaguePokemon, error) {
+func (s *draftServiceImpl) fetchRequestedPokemon(leagueID uuid.UUID, input *requests.DraftMakePickRequestDTO) ([]*models.LeaguePokemon, error) {
 	var pokemonIDs []uuid.UUID
 	for _, requestedPick := range input.RequestedPicks {
 		pokemonIDs = append(pokemonIDs, requestedPick.LeaguePokemonID)
