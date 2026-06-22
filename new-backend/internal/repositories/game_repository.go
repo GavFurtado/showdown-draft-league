@@ -3,7 +3,7 @@ package repositories
 import (
 	"fmt"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/google/uuid"
@@ -41,8 +41,10 @@ type GameRepository interface {
 	GetDisputedGamesByLeague(leagueID uuid.UUID) ([]models.Game, error)
 	// checks if games of a specific type exist for a given league.
 	HasGames(leagueID uuid.UUID, gameType enums.GameType) (bool, error)
-	UpdateGameReport(gameID uuid.UUID, loserID uuid.UUID, dto *common.ReportGameDTO) error
-	FinalizeGameAndUpdateStats(game *models.Game, loserID uuid.UUID, dto *common.FinalizeGameDTO) error
+
+	UpdateGameReport(gameID uuid.UUID, loserID uuid.UUID, dto *requests.ReportGameRequest) error
+
+	FinalizeGameAndUpdateStats(game *models.Game, loserID uuid.UUID, dto *requests.FinalizeGameRequest) error
 }
 
 type gameRepositoryImpl struct {
@@ -73,7 +75,7 @@ func (r *gameRepositoryImpl) GetGameByID(id uuid.UUID) (models.Game, error) {
 		Preload("Winner").
 		Preload("Loser").
 		Preload("ReportingPlayer").
-		Preload("ApproverPlayer"). 
+		Preload("ApproverPlayer").
 		First(&game, "id = ?", id).Error
 
 	if err != nil {
@@ -296,7 +298,7 @@ func (r *gameRepositoryImpl) DeleteGame(gameID uuid.UUID) error {
 	return nil
 }
 
-func (r *gameRepositoryImpl) UpdateGameReport(gameID uuid.UUID, loserID uuid.UUID, dto *common.ReportGameDTO) error {
+func (r *gameRepositoryImpl) UpdateGameReport(gameID uuid.UUID, loserID uuid.UUID, dto *requests.ReportGameRequest) error {
 	updates := map[string]interface{}{
 		"winner_id":             dto.WinnerID,
 		"loser_id":              loserID,
@@ -316,7 +318,7 @@ func (r *gameRepositoryImpl) UpdateGameReport(gameID uuid.UUID, loserID uuid.UUI
 }
 
 // FinalizeGameAndUpdateStats handles the entire process of finalizing a game within a single transaction.
-func (r *gameRepositoryImpl) FinalizeGameAndUpdateStats(game *models.Game, loserID uuid.UUID, dto *common.FinalizeGameDTO) error {
+func (r *gameRepositoryImpl) FinalizeGameAndUpdateStats(game *models.Game, loserID uuid.UUID, dto *requests.FinalizeGameRequest) error {
 	tx := r.db.Begin()
 	if tx.Error != nil {
 		return fmt.Errorf("(Repository: FinalizeGameAndUpdateStats) - failed to begin transaction: %w", tx.Error)
@@ -352,7 +354,7 @@ func (r *gameRepositoryImpl) FinalizeGameAndUpdateStats(game *models.Game, loser
 }
 
 // finalizeGame is a private helper to update the game record within a transaction.
-func (r *gameRepositoryImpl) finalizeGame(tx *gorm.DB, gameID uuid.UUID, loserID uuid.UUID, dto *common.FinalizeGameDTO) error {
+func (r *gameRepositoryImpl) finalizeGame(tx *gorm.DB, gameID uuid.UUID, loserID uuid.UUID, dto *requests.FinalizeGameRequest) error {
 	updates := map[string]any{
 		"winner_id":             dto.WinnerID,
 		"loser_id":              loserID,

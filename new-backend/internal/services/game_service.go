@@ -8,10 +8,11 @@ import (
 	"math/rand/v2"
 	"sort"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -23,8 +24,8 @@ type GameService interface {
 	GenerateRegularSeasonGames(leagueID uuid.UUID) error
 	GeneratePlayoffBracket(leagueID uuid.UUID) error
 
-	ReportGameResult(gameID uuid.UUID, dto *common.ReportGameDTO) error
-	FinalizeGameResult(gameID uuid.UUID, dto *common.FinalizeGameDTO) error
+	ReportGameResult(gameID uuid.UUID, dto *requests.ReportGameRequest) error
+	FinalizeGameResult(gameID uuid.UUID, dto *requests.FinalizeGameRequest) error
 	SetLeagueService(leagueService LeagueService)
 }
 
@@ -55,9 +56,9 @@ func (s *gameServiceImpl) GetGameByID(ID uuid.UUID) (*models.Game, error) {
 	game, err := s.gameRepo.GetGameByID(ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("%w: %w", common.ErrGameNotFound, err)
+			return nil, fmt.Errorf("%w: %w", types.ErrGameNotFound, err)
 		}
-		return nil, fmt.Errorf("%w: %w", common.ErrInternalService, err)
+		return nil, fmt.Errorf("%w: %w", types.ErrInternalService, err)
 	}
 	return &game, nil
 }
@@ -66,9 +67,9 @@ func (s *gameServiceImpl) GetGamesByLeague(leagueID uuid.UUID) ([]models.Game, e
 	games, err := s.gameRepo.GetGamesByLeague(leagueID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("%w: %w", common.ErrGameNotFound, err)
+			return nil, fmt.Errorf("%w: %w", types.ErrGameNotFound, err)
 		}
-		return nil, fmt.Errorf("%w: %w", common.ErrInternalService, err)
+		return nil, fmt.Errorf("%w: %w", types.ErrInternalService, err)
 	}
 	return games, nil
 }
@@ -77,26 +78,26 @@ func (s *gameServiceImpl) GetGamesByPlayer(playerID uuid.UUID) ([]models.Game, e
 	games, err := s.gameRepo.GetGamesByPlayer(playerID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("%w: %w", common.ErrGameNotFound, err)
+			return nil, fmt.Errorf("%w: %w", types.ErrGameNotFound, err)
 		}
-		return nil, fmt.Errorf("%w: %w", common.ErrInternalService, err)
+		return nil, fmt.Errorf("%w: %w", types.ErrInternalService, err)
 	}
 
 	return games, nil
 }
 
 // ReportGameResult allows a player to report the result of a game.
-func (s *gameServiceImpl) ReportGameResult(gameID uuid.UUID, dto *common.ReportGameDTO) error {
+func (s *gameServiceImpl) ReportGameResult(gameID uuid.UUID, dto *requests.ReportGameRequest) error {
 	game, err := s.gameRepo.GetGameByID(gameID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return common.ErrGameNotFound
+			return types.ErrGameNotFound
 		}
-		return fmt.Errorf("%w: %s", common.ErrInternalService, err.Error())
+		return fmt.Errorf("%w: %s", types.ErrInternalService, err.Error())
 	}
 
 	if game.Status != enums.GameStatusScheduled {
-		return common.ErrConflict
+		return types.ErrConflict
 	}
 
 	// Determine loser ID
@@ -106,20 +107,20 @@ func (s *gameServiceImpl) ReportGameResult(gameID uuid.UUID, dto *common.ReportG
 	} else if dto.WinnerID == game.Player2ID {
 		loserID = game.Player1ID
 	} else {
-		return common.ErrInvalidInput // Winner must be one of the players in the game
+		return types.ErrInvalidInput // Winner must be one of the players in the game
 	}
 
 	// Ensure winner and loser are distinct
 	if dto.WinnerID == loserID {
-		return fmt.Errorf("%w: winner and loser cannot be the same", common.ErrInvalidInput)
+		return fmt.Errorf("%w: winner and loser cannot be the same", types.ErrInvalidInput)
 	}
 
 	// Ensure scores are not tied if a winner is provided
 	if dto.Player1Wins == nil || dto.Player2Wins == nil {
-		return fmt.Errorf("%w: player wins must be provided", common.ErrInvalidInput)
+		return fmt.Errorf("%w: player wins must be provided", types.ErrInvalidInput)
 	}
 	if *dto.Player1Wins == *dto.Player2Wins {
-		return fmt.Errorf("%w: scores cannot be tied for a reported result", common.ErrInvalidInput)
+		return fmt.Errorf("%w: scores cannot be tied for a reported result", types.ErrInvalidInput)
 	}
 
 	if err := s.gameRepo.UpdateGameReport(gameID, loserID, dto); err != nil {
@@ -130,18 +131,18 @@ func (s *gameServiceImpl) ReportGameResult(gameID uuid.UUID, dto *common.ReportG
 }
 
 // FinalizeGameResult allows league staff to approve, submit, or retroactively edit a game result.
-func (s *gameServiceImpl) FinalizeGameResult(gameID uuid.UUID, dto *common.FinalizeGameDTO) error {
+func (s *gameServiceImpl) FinalizeGameResult(gameID uuid.UUID, dto *requests.FinalizeGameRequest) error {
 	// Fetch game to determine loser ID
 	game, err := s.gameRepo.GetGameByID(gameID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return common.ErrGameNotFound
+			return types.ErrGameNotFound
 		}
-		return fmt.Errorf("%w: %s", common.ErrInternalService, err.Error())
+		return fmt.Errorf("%w: %s", types.ErrInternalService, err.Error())
 	}
 
 	if !(game.Status == enums.GameStatusApprovalPending || game.Status == enums.GameStatusDisputed) {
-		return common.ErrConflict
+		return types.ErrConflict
 	}
 
 	// Determine loser ID for the final result
@@ -151,15 +152,15 @@ func (s *gameServiceImpl) FinalizeGameResult(gameID uuid.UUID, dto *common.Final
 	} else if dto.WinnerID == game.Player2ID {
 		loserID = game.Player1ID
 	} else {
-		return common.ErrInvalidInput // Winner must be one of the players in the game
+		return types.ErrInvalidInput // Winner must be one of the players in the game
 	}
 
 	// Ensure scores are not tied
 	if dto.Player1Wins == nil || dto.Player2Wins == nil {
-		return fmt.Errorf("%w: player wins must be provided", common.ErrInvalidInput)
+		return fmt.Errorf("%w: player wins must be provided", types.ErrInvalidInput)
 	}
 	if *dto.Player1Wins == *dto.Player2Wins {
-		return fmt.Errorf("%w: scores cannot be tied for a finalized result", common.ErrInvalidInput)
+		return fmt.Errorf("%w: scores cannot be tied for a finalized result", types.ErrInvalidInput)
 	}
 
 	// RBAC Check is handled in controller, service layer proceeds with business logic
@@ -185,16 +186,16 @@ func (s *gameServiceImpl) GenerateRegularSeasonGames(leagueID uuid.UUID) error {
 	gamesExist, err := s.gameRepo.HasGames(leagueID, enums.GameTypeRegularSeason)
 	if err != nil {
 		log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Failed to check for existing games for league %s: %v\n", leagueID, err)
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 	if gamesExist {
-		return common.ErrGamesAlreadyGenerated
+		return types.ErrGamesAlreadyGenerated
 	}
 
 	// League needs to be in POST_DRAFT status and not a BRACKET_ONLY Season League
 	if league.Status != enums.LeagueStatusPostDraft && league.Format.SeasonType == enums.LeagueSeasonTypeBracketOnly {
 		log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - League %s not in valid state to generate season bracket: %v\n", leagueID, err)
-		return common.ErrInvalidState
+		return types.ErrInvalidState
 	}
 
 	// GroupCount can only be 1 or 2
@@ -204,7 +205,7 @@ func (s *gameServiceImpl) GenerateRegularSeasonGames(leagueID uuid.UUID) error {
 		players, err := s.playerRepo.GetPlayersByLeagueAndGroupNumber(league.ID, i+1)
 		if err != nil {
 			log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Repository error fetching Players by League %s with Group Number %d: %v\n", league.ID, i+1, err)
-			return common.ErrInternalService
+			return types.ErrInternalService
 		}
 		playersByGroupNumber[i] = players
 	}
@@ -224,7 +225,7 @@ func (s *gameServiceImpl) GenerateRegularSeasonGames(leagueID uuid.UUID) error {
 		err = s.gameRepo.CreateGames(allGeneratedGames)
 		if err != nil {
 			log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Repository error creating games for league %s: %v\n", leagueID, err)
-			return common.ErrInternalService
+			return types.ErrInternalService
 		}
 	}
 	return nil
@@ -274,7 +275,7 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 		// STANDARD or BYES_ONLY are allowed
 		if league.Format.PlayoffSeedingType == enums.LeaguePlayoffSeedingTypeFullySeeded {
 			return fmt.Errorf("%w: %s and %s are incompatible playoff options",
-				common.ErrInvalidLeagueConfiguration,
+				types.ErrInvalidLeagueConfiguration,
 				enums.LeaguePlayoffTypeSingleElim,
 				enums.LeaguePlayoffSeedingTypeFullySeeded)
 		}
@@ -296,7 +297,7 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 		err = s.gameRepo.CreateGames(generatedGames)
 		if err != nil {
 			log.Printf("ERROR: (Service: GeneratePlayoffBracket) - Repository error creating games for league %s: %v\n", leagueID, err)
-			return common.ErrInternalService
+			return types.ErrInternalService
 		}
 	}
 
@@ -327,11 +328,11 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 
 	if naturalByesNeeded > 0 && seedingType == enums.LeaguePlayoffSeedingTypeStandard {
 		return nil, fmt.Errorf("%w: Cannot construct single elimination bracket. Either add %d participants or enable 'byes' for %d players",
-			common.ErrInvalidLeagueConfiguration,
+			types.ErrInvalidLeagueConfiguration,
 			naturalByesNeeded, naturalByesNeeded)
 	}
 	if naturalByesNeeded != league.Format.PlayoffByesCount {
-		return nil, fmt.Errorf("%w: Bye count is set to %d but valid is %d for %d participants", common.ErrInvalidLeagueConfiguration, league.Format.PlayoffByesCount, naturalByesNeeded, numParticipants)
+		return nil, fmt.Errorf("%w: Bye count is set to %d but valid is %d for %d participants", types.ErrInvalidLeagueConfiguration, league.Format.PlayoffByesCount, naturalByesNeeded, numParticipants)
 	}
 
 	var playersGettingByes []models.Player
@@ -472,7 +473,7 @@ func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League
 	remainingPlayers := []models.Player{}     // numParticipants - Format.PlayoffByeCount
 
 	if byeCount != 0 && seedingType == enums.LeaguePlayoffSeedingTypeStandard {
-		return nil, fmt.Errorf("%w: Bye count must be 0 for Standard Seeded brackets.", common.ErrInvalidLeagueConfiguration)
+		return nil, fmt.Errorf("%w: Bye count must be 0 for Standard Seeded brackets.", types.ErrInvalidLeagueConfiguration)
 	}
 
 	// initialize remainingPlayers and playersGettingByes
@@ -488,7 +489,7 @@ func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League
 		naturalByesNeeded := nextPowerOfTwo - numParticipants
 		if naturalByesNeeded != byeCount {
 			return nil, fmt.Errorf("%w: For BYES_ONLY Double Elimination with %d particpants, number of byes (Current: %d) allowed is %d.",
-				common.ErrInvalidLeagueConfiguration, numParticipants, byeCount, naturalByesNeeded)
+				types.ErrInvalidLeagueConfiguration, numParticipants, byeCount, naturalByesNeeded)
 		}
 	} else if seedingType == enums.LeaguePlayoffSeedingTypeFullySeeded {
 		nPlayersGettingByes := len(playersGettingByes)
@@ -496,27 +497,27 @@ func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League
 
 		if nRemainingPlayers%3 != 0 {
 			return nil, fmt.Errorf("%w: For FULLY_SEEDED Double Elimination, number of players that don't get a bye (Current: %d) must be divisible by 3.",
-				common.ErrInvalidLeagueConfiguration, nRemainingPlayers)
+				types.ErrInvalidLeagueConfiguration, nRemainingPlayers)
 		}
 
 		nPlayers_UB1 := (2 * nRemainingPlayers) / 3
 		if nPlayers_UB1 <= 0 || nPlayers_UB1%2 != 0 { // Must be positive even number
 			return nil, fmt.Errorf("%w: For FULLY_SEEDED Double Elimination, number of players starting in Upper Bracket Round 1 (Current: %d) must be a positive even number",
-				common.ErrInvalidLeagueConfiguration, nPlayersGettingByes)
+				types.ErrInvalidLeagueConfiguration, nPlayersGettingByes)
 		}
 
 		// Total effective player count in Upper Bracket Round 2
 		nEffectivePlayers_UB2 := byeCount + (nPlayers_UB1 / 2)
 		if nEffectivePlayers_UB2 <= 0 || !isPowerOfTwo(nEffectivePlayers_UB2) {
 			return nil, fmt.Errorf("%w: For FULLY_SEEDED Double Elimination, the total effective number of players in Upper Bracket 2 (Current: %d) must be a positive power of two",
-				common.ErrInvalidLeagueConfiguration, nEffectivePlayers_UB2)
+				types.ErrInvalidLeagueConfiguration, nEffectivePlayers_UB2)
 		}
 
 		// For balanced bracket structure, # of players in UB Round 1 must be atleast twice the # of byes
 		// Disallows brackets where more players start in UB Round 2 than UB Round 1 that are otherwise valid
 		if nPlayers_UB1 < 2*byeCount {
 			return nil, fmt.Errorf("%w: For FULLY_SEEDED double elimination, the number of players receiving byes (Current: %d) cannot exceed the number of players starting in Upper Bracket Round 1 (%d) to maintain a balanced bracket structure.",
-				common.ErrInvalidLeagueConfiguration, byeCount, nPlayers_UB1)
+				types.ErrInvalidLeagueConfiguration, byeCount, nPlayers_UB1)
 		}
 
 		playersStartingInUB1 = remainingPlayers[:nPlayers_UB1]
@@ -524,7 +525,7 @@ func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League
 	} else { // Standard seeding
 		playersStartingInUB1 = seededPlayers // All players start in UB Round 1
 		if !isPowerOfTwo(numParticipants) {
-			return nil, fmt.Errorf("%w: For STANDARD double elimination, number of participants must be a positive power of two", common.ErrInvalidLeagueConfiguration)
+			return nil, fmt.Errorf("%w: For STANDARD double elimination, number of participants must be a positive power of two", types.ErrInvalidLeagueConfiguration)
 		}
 	}
 
@@ -540,7 +541,7 @@ func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League
 	}
 	if nEffectivePlayers_UB2 <= 0 || !isPowerOfTwo(nEffectivePlayers_UB2) {
 		return nil, fmt.Errorf("%w: Internal error: Calculated effective players for Upper Bracket Round 2 (%d) is not a positive power of two. This indicates a logic flaw in seeding validation.",
-			common.ErrInternalService, nEffectivePlayers_UB2)
+			types.ErrInternalService, nEffectivePlayers_UB2)
 	}
 
 	var currentUBRoundGames []*models.Game
@@ -900,7 +901,7 @@ func (s *gameServiceImpl) getSeededPlayers(league *models.League, playersByGroup
 	if len(qualifyingPlayers) != league.Format.PlayoffParticipantCount { // should never be true
 		log.Printf("ERROR: (Service: getSeededPlayers) - Mismatch in qualified players count. Expected %d, got %d for league %s. This might indicate an issue with league configuration or player data.\n",
 			league.Format.PlayoffParticipantCount, len(qualifyingPlayers), league.ID)
-		return nil, common.ErrInsufficientPlayersForPlayoffs
+		return nil, types.ErrInsufficientPlayersForPlayoffs
 	}
 
 	return qualifyingPlayers, nil
@@ -1042,7 +1043,7 @@ func (s *gameServiceImpl) generateRoundRobinGamesForGroup(leagueID uuid.UUID, pl
 		} else {
 			// should never happen
 			log.Printf("ERROR: (Service: generateRoundRobinGamesForGroup) - Invalid conceptual RoundIdx %d found in game for league %s, group %d", conceptualRoundIdx, leagueID, groupNumber)
-			return nil, common.ErrInternalService
+			return nil, types.ErrInternalService
 		}
 	}
 
@@ -1053,9 +1054,9 @@ func (s *gameServiceImpl) fetchLeagueResource(leagueID uuid.UUID) (*models.Leagu
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, common.ErrLeagueNotFound
+			return nil, types.ErrLeagueNotFound
 		}
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 	return league, nil
 }

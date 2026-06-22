@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
@@ -35,7 +35,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 
 	testUserID := uuid.New()
 
-	input := &common.LeagueCreateRequestDTO{
+	input := &types.LeagueCreateRequestDTO{
 		Name:                "Test League",
 		RulesetDescription:  "Test rules",
 		MaxPokemonPerPlayer: 6,
@@ -100,7 +100,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 		result, err := service.CreateLeague(testUserID, input)
 		assert.Error(t, err)
 		assert.Nil(t, result)
-		assert.Contains(t, err.Error(), common.ErrMaxLeagueCreationLimitReached.Error())
+		assert.Contains(t, err.Error(), types.ErrMaxLeagueCreationLimitReached.Error())
 
 		mockLeagueRepo.AssertExpectations(t)
 		mockLeagueRepo.AssertNotCalled(t, "CreateLeague")

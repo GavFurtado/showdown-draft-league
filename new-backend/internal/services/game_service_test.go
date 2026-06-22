@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	mock_repos "github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
@@ -156,7 +156,7 @@ func TestGameService_GenerateRegularSeasonGames_ErrGamesAlreadyGenerated(t *test
 
 	// ASSERT
 	assert.Error(t, err)
-	assert.Equal(t, common.ErrGamesAlreadyGenerated, err)
+	assert.Equal(t, types.ErrGamesAlreadyGenerated, err)
 	mockLeagueRepo.AssertExpectations(t)
 	mockGameRepo.AssertExpectations(t)
 	mockPlayerRepo.AssertNotCalled(t, "GetPlayersByLeagueAndGroupNumber")

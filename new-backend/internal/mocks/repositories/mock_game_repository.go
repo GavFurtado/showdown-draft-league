@@ -1,7 +1,7 @@
 package mock_repositories
 
 import (
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/google/uuid"
@@ -123,12 +123,12 @@ func (m *MockGameRepository) HasGames(leagueID uuid.UUID, gameType enums.GameTyp
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *MockGameRepository) UpdateGameReport(gameID uuid.UUID, loserID uuid.UUID, dto *common.ReportGameDTO) error {
+func (m *MockGameRepository) UpdateGameReport(gameID uuid.UUID, loserID uuid.UUID, dto *types.ReportGameDTO) error {
 	args := m.Called(gameID, loserID, dto)
 	return args.Error(0)
 }
 
-func (m *MockGameRepository) FinalizeGameAndUpdateStats(game *models.Game, loserID uuid.UUID, dto *common.FinalizeGameDTO) error {
+func (m *MockGameRepository) FinalizeGameAndUpdateStats(game *models.Game, loserID uuid.UUID, dto *types.FinalizeGameDTO) error {
 	args := m.Called(game, loserID, dto)
 	return args.Error(0)
 }

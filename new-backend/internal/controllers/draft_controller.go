@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -34,44 +35,43 @@ func (dc *draftControllerImpl) GetDraftByID(ctx *gin.Context) {
 	draftIDStr := ctx.Param("draftId")
 	draftID, err := uuid.Parse(draftIDStr)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
 		return
 	}
 
 	draft, err := dc.draftService.GetDraftByID(draftID)
 	if err != nil {
 		switch {
-		case errors.Is(err, common.ErrDraftNotFound):
-			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrDraftNotFound.Error()})
-		case errors.Is(err, common.ErrInternalService):
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
+		case errors.Is(err, types.ErrDraftNotFound):
+			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrDraftNotFound.Error()})
+		case errors.Is(err, types.ErrInternalService):
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error(), "details": err.Error()})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error(), "details": err.Error()})
 		}
 		return
 	}
 
 	ctx.JSON(http.StatusOK, draft)
-
 }
 
 func (dc *draftControllerImpl) GetDraftByLeagueID(ctx *gin.Context) {
 	leagueIDStr := ctx.Param("leagueId")
 	leagueID, err := uuid.Parse(leagueIDStr)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
 		return
 	}
 
 	draft, err := dc.draftService.GetDraftByLeagueID(leagueID)
 	if err != nil {
 		switch {
-		case errors.Is(err, common.ErrDraftNotFound):
-			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrDraftNotFound.Error()})
-		case errors.Is(err, common.ErrInternalService):
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
+		case errors.Is(err, types.ErrDraftNotFound):
+			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrDraftNotFound.Error()})
+		case errors.Is(err, types.ErrInternalService):
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
 		}
 		return
 	}
@@ -98,18 +98,18 @@ func (dc *draftControllerImpl) StartDraft(ctx *gin.Context) {
 	draft, err := dc.draftService.StartDraft(leagueID, turnTimeLimit)
 	if err != nil {
 		switch {
-		case errors.Is(err, common.ErrLeagueNotFound):
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrLeagueNotFound.Error()})
-		case errors.Is(err, common.ErrNoPlayerForDraft):
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrNoPlayerForDraft.Error()})
-		case errors.Is(err, common.ErrInvalidDraftPosition):
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInvalidDraftPosition.Error()})
-		case errors.Is(err, common.ErrDuplicateDraftPosition):
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrDuplicateDraftPosition.Error()})
-		case errors.Is(err, common.ErrIncompleteDraftOrder):
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrIncompleteDraftOrder.Error()})
-		case errors.Is(err, common.ErrInternalService):
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrIncompleteDraftOrder.Error()})
+		case errors.Is(err, types.ErrLeagueNotFound):
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrLeagueNotFound.Error()})
+		case errors.Is(err, types.ErrNoPlayerForDraft):
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrNoPlayerForDraft.Error()})
+		case errors.Is(err, types.ErrInvalidDraftPosition):
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInvalidDraftPosition.Error()})
+		case errors.Is(err, types.ErrDuplicateDraftPosition):
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrDuplicateDraftPosition.Error()})
+		case errors.Is(err, types.ErrIncompleteDraftOrder):
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrIncompleteDraftOrder.Error()})
+		case errors.Is(err, types.ErrInternalService):
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrIncompleteDraftOrder.Error()})
 		default:
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start draft", "details": err.Error()})
 		}
@@ -123,19 +123,19 @@ func (dc *draftControllerImpl) MakePick(c *gin.Context) {
 	leagueIDStr := c.Param("leagueId")
 	leagueID, err := uuid.Parse(leagueIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
 		return
 	}
 
-	var input common.DraftMakePickDTO
+	var input requests.DraftMakePickRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": common.ErrInvalidInput.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": types.ErrInvalidInput.Error()})
 		return
 	}
 
 	currentUser, exists := c.Get("currentUser")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": common.ErrNoUserInContext.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": types.ErrNoUserInContext.Error()})
 		return
 	}
 	user, ok := currentUser.(*models.User)
@@ -147,13 +147,13 @@ func (dc *draftControllerImpl) MakePick(c *gin.Context) {
 	if err := dc.draftService.MakePick(user, leagueID, &input); err != nil {
 		// Handle specific errors from the service layer
 		switch {
-		case errors.Is(err, common.ErrUnauthorized):
+		case errors.Is(err, types.ErrUnauthorized):
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Not your turn to pick"})
-		case errors.Is(err, common.ErrInvalidState):
+		case errors.Is(err, types.ErrInvalidState):
 			c.JSON(http.StatusConflict, gin.H{"error": "Draft is not in a valid state for picking"})
-		case errors.Is(err, common.ErrTooManyRequestedPicks):
+		case errors.Is(err, types.ErrTooManyRequestedPicks):
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Requested too many picks"})
-		case errors.Is(err, common.ErrInsufficientDraftPoints):
+		case errors.Is(err, types.ErrInsufficientDraftPoints):
 			c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient draft points"})
 		default:
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to make pick", "details": err.Error()})
@@ -185,11 +185,11 @@ func (dc *draftControllerImpl) SkipPick(c *gin.Context) {
 
 	if err := dc.draftService.SkipTurn(user, leagueID); err != nil {
 		switch {
-		case errors.Is(err, common.ErrUnauthorized):
+		case errors.Is(err, types.ErrUnauthorized):
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Not your turn to skip"})
-		case errors.Is(err, common.ErrInvalidState):
+		case errors.Is(err, types.ErrInvalidState):
 			c.JSON(http.StatusConflict, gin.H{"error": "Draft is not in a valid state for skipping"})
-		case errors.Is(err, common.ErrCannotSkipBelowMinimumRoster):
+		case errors.Is(err, types.ErrCannotSkipBelowMinimumRoster):
 			c.JSON(http.StatusForbidden, gin.H{"error": "Cannot skip, minimum roster requirement not met"})
 		default:
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to skip turn", "details": err.Error()})

@@ -1,9 +1,8 @@
-package common
+package types
 
 import "errors"
 
 var (
-
 	// Common resource not found errors
 	ErrLeagueNotFound         = errors.New("league not found")
 	ErrUserNotFound           = errors.New("user not found")
@@ -43,7 +42,7 @@ var (
 	ErrInvalidDraftPosition           = errors.New("invalid draft position for player")
 	ErrDuplicateDraftPosition         = errors.New("duplicate draft position found")
 	ErrIncompleteDraftOrder           = errors.New("draft order is incomplete")
-	ErrInsufficientPlayersForPlayoffs = errors.New("insufficient players to start a playoff bracket") // should never happen due to previous validations
+	ErrInsufficientPlayersForPlayoffs = errors.New("insufficient players to start a playoff bracket")
 	ErrInvalidLeagueConfiguration     = errors.New("invalid league configuration")
 	ErrGamesAlreadyGenerated          = errors.New("games have already been generated for this league/season")
 

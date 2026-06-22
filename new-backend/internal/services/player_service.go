@@ -5,17 +5,18 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type PlayerService interface {
-	CreatePlayerHandler(input *common.PlayerCreateRequest) (*models.Player, error)
+	CreatePlayerHandler(input *requests.PlayerCreateRequest) (*models.Player, error)
 
 	GetPlayerByIDHandler(playerID uuid.UUID, currentUser *models.User) (*models.Player, error)
 	GetPlayerByUserIDAndLeagueID(userID uuid.UUID, leagueID uuid.UUID) (*models.Player, error)
@@ -53,29 +54,29 @@ func NewPlayerService(
 	}
 }
 
-func (s *playerServiceImpl) CreatePlayerHandler(input *common.PlayerCreateRequest) (*models.Player, error) {
+func (s *playerServiceImpl) CreatePlayerHandler(input *requests.PlayerCreateRequest) (*models.Player, error) {
 	// fetch League and User details
 	league, err := s.leagueRepo.GetLeagueByID(input.LeagueID)
 	if err != nil {
 		log.Printf("Service: CreatePlayerHandler - Failed to fetch league %s: %v", input.LeagueID, err)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, common.ErrLeagueNotFound
+			return nil, types.ErrLeagueNotFound
 		}
-		return nil, fmt.Errorf("%w: failed to retrieve league data", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve league data", types.ErrInternalService)
 	}
 
 	if league.Status != enums.LeagueStatusSetup {
 		log.Printf("Service: CreatePlayerHandler - League %s is not in SETUP status to add players: %v", input.LeagueID, err)
-		return nil, common.ErrInvalidState
+		return nil, types.ErrInvalidState
 	}
 
 	user, err := s.userRepo.GetUserByID(input.UserID)
 	if err != nil {
 		log.Printf("Service: CreatePlayerHandler - Failed to fetch user %s: %v", input.UserID, err)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, common.ErrUserNotFound
+			return nil, types.ErrUserNotFound
 		}
-		return nil, fmt.Errorf("%w: failed to retrieve user data", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve user data", types.ErrInternalService)
 	}
 
 	// Fallback for InLeagueName and TeamName (always happens if empty)
@@ -93,30 +94,30 @@ func (s *playerServiceImpl) CreatePlayerHandler(input *common.PlayerCreateReques
 	existingPlayerByUser, err := s.playerRepo.FindPlayerByUserAndLeague(input.UserID, input.LeagueID)
 	if err != nil {
 		log.Printf("Service: CreatePlayerHandler - Failed to check for existing player by user ID %s in league %s: %v", input.UserID, input.LeagueID, err)
-		return nil, fmt.Errorf("%w: failed to check existing player data", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to check existing player data", types.ErrInternalService)
 	}
 	if existingPlayerByUser != nil {
-		return nil, common.ErrUserAlreadyInLeague
+		return nil, types.ErrUserAlreadyInLeague
 	}
 
 	// b. Check for Unique InLeagueName within the League
 	existingPlayerByName, err := s.playerRepo.FindPlayerByInLeagueNameAndLeagueID(*input.InLeagueName, input.LeagueID)
 	if err != nil {
 		log.Printf("Service: CreatePlayerHandler - Failed to check for existing player by in-league name '%s' in league %s: %v", *input.InLeagueName, input.LeagueID, err)
-		return nil, fmt.Errorf("%w: failed to check in-league name uniqueness", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to check in-league name uniqueness", types.ErrInternalService)
 	}
 	if existingPlayerByName != nil {
-		return nil, fmt.Errorf("%w: '%s'", common.ErrInLeagueNameTaken, *input.InLeagueName)
+		return nil, fmt.Errorf("%w: '%s'", types.ErrInLeagueNameTaken, *input.InLeagueName)
 	}
 
 	// c. Check for Unique TeamName within the League
 	existingPlayerByTeamName, err := s.playerRepo.FindPlayerByTeamNameAndLeagueID(*input.TeamName, input.LeagueID)
 	if err != nil {
 		log.Printf("Service: CreatePlayerHandler - Failed to check for existing player by team name '%s' in league %s: %v", *input.TeamName, input.LeagueID, err)
-		return nil, fmt.Errorf("%w: failed to check team name uniqueness", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to check team name uniqueness", types.ErrInternalService)
 	}
 	if existingPlayerByTeamName != nil {
-		return nil, fmt.Errorf("%w: '%s'", common.ErrTeamNameTaken, *input.TeamName)
+		return nil, fmt.Errorf("%w: '%s'", types.ErrTeamNameTaken, *input.TeamName)
 	}
 	// --- END UNIQUENESS CHECKS ---
 
@@ -140,14 +141,14 @@ func (s *playerServiceImpl) CreatePlayerHandler(input *common.PlayerCreateReques
 	createdPlayer, err := s.playerRepo.CreatePlayer(&player)
 	if err != nil {
 		log.Printf("Service: CreatePlayerHandler - Failed to create player for user %s in league %s: %v", input.UserID, input.LeagueID, err)
-		return nil, fmt.Errorf("%w: failed to add player to league", common.ErrFailedToCreatePlayer)
+		return nil, fmt.Errorf("%w: failed to add player to league", types.ErrFailedToCreatePlayer)
 	}
 
 	league.PlayerCount++
 	league.NewPlayerGroupNumber = ((league.NewPlayerGroupNumber + 1) % league.Format.GroupCount) + 1 // +1 due to 1-based GroupNumbers
 	if _, err = s.leagueRepo.UpdateLeague(league); err != nil {
 		log.Printf("Service: CreatePlayerHandler - Failed to update league %s after creating player for %s: %v", league.ID, input.UserID, err)
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 
 	log.Printf("Service: CreatePlayerHandler - Player %s created for user %s in league %s.", createdPlayer.ID, input.UserID, input.LeagueID)
@@ -160,10 +161,10 @@ func (s *playerServiceImpl) GetPlayerByIDHandler(playerID uuid.UUID, currentUser
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("Service: GetPlayerByIDHandler - Player %s not found: %v", playerID, err)
-			return nil, common.ErrPlayerNotFound
+			return nil, types.ErrPlayerNotFound
 		}
 		log.Printf("Service: GetPlayerByIDHandler - Failed to retrieve player %s: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to retrieve player data", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve player data", types.ErrInternalService)
 	}
 
 	return player, nil
@@ -174,10 +175,10 @@ func (s *playerServiceImpl) GetPlayerByUserIDAndLeagueID(userID, leagueID uuid.U
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("ERROR: (Service: GetPlayerByUserIDAndLeagueID) - Player (userID %s; leagueID %s) not found: %v", userID, leagueID, err)
-			return nil, common.ErrPlayerNotFound
+			return nil, types.ErrPlayerNotFound
 		}
 		log.Printf("ERROR: (Service: GetPlayerByUserIDAndLeagueID) - Failed to retrieve player with userID %s and leagueID %s: %v", userID, leagueID, err)
-		return nil, fmt.Errorf("%w: failed to retrieve player data", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve player data", types.ErrInternalService)
 	}
 
 	return player, nil
@@ -187,7 +188,7 @@ func (s *playerServiceImpl) GetPlayersByLeagueHandler(leagueID, userID uuid.UUID
 	players, err := s.playerRepo.GetPlayersByLeague(leagueID)
 	if err != nil {
 		log.Printf("Service: GetPlayersByLeagueHandler - Failed to retrieve players for league %s: %v", leagueID, err)
-		return nil, fmt.Errorf("%w: failed to retrieve players data", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve players data", types.ErrInternalService)
 	}
 
 	return players, nil
@@ -200,7 +201,7 @@ func (s *playerServiceImpl) GetPlayersByUserHandler(
 	players, err := s.playerRepo.GetPlayersByUser(userID)
 	if err != nil {
 		log.Printf("Service: GetPlayersByUserHandler - Failed to retrieve players for user %s: %v", userID, err)
-		return nil, fmt.Errorf("%w: failed to retrieve player data", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve player data", types.ErrInternalService)
 	}
 
 	return players, nil
@@ -211,10 +212,10 @@ func (s *playerServiceImpl) GetPlayerWithFullRosterHandler(playerID, currentUser
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("Service: GetPlayerWithFullRosterHandler - Player %s not found: %v", playerID, err)
-			return nil, common.ErrPlayerNotFound
+			return nil, types.ErrPlayerNotFound
 		}
 		log.Printf("Service: GetPlayerWithFullRosterHandler - Failed to retrieve player %s with full roster: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to retrieve player data", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve player data", types.ErrInternalService)
 	}
 
 	return player, nil
@@ -228,14 +229,14 @@ func (s *playerServiceImpl) GetPlayerRosterByWeek(playerID uuid.UUID, weekNumber
 	_, err := s.playerRepo.GetPlayerByID(playerID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, common.ErrPlayerNotFound
+			return nil, types.ErrPlayerNotFound
 		}
-		return nil, fmt.Errorf("%w: failed to retrieve player data: %v", common.ErrInternalService, err)
+		return nil, fmt.Errorf("%w: failed to retrieve player data: %v", types.ErrInternalService, err)
 	}
 
 	allDraftedPokemon, err := s.draftedPokemonRepo.GetAllDraftedPokemonByPlayer(playerID)
 	if err != nil {
-		return nil, fmt.Errorf("%w: failed to retrieve all drafted pokemon for player: %v", common.ErrInternalService, err)
+		return nil, fmt.Errorf("%w: failed to retrieve all drafted pokemon for player: %v", types.ErrInternalService, err)
 	}
 
 	var rosterForWeek []models.DraftedPokemon
@@ -267,10 +268,10 @@ func (s *playerServiceImpl) UpdatePlayerProfile(
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("Service: UpdatePlayerProfile - Player %s not found.", playerID)
-			return nil, common.ErrPlayerNotFound
+			return nil, types.ErrPlayerNotFound
 		}
 		log.Printf("Service: UpdatePlayerProfile - Failed to fetch player %s: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to retrieve player for update", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve player for update", types.ErrInternalService)
 	}
 
 	// TODO: with the new rbac middleware there's extra checks here that i'm not touching because
@@ -284,11 +285,11 @@ func (s *playerServiceImpl) UpdatePlayerProfile(
 		requesterPlayer, err := s.playerRepo.GetPlayerByUserAndLeague(currentUser.ID, existingPlayer.LeagueID)
 		if err != nil {
 			log.Printf("Service: UpdatePlayerProfile - Failed to get requester player for auth: %v", err)
-			return nil, common.ErrInternalService
+			return nil, types.ErrInternalService
 		}
 		if requesterPlayer == nil || (!requesterPlayer.IsLeagueOwner() && !requesterPlayer.IsLeagueModerator()) {
 			log.Printf("Service: UpdatePlayerProfile - Unauthorized access attempt by user %s to update player %s's profile.", currentUser.ID, playerID)
-			return nil, common.ErrUnauthorized
+			return nil, types.ErrUnauthorized
 		}
 	}
 
@@ -299,10 +300,10 @@ func (s *playerServiceImpl) UpdatePlayerProfile(
 			existing, err := s.playerRepo.FindPlayerByInLeagueNameAndLeagueID(*inLeagueName, existingPlayer.LeagueID)
 			if err != nil {
 				log.Printf("Service: UpdatePlayerProfile - DB error checking in-league name uniqueness: %v", err)
-				return nil, fmt.Errorf("%w: failed to check in-league name uniqueness", common.ErrInternalService)
+				return nil, fmt.Errorf("%w: failed to check in-league name uniqueness", types.ErrInternalService)
 			}
 			if existing != nil && existing.ID != existingPlayer.ID {
-				return nil, fmt.Errorf("%w: '%s'", common.ErrInLeagueNameTaken, *inLeagueName)
+				return nil, fmt.Errorf("%w: '%s'", types.ErrInLeagueNameTaken, *inLeagueName)
 			}
 		}
 		existingPlayer.InLeagueName = *inLeagueName
@@ -314,10 +315,10 @@ func (s *playerServiceImpl) UpdatePlayerProfile(
 			existing, err := s.playerRepo.FindPlayerByTeamNameAndLeagueID(*teamName, existingPlayer.LeagueID)
 			if err != nil {
 				log.Printf("Service: UpdatePlayerProfile - DB error checking team name uniqueness: %v", err)
-				return nil, fmt.Errorf("%w: failed to check team name uniqueness", common.ErrInternalService)
+				return nil, fmt.Errorf("%w: failed to check team name uniqueness", types.ErrInternalService)
 			}
 			if existing != nil && existing.ID != existingPlayer.ID {
-				return nil, fmt.Errorf("%w: '%s'", common.ErrTeamNameTaken, *teamName)
+				return nil, fmt.Errorf("%w: '%s'", types.ErrTeamNameTaken, *teamName)
 			}
 		}
 		existingPlayer.TeamName = *teamName
@@ -332,7 +333,7 @@ func (s *playerServiceImpl) UpdatePlayerProfile(
 	updatedPlayer, err := s.playerRepo.UpdatePlayer(existingPlayer)
 	if err != nil {
 		log.Printf("Service: UpdatePlayerProfile - Failed to save updated player %s: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to save player profile updates", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to save player profile updates", types.ErrInternalService)
 	}
 
 	log.Printf("Service: UpdatePlayerProfile - Player %s profile updated by user %s.", playerID, currentUser.ID)
@@ -354,10 +355,10 @@ func (s *playerServiceImpl) UpdatePlayerDraftPoints(
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("Service: UpdatePlayerDraftPoints - Player %s not found.", playerID)
-			return nil, common.ErrPlayerNotFound
+			return nil, types.ErrPlayerNotFound
 		}
 		log.Printf("Service: UpdatePlayerDraftPoints - Failed to fetch player %s: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to retrieve player for draft points update", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve player for draft points update", types.ErrInternalService)
 	}
 
 	// TODO: not touching authorization here for now. please come back to this
@@ -367,31 +368,31 @@ func (s *playerServiceImpl) UpdatePlayerDraftPoints(
 		requesterPlayer, err := s.playerRepo.GetPlayerByUserAndLeague(currentUser.ID, existingPlayer.LeagueID)
 		if err != nil {
 			log.Printf("Service: UpdatePlayerDraftPoints - Failed to get requester player for auth: %v", err)
-			return nil, common.ErrInternalService
+			return nil, types.ErrInternalService
 		}
 		if requesterPlayer == nil || (!requesterPlayer.IsLeagueOwner() && !requesterPlayer.IsLeagueModerator()) {
 			log.Printf("Service: UpdatePlayerDraftPoints - Unauthorized attempt by user %s to update player %s's draft points.", currentUser.ID, playerID)
-			return nil, common.ErrUnauthorized
+			return nil, types.ErrUnauthorized
 		}
 	}
 
 	if draftPoints == nil {
 		log.Printf("Service: UpdatePlayerDraftPoints - request draft points is somehow nil (should be impossible in the service layer)")
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 
 	// Perform update using the specific repository method
 	err = s.playerRepo.UpdatePlayerDraftPoints(playerID, *draftPoints)
 	if err != nil {
 		log.Printf("Service: UpdatePlayerDraftPoints - Failed to update player %s draft points: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to update player draft points", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to update player draft points", types.ErrInternalService)
 	}
 
 	// Fetch the updated player to return
 	updatedPlayer, err := s.playerRepo.GetPlayerByID(playerID)
 	if err != nil {
 		log.Printf("Service: UpdatePlayerDraftPoints - Failed to re-fetch player %s after update: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to re-fetch updated player", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to re-fetch updated player", types.ErrInternalService)
 	}
 
 	log.Printf("Service: UpdatePlayerDraftPoints - Player %s draft points updated to %d by user %s.", playerID, *draftPoints, currentUser.ID)
@@ -412,10 +413,10 @@ func (s *playerServiceImpl) UpdatePlayerRecord(
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("Service: UpdatePlayerRecord - Player %s not found.", playerID)
-			return nil, common.ErrPlayerNotFound
+			return nil, types.ErrPlayerNotFound
 		}
 		log.Printf("Service: UpdatePlayerRecord - Failed to fetch player %s: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to retrieve player for record update", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve player for record update", types.ErrInternalService)
 	}
 
 	// TODO: not touching authorization for this rn. come back to this
@@ -425,11 +426,11 @@ func (s *playerServiceImpl) UpdatePlayerRecord(
 		requesterPlayer, err := s.playerRepo.GetPlayerByUserAndLeague(currentUser.ID, existingPlayer.LeagueID)
 		if err != nil {
 			log.Printf("Service: UpdatePlayerRecord - Failed to get requester player for auth: %v", err)
-			return nil, common.ErrInternalService
+			return nil, types.ErrInternalService
 		}
 		if requesterPlayer == nil || (!requesterPlayer.IsLeagueOwner() && !requesterPlayer.IsLeagueModerator()) {
 			log.Printf("Service: UpdatePlayerRecord - Unauthorized attempt by user %s to update player %s's record.", currentUser.ID, playerID)
-			return nil, common.ErrUnauthorized
+			return nil, types.ErrUnauthorized
 		}
 	}
 
@@ -437,14 +438,14 @@ func (s *playerServiceImpl) UpdatePlayerRecord(
 	err = s.playerRepo.UpdatePlayerRecord(playerID, wins, losses)
 	if err != nil {
 		log.Printf("Service: UpdatePlayerRecord - Failed to update player %s record: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to update player record", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to update player record", types.ErrInternalService)
 	}
 
 	// Fetch the updated player to return
 	updatedPlayer, err := s.playerRepo.GetPlayerByID(playerID)
 	if err != nil {
 		log.Printf("Service: UpdatePlayerRecord - Failed to re-fetch player %s after update: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to re-fetch updated player", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to re-fetch updated player", types.ErrInternalService)
 	}
 
 	log.Printf("Service: UpdatePlayerRecord - Player %s record updated to W%d-L%d by user %s.", playerID, wins, losses, currentUser.ID)
@@ -462,10 +463,10 @@ func (s *playerServiceImpl) UpdatePlayerDraftPosition(
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("Service: UpdatePlayerDraftPosition - Player %s not found.", playerID)
-			return nil, common.ErrPlayerNotFound
+			return nil, types.ErrPlayerNotFound
 		}
 		log.Printf("Service: UpdatePlayerDraftPosition - Failed to fetch player %s: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to retrieve player for draft position update", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to retrieve player for draft position update", types.ErrInternalService)
 	}
 
 	// TODO: not touching this rn. fix later
@@ -475,11 +476,11 @@ func (s *playerServiceImpl) UpdatePlayerDraftPosition(
 		requesterPlayer, err := s.playerRepo.GetPlayerByUserAndLeague(currentUser.ID, existingPlayer.LeagueID)
 		if err != nil {
 			log.Printf("Service: UpdatePlayerDraftPosition - Failed to get requester player for auth: %v", err)
-			return nil, common.ErrInternalService
+			return nil, types.ErrInternalService
 		}
 		if requesterPlayer == nil || (!requesterPlayer.IsLeagueOwner() && !requesterPlayer.IsLeagueModerator()) {
 			log.Printf("Service: UpdatePlayerDraftPosition - Unauthorized attempt by user %s to update player %s's draft position.", currentUser.ID, playerID)
-			return nil, common.ErrUnauthorized
+			return nil, types.ErrUnauthorized
 		}
 	}
 
@@ -487,14 +488,14 @@ func (s *playerServiceImpl) UpdatePlayerDraftPosition(
 	err = s.playerRepo.UpdatePlayerDraftPosition(playerID, draftPosition)
 	if err != nil {
 		log.Printf("Service: UpdatePlayerDraftPosition - Failed to update player %s draft position: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to update player draft position", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to update player draft position", types.ErrInternalService)
 	}
 
 	// Fetch the updated player to return
 	updatedPlayer, err := s.playerRepo.GetPlayerByID(playerID)
 	if err != nil {
 		log.Printf("Service: UpdatePlayerDraftPosition - Failed to re-fetch player %s after update: %v", playerID, err)
-		return nil, fmt.Errorf("%w: failed to re-fetch updated player", common.ErrInternalService)
+		return nil, fmt.Errorf("%w: failed to re-fetch updated player", types.ErrInternalService)
 	}
 
 	log.Printf("Service: UpdatePlayerDraftPosition - Player %s draft position updated to %d by user %s.", playerID, draftPosition, currentUser.ID)
@@ -506,17 +507,17 @@ func (s *playerServiceImpl) UpdatePlayerRole(currentUserID, playerID uuid.UUID, 
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			log.Printf("Service: UpdatePlayerRole - player %s not found to update role (Requesting user: %s): %v\n", playerID, currentUserID, err)
-			return nil, common.ErrPlayerNotFound
+			return nil, types.ErrPlayerNotFound
 		}
 		log.Printf("Service: UpdatePlayerRole - Failed to update role (Requesting user: %s) for player %s: %v\n", currentUserID, playerID, err)
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 
 	updatedPlayer, err := s.playerRepo.GetPlayerByID(playerID)
 	if err != nil {
 		// should be impossible for this to be a record not found again
 		log.Printf("Service: UpdatePlayerDraftPosition - Failed to re-fetch (Requesting user: %s) player %s after update: %v\n", currentUserID, playerID, err)
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 
 	return updatedPlayer, nil

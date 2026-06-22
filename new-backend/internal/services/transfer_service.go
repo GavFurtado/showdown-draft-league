@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
@@ -56,12 +56,12 @@ func (s *transferServiceImpl) StartTransferPeriod(leagueID uuid.UUID) error {
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
 		log.Printf("ERROR: (TransferService: StartTransferPeriod) - Failed to fetch league %s: %v\n", leagueID, err)
-		return common.ErrLeagueNotFound
+		return types.ErrLeagueNotFound
 	}
 
 	// 2. Validate Status
 	if !league.Format.AllowTransfers {
-		return fmt.Errorf("%w: Transfers are disabled for this league", common.ErrUnauthorized)
+		return fmt.Errorf("%w: Transfers are disabled for this league", types.ErrUnauthorized)
 	}
 
 	if league.Status != enums.LeagueStatusRegularSeason && league.Status != enums.LeagueStatusPostDraft {
@@ -75,7 +75,7 @@ func (s *transferServiceImpl) StartTransferPeriod(leagueID uuid.UUID) error {
 		players, err := s.playerRepo.GetPlayersByLeague(leagueID)
 		if err != nil {
 			log.Printf("ERROR: (TransferService: StartTransferPeriod) - Failed to get players for league %s: %v\n", leagueID, err)
-			return common.ErrInternalService
+			return types.ErrInternalService
 		}
 
 		for _, player := range players {
@@ -113,7 +113,7 @@ func (s *transferServiceImpl) StartTransferPeriod(leagueID uuid.UUID) error {
 	if _, err := s.leagueRepo.UpdateLeague(league); err != nil {
 		log.Printf("ERROR: (TransferService: StartTransferPeriod) - Failed to update league %s status: %v\n", leagueID, err)
 		s.schedulerService.DeregisterTask(taskID)
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 
 	if !league.Format.TransfersCostCredits {
@@ -135,7 +135,7 @@ func (s *transferServiceImpl) EndTransferPeriod(leagueID uuid.UUID) error {
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
 		log.Printf("ERROR: (TransferService: EndTransferPeriod) - Failed to fetch league %s: %v\n", leagueID, err)
-		return common.ErrLeagueNotFound
+		return types.ErrLeagueNotFound
 	}
 
 	// 2. Validate Status
@@ -173,7 +173,7 @@ func (s *transferServiceImpl) EndTransferPeriod(leagueID uuid.UUID) error {
 	if _, err := s.leagueRepo.UpdateLeague(league); err != nil {
 		log.Printf("ERROR: (TransferService: EndTransferPeriod) - Failed to update league %s: %v\n", leagueID, err)
 		s.schedulerService.DeregisterTask(taskID)
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 
 	log.Printf("LOG: (TransferService: EndTransferPeriod) - Transfer window ended for league %s.\n", leagueID)
@@ -186,29 +186,29 @@ func (s *transferServiceImpl) DropPokemon(currentUser *models.User, leagueID, dr
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return common.ErrLeagueNotFound
+			return types.ErrLeagueNotFound
 		}
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 
 	draftedPokemon, err := s.draftedPokemonRepo.GetDraftedPokemonByID(draftedPokemonID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return common.ErrDraftedPokemonNotFound
+			return types.ErrDraftedPokemonNotFound
 		}
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 	if draftedPokemon.LeagueID != leagueID {
-		return common.ErrForbidden
+		return types.ErrForbidden
 	}
 
 	// Authorize user is owner of pokemon
 	player, err := s.playerRepo.GetPlayerByID(draftedPokemon.PlayerID)
 	if err != nil {
-		return common.ErrPlayerNotFound
+		return types.ErrPlayerNotFound
 	}
 	if player.UserID != currentUser.ID {
-		return common.ErrUnauthorized
+		return types.ErrUnauthorized
 	}
 
 	inWindow, err := s.isLeagueInTransferWindow(draftedPokemon.LeagueID)
@@ -216,31 +216,31 @@ func (s *transferServiceImpl) DropPokemon(currentUser *models.User, leagueID, dr
 		return err
 	}
 	if !inWindow {
-		return common.ErrInvalidState
+		return types.ErrInvalidState
 	}
 
 	if player.TransferCredits < league.Format.DropCost {
-		return common.ErrInsufficientTransferCredits
+		return types.ErrInsufficientTransferCredits
 	}
 
 	if draftedPokemon.IsReleased {
-		return common.ErrPokemonAlreadyReleased
+		return types.ErrPokemonAlreadyReleased
 	}
 
 	// Check if dropping this pokemon would put the player below the minimum
 	currentPokemonCount, err := s.draftedPokemonRepo.GetDraftedPokemonCountByPlayer(player.ID)
 	if err != nil {
 		log.Printf("LOG: (Error: TransferService.DropPokemon) - could not get pokemon count for player %s: %v", player.ID, err)
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 	if currentPokemonCount <= int64(league.MinPokemonPerPlayer) {
-		return common.ErrBelowMinPokemon
+		return types.ErrBelowMinPokemon
 	}
 
 	err = s.draftedPokemonRepo.ReleasePokemonTransaction(draftedPokemon, player, league.Format.DropCost, league.CurrentWeekNumber)
 	if err != nil {
 		log.Printf("LOG: (Error: TransferService.DropPokemon) - Failed to release pokemon with ID %s: %v", draftedPokemonID, err)
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 	return nil
 }
@@ -251,21 +251,21 @@ func (s *transferServiceImpl) PickupFreeAgent(currentUser *models.User, leagueID
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return common.ErrLeagueNotFound
+			return types.ErrLeagueNotFound
 		}
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 
 	leaguePokemon, err := s.leaguePokemonRepo.GetLeaguePokemonByID(leaguePokemonID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return common.ErrLeaguePokemonNotFound
+			return types.ErrLeaguePokemonNotFound
 		}
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 
 	if leaguePokemon.LeagueID != leagueID {
-		return common.ErrForbidden
+		return types.ErrForbidden
 	}
 
 	inWindow, err := s.isLeagueInTransferWindow(leaguePokemon.LeagueID)
@@ -273,30 +273,30 @@ func (s *transferServiceImpl) PickupFreeAgent(currentUser *models.User, leagueID
 		return err
 	}
 	if !inWindow {
-		return common.ErrInvalidState // Or a more specific "not in transfer window" error
+		return types.ErrInvalidState // Or a more specific "not in transfer window" error
 	}
 
 	player, err := s.playerRepo.GetPlayerByUserAndLeague(currentUser.ID, leaguePokemon.LeagueID)
 	if err != nil {
-		return common.ErrPlayerNotFound
+		return types.ErrPlayerNotFound
 	}
 
 	if player.TransferCredits < league.Format.PickupCost {
-		return common.ErrInsufficientTransferCredits
+		return types.ErrInsufficientTransferCredits
 	}
 
 	if !leaguePokemon.IsAvailable {
-		return common.ErrConflict // Pokemon not available
+		return types.ErrConflict // Pokemon not available
 	}
 
 	// Check if picking up this pokemon would put the player above the maximum
 	currentPokemonCount, err := s.draftedPokemonRepo.GetDraftedPokemonCountByPlayer(player.ID)
 	if err != nil {
 		log.Printf("LOG: (Error: TransferService.PickupFreeAgent) - could not get pokemon count for player %s: %v", player.ID, err)
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 	if currentPokemonCount >= int64(league.MaxPokemonPerPlayer) {
-		return common.ErrAboveMaxPokemon
+		return types.ErrAboveMaxPokemon
 	}
 
 	newDraftedPokemon := &models.DraftedPokemon{
@@ -311,7 +311,7 @@ func (s *transferServiceImpl) PickupFreeAgent(currentUser *models.User, leagueID
 	// Call the new repository transaction method
 	if err := s.draftedPokemonRepo.PickupFreeAgentTransaction(player, newDraftedPokemon, leaguePokemon, league.Format.PickupCost); err != nil {
 		log.Printf("LOG: (Error: TransferService.PickupFreeAgent) - Failed to complete pickup free agent transaction: %v", err)
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 
 	return nil
@@ -320,7 +320,7 @@ func (s *transferServiceImpl) PickupFreeAgent(currentUser *models.User, leagueID
 func (s *transferServiceImpl) isLeagueInTransferWindow(leagueID uuid.UUID) (bool, error) {
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
-		return false, common.ErrLeagueNotFound
+		return false, types.ErrLeagueNotFound
 	}
 	return league.Status == enums.LeagueStatusTransferWindow, nil
 }

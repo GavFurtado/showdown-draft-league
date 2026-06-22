@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	mock_repositories "github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
@@ -54,7 +54,7 @@ func TestDraftedPokemonService_GetDraftedPokemonByID(t *testing.T) {
 
 		result, err := service.GetDraftedPokemonByID(testID)
 		assert.Nil(t, result)
-		assert.ErrorIs(t, err, common.ErrDraftedPokemonNotFound)
+		assert.ErrorIs(t, err, types.ErrDraftedPokemonNotFound)
 
 		mockDraftedPokemonRepo.AssertExpectations(t)
 	})
@@ -65,7 +65,7 @@ func TestDraftedPokemonService_GetDraftedPokemonByID(t *testing.T) {
 
 		result, err := service.GetDraftedPokemonByID(testID)
 		assert.Nil(t, result)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 
 		mockDraftedPokemonRepo.AssertExpectations(t)
 	})
@@ -117,7 +117,7 @@ func TestDraftedPokemonService_GetDraftedPokemonByPlayer(t *testing.T) {
 
 		result, err := service.GetDraftedPokemonByPlayer(testPlayerID)
 		assert.Nil(t, result)
-		assert.ErrorIs(t, err, common.ErrPlayerNotFound)
+		assert.ErrorIs(t, err, types.ErrPlayerNotFound)
 
 		mockPlayerRepo.AssertExpectations(t)
 	})
@@ -128,7 +128,7 @@ func TestDraftedPokemonService_GetDraftedPokemonByPlayer(t *testing.T) {
 
 		result, err := service.GetDraftedPokemonByPlayer(testPlayerID)
 		assert.Nil(t, result)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 
 		mockPlayerRepo.AssertExpectations(t)
 	})
@@ -146,7 +146,7 @@ func TestDraftedPokemonService_GetDraftedPokemonByPlayer(t *testing.T) {
 
 		result, err := service.GetDraftedPokemonByPlayer(testPlayerID)
 		assert.Nil(t, result)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 
 		mockPlayerRepo.AssertExpectations(t)
 		mockDraftedPokemonRepo.AssertExpectations(t)
@@ -202,7 +202,7 @@ func TestDraftedPokemonService_IsPokemonDrafted(t *testing.T) {
 
 		result, err := service.IsPokemonDrafted(testLeagueID, testPokemonSpeciesID)
 		assert.False(t, result)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 
 		mockDraftedPokemonRepo.AssertExpectations(t)
 	})
@@ -212,7 +212,7 @@ func TestDraftedPokemonService_IsPokemonDrafted(t *testing.T) {
 
 		result, err := service.IsPokemonDrafted(testLeagueID, testPokemonSpeciesID)
 		assert.False(t, result)
-		assert.ErrorIs(t, err, common.ErrPokemonSpeciesNotFound)
+		assert.ErrorIs(t, err, types.ErrPokemonSpeciesNotFound)
 
 		mockPokemonSpeciesRepo.AssertExpectations(t)
 	})
@@ -257,7 +257,7 @@ func TestDraftedPokemonService_GetNextDraftPickNumber(t *testing.T) {
 
 		result, err := service.GetNextDraftPickNumber(testLeagueID)
 		assert.Equal(t, 0, result)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 
 		mockDraftedPokemonRepo.AssertExpectations(t)
 	})
@@ -267,7 +267,7 @@ func TestDraftedPokemonService_GetNextDraftPickNumber(t *testing.T) {
 
 		result, err := service.GetNextDraftPickNumber(testLeagueID)
 		assert.Equal(t, 0, result)
-		assert.ErrorIs(t, err, common.ErrInvalidState)
+		assert.ErrorIs(t, err, types.ErrInvalidState)
 
 		mockLeagueRepo.AssertExpectations(t)
 	})
@@ -310,7 +310,7 @@ func TestDraftedPokemonService_GetDraftedPokemonCountByPlayer(t *testing.T) {
 
 		result, err := service.GetDraftedPokemonCountByPlayer(currentUser, testPlayerID)
 		assert.Equal(t, int64(0), result)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 
 		mockDraftedPokemonRepo.AssertExpectations(t)
 	})
@@ -349,7 +349,7 @@ func TestDraftedPokemonService_DeleteDraftedPokemon(t *testing.T) {
 		mockDraftedPokemonRepo.On("DeleteDraftedPokemon", testDraftedPokemonID).Return(gorm.ErrRecordNotFound).Once()
 
 		err := service.DeleteDraftedPokemon(currentUser, testDraftedPokemonID)
-		assert.ErrorIs(t, err, common.ErrDraftedPokemonNotFound)
+		assert.ErrorIs(t, err, types.ErrDraftedPokemonNotFound)
 
 		mockDraftedPokemonRepo.AssertExpectations(t)
 	})
@@ -359,7 +359,7 @@ func TestDraftedPokemonService_DeleteDraftedPokemon(t *testing.T) {
 		mockDraftedPokemonRepo.On("DeleteDraftedPokemon", testDraftedPokemonID).Return(repoErr).Once()
 
 		err := service.DeleteDraftedPokemon(currentUser, testDraftedPokemonID)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 
 		mockDraftedPokemonRepo.AssertExpectations(t)
 	})
@@ -405,7 +405,7 @@ func TestDraftedPokemonService_SimpleGetterMethods(t *testing.T) {
 
 		result, err := service.GetDraftedPokemonByLeague(testLeagueID)
 		assert.Nil(t, result)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 
 		mockDraftedPokemonRepo.AssertExpectations(t)
 	})

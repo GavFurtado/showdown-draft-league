@@ -4,7 +4,7 @@ import (
 	"errors"
 	"log"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
@@ -38,10 +38,10 @@ func (s *RBACServiceImpl) CanAccess(userID uuid.UUID, leagueID uuid.UUID, requir
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("LOG: (Service: CanAccess) - Player (User ID: %s) not found (likely not part of league or league doesn't exist).\n", userID)
-			return nil, false, common.ErrLeagueNotFound
+			return nil, false, types.ErrLeagueNotFound
 		}
 		log.Printf("LOG: (Service: CanAccess) - failed to retrieve player (userID: %s; leagueID: %s\n", userID, leagueID)
-		return nil, false, common.ErrInternalService
+		return nil, false, types.ErrInternalService
 	}
 
 	// check if the role matches the permission required

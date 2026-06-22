@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/middleware"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/gin-gonic/gin"
@@ -21,7 +21,7 @@ func NewUserController(userService services.UserService) UserController {
 	}
 }
 
-// gets current user profile.
+// GetMyProfile gets current user profile.
 func (ctrl *UserController) GetMyProfile(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
@@ -44,7 +44,7 @@ func (ctrl *UserController) GetMyProfile(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, user)
 }
 
-// gets current user's discord details
+// GetMyDiscordDetails gets current user's discord details
 // main use case is for the profile on navbar
 func (ctrl *UserController) GetMyDiscordDetails(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
@@ -68,7 +68,7 @@ func (ctrl *UserController) GetMyDiscordDetails(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, discordDetails)
 }
 
-// updates a user's profile
+// UpdateProfile updates a user's profile
 // currently (29/06/25) only does Showdown Username cuz that's the only thing that should be updatable
 func (ctrl *UserController) UpdateProfile(ctx *gin.Context) {
 	// doesn't have admin override (can be done if we just have userID in req instead and modify the service a little bit)
@@ -79,7 +79,7 @@ func (ctrl *UserController) UpdateProfile(ctx *gin.Context) {
 		return
 	}
 
-	var req common.UserUpdateProfileRequest
+	var req requests.UserUpdateProfileRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Missing field(s) in the payload"})
 		return

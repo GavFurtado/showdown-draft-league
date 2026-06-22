@@ -1,7 +1,7 @@
 package mock_services
 
 import (
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/google/uuid"
@@ -40,7 +40,7 @@ func (m *MockDraftService) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*m
 	return result, args.Error(1)
 }
 
-func (m *MockDraftService) MakePick(currentUser *models.User, leagueID uuid.UUID, input *common.DraftMakePickDTO) error {
+func (m *MockDraftService) MakePick(currentUser *models.User, leagueID uuid.UUID, input *requests.DraftMakePickRequest) error {
 	args := m.Called(currentUser, leagueID, input)
 	return args.Error(0)
 }

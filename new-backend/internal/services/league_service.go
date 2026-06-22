@@ -5,11 +5,12 @@ import (
 	"log"
 	"time"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 	"github.com/google/uuid"
 )
@@ -17,7 +18,7 @@ import (
 // defines the interface for league-related business logic.
 type LeagueService interface {
 	// handles the business logic for creating a new league.
-	CreateLeague(userID uuid.UUID, req *common.LeagueCreateRequestDTO) (*models.League, error)
+	CreateLeague(userID uuid.UUID, req *requests.LeagueCreateRequestDTO) (*models.League, error)
 	// Get league entity using leagueID
 	GetLeagueByIDForUser(userID, leagueID uuid.UUID) (*models.League, error)
 	// gets all Leagues where userID is the commissioner
@@ -77,7 +78,7 @@ func (s *leagueServiceImpl) SetTransferService(transferService TransferService) 
 }
 
 // handles the business logic for creating a new league.
-func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueCreateRequestDTO) (*models.League, error) {
+func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.LeagueCreateRequestDTO) (*models.League, error) {
 	const maxLeaguesCommisionable = 2
 	const maxGroupsAllowed = 2
 
@@ -89,15 +90,15 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueC
 	}
 
 	if count >= maxLeaguesCommisionable {
-		return nil, common.ErrMaxLeagueCreationLimitReached
+		return nil, types.ErrMaxLeagueCreationLimitReached
 	}
 
 	if input.Format.GroupCount > maxGroupsAllowed {
-		return nil, common.ErrExceedsMaxAllowableGroupCount
+		return nil, types.ErrExceedsMaxAllowableGroupCount
 	}
 
 	if input.Format.AllowTransfers && input.Format.TransferWindowFrequencyDays%7 != 0 {
-		return nil, fmt.Errorf("%w: TransferWindowFrequencyDays must be a multiple of 7", common.ErrInvalidLeagueConfiguration)
+		return nil, fmt.Errorf("%w: TransferWindowFrequencyDays must be a multiple of 7", types.ErrInvalidLeagueConfiguration)
 	}
 
 	newPlayerGroupNumber := 1
@@ -113,28 +114,10 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueC
 		MaxPokemonPerPlayer:  input.MaxPokemonPerPlayer,
 		MinPokemonPerPlayer:  input.MinPokemonPerPlayer,
 		StartingDraftPoints:  input.StartingDraftPoints,
-		Status:               enums.LeagueStatusSetup,
-		StartDate:            time.Now(),
 		NewPlayerGroupNumber: newPlayerGroupNumber,
-		PlayerCount:          1,
-		Format: &models.LeagueFormat{
-			SeasonType:                  input.Format.SeasonType,
-			GroupCount:                  input.Format.GroupCount,
-			PlayoffType:                 input.Format.PlayoffType,
-			PlayoffParticipantCount:     input.Format.PlayoffParticipantCount,
-			PlayoffByesCount:            input.Format.PlayoffByesCount,
-			PlayoffSeedingType:          input.Format.PlayoffSeedingType,
-			IsSnakeRoundDraft:           input.Format.IsSnakeRoundDraft,
-			AllowTransfers:              input.Format.AllowTransfers,
-			TransfersCostCredits:        input.Format.TransfersCostCredits,
-			TransferCreditsPerWindow:    input.Format.TransferCreditsPerWindow,
-			TransferCreditCap:           input.Format.TransferCreditCap,
-			TransferWindowDuration:      input.Format.TransferWindowDuration,
-			TransferWindowFrequencyDays: input.Format.TransferWindowFrequencyDays,
-			DropCost:                    input.Format.DropCost,
-			PickupCost:                  input.Format.PickupCost,
-		},
+		Format:               &input.Format,
 	}
+	league.StartDate = time.Now()
 
 	createdLeague, err := s.leagueRepo.CreateLeague(league)
 	if err != nil {
@@ -142,7 +125,7 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *common.LeagueC
 		return nil, fmt.Errorf("failed to create league: %w", err)
 	}
 
-	// TODO: this should maybe not be done
+	// TODO: creating an owner player should maybe not be done
 	ownerPlayer := &models.Player{
 		UserID:          userID,
 		LeagueID:        createdLeague.ID,
@@ -213,13 +196,13 @@ func (s *leagueServiceImpl) StartRegularSeason(leagueID uuid.UUID) error {
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
 		log.Printf("ERROR: (LeagueService: StartRegularSeason) - Failed to fetch league %s: %v\n", leagueID, err)
-		return common.ErrLeagueNotFound
+		return types.ErrLeagueNotFound
 	}
 
 	// 1. Validate League Status
 	if league.Status != enums.LeagueStatusPostDraft {
 		log.Printf("ERROR: (LeagueService: StartRegularSeason) - League %s is not in POST_DRAFT status, cannot start regular season. Current status: %s\n", leagueID, league.Status)
-		return common.ErrInvalidState
+		return types.ErrInvalidState
 	}
 
 	// 2. Generate Regular Season Games
@@ -282,7 +265,7 @@ func (s *leagueServiceImpl) ProcessWeeklyTick(leagueID uuid.UUID) error {
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
 		log.Printf("ERROR: (LeagueService: ProcessWeeklyTick) - Failed to fetch league %s: %v\n", leagueID, err)
-		return common.ErrLeagueNotFound
+		return types.ErrLeagueNotFound
 	}
 
 	if league.Status != enums.LeagueStatusRegularSeason {

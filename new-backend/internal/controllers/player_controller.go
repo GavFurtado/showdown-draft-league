@@ -5,10 +5,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/middleware"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -47,11 +48,11 @@ func (c *playerControllerImpl) JoinLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
 		log.Printf("PlayerController: JoinLeague - no user in context\n")
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrNoUserInContext.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrNoUserInContext.Error()})
 		return
 	}
 
-	var req common.PlayerCreateRequest
+	var req requests.PlayerCreateRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		log.Printf("PlayerController: JoinLeague - bad request\n")
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields in payload"})
@@ -76,13 +77,13 @@ func (c *playerControllerImpl) JoinLeague(ctx *gin.Context) {
 	if err != nil {
 		log.Printf("PlayerController: JoinLeague - Service Method returned an error\n")
 		switch err {
-		case common.ErrUserNotFound:
+		case types.ErrUserNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		case common.ErrUserAlreadyInLeague, common.ErrInLeagueNameTaken, common.ErrTeamNameTaken:
+		case types.ErrUserAlreadyInLeague, types.ErrInLeagueNameTaken, types.ErrTeamNameTaken:
 			ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
-		case common.ErrInternalService, common.ErrFailedToCreatePlayer:
+		case types.ErrInternalService, types.ErrFailedToCreatePlayer:
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		case common.ErrInvalidState:
+		case types.ErrInvalidState:
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		default:
 			// fallback in case the error is unrecognized
@@ -99,14 +100,14 @@ func (c *playerControllerImpl) GetPlayerByID(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
 		log.Printf("PlayerController: GetPlayerByID - no user in context\n")
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrNoUserInContext.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrNoUserInContext.Error()})
 		return
 	}
 
 	playerIDstr := ctx.Param("id")
 	playerID, err := uuid.Parse(playerIDstr)
 	if err != nil { // if the str was "" (which btw idk how that happens) it's still handled here
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
 		return
 	}
 
@@ -114,11 +115,11 @@ func (c *playerControllerImpl) GetPlayerByID(ctx *gin.Context) {
 	if err != nil {
 		log.Printf("LOG: (PlayerController: GetPlayerByID) - Error occured in the Service Method\n")
 		switch err {
-		case common.ErrPlayerNotFound:
+		case types.ErrPlayerNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		case common.ErrInternalService:
+		case types.ErrInternalService:
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		case common.ErrUnauthorized:
+		case types.ErrUnauthorized:
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		default:
 			// fallback
@@ -141,7 +142,7 @@ func (c *playerControllerImpl) GetPlayerByUserIDAndLeagueID(ctx *gin.Context) {
 	leagueIDStr := ctx.Param("leagueId")
 	leagueID, err := uuid.Parse(leagueIDStr)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
 		return
 	}
 
@@ -149,9 +150,9 @@ func (c *playerControllerImpl) GetPlayerByUserIDAndLeagueID(ctx *gin.Context) {
 	if err != nil {
 		log.Printf("LOG: (PlayerController: GetPlayerByID) - Error occured in the Service Method\n")
 		switch err {
-		case common.ErrPlayerNotFound:
+		case types.ErrPlayerNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		case common.ErrInternalService:
+		case types.ErrInternalService:
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		default:
 			// fallback
@@ -169,7 +170,7 @@ func (c *playerControllerImpl) GetPlayersByLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
 		log.Printf("PlayerController: GetPlayersByLeague - no user in context\n")
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrNoUserInContext.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrNoUserInContext.Error()})
 		return
 	}
 
@@ -177,21 +178,21 @@ func (c *playerControllerImpl) GetPlayersByLeague(ctx *gin.Context) {
 	leagueIDStr := ctx.Param("leagueId")
 	leagueID, err := uuid.Parse(leagueIDStr)
 	if err != nil { // if the str was "" (which btw idk how that happens) it's still handled here
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
 		return
 	}
 
 	if leagueID == uuid.Nil || currentUser.ID == uuid.Nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
 	}
 
 	players, err := c.playerService.GetPlayersByLeagueHandler(leagueID, currentUser.ID)
 	if err != nil {
 		log.Printf("PlayerController: GetPlayersByLeague - Error occured in the Service Method")
 		switch err {
-		case common.ErrInternalService:
+		case types.ErrInternalService:
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		case common.ErrUnauthorized:
+		case types.ErrUnauthorized:
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		default:
 			// fallback
@@ -209,7 +210,7 @@ func (c playerControllerImpl) GetPlayersByUser(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
 		log.Printf("PlayerController: GetPlayersByUser - no user in context\n")
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrNoUserInContext.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrNoUserInContext.Error()})
 		return
 
 	}
@@ -218,7 +219,7 @@ func (c playerControllerImpl) GetPlayersByUser(ctx *gin.Context) {
 	userIDstr := ctx.Param("id")
 	userID, err := uuid.Parse(userIDstr)
 	if err != nil { // if the str was "" (which btw idk how that happens) it's still handled here
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
 		return
 	}
 
@@ -226,9 +227,9 @@ func (c playerControllerImpl) GetPlayersByUser(ctx *gin.Context) {
 	if err != nil {
 		log.Printf("PlayerController: GetPlayersByUser - Error occured in the Service Method")
 		switch err {
-		case common.ErrInternalService:
+		case types.ErrInternalService:
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		case common.ErrUnauthorized:
+		case types.ErrUnauthorized:
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		default:
 			// fallback
@@ -247,14 +248,14 @@ func (c *playerControllerImpl) GetPlayerWithFullRoster(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
 		log.Printf("PlayerController: GetPlayersWithFullRoster - no user in context\n")
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrNoUserInContext.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrNoUserInContext.Error()})
 		return
 	}
 
 	playerIDStr := ctx.Param("id")
 	playerID, err := uuid.Parse(playerIDStr)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
 		return
 	}
 
@@ -270,9 +271,9 @@ func (c *playerControllerImpl) GetPlayerWithFullRoster(ctx *gin.Context) {
 		if err != nil {
 			log.Printf("PlayerController: GetPlayerRosterByWeek - Error occurred in the Service Method")
 			switch err {
-			case common.ErrPlayerNotFound:
+			case types.ErrPlayerNotFound:
 				ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			case common.ErrInternalService:
+			case types.ErrInternalService:
 				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			default:
 				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "unexpected error"})
@@ -287,11 +288,11 @@ func (c *playerControllerImpl) GetPlayerWithFullRoster(ctx *gin.Context) {
 	if err != nil {
 		log.Printf("PlayerController: GetPlayersWithFullRoster - Error occurred in the Service Method")
 		switch err {
-		case common.ErrPlayerNotFound:
+		case types.ErrPlayerNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		case common.ErrInternalService:
+		case types.ErrInternalService:
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		case common.ErrUnauthorized:
+		case types.ErrUnauthorized:
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		default:
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "unexpected error"})
@@ -307,11 +308,11 @@ func (c *playerControllerImpl) GetPlayerWithFullRoster(ctx *gin.Context) {
 func (c *playerControllerImpl) UpdatePlayerProfile(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrNoUserInContext.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrNoUserInContext.Error()})
 		return
 	}
 
-	var req common.UpdatePlayerInfoRequest
+	var req requests.UpdatePlayerInfoRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -320,7 +321,7 @@ func (c *playerControllerImpl) UpdatePlayerProfile(ctx *gin.Context) {
 	playerIDstr := ctx.Param("id")
 	playerID, err := uuid.Parse(playerIDstr)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
 		return
 	}
 
@@ -368,13 +369,13 @@ func (c *playerControllerImpl) updatePlayerProfileFields(ctx *gin.Context, curre
 	player, err := c.playerService.UpdatePlayerProfile(currentUser, playerID, inLeagueName, teamName)
 	if err != nil {
 		switch err {
-		case common.ErrPlayerNotFound:
+		case types.ErrPlayerNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		case common.ErrInLeagueNameTaken, common.ErrTeamNameTaken:
+		case types.ErrInLeagueNameTaken, types.ErrTeamNameTaken:
 			ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
-		case common.ErrInternalService:
+		case types.ErrInternalService:
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		case common.ErrUnauthorized:
+		case types.ErrUnauthorized:
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		default:
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "unexpected error"})
@@ -389,11 +390,11 @@ func (c *playerControllerImpl) updatePlayerDraftPoints(ctx *gin.Context, current
 	player, err := c.playerService.UpdatePlayerDraftPoints(currentUser, playerID, draftPoints)
 	if err != nil {
 		switch err {
-		case common.ErrPlayerNotFound:
+		case types.ErrPlayerNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		case common.ErrInternalService:
+		case types.ErrInternalService:
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		case common.ErrUnauthorized:
+		case types.ErrUnauthorized:
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		default:
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "unexpected error"})
@@ -408,11 +409,11 @@ func (c *playerControllerImpl) updatePlayerDraftPosition(ctx *gin.Context, curre
 	player, err := c.playerService.UpdatePlayerDraftPosition(currentUser, playerID, *draftPosition)
 	if err != nil {
 		switch err {
-		case common.ErrPlayerNotFound:
+		case types.ErrPlayerNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		case common.ErrInternalService:
+		case types.ErrInternalService:
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		case common.ErrUnauthorized:
+		case types.ErrUnauthorized:
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		default:
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "unexpected error"})
@@ -427,11 +428,11 @@ func (c *playerControllerImpl) updatePlayerRecord(ctx *gin.Context, currentUser 
 	player, err := c.playerService.UpdatePlayerRecord(currentUser, playerID, wins, losses)
 	if err != nil {
 		switch err {
-		case common.ErrPlayerNotFound:
+		case types.ErrPlayerNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		case common.ErrInternalService:
+		case types.ErrInternalService:
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		case common.ErrUnauthorized:
+		case types.ErrUnauthorized:
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		default:
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "unexpected error"})

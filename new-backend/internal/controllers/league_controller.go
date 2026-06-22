@@ -6,9 +6,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/middleware"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -36,11 +37,11 @@ func (ctrl *leagueControllerImpl) CreateLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
 		log.Printf("(Error: CreateLeague) - no user in context\n")
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": common.ErrNoUserInContext.Error()})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": types.ErrNoUserInContext.Error()})
 		return
 	}
 
-	var req common.LeagueCreateRequestDTO
+	var req requests.LeagueCreateRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
@@ -74,7 +75,7 @@ func (ctrl *leagueControllerImpl) GetLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
 		log.Printf("(Error: GetLeague) - no user in context\n")
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrNoUserInContext.Error()})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrNoUserInContext.Error()})
 		return
 	}
 
@@ -83,7 +84,7 @@ func (ctrl *leagueControllerImpl) GetLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(leagueIDStr)
 	if err != nil {
 		log.Printf("(Error: GetLeague) - Invalid league ID format: %v\n", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
 		return
 	}
 

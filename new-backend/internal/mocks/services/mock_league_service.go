@@ -1,7 +1,8 @@
 package mock_services
 
 import (
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/google/uuid"
@@ -13,7 +14,7 @@ type MockLeagueService struct {
 	mock.Mock
 }
 
-func (m *MockLeagueService) CreateLeague(userID uuid.UUID, req *common.LeagueCreateRequestDTO) (*models.League, error) {
+func (m *MockLeagueService) CreateLeague(userID uuid.UUID, req *requests.LeagueCreateRequestDTO) (*models.League, error) {
 	args := m.Called(userID, req)
 	var result *models.League
 	if args.Get(0) != nil {

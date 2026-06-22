@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/gin-gonic/gin"
 )
@@ -47,8 +47,8 @@ func (c *pokemonSpeciesControllerImpl) GetAllPokemonSpecies(ctx *gin.Context) {
 	pokemonDTOs, err := c.pokemonService.GetAllPokemonSpecies()
 	if err != nil {
 		log.Printf("LOG: (Error: PokemonSpeciesController.GetAllPokemonSpecies) - Service failed: %v\n", err)
-		// The service method GetAllPokemonSpecies currently only returns common.ErrInternalService
-		// if an error occurs. It does not return common.ErrPokemonSpeciesNotFound.
+		// The service method GetAllPokemonSpecies currently only returns types.ErrInternalService
+		// if an error occurs. It does not return types.ErrPokemonSpeciesNotFound.
 		// Therefore, we handle it as a generic internal server error.
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve Pokemon species due to an internal error"})
 		return
@@ -63,7 +63,7 @@ func (c *pokemonSpeciesControllerImpl) GetPokemonSpeciesByID(ctx *gin.Context) {
 	pokemonIDstr := ctx.Param("id")
 	pokemonID, err := strconv.ParseInt(pokemonIDstr, 10, 64)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
 		return
 	}
 
@@ -71,11 +71,11 @@ func (c *pokemonSpeciesControllerImpl) GetPokemonSpeciesByID(ctx *gin.Context) {
 	if err != nil {
 		log.Printf("LOG: (PokemonSpeciesController: GetPokemonSpeciesByID): Service method Error: ")
 		switch err {
-		case common.ErrPokemonSpeciesNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrPokemonSpeciesNotFound.Error()})
+		case types.ErrPokemonSpeciesNotFound:
+			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrPokemonSpeciesNotFound.Error()})
 			return
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
 			return
 		}
 	}
@@ -89,7 +89,7 @@ func (c *pokemonSpeciesControllerImpl) GetPokemonSpeciesByID(ctx *gin.Context) {
 func (c *pokemonSpeciesControllerImpl) GetPokemonSpeciesByName(ctx *gin.Context) {
 	pokemonName := ctx.Param("name")
 	if pokemonName == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
 		return
 	}
 
@@ -97,11 +97,11 @@ func (c *pokemonSpeciesControllerImpl) GetPokemonSpeciesByName(ctx *gin.Context)
 	if err != nil {
 		log.Printf("LOG: (PokemonSpeciesController: GetPokemonSpeciesByName): Service method Error: ")
 		switch err {
-		case common.ErrPokemonSpeciesNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrPokemonSpeciesNotFound.Error()})
+		case types.ErrPokemonSpeciesNotFound:
+			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrPokemonSpeciesNotFound.Error()})
 			return
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
 			return
 		}
 	}

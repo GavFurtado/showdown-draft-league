@@ -17,6 +17,7 @@ import (
 )
 
 func main() {
+	// Load application configuration
 	cfg := config.LoadConfig()
 
 	// CORS config
@@ -96,5 +97,4 @@ func main() {
 	if err := server.Run(":" + port); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
-
 }
