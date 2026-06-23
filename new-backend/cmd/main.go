@@ -43,15 +43,11 @@ func main() {
 
 	log.SetFlags(0) // no date/time.
 
-	log.Println("here")
-
 	// Connect to PostgreSQL database
 	db, err := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
-
-	fmt.Println("here")
 
 	// Auto-migrate database models
 	// Ensure the order respects foreign key dependencies.

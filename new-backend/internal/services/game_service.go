@@ -313,7 +313,7 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 	var generatedGames []*models.Game
 	numParticipants := len(seededPlayers)
 	if numParticipants == 0 { // should already be validated by this point
-		return nil, fmt.Errorf("No players provided for bracket generation")
+		return nil, fmt.Errorf("no players provided for bracket generation")
 	}
 
 	// Each round must have a power of 2 # of participants
@@ -323,7 +323,7 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 	naturalByesNeeded := nextPowerOfTwo - numParticipants
 
 	if league.Format.PlayoffSeedingType == enums.LeaguePlayoffSeedingTypeFullySeeded {
-		return nil, fmt.Errorf("%w: FULLY_SEEDED brackets not supported for single elimination. Use BYES_ONLY", common.ErrInvalidLeagueConfiguration)
+		return nil, fmt.Errorf("%w: FULLY_SEEDED brackets not supported for single elimination. Use BYES_ONLY", types.ErrInvalidLeagueConfiguration)
 	}
 
 	if naturalByesNeeded > 0 && seedingType == enums.LeaguePlayoffSeedingTypeStandard {
@@ -461,7 +461,7 @@ func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League
 	var generatedGames []*models.Game
 	numParticipants := len(seededPlayers)
 	if numParticipants == 0 { // should already be validated by this point
-		return nil, fmt.Errorf("No players provided for bracket generation")
+		return nil, fmt.Errorf("no players provided for bracket generation")
 	}
 
 	seedingType := league.Format.PlayoffSeedingType
@@ -473,7 +473,7 @@ func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League
 	remainingPlayers := []models.Player{}     // numParticipants - Format.PlayoffByeCount
 
 	if byeCount != 0 && seedingType == enums.LeaguePlayoffSeedingTypeStandard {
-		return nil, fmt.Errorf("%w: Bye count must be 0 for Standard Seeded brackets.", types.ErrInvalidLeagueConfiguration)
+		return nil, fmt.Errorf("%w: Bye count must be 0 for Standard Seeded brackets", types.ErrInvalidLeagueConfiguration)
 	}
 
 	// initialize remainingPlayers and playersGettingByes
@@ -488,7 +488,7 @@ func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League
 	if seedingType == enums.LeaguePlayoffSeedingTypeByesOnly {
 		naturalByesNeeded := nextPowerOfTwo - numParticipants
 		if naturalByesNeeded != byeCount {
-			return nil, fmt.Errorf("%w: For BYES_ONLY Double Elimination with %d particpants, number of byes (Current: %d) allowed is %d.",
+			return nil, fmt.Errorf("%w: For BYES_ONLY Double Elimination with %d particpants, number of byes (Current: %d) allowed is %d",
 				types.ErrInvalidLeagueConfiguration, numParticipants, byeCount, naturalByesNeeded)
 		}
 	} else if seedingType == enums.LeaguePlayoffSeedingTypeFullySeeded {
@@ -496,7 +496,7 @@ func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League
 		nRemainingPlayers := len(remainingPlayers) // nPlayers_UB1 + nPlayers_LB1
 
 		if nRemainingPlayers%3 != 0 {
-			return nil, fmt.Errorf("%w: For FULLY_SEEDED Double Elimination, number of players that don't get a bye (Current: %d) must be divisible by 3.",
+			return nil, fmt.Errorf("%w: For FULLY_SEEDED Double Elimination, number of players that don't get a bye (Current: %d) must be divisible by 3",
 				types.ErrInvalidLeagueConfiguration, nRemainingPlayers)
 		}
 
@@ -516,7 +516,7 @@ func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League
 		// For balanced bracket structure, # of players in UB Round 1 must be atleast twice the # of byes
 		// Disallows brackets where more players start in UB Round 2 than UB Round 1 that are otherwise valid
 		if nPlayers_UB1 < 2*byeCount {
-			return nil, fmt.Errorf("%w: For FULLY_SEEDED double elimination, the number of players receiving byes (Current: %d) cannot exceed the number of players starting in Upper Bracket Round 1 (%d) to maintain a balanced bracket structure.",
+			return nil, fmt.Errorf("%w: For FULLY_SEEDED double elimination, the number of players receiving byes (Current: %d) cannot exceed the number of players starting in Upper Bracket Round 1 (%d) to maintain a balanced bracket structure",
 				types.ErrInvalidLeagueConfiguration, byeCount, nPlayers_UB1)
 		}
 
@@ -540,7 +540,7 @@ func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League
 		nEffectivePlayers_UB2 = len(playersGettingByes) + (len(playersStartingInUB1) / 2)
 	}
 	if nEffectivePlayers_UB2 <= 0 || !isPowerOfTwo(nEffectivePlayers_UB2) {
-		return nil, fmt.Errorf("%w: Internal error: Calculated effective players for Upper Bracket Round 2 (%d) is not a positive power of two. This indicates a logic flaw in seeding validation.",
+		return nil, fmt.Errorf("%w: Internal error: Calculated effective players for Upper Bracket Round 2 (%d) is not a positive power of two. This indicates a logic flaw in seeding validation",
 			types.ErrInternalService, nEffectivePlayers_UB2)
 	}
 

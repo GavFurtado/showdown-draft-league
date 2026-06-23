@@ -54,11 +54,11 @@ func (ctrl *leagueControllerImpl) CreateLeague(ctx *gin.Context) {
 		log.Printf("(Error: CreateLeague) - Service failed: %v\n", err)
 		// Check for specific service errors to return appropriate HTTP status
 		switch {
-		case errors.Is(err, common.ErrMaxLeagueCreationLimitReached):
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrMaxLeagueCreationLimitReached.Error()})
-		case errors.Is(err, common.ErrExceedsMaxAllowableGroupCount):
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrExceedsMaxAllowableGroupCount.Error()})
-		case errors.Is(err, common.ErrInvalidLeagueConfiguration):
+		case errors.Is(err, types.ErrMaxLeagueCreationLimitReached):
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrMaxLeagueCreationLimitReached.Error()})
+		case errors.Is(err, types.ErrExceedsMaxAllowableGroupCount):
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrExceedsMaxAllowableGroupCount.Error()})
+		case errors.Is(err, types.ErrInvalidLeagueConfiguration):
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		default:
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create league"})
