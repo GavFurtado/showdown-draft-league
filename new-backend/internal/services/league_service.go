@@ -110,6 +110,7 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.Leagu
 
 	league := &models.League{
 		Name:                 input.Name,
+		OwnerUserID:          userID,
 		RulesetDescription:   input.RulesetDescription,
 		MaxPokemonPerPlayer:  input.MaxPokemonPerPlayer,
 		MinPokemonPerPlayer:  input.MinPokemonPerPlayer,

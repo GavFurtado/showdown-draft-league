@@ -11,9 +11,9 @@ import (
 type Player struct {
 	ID              uuid.UUID       `gorm:"type:uuid;primaryKey;default:gen_random_uuid();column:id" json:"ID"`
 	UserID          uuid.UUID       `gorm:"type:uuid;not null;column:user_id" json:"UserID"`
-	LeagueID        uuid.UUID       `gorm:"type:uuid;not null;column:league_id" json:"LeagueID"`
+	LeagueID        uuid.UUID       `gorm:"type:uuid;not null;column:league_id;uniqueIndex:idx_league_team_name" json:"LeagueID"`
 	InLeagueName    string          `gorm:"column:in_league_name" json:"InLeagueName"`
-	TeamName        string          `gorm:"not null;column:team_name" json:"TeamName"`
+	TeamName        string          `gorm:"not null;column:team_name;uniqueIndex:idx_league_team_name" json:"TeamName"`
 	Wins            int             `gorm:"default:0;not null;column:wins" json:"Wins"`
 	Losses          int             `gorm:"default:0;not null;column:losses" json:"Losses"`
 	DraftPoints     int             `gorm:"default:140;not null;column:draft_points" json:"DraftPoints"`
