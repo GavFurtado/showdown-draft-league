@@ -4,10 +4,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/responses"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -33,7 +35,7 @@ func TestUserService_GetMyProfileHandler(t *testing.T) {
 		mockUserRepo.On("GetUserByID", userID).Return((*models.User)(nil), gorm.ErrRecordNotFound).Once()
 
 		user, err := service.GetMyProfileHandler(userID)
-		assert.ErrorIs(t, err, common.ErrUserNotFound)
+		assert.ErrorIs(t, err, types.ErrUserNotFound)
 		assert.Nil(t, user)
 		mockUserRepo.AssertExpectations(t)
 	})
@@ -43,7 +45,7 @@ func TestUserService_GetMyProfileHandler(t *testing.T) {
 		mockUserRepo.On("GetUserByID", userID).Return((*models.User)(nil), internalErr).Once()
 
 		user, err := service.GetMyProfileHandler(userID)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 		assert.Nil(t, user)
 		mockUserRepo.AssertExpectations(t)
 	})
@@ -57,7 +59,7 @@ func TestUserService_GetMyDiscordDetailsHandler(t *testing.T) {
 
 	t.Run("Successfully gets Discord details", func(t *testing.T) {
 		user := &models.User{ID: userID, DiscordUsername: "testdiscord", DiscordAvatarURL: "avatar.url"}
-		expectedDiscordUser := &common.DiscordUser{ID: userID.String(), Username: "testdiscord", Avatar: "avatar.url"}
+		expectedDiscordUser := &responses.DiscordUserResponse{ID: userID.String(), Username: "testdiscord", Avatar: "avatar.url"}
 		mockUserRepo.On("GetUserByID", userID).Return(user, nil).Once()
 
 		discordUser, err := service.GetMyDiscordDetailsHandler(userID)
@@ -70,7 +72,7 @@ func TestUserService_GetMyDiscordDetailsHandler(t *testing.T) {
 		mockUserRepo.On("GetUserByID", userID).Return((*models.User)(nil), gorm.ErrRecordNotFound).Once()
 
 		discordUser, err := service.GetMyDiscordDetailsHandler(userID)
-		assert.ErrorIs(t, err, common.ErrUserNotFound)
+		assert.ErrorIs(t, err, types.ErrUserNotFound)
 		assert.Nil(t, discordUser)
 		mockUserRepo.AssertExpectations(t)
 	})
@@ -80,7 +82,7 @@ func TestUserService_GetMyDiscordDetailsHandler(t *testing.T) {
 		mockUserRepo.On("GetUserByID", userID).Return((*models.User)(nil), internalErr).Once()
 
 		discordUser, err := service.GetMyDiscordDetailsHandler(userID)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 		assert.Nil(t, discordUser)
 		mockUserRepo.AssertExpectations(t)
 	})
@@ -92,7 +94,7 @@ func TestUserService_UpdateProfileHandler(t *testing.T) {
 
 	userID := uuid.New()
 	showdownName := "newshowdown"
-	updateReq := common.UserUpdateProfileRequest{ShowdownName: &showdownName}
+	updateReq := requests.UserUpdateProfileRequestDTO{ShowdownName: &showdownName}
 
 	t.Run("Successfully updates user profile", func(t *testing.T) {
 		originalUser := &models.User{ID: userID, ShowdownUsername: "oldshowdown"}
@@ -111,7 +113,7 @@ func TestUserService_UpdateProfileHandler(t *testing.T) {
 		mockUserRepo.On("GetUserByID", userID).Return((*models.User)(nil), gorm.ErrRecordNotFound).Once()
 
 		user, err := service.UpdateProfileHandler(userID, updateReq)
-		assert.ErrorIs(t, err, common.ErrUserNotFound)
+		assert.ErrorIs(t, err, types.ErrUserNotFound)
 		assert.Nil(t, user)
 		mockUserRepo.AssertExpectations(t)
 	})
@@ -121,7 +123,7 @@ func TestUserService_UpdateProfileHandler(t *testing.T) {
 		mockUserRepo.On("GetUserByID", userID).Return((*models.User)(nil), internalErr).Once()
 
 		user, err := service.UpdateProfileHandler(userID, updateReq)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 		assert.Nil(t, user)
 		mockUserRepo.AssertExpectations(t)
 	})
@@ -135,7 +137,7 @@ func TestUserService_UpdateProfileHandler(t *testing.T) {
 		mockUserRepo.On("UpdateUser", updatedUser).Return((*models.User)(nil), internalErr).Once()
 
 		user, err := service.UpdateProfileHandler(userID, updateReq)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 		assert.Nil(t, user)
 		mockUserRepo.AssertExpectations(t)
 	})
@@ -164,7 +166,7 @@ func TestUserService_GetMyLeaguesHandler(t *testing.T) {
 		mockUserRepo.On("GetUserLeagues", userID).Return(([]*models.League)(nil), gorm.ErrRecordNotFound).Once()
 
 		leagues, err := service.GetMyLeaguesHandler(userID)
-		assert.ErrorIs(t, err, common.ErrUserNotFound)
+		assert.ErrorIs(t, err, types.ErrUserNotFound)
 		assert.Nil(t, leagues)
 		mockUserRepo.AssertExpectations(t)
 	})
@@ -174,7 +176,7 @@ func TestUserService_GetMyLeaguesHandler(t *testing.T) {
 		mockUserRepo.On("GetUserLeagues", userID).Return(([]*models.League)(nil), internalErr).Once()
 
 		leagues, err := service.GetMyLeaguesHandler(userID)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 		assert.Nil(t, leagues)
 		mockUserRepo.AssertExpectations(t)
 	})

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/responses"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 	"github.com/google/uuid"
@@ -106,7 +106,7 @@ func (s *authServiceImpl) HandleDiscordCallback(ctx context.Context, code string
 }
 
 // Helper functions
-func getDiscordUserInfo(accessToken string) (*common.DiscordUser, error) {
+func getDiscordUserInfo(accessToken string) (*responses.DiscordUserResponse, error) {
 	req, err := http.NewRequest("GET", "https://discord.com/api/v10/users/@me", nil)
 	if err != nil {
 		return nil, fmt.Errorf("(Error: getDiscordUserInfo) - Failed to create Discord user info request: %w", err)
@@ -126,7 +126,7 @@ func getDiscordUserInfo(accessToken string) (*common.DiscordUser, error) {
 			resp.StatusCode, string(bodyBytes))
 	}
 
-	var discordUser common.DiscordUser
+	var discordUser responses.DiscordUserResponse
 	if err := json.NewDecoder(resp.Body).Decode(&discordUser); err != nil {
 		return nil, fmt.Errorf("failed to decode Discord user info: %w", err)
 	}

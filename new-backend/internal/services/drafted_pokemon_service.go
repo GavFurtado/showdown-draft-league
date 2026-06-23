@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
@@ -72,10 +72,10 @@ func (s *draftedPokemonServiceImpl) GetDraftedPokemonByID(id uuid.UUID) (*models
 	pokemon, err := s.draftedPokemonRepo.GetDraftedPokemonByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, common.ErrDraftedPokemonNotFound
+			return nil, types.ErrDraftedPokemonNotFound
 		}
 		log.Printf("LOG: (Error: DraftedPokemonService.GetDraftedPokemonByID) - Failed to get drafted pokemon by ID %s: %v", id, err)
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 
 	return pokemon, nil
@@ -86,16 +86,16 @@ func (s *draftedPokemonServiceImpl) GetDraftedPokemonByPlayer(playerID uuid.UUID
 	targetPlayer, err := s.playerRepo.GetPlayerByID(playerID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, common.ErrPlayerNotFound
+			return nil, types.ErrPlayerNotFound
 		}
 		log.Printf("LOG: (Error: DraftedPokemonService.GetDraftedPokemonByPlayer) - Failed to get target player %s: %v", playerID, err)
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 
 	pokemon, err := s.draftedPokemonRepo.GetDraftedPokemonByPlayer(targetPlayer.ID)
 	if err != nil {
 		log.Printf("LOG: (Error: DraftedPokemonService.GetDraftedPokemonByPlayer) - Failed to get drafted pokemon by player %s: %v", playerID, err)
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 
 	return pokemon, nil
@@ -106,7 +106,7 @@ func (s *draftedPokemonServiceImpl) GetDraftedPokemonByLeague(leagueID uuid.UUID
 	pokemon, err := s.draftedPokemonRepo.GetDraftedPokemonByLeague(leagueID)
 	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.GetDraftedPokemonByLeague) - Failed to get drafted pokemon by league %s: %v", leagueID, err)
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 
 	return pokemon, nil
@@ -117,7 +117,7 @@ func (s *draftedPokemonServiceImpl) GetActiveDraftedPokemonByLeague(leagueID uui
 	pokemon, err := s.draftedPokemonRepo.GetActiveDraftedPokemonByLeague(leagueID)
 	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.GetActiveDraftedPokemonByLeague) - Failed to get active drafted pokemon by league %s: %v", leagueID, err)
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 
 	return pokemon, nil
@@ -128,7 +128,7 @@ func (s *draftedPokemonServiceImpl) GetReleasedPokemonByLeague(leagueID uuid.UUI
 	pokemon, err := s.draftedPokemonRepo.GetReleasedPokemonByLeague(leagueID)
 	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.GetReleasedPokemonByLeague) - Failed to get released pokemon by league %s: %v", leagueID, err)
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 
 	return pokemon, nil
@@ -139,15 +139,15 @@ func (s *draftedPokemonServiceImpl) IsPokemonDrafted(leagueID uuid.UUID, pokemon
 	// check if valid species id
 	if _, err := s.pokemonSpeciesRepo.GetPokemonSpeciesByID(pokemonSpeciesID); err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return false, common.ErrPokemonSpeciesNotFound
+			return false, types.ErrPokemonSpeciesNotFound
 		}
-		return false, common.ErrInternalService
+		return false, types.ErrInternalService
 	}
 
 	isDrafted, err := s.draftedPokemonRepo.IsPokemonDrafted(leagueID, pokemonSpeciesID)
 	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.IsPokemonDrafted) - Failed to check if pokemon is drafted for league %s and species %d: %v\n", leagueID, pokemonSpeciesID, err)
-		return false, common.ErrInternalService
+		return false, types.ErrInternalService
 	}
 
 	return isDrafted, nil
@@ -158,17 +158,17 @@ func (s *draftedPokemonServiceImpl) GetNextDraftPickNumber(leagueID uuid.UUID) (
 	leagueStatus, err := s.leagueRepo.GetLeagueStatus(leagueID)
 	if err != nil {
 		log.Printf("LOG: (Error: DraftedPokemonService.GetNextDraftPickNumber) - Failed to get league status for league %s: %v", leagueID, err)
-		return 0, common.ErrInternalService
+		return 0, types.ErrInternalService
 	}
 
 	if leagueStatus != enums.LeagueStatusDrafting {
-		return 0, common.ErrInvalidState
+		return 0, types.ErrInvalidState
 	}
 
 	nextPick, err := s.draftedPokemonRepo.GetNextDraftPickNumber(leagueID)
 	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.GetNextDraftPickNumber) - Failed to get next draft pick number for league %s: %v", leagueID, err)
-		return 0, common.ErrInternalService
+		return 0, types.ErrInternalService
 	}
 
 	return nextPick, nil
@@ -179,7 +179,7 @@ func (s *draftedPokemonServiceImpl) GetDraftedPokemonCountByPlayer(currentUser *
 	count, err := s.draftedPokemonRepo.GetDraftedPokemonCountByPlayer(playerID)
 	if err != nil {
 		log.Printf("LOG: (Error: DraftedPokemonService.GetDraftedPokemonCountByPlayer) - (user %s) Failed to get drafted pokemon count for player %s: %v", currentUser.ID, playerID, err)
-		return 0, common.ErrInternalService
+		return 0, types.ErrInternalService
 	}
 
 	return count, nil
@@ -190,7 +190,7 @@ func (s *draftedPokemonServiceImpl) GetDraftHistory(leagueID uuid.UUID) ([]model
 	history, err := s.draftedPokemonRepo.GetDraftHistory(leagueID)
 	if err != nil {
 		log.Printf("(Error: DraftedPokemonService.GetDraftHistory) - Failed to get draft history for league %s: %v", leagueID, err)
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 
 	return history, nil
@@ -203,17 +203,17 @@ func (s *draftedPokemonServiceImpl) TradePokemon(currentUser *models.User, draft
 	draftedPokemon, err := s.draftedPokemonRepo.GetDraftedPokemonByID(draftedPokemonID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return common.ErrDraftedPokemonNotFound
+			return types.ErrDraftedPokemonNotFound
 		}
 		log.Printf("(Error: TradePokemon) - Error getting drafted pokemon %s for trade: %v", draftedPokemonID, err)
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 
 	// 2. Get the current owner of the pokemon
 	currentOwnerPlayer, err := s.playerRepo.GetPlayerByID(draftedPokemon.PlayerID)
 	if err != nil {
 		log.Printf("(Error: TradePokemon) - Error getting current owner player %s for drafted pokemon %s: %v", draftedPokemon.PlayerID, draftedPokemonID, err)
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 
 	// 3. Get the new player's details
@@ -236,7 +236,7 @@ func (s *draftedPokemonServiceImpl) TradePokemon(currentUser *models.User, draft
 	// More complex trade logic (e.g., both players agree) would be implemented here or in a higher-level "Trade" service.
 	if currentUser.Role != "admin" && !isOwner && currentUser.ID != currentOwnerPlayer.UserID {
 		log.Printf("(Error: DraftedPokemonService.TradePokemon) - Unauthorized attempt by user %s to trade pokemon %s", currentUser.ID, draftedPokemonID)
-		return common.ErrUnauthorized
+		return types.ErrUnauthorized
 	}
 
 	// Validation: Ensure the pokemon is not released
@@ -264,10 +264,10 @@ func (s *draftedPokemonServiceImpl) DeleteDraftedPokemon(currentUser *models.Use
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			log.Printf("LOG: (Error: DraftedPokemonService.DeleteDraftedPokemon) - drafted pokemon %s not found: %v", draftedPokemonID, err)
-			return common.ErrDraftedPokemonNotFound
+			return types.ErrDraftedPokemonNotFound
 		}
 		log.Printf("(Error: DraftedPokemonService.DeleteDraftedPokemon) - Failed to delete drafted pokemon with ID %s: %v", draftedPokemonID, err)
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 
 	return nil

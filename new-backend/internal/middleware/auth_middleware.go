@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
@@ -91,7 +91,7 @@ func LeagueRBACMiddleware(
 		// Check if the user has the required permission for the league
 		player, ok, err := deps.RBACService.CanAccess(currentUser.ID, leagueID, requiredPermission)
 		if err != nil {
-			if err == common.ErrInternalService {
+			if err == types.ErrInternalService {
 				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 				return
 			}

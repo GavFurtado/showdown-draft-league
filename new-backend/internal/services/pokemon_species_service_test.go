@@ -4,10 +4,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/responses"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -32,7 +33,7 @@ func TestPokemonSpeciesService_GetPokemonSpeciesByID(t *testing.T) {
 		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", pokemonID).Return((*models.PokemonSpecies)(nil), gorm.ErrRecordNotFound).Once()
 
 		pokemon, err := service.GetPokemonSpeciesByID(pokemonID)
-		assert.ErrorIs(t, err, common.ErrPokemonSpeciesNotFound)
+		assert.ErrorIs(t, err, types.ErrPokemonSpeciesNotFound)
 		assert.Nil(t, pokemon)
 		mockPokemonSpeciesRepo.AssertExpectations(t)
 	})
@@ -42,14 +43,14 @@ func TestPokemonSpeciesService_GetPokemonSpeciesByID(t *testing.T) {
 		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", pokemonID).Return((*models.PokemonSpecies)(nil), internalErr).Once()
 
 		pokemon, err := service.GetPokemonSpeciesByID(pokemonID)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 		assert.Nil(t, pokemon)
 		mockPokemonSpeciesRepo.AssertExpectations(t)
 	})
 
 	t.Run("Returns ErrInvalidInput for invalid ID", func(t *testing.T) {
 		pokemon, err := service.GetPokemonSpeciesByID(0)
-		assert.ErrorIs(t, err, common.ErrInvalidInput)
+		assert.ErrorIs(t, err, types.ErrInvalidInput)
 		assert.Nil(t, pokemon)
 		mockPokemonSpeciesRepo.AssertNotCalled(t, "GetPokemonSpeciesByID")
 	})
@@ -75,7 +76,7 @@ func TestPokemonSpeciesService_GetPokemonSpeciesByName(t *testing.T) {
 		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByName", pokemonName).Return((*models.PokemonSpecies)(nil), gorm.ErrRecordNotFound).Once()
 
 		pokemon, err := service.GetPokemonSpeciesByName(pokemonName)
-		assert.ErrorIs(t, err, common.ErrPokemonSpeciesNotFound)
+		assert.ErrorIs(t, err, types.ErrPokemonSpeciesNotFound)
 		assert.Nil(t, pokemon)
 		mockPokemonSpeciesRepo.AssertExpectations(t)
 	})
@@ -85,14 +86,14 @@ func TestPokemonSpeciesService_GetPokemonSpeciesByName(t *testing.T) {
 		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByName", pokemonName).Return((*models.PokemonSpecies)(nil), internalErr).Once()
 
 		pokemon, err := service.GetPokemonSpeciesByName(pokemonName)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 		assert.Nil(t, pokemon)
 		mockPokemonSpeciesRepo.AssertExpectations(t)
 	})
 
 	t.Run("Returns ErrInvalidInput for empty name", func(t *testing.T) {
 		pokemon, err := service.GetPokemonSpeciesByName("")
-		assert.ErrorIs(t, err, common.ErrInvalidInput)
+		assert.ErrorIs(t, err, types.ErrInvalidInput)
 		assert.Nil(t, pokemon)
 		mockPokemonSpeciesRepo.AssertNotCalled(t, "GetPokemonSpeciesByName")
 	})
@@ -107,7 +108,7 @@ func TestPokemonSpeciesService_GetAllPokemonSpecies(t *testing.T) {
 			{ID: 1, Name: "Pikachu", Types: models.StringArray{"electric"}, Sprites: models.Sprites{FrontDefault: "url"}},
 			{ID: 2, Name: "Charmander", Types: models.StringArray{"fire"}, Sprites: models.Sprites{FrontDefault: "url2"}},
 		}
-		expectedDTOs := []common.PokemonSpeciesListDTO{
+		expectedDTOs := []responses.PokemonSpeciesListResponseDTO{
 			{ID: 1, Name: "Pikachu", Types: []string{"electric"}, FrontDefault: "url"},
 			{ID: 2, Name: "Charmander", Types: []string{"fire"}, FrontDefault: "url2"},
 		}
@@ -135,7 +136,7 @@ func TestPokemonSpeciesService_GetAllPokemonSpecies(t *testing.T) {
 		mockPokemonSpeciesRepo.On("GetAllPokemonSpecies").Return(([]models.PokemonSpecies)(nil), internalErr).Once()
 
 		pokemon, err := service.GetAllPokemonSpecies()
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 		assert.Nil(t, pokemon)
 		mockPokemonSpeciesRepo.AssertExpectations(t)
 	})
@@ -173,7 +174,7 @@ func TestPokemonSpeciesService_ListPokemonSpecies(t *testing.T) {
 		mockPokemonSpeciesRepo.On("FindPokemonSpecies", filter).Return(([]models.PokemonSpecies)(nil), internalErr).Once()
 
 		pokemon, err := service.ListPokemonSpecies(filter)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 		assert.Nil(t, pokemon)
 		mockPokemonSpeciesRepo.AssertExpectations(t)
 	})
@@ -197,15 +198,15 @@ func TestPokemonSpeciesService_CreatePokemonSpecies(t *testing.T) {
 
 	t.Run("Returns ErrInvalidInput for invalid pokemon", func(t *testing.T) {
 		err := service.CreatePokemonSpecies(nil)
-		assert.ErrorIs(t, err, common.ErrInvalidInput)
+		assert.ErrorIs(t, err, types.ErrInvalidInput)
 		mockPokemonSpeciesRepo.AssertNotCalled(t, "CreatePokemonSpecies")
 
 		err = service.CreatePokemonSpecies(&models.PokemonSpecies{ID: 0, Name: "Invalid"})
-		assert.ErrorIs(t, err, common.ErrInvalidInput)
+		assert.ErrorIs(t, err, types.ErrInvalidInput)
 		mockPokemonSpeciesRepo.AssertNotCalled(t, "CreatePokemonSpecies")
 
 		err = service.CreatePokemonSpecies(&models.PokemonSpecies{ID: 1, Name: ""})
-		assert.ErrorIs(t, err, common.ErrInvalidInput)
+		assert.ErrorIs(t, err, types.ErrInvalidInput)
 		mockPokemonSpeciesRepo.AssertNotCalled(t, "CreatePokemonSpecies")
 	})
 
@@ -214,7 +215,7 @@ func TestPokemonSpeciesService_CreatePokemonSpecies(t *testing.T) {
 		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", newPokemon.ID).Return(existingPokemon, nil).Once()
 
 		err := service.CreatePokemonSpecies(newPokemon)
-		assert.ErrorIs(t, err, common.ErrConflict)
+		assert.ErrorIs(t, err, types.ErrConflict)
 		mockPokemonSpeciesRepo.AssertExpectations(t)
 		mockPokemonSpeciesRepo.AssertNotCalled(t, "CreatePokemonSpecies")
 	})
@@ -225,7 +226,7 @@ func TestPokemonSpeciesService_CreatePokemonSpecies(t *testing.T) {
 		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByName", newPokemon.Name).Return(existingPokemon, nil).Once()
 
 		err := service.CreatePokemonSpecies(newPokemon)
-		assert.ErrorIs(t, err, common.ErrConflict)
+		assert.ErrorIs(t, err, types.ErrConflict)
 		mockPokemonSpeciesRepo.AssertExpectations(t)
 		mockPokemonSpeciesRepo.AssertNotCalled(t, "CreatePokemonSpecies")
 	})
@@ -235,7 +236,7 @@ func TestPokemonSpeciesService_CreatePokemonSpecies(t *testing.T) {
 		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", newPokemon.ID).Return((*models.PokemonSpecies)(nil), internalErr).Once()
 
 		err := service.CreatePokemonSpecies(newPokemon)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 		mockPokemonSpeciesRepo.AssertExpectations(t)
 		mockPokemonSpeciesRepo.AssertNotCalled(t, "CreatePokemonSpecies")
 	})
@@ -246,7 +247,7 @@ func TestPokemonSpeciesService_CreatePokemonSpecies(t *testing.T) {
 		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByName", newPokemon.Name).Return((*models.PokemonSpecies)(nil), internalErr).Once()
 
 		err := service.CreatePokemonSpecies(newPokemon)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 		mockPokemonSpeciesRepo.AssertExpectations(t)
 		mockPokemonSpeciesRepo.AssertNotCalled(t, "CreatePokemonSpecies")
 	})
@@ -258,7 +259,7 @@ func TestPokemonSpeciesService_CreatePokemonSpecies(t *testing.T) {
 		mockPokemonSpeciesRepo.On("CreatePokemonSpecies", newPokemon).Return(internalErr).Once()
 
 		err := service.CreatePokemonSpecies(newPokemon)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 		mockPokemonSpeciesRepo.AssertExpectations(t)
 	})
 }
@@ -280,11 +281,11 @@ func TestPokemonSpeciesService_UpdatePokemonSpecies(t *testing.T) {
 
 	t.Run("Returns ErrInvalidInput for invalid pokemon", func(t *testing.T) {
 		err := service.UpdatePokemonSpecies(nil)
-		assert.ErrorIs(t, err, common.ErrInvalidInput)
+		assert.ErrorIs(t, err, types.ErrInvalidInput)
 		mockPokemonSpeciesRepo.AssertNotCalled(t, "UpdatePokemonSpecies")
 
 		err = service.UpdatePokemonSpecies(&models.PokemonSpecies{ID: 0, Name: "Invalid"})
-		assert.ErrorIs(t, err, common.ErrInvalidInput)
+		assert.ErrorIs(t, err, types.ErrInvalidInput)
 		mockPokemonSpeciesRepo.AssertNotCalled(t, "UpdatePokemonSpecies")
 	})
 
@@ -292,7 +293,7 @@ func TestPokemonSpeciesService_UpdatePokemonSpecies(t *testing.T) {
 		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", updatedPokemon.ID).Return((*models.PokemonSpecies)(nil), gorm.ErrRecordNotFound).Once()
 
 		err := service.UpdatePokemonSpecies(updatedPokemon)
-		assert.ErrorIs(t, err, common.ErrPokemonSpeciesNotFound)
+		assert.ErrorIs(t, err, types.ErrPokemonSpeciesNotFound)
 		mockPokemonSpeciesRepo.AssertExpectations(t)
 		mockPokemonSpeciesRepo.AssertNotCalled(t, "UpdatePokemonSpecies")
 	})
@@ -302,7 +303,7 @@ func TestPokemonSpeciesService_UpdatePokemonSpecies(t *testing.T) {
 		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", updatedPokemon.ID).Return((*models.PokemonSpecies)(nil), internalErr).Once()
 
 		err := service.UpdatePokemonSpecies(updatedPokemon)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 		mockPokemonSpeciesRepo.AssertExpectations(t)
 		mockPokemonSpeciesRepo.AssertNotCalled(t, "UpdatePokemonSpecies")
 	})
@@ -313,7 +314,7 @@ func TestPokemonSpeciesService_UpdatePokemonSpecies(t *testing.T) {
 		mockPokemonSpeciesRepo.On("UpdatePokemonSpecies", updatedPokemon).Return(internalErr).Once()
 
 		err := service.UpdatePokemonSpecies(updatedPokemon)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 		mockPokemonSpeciesRepo.AssertExpectations(t)
 	})
 }
@@ -335,7 +336,7 @@ func TestPokemonSpeciesService_DeletePokemonSpecies(t *testing.T) {
 
 	t.Run("Returns ErrInvalidInput for invalid ID", func(t *testing.T) {
 		err := service.DeletePokemonSpecies(0)
-		assert.ErrorIs(t, err, common.ErrInvalidInput)
+		assert.ErrorIs(t, err, types.ErrInvalidInput)
 		mockPokemonSpeciesRepo.AssertNotCalled(t, "DeletePokemonSpecies")
 	})
 
@@ -343,7 +344,7 @@ func TestPokemonSpeciesService_DeletePokemonSpecies(t *testing.T) {
 		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", pokemonID).Return((*models.PokemonSpecies)(nil), gorm.ErrRecordNotFound).Once()
 
 		err := service.DeletePokemonSpecies(pokemonID)
-		assert.ErrorIs(t, err, common.ErrPokemonSpeciesNotFound)
+		assert.ErrorIs(t, err, types.ErrPokemonSpeciesNotFound)
 		mockPokemonSpeciesRepo.AssertExpectations(t)
 		mockPokemonSpeciesRepo.AssertNotCalled(t, "DeletePokemonSpecies")
 	})
@@ -353,7 +354,7 @@ func TestPokemonSpeciesService_DeletePokemonSpecies(t *testing.T) {
 		mockPokemonSpeciesRepo.On("GetPokemonSpeciesByID", pokemonID).Return((*models.PokemonSpecies)(nil), internalErr).Once()
 
 		err := service.DeletePokemonSpecies(pokemonID)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 		mockPokemonSpeciesRepo.AssertExpectations(t)
 		mockPokemonSpeciesRepo.AssertNotCalled(t, "DeletePokemonSpecies")
 	})
@@ -364,7 +365,7 @@ func TestPokemonSpeciesService_DeletePokemonSpecies(t *testing.T) {
 		mockPokemonSpeciesRepo.On("DeletePokemonSpecies", pokemonID).Return(internalErr).Once()
 
 		err := service.DeletePokemonSpecies(pokemonID)
-		assert.ErrorIs(t, err, common.ErrInternalService)
+		assert.ErrorIs(t, err, types.ErrInternalService)
 		mockPokemonSpeciesRepo.AssertExpectations(t)
 	})
 }

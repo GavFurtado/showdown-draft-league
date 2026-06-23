@@ -11,10 +11,11 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 )
 
@@ -22,7 +23,7 @@ type DraftService interface {
 	GetDraftByID(draftID uuid.UUID) (*models.Draft, error)
 	GetDraftByLeagueID(leagueID uuid.UUID) (*models.Draft, error)
 	StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*models.Draft, error)
-	MakePick(currentUser *models.User, leagueID uuid.UUID, input *common.DraftMakePickDTO) error
+	MakePick(currentUser *models.User, leagueID uuid.UUID, input *requests.DraftMakePickRequestDTO) error
 	SkipTurn(currentUser *models.User, leagueID uuid.UUID) error
 	AutoSkipTurn(playerID, leagueID uuid.UUID) error
 	SetSchedulerService(schedulerService SchedulerService)
@@ -67,10 +68,10 @@ func (s *draftServiceImpl) GetDraftByID(draftID uuid.UUID) (*models.Draft, error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("ERROR: (DraftService: GetDraftByID) - draft record for ID %s not found: %v", draftID, err)
-			return nil, common.ErrDraftNotFound
+			return nil, types.ErrDraftNotFound
 		}
 		log.Printf("ERROR: (DraftService: GetDraftByID) - Error fetching draft %s: %v", draftID, err)
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 	return draft, nil
 }
@@ -80,10 +81,10 @@ func (s *draftServiceImpl) GetDraftByLeagueID(leagueID uuid.UUID) (*models.Draft
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Printf("ERROR: (DraftService: GetDraftByID) - draft record for league ID %s not found: %v", leagueID, err)
-			return nil, common.ErrDraftNotFound
+			return nil, types.ErrDraftNotFound
 		}
 		log.Printf("ERROR: (DraftService: GetDraftByID) - Error fetching draft for league %s: %v", leagueID, err)
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 	return draft, nil
 }
@@ -98,19 +99,19 @@ func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*m
 	league, err := (s.leagueRepo).GetLeagueByID(leagueID)
 	if err != nil || league == nil {
 		log.Printf("LOG: (Error: DraftService.StartDraft) - Could not get league %s: %v\n", leagueID, err)
-		return nil, common.ErrLeagueNotFound
+		return nil, types.ErrLeagueNotFound
 	}
 
 	// Retrieve players in the league, sorted by draft position
 	players, err := s.playerRepo.GetPlayersByLeague(leagueID)
 	if err != nil {
 		log.Printf("LOG: (Error: DraftService.StartDraft) - Could not get players for league %s: %v\n", leagueID, err)
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 
 	if len(players) == 0 {
 		log.Printf("LOG: (Error: DraftService.StartDraft) - No players found for league %s\n", leagueID)
-		return nil, common.ErrNoPlayerForDraft
+		return nil, types.ErrNoPlayerForDraft
 	}
 
 	switch league.Format.DraftOrderType {
@@ -125,7 +126,7 @@ func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*m
 			players[i].DraftPosition = i + 1 // Draft positions are 1-based
 			if err := s.playerRepo.UpdatePlayerDraftPosition(players[i].ID, players[i].DraftPosition); err != nil {
 				log.Printf("LOG: (Error: DraftService.StartDraft) - Failed to update draft position for player %s: %v\n", players[i].ID, err)
-				return nil, common.ErrInternalService
+				return nil, types.ErrInternalService
 			}
 		}
 		log.Printf("LOG: (DraftService.StartDraft) - Randomized draft order for league %s complete.\n", leagueID)
@@ -138,18 +139,18 @@ func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*m
 		for _, p := range players {
 			if p.DraftPosition <= 0 {
 				log.Printf("ERROR: (DraftService: StartDraft) - Player %s has invalid draft position %d for manual draft order.\n", p.ID, p.DraftPosition)
-				return nil, common.ErrInvalidDraftPosition
+				return nil, types.ErrInvalidDraftPosition
 			}
 			if seenPositions[p.DraftPosition] {
 				log.Printf("ERROR: (DraftService: StartDraft) - Duplicate draft position %d found for player %s in manual draft order.\n", p.DraftPosition, p.ID)
-				return nil, common.ErrDuplicateDraftPosition
+				return nil, types.ErrDuplicateDraftPosition
 			}
 			seenPositions[p.DraftPosition] = true
 		}
 		// Ensure all positions from 1 to len(players) are present
 		if len(seenPositions) != len(players) {
 			log.Printf("ERROR: (DraftService: StartDraft) - Missing or extra draft positions for manual draft order in league %s.\n", leagueID)
-			return nil, common.ErrIncompleteDraftOrder
+			return nil, types.ErrIncompleteDraftOrder
 		}
 		log.Printf("LOG: (DraftService: StartDraft) - Using manual draft order for league %s.\n", leagueID)
 	}
@@ -224,21 +225,21 @@ func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*m
 func (s *draftServiceImpl) MakePick(
 	currentUser *models.User,
 	leagueID uuid.UUID,
-	input *common.DraftMakePickDTO,
+	input *requests.DraftMakePickRequestDTO,
 ) error {
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
 		log.Printf("LOG: (DraftService: MakePick) - (user %s) could not find league %s: %v\n", currentUser.ID, leagueID, err)
-		return common.ErrLeagueNotFound
+		return types.ErrLeagueNotFound
 	}
 
 	// fetch draft for league
 	draft, err := s.fetchDraftResource(league.ID)
 	if err != nil {
 		switch err {
-		case common.ErrDraftNotFound:
+		case types.ErrDraftNotFound:
 			log.Printf("LOG: (DraftService: MakePick) - (user %s) draft for leagueID %s not found: %v\n", currentUser.ID, league.ID, err)
-		case common.ErrInternalService:
+		case types.ErrInternalService:
 			log.Printf("LOG: (DraftService: MakePick) - (user %s) error fetching draft: %v\n", currentUser.ID, err)
 		}
 		return err
@@ -247,9 +248,9 @@ func (s *draftServiceImpl) MakePick(
 	player, err := s.fetchPlayerResource(currentUser.ID, league.ID)
 	if err != nil {
 		switch err {
-		case common.ErrPlayerNotFound:
+		case types.ErrPlayerNotFound:
 			log.Printf("LOG: (DraftService: MakePick) - (user %s) Player in league %s not found: %v\n", currentUser.ID, league.ID, err)
-		case common.ErrInternalService:
+		case types.ErrInternalService:
 			log.Printf("LOG: (DraftService: MakePick) - (user %s) Error fetching player in league %s: %v\n", currentUser.ID, league.ID, err)
 		}
 		return err
@@ -259,19 +260,19 @@ func (s *draftServiceImpl) MakePick(
 	// check if it's the right player's turn
 	if currentTurnPlayerID := *draft.CurrentTurnPlayerID; currentTurnPlayerID != player.ID {
 		log.Printf("LOG: (DraftService: MakePick) - player %s tried to draft when it isn't their turn. Current Turn: Player %s\n", currentTurnPlayerID, *draft.CurrentTurnPlayerID)
-		return common.ErrUnauthorized
+		return types.ErrUnauthorized
 	}
 
 	// check if number of requested picks is valid for the player
 	if input.RequestedPickCount > len(draft.PlayersWithAccumulatedPicks[player.ID])+1 {
 		log.Printf("LOG: (DraftService: MakePick) -  (user %s) Player %s requested too many draft picks\n", currentUser.ID, player.ID)
-		return common.ErrTooManyRequestedPicks
+		return types.ErrTooManyRequestedPicks
 	}
 
 	// check league status
 	if isValidStatus := s.validateLeagueStatusForPick(league.Status, draft.Status); !isValidStatus {
 		log.Printf("LOG: (DraftService: MakePick) - (user %s) league %s is not in drafting status: %v", currentUser.ID, league.ID, err)
-		return common.ErrInvalidState
+		return types.ErrInvalidState
 	}
 	// END early checks
 
@@ -280,11 +281,11 @@ func (s *draftServiceImpl) MakePick(
 	allRequestedLeaguePokemon, err := s.fetchRequestedPokemon(league.ID, input)
 	if err != nil {
 		switch err {
-		case common.ErrLeaguePokemonNotFound:
+		case types.ErrLeaguePokemonNotFound:
 			log.Printf("LOG: (DraftService: MakePick) - (user %s) One or more League Pokemon were not found: %v\n", currentUser.ID, err)
-		case common.ErrConflict:
+		case types.ErrConflict:
 			log.Printf("LOG: (DraftService: MakePick) - (user %s) One or more League Pokemon are not available for drafting: %v\n", currentUser.ID, err)
-		case common.ErrInternalService:
+		case types.ErrInternalService:
 			log.Printf("LOG: (DraftService: MakePick) - (user %s) error fetching requested league pokemon for league %s: %v\n", currentUser.ID, league.ID, err)
 		}
 		return err
@@ -294,11 +295,11 @@ func (s *draftServiceImpl) MakePick(
 	playerCount, err := s.playerRepo.GetPlayerCountByLeague(league.ID)
 	if err != nil {
 		log.Printf("DraftService: MakePick - failed to get player count for league %s: %v\n", league.ID, err)
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 	if playerCount == 0 { // this should never happen if the draft has started or if the league even exists
 		log.Printf("DraftService: MakePick - no players in league %d. (Unreachable Code)\n", league.ID)
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 
 	totalRequestedCost := s.getTotalCostForPicks(allRequestedLeaguePokemon)
@@ -307,9 +308,9 @@ func (s *draftServiceImpl) MakePick(
 	currentPickSlotUsed, err := s.validatePicksAndCheckCurrentPickSlotUsed(draft, player, league, input, totalRequestedCost)
 	if err != nil {
 		switch err {
-		case common.ErrInvalidInput:
+		case types.ErrInvalidInput:
 			log.Printf("LOG: (DraftService: MakePick): (user %s; league %s) Invalid pick number in request: %v\n", currentUser.ID, league.ID, err)
-		case common.ErrInsufficientDraftPoints:
+		case types.ErrInsufficientDraftPoints:
 			log.Printf("LOG: (DraftService: MakePick): (user %s; league %s) Insufficient draft points (%d) for transaction: %v\n", currentUser.ID, league.ID, player.DraftPoints, err)
 		}
 		return err
@@ -326,7 +327,7 @@ func (s *draftServiceImpl) MakePick(
 	allPlayers, err := s.playerRepo.GetPlayersByLeague(draft.LeagueID)
 	if err != nil {
 		log.Printf("DraftService: MakePick - Could not get all players in league %s: %v\n", league.ID, err)
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 
 	// advance turn (if CurrentPickSlotUsed) and update draft model
@@ -376,15 +377,15 @@ func (s *draftServiceImpl) SkipTurn(currentUser *models.User, leagueID uuid.UUID
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
 		log.Printf("LOG: (DraftService: SkipTurn) - (user %s) could not find league %s: %v\n", currentUser.ID, leagueID, err)
-		return common.ErrLeagueNotFound
+		return types.ErrLeagueNotFound
 	}
 
 	draft, err := s.fetchDraftResource(league.ID)
 	if err != nil {
 		switch err {
-		case common.ErrDraftNotFound:
+		case types.ErrDraftNotFound:
 			log.Printf("LOG: (DraftService: SkipTurn) - (user %s) Draft for leagueID %s not found: %v\n", currentUser.ID, league.ID, err)
-		case common.ErrInternalService:
+		case types.ErrInternalService:
 			log.Printf("LOG: (DraftService: SkipTurn) - (user %s) Error fetching draft: %v\n", currentUser.ID, err)
 		}
 		return err
@@ -393,9 +394,9 @@ func (s *draftServiceImpl) SkipTurn(currentUser *models.User, leagueID uuid.UUID
 	player, err := s.fetchPlayerResource(currentUser.ID, league.ID)
 	if err != nil {
 		switch err {
-		case common.ErrPlayerNotFound:
+		case types.ErrPlayerNotFound:
 			log.Printf("LOG: (DraftService: SkipTurn) - (user %s) Player in league %s not found: %v\n", currentUser.ID, league.ID, err)
-		case common.ErrInternalService:
+		case types.ErrInternalService:
 			log.Printf("LOG: (DraftService: SkipTurn) - (user %s) Error fetching player in league %s: %v\n", currentUser.ID, league.ID, err)
 		}
 		return err
@@ -404,19 +405,19 @@ func (s *draftServiceImpl) SkipTurn(currentUser *models.User, leagueID uuid.UUID
 	// check league status
 	if isValidStatus := s.validateLeagueStatusForPick(league.Status, draft.Status); !isValidStatus {
 		log.Printf("LOG: (DraftService: SkipTurn) - (user %s) league %s is not in drafting status: %v", currentUser.ID, league.ID, err)
-		return common.ErrInvalidState
+		return types.ErrInvalidState
 	}
 	// check if it's the right player's turn
 	if currentTurnPlayerID := *draft.CurrentTurnPlayerID; currentTurnPlayerID != player.ID {
 		log.Printf("LOG: (DraftService: SkipTurn) - player %s tried to draft when it isn't their turn. Current Turn: Player %s\n", currentTurnPlayerID, *draft.CurrentTurnPlayerID)
-		return common.ErrUnauthorized
+		return types.ErrUnauthorized
 	}
 
 	// get all players to change set the CurrentPlayer's turn for the next one
 	allPlayers, err := s.playerRepo.GetPlayersByLeague(draft.LeagueID)
 	if err != nil {
 		log.Printf("LOG: (DraftService: SkipTurn) - Could not get all players in league %s: %v\n", league.ID, err)
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 
 	effectiveSkipsInThisAction := 1 // One skip for the current turn
@@ -431,13 +432,13 @@ func (s *draftServiceImpl) SkipTurn(currentUser *models.User, leagueID uuid.UUID
 	log.Printf("DEBUG: (DraftService: SkipTurn) - Player %s SkipsLeft BEFORE DB update: %d\n", player.ID, player.SkipsLeft)
 	if _, err := s.playerRepo.UpdatePlayer(player); err != nil {
 		log.Printf("CRITICAL ERROR: (DraftService: SkipTurn) - Failed to update player %s skipsLeft in DB: %v\n", player.ID, err)
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 	// Re-fetch player to confirm DB state
 	updatedPlayer, err := s.playerRepo.GetPlayerByID(player.ID)
 	if err != nil {
 		log.Printf("CRITICAL ERROR: (DraftService: SkipTurn) - Failed to re-fetch player %s after update: %v\n", player.ID, err)
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 	log.Printf("DEBUG: (DraftService: SkipTurn) - Player %s SkipsLeft AFTER DB re-fetch: %d\n", updatedPlayer.ID, updatedPlayer.SkipsLeft)
 
@@ -484,9 +485,9 @@ func (s *draftServiceImpl) AutoSkipTurn(playerID, leagueID uuid.UUID) error {
 	player, err := s.playerRepo.GetPlayerByID(playerID)
 	if err != nil {
 		switch err {
-		case common.ErrPlayerNotFound:
+		case types.ErrPlayerNotFound:
 			log.Printf("ERROR: (DraftService: AutoSkipTurn) - Player %s in league %s not found: %v\n", playerID, leagueID, err)
-		case common.ErrInternalService:
+		case types.ErrInternalService:
 			log.Printf("ERROR: (DraftService: AutoSkipTurn) - Error fetching player %s in league %s: %v\n", playerID, leagueID, err)
 		}
 		return err
@@ -496,10 +497,10 @@ func (s *draftServiceImpl) AutoSkipTurn(playerID, leagueID uuid.UUID) error {
 		switch err {
 		case gorm.ErrRecordNotFound:
 			log.Printf("LOG: (DraftService: AutoSkipTurn) - (player %s) League %s not found: %v\n", playerID, leagueID, err)
-			return common.ErrLeagueNotFound
+			return types.ErrLeagueNotFound
 		default:
 			log.Printf("LOG: (DraftService: AutoSkipTurn) - Could not fetch league %s: %v\n", leagueID, err)
-			return common.ErrInternalService
+			return types.ErrInternalService
 		}
 	}
 	draft, err := s.fetchDraftResource(leagueID)
@@ -507,10 +508,10 @@ func (s *draftServiceImpl) AutoSkipTurn(playerID, leagueID uuid.UUID) error {
 		switch err {
 		case gorm.ErrRecordNotFound:
 			log.Printf("LOG: (DraftService: AutoSkipTurn) - (player %s) Draft for leagueID %s not found: %v\n", playerID, leagueID, err)
-			return common.ErrDraftNotFound
+			return types.ErrDraftNotFound
 		default:
 			log.Printf("LOG: (DraftService: AutoSkipTurn) - (player %s) Error fetching draft: %v\n", playerID, err)
-			return common.ErrInternalService
+			return types.ErrInternalService
 		}
 	}
 
@@ -523,23 +524,23 @@ func (s *draftServiceImpl) AutoSkipTurn(playerID, leagueID uuid.UUID) error {
 		draft, err = s.draftRepo.UpdateDraft(draft)
 		if err != nil {
 			log.Printf("ERROR: (DraftService: AutoSkipTurn) - Could not update draft %d status to PAUSED: %v\n", draft.ID, err)
-			return common.ErrInternalService
+			return types.ErrInternalService
 		}
 		fmt.Printf("INFO: (DraftService: AutoSkipTurn) - Draft for league %s paused. Awaiting Manual Intervention\n", leagueID)
-		return common.ErrDraftPausedForIntervention
+		return types.ErrDraftPausedForIntervention
 	}
 
 	player.SkipsLeft -= effectiveSkipsInThisAction
 	log.Printf("DEBUG: (DraftService: AutoSkipTurn) - Player %s SkipsLeft BEFORE DB update: %d\n", player.ID, player.SkipsLeft)
 	if _, err := s.playerRepo.UpdatePlayer(player); err != nil {
 		log.Printf("CRITICAL ERROR: (DraftService: SkipTurn) - Failed to update player %s skipsLeft in DB: %v\n", player.ID, err)
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 	// Re-fetch player to confirm DB state
 	updatedPlayer, err := s.playerRepo.GetPlayerByID(player.ID)
 	if err != nil {
 		log.Printf("CRITICAL ERROR: (DraftService: SkipTurn) - Failed to re-fetch player %s after update: %v\n", player.ID, err)
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 	log.Printf("DEBUG: (DraftService: SkipTurn) - Player %s SkipsLeft AFTER DB re-fetch: %d\n", updatedPlayer.ID, updatedPlayer.SkipsLeft)
 	log.Printf("DEBUG: (DraftService: AutoSkipTurn) - Player %s SkipsLeft updated to %d after auto-skip.\n", player.ID, player.SkipsLeft)
@@ -547,7 +548,7 @@ func (s *draftServiceImpl) AutoSkipTurn(playerID, leagueID uuid.UUID) error {
 	allPlayers, err := s.playerRepo.GetPlayersByLeague(leagueID)
 	if err != nil {
 		log.Printf("ERROR: (DraftService: AutoSkipTurn) - Could not get all players in league %s: %v\n", leagueID, err)
-		return common.ErrInternalService
+		return types.ErrInternalService
 	}
 
 	draft, err = s.advanceDraftState(draft, league, player, allPlayers, len(allPlayers), false)
@@ -611,7 +612,7 @@ func (s *draftServiceImpl) advanceDraftState(
 	if err != nil {
 		log.Printf("LOG: (DraftService: advanceDraftState) - Error checking draft completion for league %s: %v\\n", league.ID,
 			err)
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 
 	if isDraftCompleted {
@@ -651,7 +652,7 @@ func (s *draftServiceImpl) advanceDraftState(
 	}
 	if currentPlayerIdx == -1 { // this is an impossible case
 		log.Printf("LOG: (DraftService: advanceDraftState) - Current player %s not found in allPlayers list. This should not happen. (Unreachable Control Flow)\\n", player.ID)
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 
 	var nextPlayerIdx int
@@ -683,7 +684,7 @@ func (s *draftServiceImpl) advanceDraftState(
 	draft, err = s.draftRepo.UpdateDraft(draft)
 	if err != nil {
 		log.Printf("LOG: (DraftService: advanceDraftState) - Failed to update draft: %v\n", err)
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 
 	return draft, nil
@@ -697,7 +698,7 @@ func (s *draftServiceImpl) executePickTransactions(
 	league *models.League,
 	player *models.Player,
 	allRequestedPokemon []*models.LeaguePokemon,
-	input *common.DraftMakePickDTO,
+	input *requests.DraftMakePickRequestDTO,
 	playerCount int64,
 	totalRequestedCost int,
 ) error {
@@ -737,7 +738,6 @@ func (s *draftServiceImpl) executePickTransactions(
 			draft.PlayersWithAccumulatedPicks[player.ID], requestedPick.DraftPickNumber,
 		); accumPickIndex != -1 {
 			accumulatedPickNumberIndicesToDelete = append(accumulatedPickNumberIndicesToDelete, accumPickIndex)
-
 		}
 	}
 
@@ -770,7 +770,7 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 	draft *models.Draft,
 	player *models.Player,
 	league *models.League,
-	input *common.DraftMakePickDTO,
+	input *requests.DraftMakePickRequestDTO,
 	totalRequestedCost int,
 ) (bool, error) {
 	playerID := *draft.CurrentTurnPlayerID // validated earlier to match currentPlayer
@@ -791,7 +791,7 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 		if !slices.Contains(validPickNumbersForPlayer, requestedPick.DraftPickNumber) {
 			log.Printf("LOG: (DraftService: validatePicksAndCheckCurrentPickSlotUsed) - Player %s requested invalid pick number %d. Not on clock (%d) and not in accumulated picks (%v).\n",
 				playerID, requestedPick.DraftPickNumber, draft.CurrentPickOnClock, accumulatedPickNumbers)
-			return false, common.ErrInvalidInput
+			return false, types.ErrInvalidInput
 		}
 
 		// if it's an accumulated pick, ensure it's not used twice in this batch
@@ -799,7 +799,7 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 			if usedAccumulatedPicksInThisBatch[requestedPick.DraftPickNumber] {
 				log.Printf("LOG: (DraftService: validatePicksAndCheckCurrentPickSlotUsed) - Player %s attempted to use accumulated pick %d multiple times in one request.\n",
 					playerID, requestedPick.DraftPickNumber)
-				return false, common.ErrInvalidInput
+				return false, types.ErrInvalidInput
 			}
 			usedAccumulatedPicksInThisBatch[requestedPick.DraftPickNumber] = true
 		}
@@ -812,7 +812,7 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 
 	// 2. Check if player has enough draft points for the entire batch
 	if player.DraftPoints < totalRequestedCost {
-		return false, common.ErrInsufficientDraftPoints
+		return false, types.ErrInsufficientDraftPoints
 	}
 
 	// 3. "Skips Left" Preventative Validation
@@ -853,7 +853,7 @@ func (s *draftServiceImpl) isSkipAllowed(player *models.Player, effectiveSkipsIn
 	if player.SkipsLeft-effectiveSkipsInThisAction >= 0 {
 		return true, nil
 	}
-	return false, common.ErrCannotSkipBelowMinimumRoster
+	return false, types.ErrCannotSkipBelowMinimumRoster
 }
 
 func (s *draftServiceImpl) getTotalCostForPicks(allRequestedPokemon []*models.LeaguePokemon) int {
@@ -870,9 +870,9 @@ func (s *draftServiceImpl) fetchDraftResource(leagueID uuid.UUID) (*models.Draft
 	draft, err := s.draftRepo.GetDraftByLeagueID(leagueID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, common.ErrDraftNotFound
+			return nil, types.ErrDraftNotFound
 		}
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 	return draft, nil
 }
@@ -883,9 +883,9 @@ func (s *draftServiceImpl) fetchPlayerResource(userID, leagueID uuid.UUID) (*mod
 	player, err := s.playerRepo.GetPlayerByUserAndLeague(userID, leagueID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, common.ErrPlayerNotFound
+			return nil, types.ErrPlayerNotFound
 		}
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 	log.Printf("DEBUG: (DraftService: fetchPlayerResource) - Fetched player %s. SkipsLeft: %d\n", player.ID, player.SkipsLeft)
 	return player, nil
@@ -894,7 +894,7 @@ func (s *draftServiceImpl) fetchPlayerResource(userID, leagueID uuid.UUID) (*mod
 // fetchRequestedPokemon retrieves a list of LeaguePokemon by their IDs, ensuring they are
 // all available to be drafted. It returns service-specific errors for not found or
 // already drafted pokemon.
-func (s *draftServiceImpl) fetchRequestedPokemon(leagueID uuid.UUID, input *common.DraftMakePickDTO) ([]*models.LeaguePokemon, error) {
+func (s *draftServiceImpl) fetchRequestedPokemon(leagueID uuid.UUID, input *requests.DraftMakePickRequestDTO) ([]*models.LeaguePokemon, error) {
 	var pokemonIDs []uuid.UUID
 	for _, requestedPick := range input.RequestedPicks {
 		pokemonIDs = append(pokemonIDs, requestedPick.LeaguePokemonID)
@@ -902,20 +902,20 @@ func (s *draftServiceImpl) fetchRequestedPokemon(leagueID uuid.UUID, input *comm
 
 	allRequestedLeaguePokemonStructs, err := s.leaguePokemonRepo.GetLeaguePokemonByIDs(leagueID, pokemonIDs)
 	if err != nil {
-		return nil, common.ErrInternalService
+		return nil, types.ErrInternalService
 	}
 
 	// Validate that all requested Pokémon were actually returned and are available.
 	// This ensures no invalid IDs slipped through or were already drafted.
 	if len(allRequestedLeaguePokemonStructs) != len(pokemonIDs) {
 		// This means some requested Pokémon were not found or were filtered out by the repo.
-		return nil, common.ErrLeaguePokemonNotFound
+		return nil, types.ErrLeaguePokemonNotFound
 	}
 
 	var allRequestedLeaguePokemon []*models.LeaguePokemon
 	for _, lp := range allRequestedLeaguePokemonStructs {
 		if !lp.IsAvailable {
-			return nil, common.ErrConflict
+			return nil, types.ErrConflict
 		}
 		allRequestedLeaguePokemon = append(allRequestedLeaguePokemon, &lp)
 	}
@@ -943,7 +943,7 @@ func (s *draftServiceImpl) checkDraftCompletion(
 	if totalPlayers == 0 {
 		// should be impossible to reach here
 		log.Printf("LOG: (DraftService: checkDraftCompletion) - No players in league %s. Cannot check for draft completion.\\n", league.ID)
-		return false, common.ErrInternalService
+		return false, types.ErrInternalService
 	}
 	maxPicksPerPlayer := league.MaxPokemonPerPlayer
 	totalExpectedPicks := totalPlayers * maxPicksPerPlayer
@@ -952,7 +952,7 @@ func (s *draftServiceImpl) checkDraftCompletion(
 	currentTotalDraftedPokemon, err := s.draftedPokemonRepo.GetActiveDraftedPokemonCountByLeague(league.ID)
 	if err != nil {
 		log.Printf("LOG: (DraftService: checkDraftCompletion) - Failed to get total drafted pokemon count for league %s: %v\\n", league.ID, err)
-		return false, common.ErrInternalService
+		return false, types.ErrInternalService
 	}
 
 	// Cond. 1: if the total number of picks has reached the maximum
@@ -968,7 +968,7 @@ func (s *draftServiceImpl) checkDraftCompletion(
 		playerActiveRosterSize, err := s.draftedPokemonRepo.GetDraftedPokemonCountByPlayer(player.ID) // Reusing existing method
 		if err != nil {
 			log.Printf("LOG: (DraftService: checkDraftCompletion) - Failed to get roster count for player %s in league %s: %v\\n", player.ID, league.ID, err)
-			return false, common.ErrInternalService
+			return false, types.ErrInternalService
 		}
 		if playerActiveRosterSize < int64(minPokemonPerRoster) {
 			// at least one player has not met their minimum roster size, so the draft is not complete.

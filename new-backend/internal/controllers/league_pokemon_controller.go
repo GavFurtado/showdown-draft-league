@@ -5,9 +5,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/common"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/middleware"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -41,11 +42,11 @@ func (c *leaguePokemonControllerImpl) CreatePokemonForLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
 		log.Printf("LOG: (Controller: CreatePokemonForLeague) - error: no user in context\n")
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": common.ErrNoUserInContext.Error()})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": types.ErrNoUserInContext.Error()})
 		return
 	}
 
-	var req common.LeaguePokemonCreateRequestDTO
+	var req requests.LeaguePokemonCreateRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
@@ -56,14 +57,14 @@ func (c *leaguePokemonControllerImpl) CreatePokemonForLeague(ctx *gin.Context) {
 	if err != nil {
 		log.Printf("LOG: (Controller: CreatePokemonForLeague) - Service method Error: %v\n", err)
 		switch err {
-		case common.ErrInvalidState:
-			ctx.JSON(http.StatusForbidden, gin.H{"error": common.ErrInvalidState.Error()})
-		case common.ErrLeagueNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrLeagueNotFound.Error()})
-		case common.ErrPokemonSpeciesNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrPokemonSpeciesNotFound.Error()})
+		case types.ErrInvalidState:
+			ctx.JSON(http.StatusForbidden, gin.H{"error": types.ErrInvalidState.Error()})
+		case types.ErrLeagueNotFound:
+			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrLeagueNotFound.Error()})
+		case types.ErrPokemonSpeciesNotFound:
+			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrPokemonSpeciesNotFound.Error()})
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
 		}
 		return
 	}
@@ -78,11 +79,11 @@ func (c *leaguePokemonControllerImpl) BatchCreatePokemonForLeague(ctx *gin.Conte
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
 		log.Printf("LOG: (Controller: BatchCreatePokemonForLeague) - error: no user in context\n")
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": common.ErrNoUserInContext.Error()})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": types.ErrNoUserInContext.Error()})
 		return
 	}
 
-	var req []common.LeaguePokemonCreateRequestDTO
+	var req []requests.LeaguePokemonCreateRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
@@ -93,14 +94,14 @@ func (c *leaguePokemonControllerImpl) BatchCreatePokemonForLeague(ctx *gin.Conte
 	if err != nil {
 		log.Printf("LOG: (Controller: BatchCreatePokemonForLeague) - Service method Error: %v\n", err)
 		switch err {
-		case common.ErrInvalidState:
-			ctx.JSON(http.StatusForbidden, gin.H{"error": common.ErrInvalidState.Error()})
-		case common.ErrLeagueNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrLeagueNotFound.Error()})
-		case common.ErrPokemonSpeciesNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrPokemonSpeciesNotFound.Error()})
+		case types.ErrInvalidState:
+			ctx.JSON(http.StatusForbidden, gin.H{"error": types.ErrInvalidState.Error()})
+		case types.ErrLeagueNotFound:
+			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrLeagueNotFound.Error()})
+		case types.ErrPokemonSpeciesNotFound:
+			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrPokemonSpeciesNotFound.Error()})
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
 		}
 		return
 	}
@@ -115,11 +116,11 @@ func (c *leaguePokemonControllerImpl) UpdateLeaguePokemon(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
 		log.Printf("LOG: (Controller: BatchCreatePokemonForLeague) - error: no user in context\n")
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": common.ErrNoUserInContext.Error()})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": types.ErrNoUserInContext.Error()})
 		return
 	}
 
-	var req common.LeaguePokemonUpdateRequest
+	var req requests.LeaguePokemonUpdateRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 	}
@@ -129,16 +130,16 @@ func (c *leaguePokemonControllerImpl) UpdateLeaguePokemon(ctx *gin.Context) {
 	if err != nil {
 		log.Printf("LOG: (Controller: UpdateLeaguePokemon) - Service method Error: %v\n", err)
 		switch err {
-		case common.ErrLeaguePokemonNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrLeaguePokemonNotFound.Error()})
-		case common.ErrLeagueNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrLeagueNotFound.Error()})
-		case common.ErrPokemonSpeciesNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrPokemonSpeciesNotFound.Error()})
-		case common.ErrInvalidState:
-			ctx.JSON(http.StatusForbidden, gin.H{"error": common.ErrInvalidState.Error()})
+		case types.ErrLeaguePokemonNotFound:
+			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrLeaguePokemonNotFound.Error()})
+		case types.ErrLeagueNotFound:
+			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrLeagueNotFound.Error()})
+		case types.ErrPokemonSpeciesNotFound:
+			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrPokemonSpeciesNotFound.Error()})
+		case types.ErrInvalidState:
+			ctx.JSON(http.StatusForbidden, gin.H{"error": types.ErrInvalidState.Error()})
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
 		}
 		return
 	}
@@ -155,14 +156,14 @@ func (c *leaguePokemonControllerImpl) GetAllPokemonByLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
 		log.Printf("LOG: (LeaguePokemonController: GetAllPokemonByLeague) - error: no user in context\n")
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": common.ErrNoUserInContext.Error()})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": types.ErrNoUserInContext.Error()})
 		return
 	}
 
 	leagueIDstr := ctx.Param("leagueId")
 	leagueID, err := uuid.Parse(leagueIDstr)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": common.ErrParsingParams.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
 		return
 	}
 
@@ -170,10 +171,10 @@ func (c *leaguePokemonControllerImpl) GetAllPokemonByLeague(ctx *gin.Context) {
 	leaguePokemon, err := c.leaguePokemonService.GetAllPokemonInLeague(currentUser, leagueID)
 	if err != nil {
 		switch err {
-		case common.ErrLeagueNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": common.ErrLeagueNotFound.Error()})
+		case types.ErrLeagueNotFound:
+			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrLeagueNotFound.Error()})
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": common.ErrInternalService.Error()})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
 		}
 		return
 	}
