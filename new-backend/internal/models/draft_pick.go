@@ -21,7 +21,7 @@ type DraftPick struct {
 	UpdatedAt   time.Time `gorm:"column:updated_at" json:"UpdatedAt"`
 
 	// Relationships
-	Draft     *Draft     `gorm:"foreignKey:draft_id;references:id" json:"Draft,omitempty"`
-	Player    *Player    `gorm:"foreignKey:player_id;references:id" json:"Player,omitempty"`
-	PoolEntry *PoolEntry `gorm:"foreignKey:pool_entry_id;references:id" json:"PoolEntry,omitempty"`
+	Draft     *Draft       `gorm:"foreignKey:draft_id;references:id" json:"Draft,omitempty"`
+	Player    *LeagueMember `gorm:"foreignKey:player_id;references:id" json:"Player,omitempty"`
+	PoolEntry *PoolEntry   `gorm:"foreignKey:pool_entry_id;references:id" json:"PoolEntry,omitempty"`
 }

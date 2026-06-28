@@ -75,7 +75,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 			IsParticipating: false,
 			DraftPoints:     1000,
 			GroupNumber:     1, // Service sets this to 1
-			Role:            rbac.PRoleOwner,
+			Role:            rbac.MRoleOwner,
 		}
 		createdPlayer := *expectedOwnerPlayer
 		createdPlayer.ID = uuid.New()

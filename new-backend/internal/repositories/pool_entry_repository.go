@@ -2,286 +2,248 @@ package repositories
 
 import (
 	"fmt"
+
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-// TODO: Rename functions once this is plugged into actual services
 type PoolEntryRepository interface {
-	// gets multiple specific Pokemon from a league's draft pool by their IDs
-	GetLeaguePokemonByIDs(leagueID uuid.UUID, leaguePokemonIDs []uuid.UUID) ([]models.LeaguePokemon, error)
-	// adds a Pokemon species to a league's draft pool
-	CreateLeaguePokemon(leaguePokemon *models.LeaguePokemon) (*models.LeaguePokemon, error)
-	// adds multiple Pokemon species to a league's draft pool in a transaction
-	CreateLeaguePokemonBatch(leaguePokemon []models.LeaguePokemon) ([]models.LeaguePokemon, error)
-	// gets all Pokemon in a league's draft pool (available and unavailable)
-	GetAllPokemonByLeague(leagueID uuid.UUID) ([]models.LeaguePokemon, error)
-	// gets all available Pokemon for a specific league's draft pool
-	GetAvailablePokemonByLeague(leagueID uuid.UUID) ([]models.LeaguePokemon, error)
-	// gets a specific Pokemon from a league's draft pool by its ID
-	GetLeaguePokemonByID(leaguePokemonID uuid.UUID) (*models.LeaguePokemon, error)
-	// updates a Pokemon's availability or cost in a league
-	UpdateLeaguePokemon(leaguePokemon *models.LeaguePokemon) (*models.LeaguePokemon, error)
-	// marks a Pokemon as unavailable (typically after being drafted)
-	MarkPokemonUnavailable(leagueID, pokemonSpeciesID uuid.UUID) error
-	// gets Pokemon filtered by cost range
-	GetPokemonByCostRange(leagueID uuid.UUID, minCost, maxCost int) ([]models.LeaguePokemon, error)
-	// checks if a Pokemon species is available in a league's draft pool
-	IsPokemonAvailable(leagueID, pokemonSpeciesID uuid.UUID) (bool, error)
-	// gets the cost of a specific Pokemon in a league
-	GetPokemonCost(leagueID, pokemonSpeciesID uuid.UUID) (*int, error)
-	// removes a Pokemon species from a league's draft pool (soft delete)
-	DeleteLeaguePokemon(leagueID, pokemonSpeciesID uuid.UUID) error
-	// gets count of available Pokemon in a league
-	GetAvailablePokemonCount(leagueID uuid.UUID) (int64, error)
-	// removes all Pokemon from a league's draft pool (used when deleting a league)
-	DeleteAllLeaguePokemon(leagueID uuid.UUID) error
+	GetByID(id uuid.UUID) (*models.PoolEntry, error)
+	GetByLeague(leagueID uuid.UUID) ([]models.PoolEntry, error)
+	GetAvailableByLeague(leagueID uuid.UUID) ([]models.PoolEntry, error)
+	GetByIDs(leagueID uuid.UUID, ids []uuid.UUID) ([]models.PoolEntry, error)
+	GetBySpecies(leagueID uuid.UUID, speciesID int64) (*models.PoolEntry, error)
+	GetByCostRange(leagueID uuid.UUID, minCost, maxCost int) ([]models.PoolEntry, error)
+	IsAvailable(leagueID uuid.UUID, speciesID int64) (bool, error)
+	GetCost(leagueID uuid.UUID, speciesID int64) (*int, error)
+	GetAvailableCount(leagueID uuid.UUID) (int64, error)
+	Create(entry *models.PoolEntry) (*models.PoolEntry, error)
+	CreateBatch(entries []models.PoolEntry) ([]models.PoolEntry, error)
+	Update(entry *models.PoolEntry) (*models.PoolEntry, error)
+	MarkUnavailable(tx *gorm.DB, id uuid.UUID) error
+	MarkAvailable(tx *gorm.DB, id uuid.UUID) error
+	Delete(leagueID uuid.UUID, speciesID int64) error
+	DeleteAllByLeague(leagueID uuid.UUID) error
 }
 
 type poolEntryRepositoryImpl struct {
 	db *gorm.DB
 }
 
-func NewPoolEntryRepository(db *gorm.DB) LeaguePokemonRepository {
-	return &poolEntryRepositoryImpl{
-		db: db,
-	}
+func NewPoolEntryRepository(db *gorm.DB) PoolEntryRepository {
+	return &poolEntryRepositoryImpl{db: db}
 }
 
-// gets multiple specific Pokemon from a league's draft pool by their IDs
-func (r *poolEntryRepositoryImpl) GetLeaguePokemonByIDs(leagueID uuid.UUID, leaguePokemonIDs []uuid.UUID) ([]models.LeaguePokemon, error) {
-	var leaguePokemon []models.LeaguePokemon
+func (r *poolEntryRepositoryImpl) GetByID(id uuid.UUID) (*models.PoolEntry, error) {
+	var entry models.PoolEntry
 	err := r.db.Preload("PokemonSpecies").
-		Where("league_id = ? AND id IN (?)", leagueID, leaguePokemonIDs).
-		Find(&leaguePokemon).Error
-
+		First(&entry, "id = ?", id).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: GetLeaguePokemonByIDs) - failed to get league pokemon by IDs: %w", err)
+		return nil, fmt.Errorf("(Error: PoolEntryRepo.GetByID) - failed to get pool entry: %w", err)
 	}
-	return leaguePokemon, nil
+	return &entry, nil
 }
 
-// adds a Pokemon species to a league's draft pool
-func (r *poolEntryRepositoryImpl) CreateLeaguePokemon(leaguePokemon *models.LeaguePokemon) (*models.LeaguePokemon, error) {
-	err := r.db.Create(leaguePokemon).Error
+func (r *poolEntryRepositoryImpl) GetByLeague(leagueID uuid.UUID) ([]models.PoolEntry, error) {
+	var entries []models.PoolEntry
+	err := r.db.Preload("PokemonSpecies").
+		Where("league_id = ?", leagueID).
+		Order("cost ASC, pokemon_species_id ASC").
+		Find(&entries).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: CreateLeaguePokemon) - failed to create league pokemon: %w", err)
+		return nil, fmt.Errorf("(Error: PoolEntryRepo.GetByLeague) - failed to get pool entries: %w", err)
 	}
-
-	// Preload PokemonSpecies after creation
-	err = r.db.Preload("PokemonSpecies").First(leaguePokemon, "id = ?", leaguePokemon.ID).Error
-	if err != nil {
-		return nil, fmt.Errorf("(Error: CreateLeaguePokemon) - failed to preload pokemon species after creation: %w", err)
-	}
-
-	return leaguePokemon, nil
+	return entries, nil
 }
 
-// adds multiple Pokemon species to a league's draft pool in a transaction
-func (r *poolEntryRepositoryImpl) CreateLeaguePokemonBatch(leaguePokemon []models.LeaguePokemon) ([]models.LeaguePokemon, error) {
+func (r *poolEntryRepositoryImpl) GetAvailableByLeague(leagueID uuid.UUID) ([]models.PoolEntry, error) {
+	var entries []models.PoolEntry
+	err := r.db.Preload("PokemonSpecies").
+		Where("league_id = ? AND is_available = ?", leagueID, true).
+		Order("cost DESC, created_at ASC").
+		Find(&entries).Error
+	if err != nil {
+		return nil, fmt.Errorf("(Error: PoolEntryRepo.GetAvailableByLeague) - failed to get available pool entries: %w", err)
+	}
+	return entries, nil
+}
+
+func (r *poolEntryRepositoryImpl) GetByIDs(leagueID uuid.UUID, ids []uuid.UUID) ([]models.PoolEntry, error) {
+	var entries []models.PoolEntry
+	err := r.db.Preload("PokemonSpecies").
+		Where("league_id = ? AND id IN (?)", leagueID, ids).
+		Find(&entries).Error
+	if err != nil {
+		return nil, fmt.Errorf("(Error: PoolEntryRepo.GetByIDs) - failed to get pool entries by IDs: %w", err)
+	}
+	return entries, nil
+}
+
+func (r *poolEntryRepositoryImpl) GetBySpecies(leagueID uuid.UUID, speciesID int64) (*models.PoolEntry, error) {
+	var entry models.PoolEntry
+	err := r.db.Preload("PokemonSpecies").
+		Where("league_id = ? AND pokemon_species_id = ?", leagueID, speciesID).
+		First(&entry).Error
+	if err != nil {
+		return nil, fmt.Errorf("(Error: PoolEntryRepo.GetBySpecies) - failed to get pool entry by species: %w", err)
+	}
+	return &entry, nil
+}
+
+func (r *poolEntryRepositoryImpl) GetByCostRange(leagueID uuid.UUID, minCost, maxCost int) ([]models.PoolEntry, error) {
+	var entries []models.PoolEntry
+	err := r.db.Preload("PokemonSpecies").
+		Where("league_id = ? AND cost BETWEEN ? AND ?", leagueID, minCost, maxCost).
+		Order("cost ASC").
+		Find(&entries).Error
+	if err != nil {
+		return nil, fmt.Errorf("(Error: PoolEntryRepo.GetByCostRange) - failed to get pool entries by cost: %w", err)
+	}
+	return entries, nil
+}
+
+func (r *poolEntryRepositoryImpl) IsAvailable(leagueID uuid.UUID, speciesID int64) (bool, error) {
+	var count int64
+	err := r.db.Model(&models.PoolEntry{}).
+		Where("league_id = ? AND pokemon_species_id = ? AND is_available = ?", leagueID, speciesID, true).
+		Count(&count).Error
+	if err != nil {
+		return false, fmt.Errorf("(Error: PoolEntryRepo.IsAvailable) - failed to check availability: %w", err)
+	}
+	return count > 0, nil
+}
+
+func (r *poolEntryRepositoryImpl) GetCost(leagueID uuid.UUID, speciesID int64) (*int, error) {
+	var entry models.PoolEntry
+	err := r.db.Select("cost").
+		Where("league_id = ? AND pokemon_species_id = ?", leagueID, speciesID).
+		First(&entry).Error
+	if err != nil {
+		return nil, fmt.Errorf("(Error: PoolEntryRepo.GetCost) - failed to get cost: %w", err)
+	}
+	return entry.Cost, nil
+}
+
+func (r *poolEntryRepositoryImpl) GetAvailableCount(leagueID uuid.UUID) (int64, error) {
+	var count int64
+	err := r.db.Model(&models.PoolEntry{}).
+		Where("league_id = ? AND is_available = ?", leagueID, true).
+		Count(&count).Error
+	if err != nil {
+		return 0, fmt.Errorf("(Error: PoolEntryRepo.GetAvailableCount) - failed to count: %w", err)
+	}
+	return count, nil
+}
+
+func (r *poolEntryRepositoryImpl) Create(entry *models.PoolEntry) (*models.PoolEntry, error) {
+	err := r.db.Create(entry).Error
+	if err != nil {
+		return nil, fmt.Errorf("(Error: PoolEntryRepo.Create) - failed to create pool entry: %w", err)
+	}
+	err = r.db.Preload("PokemonSpecies").First(entry, "id = ?", entry.ID).Error
+	if err != nil {
+		return nil, fmt.Errorf("(Error: PoolEntryRepo.Create) - failed to preload species: %w", err)
+	}
+	return entry, nil
+}
+
+func (r *poolEntryRepositoryImpl) CreateBatch(entries []models.PoolEntry) ([]models.PoolEntry, error) {
+	if len(entries) == 0 {
+		return entries, nil
+	}
+
 	tx := r.db.Begin()
 	if tx.Error != nil {
-		return nil, fmt.Errorf("(Error: CreateLeaguePokemonBatch) - failed to start transaction: %w", tx.Error)
+		return nil, fmt.Errorf("(Error: PoolEntryRepo.CreateBatch) - failed to start tx: %w", tx.Error)
 	}
 
-	// if fails at any point due to panic, rollback
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
 		}
 	}()
 
-	// Create all league pokemon entries in batch
-	if err := tx.CreateInBatches(leaguePokemon, 100).Error; err != nil {
+	if err := tx.CreateInBatches(entries, 100).Error; err != nil {
 		tx.Rollback()
-		return nil, fmt.Errorf("(Error: CreateLeaguePokemonBatch) - failed to create league pokemon batch: %w", err)
+		return nil, fmt.Errorf("(Error: PoolEntryRepo.CreateBatch) - failed to create batch: %w", err)
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		return nil, fmt.Errorf("(Error: CreateLeaguePokemonBatch) - failed to commit transaction: %w", err)
+		return nil, fmt.Errorf("(Error: PoolEntryRepo.CreateBatch) - failed to commit: %w", err)
 	}
 
-	// Retrieve the created league pokemon with PokemonSpecies preloaded
-	var createdLeaguePokemon []models.LeaguePokemon
-	// Assuming all leaguePokemon in the batch belong to the same leagueID
-	if len(leaguePokemon) > 0 {
+	var created []models.PoolEntry
+	if len(entries) > 0 {
 		err := r.db.Preload("PokemonSpecies").
-			Where("league_id = ?", leaguePokemon[0].LeagueID).
-			Where("id IN (?) ", func() []uuid.UUID {
-				var ids []uuid.UUID
-				for _, lp := range leaguePokemon {
-					ids = append(ids, lp.ID)
+			Where("league_id = ?", entries[0].LeagueID).
+			Where("id IN (?)", func() []uuid.UUID {
+				ids := make([]uuid.UUID, len(entries))
+				for i, e := range entries {
+					ids[i] = e.ID
 				}
 				return ids
 			}()).
-			Find(&createdLeaguePokemon).Error
+			Find(&created).Error
 		if err != nil {
-			return nil, fmt.Errorf("(Error: CreateLeaguePokemonBatch) - failed to retrieve created league pokemon with species: %w", err)
+			return nil, fmt.Errorf("(Error: PoolEntryRepo.CreateBatch) - failed to retrieve created entries: %w", err)
 		}
 	}
 
-	return createdLeaguePokemon, nil
+	return created, nil
 }
 
-// gets all available Pokemon for a specific league's draft pool
-func (r *poolEntryRepositoryImpl) GetAvailablePokemonByLeague(leagueID uuid.UUID) ([]models.LeaguePokemon, error) {
-	var leaguePokemon []models.LeaguePokemon
-	err := r.db.Preload("PokemonSpecies").
-		Where("league_id = ? AND is_available = ?", leagueID, true).
-		Order("cost DESC, created_at ASC").
-		Find(&leaguePokemon).Error
-
-	if err != nil {
-		return nil, fmt.Errorf("(Error: GetAvailablePokemonByLeague) - failed to get available pokemon: %w", err)
-	}
-	return leaguePokemon, nil
-}
-
-// gets all Pokemon in a league's draft pool (available and unavailable)
-func (r *poolEntryRepositoryImpl) GetAllPokemonByLeague(leagueID uuid.UUID) ([]models.LeaguePokemon, error) {
-	var leaguePokemon []models.LeaguePokemon
-	err := r.db.Preload("PokemonSpecies").
-		Where("league_id = ?", leagueID).
-		Order("cost ASC, pokemon_species_id ASC").
-		Find(&leaguePokemon).Error
-
-	if err != nil {
-		return nil, fmt.Errorf("(Error: GetAllPokemonByLeague) - failed to get league pokemon: %w", err)
-	}
-	return leaguePokemon, nil
-}
-
-// gets a specific Pokemon from a league's draft pool
-func (r *poolEntryRepositoryImpl) GetLeaguePokemonBySpecies(leagueID, pokemonSpeciesID uuid.UUID) (*models.LeaguePokemon, error) {
-	var leaguePokemon models.LeaguePokemon
-	err := r.db.Preload("PokemonSpecies").
-		Where("league_id = ? AND pokemon_species_id = ?", leagueID, pokemonSpeciesID).
-		First(&leaguePokemon).Error
-
-	if err != nil {
-		return nil, fmt.Errorf("(Error: GetLeaguePokemonBySpecies) - failed to get league pokemon: %w", err)
-	}
-	return &leaguePokemon, nil
-}
-
-// gets a specific Pokemon from a league's draft pool by its ID
-func (r *poolEntryRepositoryImpl) GetLeaguePokemonByID(leaguePokemonID uuid.UUID) (*models.LeaguePokemon, error) {
-	var leaguePokemon models.LeaguePokemon
-	err := r.db.Preload("League").
-		Preload("PokemonSpecies").
-		First(&leaguePokemon, "id = ?", leaguePokemonID).Error
-
-	if err != nil {
-		return nil, fmt.Errorf("(Error: GetLeaguePokemonByID) - failed to get league pokemon by ID: %w", err)
-	}
-	return &leaguePokemon, nil
-}
-
-// updates a Pokemon's availability or cost in a league
-func (r *poolEntryRepositoryImpl) UpdateLeaguePokemon(leaguePokemon *models.LeaguePokemon) (*models.LeaguePokemon, error) {
+func (r *poolEntryRepositoryImpl) Update(entry *models.PoolEntry) (*models.PoolEntry, error) {
 	err := r.db.Select("cost", "is_available", "updated_at").
-		Updates(leaguePokemon).Error
-
+		Updates(entry).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: UpdateLeaguePokemon) - failed to update league pokemon: %w", err)
+		return nil, fmt.Errorf("(Error: PoolEntryRepo.Update) - failed to update pool entry: %w", err)
 	}
-	return leaguePokemon, nil
+	return entry, nil
 }
 
-// marks a Pokemon as unavailable (typically after being drafted)
-func (r *poolEntryRepositoryImpl) MarkPokemonUnavailable(leagueID, pokemonSpeciesID uuid.UUID) error {
-	err := r.db.Model(&models.LeaguePokemon{}).
-		Where("league_id = ? AND pokemon_species_id = ?", leagueID, pokemonSpeciesID).
+func (r *poolEntryRepositoryImpl) MarkUnavailable(tx *gorm.DB, id uuid.UUID) error {
+	db := r.db
+	if tx != nil {
+		db = tx
+	}
+	err := db.Model(&models.PoolEntry{}).
+		Where("id = ?", id).
 		Update("is_available", false).Error
-
 	if err != nil {
-		return fmt.Errorf("(Error: MarkPokemonUnavailable) - failed to mark pokemon unavailable: %w", err)
+		return fmt.Errorf("(Error: PoolEntryRepo.MarkUnavailable) - failed to mark unavailable: %w", err)
 	}
 	return nil
 }
 
-// marks a Pokemon as available (typically when released back to free agents)
-func (r *poolEntryRepositoryImpl) MarkPokemonAvailable(leagueID, pokemonSpeciesID uuid.UUID) error {
-	err := r.db.Model(&models.LeaguePokemon{}).
-		Where("league_id = ? AND pokemon_species_id = ?", leagueID, pokemonSpeciesID).
+func (r *poolEntryRepositoryImpl) MarkAvailable(tx *gorm.DB, id uuid.UUID) error {
+	db := r.db
+	if tx != nil {
+		db = tx
+	}
+	err := db.Model(&models.PoolEntry{}).
+		Where("id = ?", id).
 		Update("is_available", true).Error
-
 	if err != nil {
-		return fmt.Errorf("(Error: MarkPokemonAvailable) - failed to mark pokemon available: %w", err)
+		return fmt.Errorf("(Error: PoolEntryRepo.MarkAvailable) - failed to mark available: %w", err)
 	}
 	return nil
 }
 
-// gets Pokemon filtered by cost range
-func (r *poolEntryRepositoryImpl) GetPokemonByCostRange(leagueID uuid.UUID, minCost, maxCost int) ([]models.LeaguePokemon, error) {
-	var leaguePokemon []models.LeaguePokemon
-	err := r.db.Preload("PokemonSpecies").
-		Where("league_id = ? AND cost BETWEEN ? AND ?", leagueID, minCost, maxCost).
-		Order("cost ASC").
-		Find(&leaguePokemon).Error
-
+func (r *poolEntryRepositoryImpl) Delete(leagueID uuid.UUID, speciesID int64) error {
+	err := r.db.Where("league_id = ? AND pokemon_species_id = ?", leagueID, speciesID).
+		Delete(&models.PoolEntry{}).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: GetPokemonByCostRange) - failed to get pokemon by cost range: %w", err)
-	}
-	return leaguePokemon, nil
-}
-
-// checks if a Pokemon species is available in a league's draft pool
-func (r *poolEntryRepositoryImpl) IsPokemonAvailable(leagueID, pokemonSpeciesID uuid.UUID) (bool, error) {
-	var count int64
-	err := r.db.Model(&models.LeaguePokemon{}).
-		Where("league_id = ? AND pokemon_species_id = ? AND is_available = ?", leagueID, pokemonSpeciesID, true).
-		Count(&count).Error
-
-	if err != nil {
-		return false, fmt.Errorf("(Error: IsPokemonAvailable) - failed to check pokemon availability: %w", err)
-	}
-	return count > 0, nil
-}
-
-// gets the cost of a specific Pokemon in a league
-func (r *poolEntryRepositoryImpl) GetPokemonCost(leagueID, pokemonSpeciesID uuid.UUID) (*int, error) {
-	var leaguePokemon models.LeaguePokemon
-	err := r.db.Select("cost").
-		Where("league_id = ? AND pokemon_species_id = ?", leagueID, pokemonSpeciesID).
-		First(&leaguePokemon).Error
-
-	if err != nil {
-		return nil, fmt.Errorf("(Error: GetPokemonCost) - failed to get pokemon cost: %w", err)
-	}
-	return leaguePokemon.Cost, nil
-}
-
-// removes a Pokemon species from a league's draft pool (soft delete)
-func (r *poolEntryRepositoryImpl) DeleteLeaguePokemon(leagueID, pokemonSpeciesID uuid.UUID) error {
-	err := r.db.Where("league_id = ? AND pokemon_species_id = ?", leagueID, pokemonSpeciesID).
-		Delete(&models.LeaguePokemon{}).Error
-
-	if err != nil {
-		return fmt.Errorf("(Error: DeleteLeaguePokemon) - failed to delete league pokemon: %w", err)
+		return fmt.Errorf("(Error: PoolEntryRepo.Delete) - failed to delete: %w", err)
 	}
 	return nil
 }
 
-// gets count of available Pokemon in a league
-func (r *poolEntryRepositoryImpl) GetAvailablePokemonCount(leagueID uuid.UUID) (int64, error) {
-	var count int64
-	err := r.db.Model(&models.LeaguePokemon{}).
-		Where("league_id = ? AND is_available = ?", leagueID, true).
-		Count(&count).Error
-
+func (r *poolEntryRepositoryImpl) DeleteAllByLeague(leagueID uuid.UUID) error {
+	err := r.db.Where("league_id = ?", leagueID).
+		Delete(&models.PoolEntry{}).Error
 	if err != nil {
-		return 0, fmt.Errorf("(Error: GetAvailablePokemonCount) - failed to count available pokemon: %w", err)
-	}
-	return count, nil
-}
-
-// removes all Pokemon from a league's draft pool (used when deleting a league)
-func (r *poolEntryRepositoryImpl) DeleteAllLeaguePokemon(leagueID uuid.UUID) error {
-	err := r.db.Where("league_id = ?", leagueID).Delete(&models.LeaguePokemon{}).Error
-	if err != nil {
-		return fmt.Errorf("(Error: DeleteAllLeaguePokemon) - failed to delete all league pokemon: %w", err)
+		return fmt.Errorf("(Error: PoolEntryRepo.DeleteAllByLeague) - failed to delete all: %w", err)
 	}
 	return nil
 }

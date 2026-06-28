@@ -61,7 +61,7 @@ func _TestPlayerService_CreatePlayerHandler(t *testing.T) {
 			DraftPoints:  int(testLeague.StartingDraftPoints),
 			Wins:         0,
 			Losses:       0,
-			Role:         rbac.PRoleMember,
+			Role:         rbac.MRoleMember,
 		}
 		createdPlayer := *expectedPlayer
 		createdPlayer.ID = uuid.New()
@@ -200,14 +200,14 @@ func _TestPlayerService_CreatePlayerHandler(t *testing.T) {
 //			LeagueID:     leagueID,
 //			InLeagueName: "OldInLeagueName",
 //			TeamName:     "OldTeamName",
-//			Role:         rbac.PRoleMember,
+//			Role:         rbac.MRoleMember,
 //		}
 //
 //		ownerPlayer := &models.Player{
 //			ID:       uuid.New(),
 //			UserID:   ownerUserID,
 //			LeagueID: leagueID,
-//			Role:     rbac.PRoleOwner,
+//			Role:     rbac.MRoleOwner,
 //		}
 //
 //		newInLeagueName := "NewInLeagueName"
@@ -261,7 +261,7 @@ func _TestPlayerService_CreatePlayerHandler(t *testing.T) {
 //
 //		t.Run("Failure - Unauthorized user", func(t *testing.T) {
 //			unauthorizedUser := &models.User{ID: uuid.New(), Role: "user"}
-//			unauthorizedPlayer := &models.Player{ID: uuid.New(), UserID: unauthorizedUser.ID, LeagueID: leagueID, Role: rbac.PRoleMember}
+//			unauthorizedPlayer := &models.Player{ID: uuid.New(), UserID: unauthorizedUser.ID, LeagueID: leagueID, Role: rbac.MRoleMember}
 //
 //			mockPlayerRepo.On("GetPlayerByID", playerID).Return(existingPlayer, nil).Once()
 //			mockPlayerRepo.On("GetPlayerByUserAndLeague", unauthorizedUser.ID, leagueID).Return(unauthorizedPlayer, nil).Once()
@@ -303,7 +303,7 @@ func _TestPlayerService_CreatePlayerHandler(t *testing.T) {
 //		service, mockPlayerRepo, _, _, _ := setupPlayerServiceTest()
 //		currentUserID := uuid.New()
 //		playerID := uuid.New()
-//		newRole := rbac.PRoleModerator
+//		newRole := rbac.MRoleModerator
 //
 //		t.Run("Success - Update Player Role", func(t *testing.T) {
 //			updatedPlayer := &models.Player{ID: playerID, Role: newRole}
@@ -367,10 +367,10 @@ func testPlayerUpdateByAuthorizedUser(t *testing.T, methodName string, updateFun
 	modUser := &models.User{ID: modUserID, Role: "user"}
 	unauthorizedUser := &models.User{ID: unauthorizedUserID, Role: "user"}
 
-	existingPlayer := &models.Player{ID: playerID, UserID: uuid.New(), LeagueID: leagueID, Role: rbac.PRoleMember}
-	ownerPlayer := &models.Player{UserID: ownerUserID, LeagueID: leagueID, Role: rbac.PRoleOwner}
-	modPlayer := &models.Player{UserID: modUserID, LeagueID: leagueID, Role: rbac.PRoleModerator}
-	unauthorizedPlayer := &models.Player{UserID: unauthorizedUserID, LeagueID: leagueID, Role: rbac.PRoleMember}
+	existingPlayer := &models.Player{ID: playerID, UserID: uuid.New(), LeagueID: leagueID, Role: rbac.MRoleMember}
+	ownerPlayer := &models.Player{UserID: ownerUserID, LeagueID: leagueID, Role: rbac.MRoleOwner}
+	modPlayer := &models.Player{UserID: modUserID, LeagueID: leagueID, Role: rbac.MRoleModerator}
+	unauthorizedPlayer := &models.Player{UserID: unauthorizedUserID, LeagueID: leagueID, Role: rbac.MRoleMember}
 
 	// Mock repository calls common to all authorized users
 	setupSuccessMocks := func() {

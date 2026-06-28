@@ -29,7 +29,7 @@ type PlayerService interface {
 	UpdatePlayerDraftPoints(currentUser *models.User, playerID uuid.UUID, draftPoints *int) (*models.Player, error)
 	UpdatePlayerRecord(currentUser *models.User, playerID uuid.UUID, wins int, losses int) (*models.Player, error)
 	UpdatePlayerDraftPosition(currentUser *models.User, playerID uuid.UUID, draftPosition int) (*models.Player, error)
-	UpdatePlayerRole(currentUserID, playerID uuid.UUID, newPlayerRole rbac.PlayerRole) (*models.Player, error)
+	UpdatePlayerRole(currentUserID, playerID uuid.UUID, newPlayerRole rbac.MemberRole) (*models.Player, error)
 	// (s *playerServiceImpl) LeaveLeague(playerID uuid.UUID) error
 }
 
@@ -135,7 +135,7 @@ func (s *playerServiceImpl) CreatePlayerHandler(input *requests.PlayerCreateRequ
 		DraftPosition: 0,
 		GroupNumber:   league.NewPlayerGroupNumber,
 		SkipsLeft:     league.MaxPokemonPerPlayer - league.MinPokemonPerPlayer,
-		Role:          rbac.PRoleMember,
+		Role:          rbac.MRoleMember,
 	}
 
 	createdPlayer, err := s.playerRepo.CreatePlayer(&player)
@@ -499,7 +499,7 @@ func (s *playerServiceImpl) UpdatePlayerDraftPosition(
 	return updatedPlayer, nil
 }
 
-func (s *playerServiceImpl) UpdatePlayerRole(currentUserID, playerID uuid.UUID, newPlayerRole rbac.PlayerRole) (*models.Player, error) {
+func (s *playerServiceImpl) UpdatePlayerRole(currentUserID, playerID uuid.UUID, newPlayerRole rbac.MemberRole) (*models.Player, error) {
 	err := s.playerRepo.UpdatePlayerRole(playerID, newPlayerRole)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {

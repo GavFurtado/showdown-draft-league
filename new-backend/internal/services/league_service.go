@@ -136,7 +136,7 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.Leagu
 		DraftPoints:     int(createdLeague.StartingDraftPoints),
 		TransferCredits: 0,
 		GroupNumber:     1, // first player for the league so assigned this
-		Role:            rbac.PRoleOwner,
+		Role:            rbac.MRoleOwner,
 	}
 
 	_, err = s.playerRepo.CreatePlayer(ownerPlayer)

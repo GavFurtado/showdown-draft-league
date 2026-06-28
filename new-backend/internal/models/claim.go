@@ -42,6 +42,6 @@ type Claim struct {
 
 	// Relationships
 	League         *League         `gorm:"foreignKey:league_id;references:id" json:"League,omitempty"`
-	Player         *Player         `gorm:"foreignKey:player_id;references:id" json:"Player,omitempty"`
+	Player         *LeagueMember   `gorm:"foreignKey:player_id;references:id" json:"Player,omitempty"`
 	PokemonSpecies *PokemonSpecies `gorm:"foreignKey:species_id;references:id" json:"PokemonSpecies,omitempty"`
 }

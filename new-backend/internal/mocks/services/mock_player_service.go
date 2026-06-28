@@ -100,7 +100,7 @@ func (m *MockPlayerService) UpdatePlayerDraftPosition(currentUser *models.User, 
 	return result, args.Error(1)
 }
 
-func (m *MockPlayerService) UpdatePlayerRole(currentUserID, playerID uuid.UUID, newPlayerRole rbac.PlayerRole) (*models.Player, error) {
+func (m *MockPlayerService) UpdatePlayerRole(currentUserID, playerID uuid.UUID, newPlayerRole rbac.MemberRole) (*models.Player, error) {
 	args := m.Called(currentUserID, playerID, newPlayerRole)
 	var result *models.Player
 	if args.Get(0) != nil {

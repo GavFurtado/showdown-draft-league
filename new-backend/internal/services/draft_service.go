@@ -764,13 +764,13 @@ func (s *draftServiceImpl) executeNewPickTransactions(
 	// Execute in a transaction: create DraftPicks, mark PoolEntries unavailable, deduct points
 	err = s.executeWithTransaction(func(txRepo *transactionalRepositories) error {
 		// 1. Create all draft picks
-		if err := txRepo.draftPickRepo.BatchCreateDraftPicks(draftPicks); err != nil {
+		if err := txRepo.draftPickRepo.CreateBatch(draftPicks); err != nil {
 			return err
 		}
 
 		// 2. Mark pool entries as unavailable (is_available = false)
 		for _, peID := range poolEntryIDs {
-			if err := txRepo.poolEntryRepo.MarkPoolEntryUnavailable(peID); err != nil {
+			if err := txRepo.poolEntryRepo.MarkUnavailable(nil, peID); err != nil {
 				return err
 			}
 		}
@@ -795,7 +795,7 @@ func (s *draftServiceImpl) executeNewPickTransactions(
 				AcquiredWeek: 0, // Pre-season draft week
 				IsActive:     true,
 			}
-			if _, err := txRepo.claimRepo.CreateClaim(claim); err != nil {
+			if _, err := txRepo.claimRepo.Create(claim); err != nil {
 				return err
 			}
 		}
@@ -981,7 +981,7 @@ func (s *draftServiceImpl) fetchRequestedPoolEntries(leagueID uuid.UUID, input *
 		poolEntryIDs = append(poolEntryIDs, requestedPick.LeaguePokemonID)
 	}
 
-	allRequestedPoolEntries, err := s.poolEntryRepo.GetPoolEntriesByIDs(leagueID, poolEntryIDs)
+	allRequestedPoolEntries, err := s.poolEntryRepo.GetByIDs(leagueID, poolEntryIDs)
 	if err != nil {
 		return nil, types.ErrInternalService
 	}
@@ -1025,7 +1025,7 @@ func (s *draftServiceImpl) checkDraftCompletion(
 	totalExpectedPicks := totalPlayers * maxPicksPerPlayer
 
 	// 2. Get the current count of all active claims in the league
-	currentTotalActiveClaims, err := s.claimRepo.GetActiveClaimCountByLeague(league.ID)
+	currentTotalActiveClaims, err := s.claimRepo.GetActiveCountByLeague(league.ID)
 	if err != nil {
 		log.Printf("LOG: (DraftService: checkDraftCompletion) - Failed to get total active claims for league %s: %v\\n", league.ID, err)
 		return false, types.ErrInternalService
@@ -1040,7 +1040,7 @@ func (s *draftServiceImpl) checkDraftCompletion(
 	minPokemonPerRoster := league.MinPokemonPerPlayer
 
 	for _, player := range allPlayers {
-		playerActiveRosterSize, err := s.claimRepo.GetActiveClaimCountByPlayer(player.ID)
+		playerActiveRosterSize, err := s.claimRepo.GetActiveCountByPlayer(player.ID)
 		if err != nil {
 			log.Printf("LOG: (DraftService: checkDraftCompletion) - Failed to get roster count for player %s in league %s: %v\\n", player.ID, league.ID, err)
 			return false, types.ErrInternalService

@@ -22,7 +22,7 @@ type LeagueMember struct {
 	DraftPosition   int             `gorm:"default:1;column:draft_position" json:"DraftPosition"` // turn order of player pick
 	GroupNumber     int             `gorm:"default:1;column:group_number" json:"GroupNumber"`     // group to which member belongs to
 	SkipsLeft       int             `gorm:"column:skips_left" json:"SkipsLeft"`
-	Role            rbac.PlayerRole `gorm:"type:varchar(20);not null;default:'member';column:role" json:"Role"`
+	Role            rbac.MemberRole `gorm:"type:varchar(20);not null;default:'member';column:role" json:"Role"`
 	IsParticipating bool            `gorm:"column:is_participating" json:"IsParticipating"` // whether a league member is a player
 	CreatedAt       time.Time       `gorm:"column:created_at" json:"CreatedAt"`
 	UpdatedAt       time.Time       `gorm:"column:updated_at" json:"UpdatedAt"`
@@ -33,17 +33,17 @@ type LeagueMember struct {
 	League *League `gorm:"foreignKey:league_id;references:id" json:"League,omitempty"`
 }
 
-// IsLeagueOwner checks if the player has the LeagueOwner role.
-func (p *Player) IsLeagueOwner() bool {
-	return p.Role.IsOwner()
+// IsLeagueOwner checks if the member has the LeagueOwner role.
+func (m *LeagueMember) IsLeagueOwner() bool {
+	return m.Role.IsOwner()
 }
 
-// IsLeagueModerator checks if the player has the LeagueModerator role.
-func (p *Player) IsLeagueModerator() bool {
-	return p.Role.IsModerator()
+// IsLeagueModerator checks if the member has the LeagueModerator role.
+func (m *LeagueMember) IsLeagueModerator() bool {
+	return m.Role.IsModerator()
 }
 
-// Can checks if the player's role has a specific permission.
-func (p *Player) Can(permission rbac.Permission) bool {
-	return p.Role.HasPermission(permission)
+// Can checks if the member's role has a specific permission.
+func (m *LeagueMember) Can(permission rbac.Permission) bool {
+	return m.Role.HasPermission(permission)
 }

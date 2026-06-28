@@ -26,7 +26,7 @@ type PlayerRepository interface {
 	// updates player's win/loss record
 	UpdatePlayerRecord(playerID uuid.UUID, wins, losses int) error
 	UpdatePlayerDraftPosition(playerID uuid.UUID, newPosition int) error
-	UpdatePlayerRole(playerID uuid.UUID, playerRole rbac.PlayerRole) error
+	UpdatePlayerRole(playerID uuid.UUID, playerRole rbac.MemberRole) error
 	GetPlayerCountByLeague(leagueID uuid.UUID) (int64, error)
 	// soft deletes a player from a league
 	DeletePlayer(playerID uuid.UUID) error
@@ -173,7 +173,7 @@ func (r *playerRepositoryImpl) UpdatePlayerDraftPosition(playerID uuid.UUID, new
 	return nil
 }
 
-func (r *playerRepositoryImpl) UpdatePlayerRole(playerID uuid.UUID, playerRole rbac.PlayerRole) error {
+func (r *playerRepositoryImpl) UpdatePlayerRole(playerID uuid.UUID, playerRole rbac.MemberRole) error {
 	err := r.db.Model(&models.Player{}).
 		Where("id = ?", playerID).
 		Update("role", playerRole).Error

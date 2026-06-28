@@ -64,7 +64,7 @@ func (m *MockPlayerRepository) UpdatePlayerDraftPosition(playerID uuid.UUID, new
 	args := m.Called(playerID, newPosition)
 	return args.Error(0)
 }
-func (m *MockPlayerRepository) UpdatePlayerRole(playerID uuid.UUID, playerRole rbac.PlayerRole) error {
+func (m *MockPlayerRepository) UpdatePlayerRole(playerID uuid.UUID, playerRole rbac.MemberRole) error {
 	args := m.Called(playerID, playerRole)
 	return args.Error(0)
 }

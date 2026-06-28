@@ -203,7 +203,7 @@ func (s *transferServiceImpl) DropPokemon(currentUser *models.User, leagueID, cl
 		return types.ErrInternalService
 	}
 
-	claim, err := s.claimRepo.GetClaimByID(claimID)
+	claim, err := s.claimRepo.GetByID(claimID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return types.ErrDraftedPokemonNotFound
@@ -240,7 +240,7 @@ func (s *transferServiceImpl) DropPokemon(currentUser *models.User, leagueID, cl
 	}
 
 	// Check if dropping this pokemon would put the player below the minimum
-	currentPokemonCount, err := s.claimRepo.GetActiveClaimCountByPlayer(player.ID)
+	currentPokemonCount, err := s.claimRepo.GetActiveCountByPlayer(player.ID)
 	if err != nil {
 		log.Printf("LOG: (Error: TransferService.DropPokemon) - could not get claim count for player %s: %v", player.ID, err)
 		return types.ErrInternalService
@@ -250,7 +250,7 @@ func (s *transferServiceImpl) DropPokemon(currentUser *models.User, leagueID, cl
 	}
 
 	// Find the pool entry to mark it as available again
-	poolEntry, err := s.poolEntryRepo.GetPoolEntryByLeagueAndSpecies(claim.LeagueID, claim.SpeciesID)
+	poolEntry, err := s.poolEntryRepo.GetBySpecies(claim.LeagueID, claim.SpeciesID)
 	if err != nil {
 		log.Printf("WARN: (TransferService.DropPokemon) - Could not find pool entry for species %d (dropping anyway): %v", claim.SpeciesID, err)
 		// Continue even if we can't find the specific pool entry - the claim is still released
@@ -261,7 +261,7 @@ func (s *transferServiceImpl) DropPokemon(currentUser *models.User, leagueID, cl
 		poolEntryID = poolEntry.ID
 	}
 
-	err = s.claimRepo.ReleaseClaimTransaction(claim, player, league.Format.DropCost, league.CurrentWeekNumber, poolEntryID)
+	err = s.claimRepo.ReleaseTx(nil, claim, player, league.Format.DropCost, league.CurrentWeekNumber, poolEntryID)
 	if err != nil {
 		log.Printf("LOG: (Error: TransferService.DropPokemon) - Failed to release claim with ID %s: %v", claimID, err)
 		return types.ErrInternalService
@@ -281,7 +281,7 @@ func (s *transferServiceImpl) PickupFreeAgent(currentUser *models.User, leagueID
 		return types.ErrInternalService
 	}
 
-	poolEntry, err := s.poolEntryRepo.GetPoolEntryByID(poolEntryID)
+	poolEntry, err := s.poolEntryRepo.GetByID(poolEntryID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return types.ErrLeaguePokemonNotFound
@@ -315,7 +315,7 @@ func (s *transferServiceImpl) PickupFreeAgent(currentUser *models.User, leagueID
 	}
 
 	// Check if picking up this pokemon would put the player above the maximum
-	currentPokemonCount, err := s.claimRepo.GetActiveClaimCountByPlayer(player.ID)
+	currentPokemonCount, err := s.claimRepo.GetActiveCountByPlayer(player.ID)
 	if err != nil {
 		log.Printf("LOG: (Error: TransferService.PickupFreeAgent) - could not get claim count for player %s: %v", player.ID, err)
 		return types.ErrInternalService
@@ -334,7 +334,7 @@ func (s *transferServiceImpl) PickupFreeAgent(currentUser *models.User, leagueID
 		IsActive:     true,
 	}
 
-	if err := s.claimRepo.PickupFreeAgentTransaction(player, newClaim, poolEntry, league.Format.PickupCost); err != nil {
+	if err := s.claimRepo.PickupFreeAgentTx(nil, player, newClaim, poolEntry, league.Format.PickupCost); err != nil {
 		log.Printf("LOG: (Error: TransferService.PickupFreeAgent) - Failed to complete pickup free agent transaction: %v", err)
 		return types.ErrInternalService
 	}
