@@ -35,7 +35,7 @@ func (m *MockLeagueMemberRepository) GetByUserAndLeague(userID, leagueID uuid.UU
 	if args.Get(0) != nil {
 		result = args.Get(0).(*models.LeagueMember)
 	}
-	return result, args.Error(2)
+	return result, args.Error(1)
 }
 
 func (m *MockLeagueMemberRepository) GetByLeague(leagueID uuid.UUID) ([]models.LeagueMember, error) {
@@ -112,7 +112,7 @@ func (m *MockLeagueMemberRepository) FindByUserAndLeague(userID, leagueID uuid.U
 	if args.Get(0) != nil {
 		result = args.Get(0).(*models.LeagueMember)
 	}
-	return result, args.Error(2)
+	return result, args.Error(1)
 }
 
 func (m *MockLeagueMemberRepository) FindByInLeagueName(name string, leagueID uuid.UUID) (*models.LeagueMember, error) {
@@ -121,7 +121,7 @@ func (m *MockLeagueMemberRepository) FindByInLeagueName(name string, leagueID uu
 	if args.Get(0) != nil {
 		result = args.Get(0).(*models.LeagueMember)
 	}
-	return result, args.Error(2)
+	return result, args.Error(1)
 }
 
 func (m *MockLeagueMemberRepository) FindByTeamName(name string, leagueID uuid.UUID) (*models.LeagueMember, error) {
@@ -130,5 +130,5 @@ func (m *MockLeagueMemberRepository) FindByTeamName(name string, leagueID uuid.U
 	if args.Get(0) != nil {
 		result = args.Get(0).(*models.LeagueMember)
 	}
-	return result, args.Error(2)
+	return result, args.Error(1)
 }

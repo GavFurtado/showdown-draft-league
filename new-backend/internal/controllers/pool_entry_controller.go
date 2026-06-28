@@ -104,7 +104,7 @@ func (c *poolEntryControllerImpl) Create(ctx *gin.Context) {
 		return
 	}
 
-	var req requests.LeaguePokemonCreateRequestDTO
+	var req requests.PoolEntryCreateRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
@@ -136,7 +136,7 @@ func (c *poolEntryControllerImpl) CreateBatch(ctx *gin.Context) {
 		return
 	}
 
-	var req []requests.LeaguePokemonCreateRequestDTO
+	var req []requests.PoolEntryCreateRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return
@@ -168,7 +168,7 @@ func (c *poolEntryControllerImpl) Update(ctx *gin.Context) {
 		return
 	}
 
-	var req requests.LeaguePokemonUpdateRequestDTO
+	var req requests.PoolEntryUpdateRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		return

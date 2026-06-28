@@ -23,7 +23,7 @@ type LeagueMemberService interface {
 	GetWithFullRoster(memberID uuid.UUID) (*models.LeagueMember, error)
 	GetRosterByWeek(memberID uuid.UUID, weekNumber int) ([]models.DraftedPokemon, error)
 
-	Create(currentUser *models.User, input *requests.PlayerCreateRequestDTO) (*models.LeagueMember, error)
+	Create(currentUser *models.User, input *requests.LeagueMemberCreateRequestDTO) (*models.LeagueMember, error)
 	UpdateProfile(currentUser *models.User, memberID uuid.UUID, inLeagueName, teamName *string) (*models.LeagueMember, error)
 	UpdateDraftPoints(currentUser *models.User, memberID uuid.UUID, draftPoints *int) (*models.LeagueMember, error)
 	UpdateRecord(currentUser *models.User, memberID uuid.UUID, wins, losses int) (*models.LeagueMember, error)
@@ -135,7 +135,7 @@ func (s *leagueMemberServiceImpl) GetRosterByWeek(memberID uuid.UUID, weekNumber
 	return rosterForWeek, nil
 }
 
-func (s *leagueMemberServiceImpl) Create(currentUser *models.User, input *requests.PlayerCreateRequestDTO) (*models.LeagueMember, error) {
+func (s *leagueMemberServiceImpl) Create(currentUser *models.User, input *requests.LeagueMemberCreateRequestDTO) (*models.LeagueMember, error) {
 	league, err := s.leagueRepo.GetLeagueByID(input.LeagueID)
 	if err != nil {
 		log.Printf("Service: LeagueMemberService.Create - Failed to fetch league %s: %v", input.LeagueID, err)

@@ -17,9 +17,9 @@ type PoolEntryService interface {
 	GetByID(id uuid.UUID) (*models.PoolEntry, error)
 	GetByLeague(leagueID uuid.UUID) ([]models.PoolEntry, error)
 	GetAvailableByLeague(leagueID uuid.UUID) ([]models.PoolEntry, error)
-	Create(currentUser *models.User, input *requests.LeaguePokemonCreateRequestDTO) (*models.PoolEntry, error)
-	CreateBatch(currentUser *models.User, inputs []requests.LeaguePokemonCreateRequestDTO) ([]models.PoolEntry, error)
-	Update(currentUser *models.User, input *requests.LeaguePokemonUpdateRequestDTO) (*models.PoolEntry, error)
+	Create(currentUser *models.User, input *requests.PoolEntryCreateRequestDTO) (*models.PoolEntry, error)
+	CreateBatch(currentUser *models.User, inputs []requests.PoolEntryCreateRequestDTO) ([]models.PoolEntry, error)
+	Update(currentUser *models.User, input *requests.PoolEntryUpdateRequestDTO) (*models.PoolEntry, error)
 }
 
 type poolEntryServiceImpl struct {
@@ -105,7 +105,7 @@ func (s *poolEntryServiceImpl) GetAvailableByLeague(leagueID uuid.UUID) ([]model
 	return entries, nil
 }
 
-func (s *poolEntryServiceImpl) Create(currentUser *models.User, input *requests.LeaguePokemonCreateRequestDTO) (*models.PoolEntry, error) {
+func (s *poolEntryServiceImpl) Create(currentUser *models.User, input *requests.PoolEntryCreateRequestDTO) (*models.PoolEntry, error) {
 	league, err := s.getLeagueByID(input.LeagueID, currentUser.ID)
 	if err != nil {
 		return nil, err
@@ -138,7 +138,7 @@ func (s *poolEntryServiceImpl) Create(currentUser *models.User, input *requests.
 	return created, nil
 }
 
-func (s *poolEntryServiceImpl) CreateBatch(currentUser *models.User, inputs []requests.LeaguePokemonCreateRequestDTO) ([]models.PoolEntry, error) {
+func (s *poolEntryServiceImpl) CreateBatch(currentUser *models.User, inputs []requests.PoolEntryCreateRequestDTO) ([]models.PoolEntry, error) {
 	if len(inputs) == 0 {
 		return []models.PoolEntry{}, nil
 	}
@@ -185,11 +185,11 @@ func (s *poolEntryServiceImpl) CreateBatch(currentUser *models.User, inputs []re
 	return created, nil
 }
 
-func (s *poolEntryServiceImpl) Update(currentUser *models.User, input *requests.LeaguePokemonUpdateRequestDTO) (*models.PoolEntry, error) {
-	existing, err := s.poolEntryRepo.GetByID(input.LeaguePokemonID)
+func (s *poolEntryServiceImpl) Update(currentUser *models.User, input *requests.PoolEntryUpdateRequestDTO) (*models.PoolEntry, error) {
+	existing, err := s.poolEntryRepo.GetByID(input.PoolEntryID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Printf("(Service: PoolEntryService.Update) - pool entry %s does not exist: %v\n", input.LeaguePokemonID, err)
+			log.Printf("(Service: PoolEntryService.Update) - pool entry %s does not exist: %v\n", input.PoolEntryID, err)
 			return nil, types.ErrPoolEntryNotFound
 		}
 		log.Printf("(Service: PoolEntryService.Update) - could not fetch pool entry: %s\n", err.Error())

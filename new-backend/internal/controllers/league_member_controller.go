@@ -155,7 +155,7 @@ func (c *leagueMemberControllerImpl) JoinLeague(ctx *gin.Context) {
 		return
 	}
 
-	var req requests.PlayerCreateRequestDTO
+	var req requests.LeagueMemberCreateRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields in payload"})
 		return
@@ -199,7 +199,7 @@ func (c *leagueMemberControllerImpl) UpdateProfile(ctx *gin.Context) {
 		return
 	}
 
-	var req requests.UpdatePlayerInfoRequestDTO
+	var req requests.UpdateLeagueMemberInfoRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
