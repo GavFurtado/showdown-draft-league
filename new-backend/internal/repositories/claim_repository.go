@@ -19,8 +19,8 @@ type ClaimRepository interface {
 	GetActiveCountByLeague(leagueID uuid.UUID) (int64, error)
 	IsSpeciesClaimedInLeague(leagueID uuid.UUID, speciesID int64) (bool, error)
 	Update(claim *models.Claim) (*models.Claim, error)
-	ReleaseTx(tx *gorm.DB, claim *models.Claim, member *models.Player, dropCost int, releasedWeek int, poolEntryID uuid.UUID) error
-	PickupFreeAgentTx(tx *gorm.DB, member *models.Player, newClaim *models.Claim, poolEntry *models.PoolEntry, pickupCost int) error
+	ReleaseTx(tx *gorm.DB, claim *models.Claim, member *models.LeagueMember, dropCost int, releasedWeek int, poolEntryID uuid.UUID) error
+	PickupFreeAgentTx(tx *gorm.DB, member *models.LeagueMember, newClaim *models.Claim, poolEntry *models.PoolEntry, pickupCost int) error
 }
 
 type claimRepositoryImpl struct {
@@ -144,7 +144,7 @@ func (r *claimRepositoryImpl) Update(claim *models.Claim) (*models.Claim, error)
 	return claim, nil
 }
 
-func (r *claimRepositoryImpl) ReleaseTx(tx *gorm.DB, claim *models.Claim, member *models.Player, dropCost int, releasedWeek int, poolEntryID uuid.UUID) error {
+func (r *claimRepositoryImpl) ReleaseTx(tx *gorm.DB, claim *models.Claim, member *models.LeagueMember, dropCost int, releasedWeek int, poolEntryID uuid.UUID) error {
 	db := r.db
 	if tx != nil {
 		db = tx
@@ -171,7 +171,7 @@ func (r *claimRepositoryImpl) ReleaseTx(tx *gorm.DB, claim *models.Claim, member
 	return nil
 }
 
-func (r *claimRepositoryImpl) PickupFreeAgentTx(tx *gorm.DB, member *models.Player, newClaim *models.Claim, poolEntry *models.PoolEntry, pickupCost int) error {
+func (r *claimRepositoryImpl) PickupFreeAgentTx(tx *gorm.DB, member *models.LeagueMember, newClaim *models.Claim, poolEntry *models.PoolEntry, pickupCost int) error {
 	db := r.db
 	if tx != nil {
 		db = tx

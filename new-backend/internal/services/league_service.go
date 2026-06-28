@@ -36,35 +36,26 @@ type LeagueService interface {
 }
 
 type leagueServiceImpl struct {
-	leagueRepo         repositories.LeagueRepository
-	playerRepo         repositories.PlayerRepository
-	memberRepo         repositories.LeagueMemberRepository
-	leaguePokemonRepo  repositories.LeaguePokemonRepository
-	draftedPokemonRepo repositories.DraftedPokemonRepository
-	draftRepo          repositories.DraftRepository
-	gameRepo           repositories.GameRepository
-	schedulerService   SchedulerService
-	transferService    TransferService
-	gameService        GameService
+	leagueRepo       repositories.LeagueRepository
+	memberRepo       repositories.LeagueMemberRepository
+	draftRepo        repositories.DraftRepository
+	gameRepo         repositories.GameRepository
+	schedulerService SchedulerService
+	transferService  TransferService
+	gameService      GameService
 }
 
 func NewLeagueService(
 	leagueRepo repositories.LeagueRepository,
-	playerRepo repositories.PlayerRepository,
 	memberRepo repositories.LeagueMemberRepository,
-	leaguePokemonRepo repositories.LeaguePokemonRepository,
-	draftedPokemonRepo repositories.DraftedPokemonRepository,
 	draftRepo repositories.DraftRepository,
 	gameRepo repositories.GameRepository,
 ) LeagueService {
 	return &leagueServiceImpl{
-		leagueRepo:         leagueRepo,
-		playerRepo:         playerRepo,
-		memberRepo:         memberRepo,
-		leaguePokemonRepo:  leaguePokemonRepo,
-		draftedPokemonRepo: draftedPokemonRepo,
-		draftRepo:          draftRepo,
-		gameRepo:           gameRepo,
+		leagueRepo: leagueRepo,
+		memberRepo: memberRepo,
+		draftRepo:  draftRepo,
+		gameRepo:   gameRepo,
 	}
 }
 

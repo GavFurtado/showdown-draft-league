@@ -32,7 +32,6 @@ type GameService interface {
 type gameServiceImpl struct {
 	gameRepo      repositories.GameRepository
 	leagueRepo    repositories.LeagueRepository
-	playerRepo    repositories.PlayerRepository
 	memberRepo    repositories.LeagueMemberRepository
 	leagueService LeagueService
 }
@@ -40,13 +39,11 @@ type gameServiceImpl struct {
 func NewGameService(
 	gameRepo repositories.GameRepository,
 	leagueRepo repositories.LeagueRepository,
-	playerRepo repositories.PlayerRepository,
 	memberRepo repositories.LeagueMemberRepository,
 ) GameService {
 	return &gameServiceImpl{
 		gameRepo:   gameRepo,
 		leagueRepo: leagueRepo,
-		playerRepo: playerRepo,
 		memberRepo: memberRepo,
 	}
 }

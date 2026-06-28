@@ -19,19 +19,13 @@ import (
 
 func TestLeagueService_CreateLeague(t *testing.T) {
 	mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
-	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
 	mockLeagueMemberRepo := new(mock_repositories.MockLeagueMemberRepository)
-	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
-	mockDraftedPokemonRepo := new(mock_repositories.MockDraftedPokemonRepository)
 	mockDraftRepo := new(mock_repositories.MockDraftRepository)
 	mockGameRepo := new(mock_repositories.MockGameRepository)
 
 	service := services.NewLeagueService(
 		mockLeagueRepo,
-		mockPlayerRepo,
 		mockLeagueMemberRepo,
-		mockLeaguePokemonRepo,
-		mockDraftedPokemonRepo,
 		mockDraftRepo,
 		mockGameRepo,
 	)
@@ -166,19 +160,13 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 
 func TestLeagueService_GetLeagueByIDForUser(t *testing.T) {
 	mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
-	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
 	mockLeagueMemberRepo := new(mock_repositories.MockLeagueMemberRepository)
-	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
-	mockDraftedPokemonRepo := new(mock_repositories.MockDraftedPokemonRepository)
 	mockDraftRepo := new(mock_repositories.MockDraftRepository)
 	mockGameRepo := new(mock_repositories.MockGameRepository)
 
 	service := services.NewLeagueService(
 		mockLeagueRepo,
-		mockPlayerRepo,
 		mockLeagueMemberRepo,
-		mockLeaguePokemonRepo,
-		mockDraftedPokemonRepo,
 		mockDraftRepo,
 		mockGameRepo,
 	)
@@ -221,19 +209,13 @@ func TestLeagueService_GetLeagueByIDForUser(t *testing.T) {
 
 func TestLeagueService_GetLeaguesByCommissioner(t *testing.T) {
 	mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
-	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
 	mockLeagueMemberRepo := new(mock_repositories.MockLeagueMemberRepository)
-	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
-	mockDraftedPokemonRepo := new(mock_repositories.MockDraftedPokemonRepository)
 	mockDraftRepo := new(mock_repositories.MockDraftRepository)
 	mockGameRepo := new(mock_repositories.MockGameRepository)
 
 	service := services.NewLeagueService(
 		mockLeagueRepo,
-		mockPlayerRepo,
 		mockLeagueMemberRepo,
-		mockLeaguePokemonRepo,
-		mockDraftedPokemonRepo,
 		mockDraftRepo,
 		mockGameRepo,
 	)
@@ -297,19 +279,13 @@ func TestLeagueService_GetLeaguesByCommissioner(t *testing.T) {
 
 func TestLeagueService_GetLeaguesByUser(t *testing.T) {
 	mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
-	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
 	mockLeagueMemberRepo := new(mock_repositories.MockLeagueMemberRepository)
-	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
-	mockDraftedPokemonRepo := new(mock_repositories.MockDraftedPokemonRepository)
 	mockDraftRepo := new(mock_repositories.MockDraftRepository)
 	mockGameRepo := new(mock_repositories.MockGameRepository)
 
 	service := services.NewLeagueService(
 		mockLeagueRepo,
-		mockPlayerRepo,
 		mockLeagueMemberRepo,
-		mockLeaguePokemonRepo,
-		mockDraftedPokemonRepo,
 		mockDraftRepo,
 		mockGameRepo,
 	)

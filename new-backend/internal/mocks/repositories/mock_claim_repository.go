@@ -77,12 +77,12 @@ func (m *MockClaimRepository) Update(claim *models.Claim) (*models.Claim, error)
 	return result, args.Error(1)
 }
 
-func (m *MockClaimRepository) ReleaseTx(tx *gorm.DB, claim *models.Claim, member *models.Player, dropCost int, releasedWeek int, poolEntryID uuid.UUID) error {
+func (m *MockClaimRepository) ReleaseTx(tx *gorm.DB, claim *models.Claim, member *models.LeagueMember, dropCost int, releasedWeek int, poolEntryID uuid.UUID) error {
 	args := m.Called(tx, claim, member, dropCost, releasedWeek, poolEntryID)
 	return args.Error(0)
 }
 
-func (m *MockClaimRepository) PickupFreeAgentTx(tx *gorm.DB, member *models.Player, newClaim *models.Claim, poolEntry *models.PoolEntry, pickupCost int) error {
+func (m *MockClaimRepository) PickupFreeAgentTx(tx *gorm.DB, member *models.LeagueMember, newClaim *models.Claim, poolEntry *models.PoolEntry, pickupCost int) error {
 	args := m.Called(tx, member, newClaim, poolEntry, pickupCost)
 	return args.Error(0)
 }

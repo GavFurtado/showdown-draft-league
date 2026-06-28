@@ -9,17 +9,14 @@ import (
 type Repositories struct {
 	LeagueRepository         repositories.LeagueRepository
 	UserRepository           repositories.UserRepository
-	PlayerRepository         repositories.PlayerRepository
 	PokemonSpeciesRepository repositories.PokemonSpeciesRepository
 	DraftRepository          repositories.DraftRepository
 	GameRepository           repositories.GameRepository
-	LeaguePokemonRepository  repositories.LeaguePokemonRepository
-	DraftedPokemonRepository repositories.DraftedPokemonRepository
 
-	DraftPickRepository      repositories.DraftPickRepository
-	ClaimRepository          repositories.ClaimRepository
-	PoolEntryRepository      repositories.PoolEntryRepository
-	LeagueMemberRepository   repositories.LeagueMemberRepository
+	DraftPickRepository    repositories.DraftPickRepository
+	ClaimRepository        repositories.ClaimRepository
+	PoolEntryRepository    repositories.PoolEntryRepository
+	LeagueMemberRepository repositories.LeagueMemberRepository
 }
 
 type Services struct {

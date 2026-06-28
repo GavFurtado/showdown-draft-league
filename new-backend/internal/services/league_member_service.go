@@ -21,7 +21,6 @@ type LeagueMemberService interface {
 	GetByLeague(leagueID uuid.UUID) ([]models.LeagueMember, error)
 	GetByUser(userID uuid.UUID) ([]models.LeagueMember, error)
 	GetWithFullRoster(memberID uuid.UUID) (*models.LeagueMember, error)
-	GetRosterByWeek(memberID uuid.UUID, weekNumber int) ([]models.DraftedPokemon, error)
 
 	Create(currentUser *models.User, input *requests.LeagueMemberCreateRequestDTO) (*models.LeagueMember, error)
 	UpdateProfile(currentUser *models.User, memberID uuid.UUID, inLeagueName, teamName *string) (*models.LeagueMember, error)
@@ -32,26 +31,20 @@ type LeagueMemberService interface {
 }
 
 type leagueMemberServiceImpl struct {
-	memberRepo         repositories.LeagueMemberRepository
-	playerRepo         repositories.PlayerRepository
-	leagueRepo         repositories.LeagueRepository
-	userRepo           repositories.UserRepository
-	draftedPokemonRepo repositories.DraftedPokemonRepository
+	memberRepo repositories.LeagueMemberRepository
+	leagueRepo repositories.LeagueRepository
+	userRepo   repositories.UserRepository
 }
 
 func NewLeagueMemberService(
 	memberRepo repositories.LeagueMemberRepository,
-	playerRepo repositories.PlayerRepository,
 	leagueRepo repositories.LeagueRepository,
 	userRepo repositories.UserRepository,
-	draftedPokemonRepo repositories.DraftedPokemonRepository,
 ) LeagueMemberService {
 	return &leagueMemberServiceImpl{
-		memberRepo:         memberRepo,
-		playerRepo:         playerRepo,
-		leagueRepo:         leagueRepo,
-		userRepo:           userRepo,
-		draftedPokemonRepo: draftedPokemonRepo,
+		memberRepo: memberRepo,
+		leagueRepo: leagueRepo,
+		userRepo:   userRepo,
 	}
 }
 
@@ -107,32 +100,6 @@ func (s *leagueMemberServiceImpl) GetWithFullRoster(memberID uuid.UUID) (*models
 		return nil, fmt.Errorf("%w: failed to retrieve member data", types.ErrInternalService)
 	}
 	return member, nil
-}
-
-func (s *leagueMemberServiceImpl) GetRosterByWeek(memberID uuid.UUID, weekNumber int) ([]models.DraftedPokemon, error) {
-	_, err := s.memberRepo.GetByID(memberID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, types.ErrPlayerNotFound
-		}
-		return nil, fmt.Errorf("%w: failed to retrieve member data: %v", types.ErrInternalService, err)
-	}
-
-	allDrafted, err := s.draftedPokemonRepo.GetAllDraftedPokemonByPlayer(memberID)
-	if err != nil {
-		return nil, fmt.Errorf("%w: failed to retrieve all drafted pokemon for member: %v", types.ErrInternalService, err)
-	}
-
-	var rosterForWeek []models.DraftedPokemon
-	for _, pokemon := range allDrafted {
-		isAcquired := pokemon.AcquiredWeek <= weekNumber
-		isNotReleasedYet := !pokemon.IsReleased || (pokemon.ReleasedWeek != nil && *pokemon.ReleasedWeek > weekNumber)
-		if isAcquired && isNotReleasedYet {
-			rosterForWeek = append(rosterForWeek, pokemon)
-		}
-	}
-
-	return rosterForWeek, nil
 }
 
 func (s *leagueMemberServiceImpl) Create(currentUser *models.User, input *requests.LeagueMemberCreateRequestDTO) (*models.LeagueMember, error) {

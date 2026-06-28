@@ -70,18 +70,18 @@ func (r *leagueRepositoryImpl) CreateLeague(league *models.League) (*models.Leag
 	return league, nil
 }
 
-// checks if a given user is a player in a specific league.
+// checks if a given user is a member in a specific league.
 func (r *leagueRepositoryImpl) IsUserPlayerInLeague(userID, leagueID uuid.UUID) (bool, error) {
-	var player models.Player
-	err := r.db.Where("user_id = ? AND league_id = ?", userID, leagueID).First(&player).Error
+	var member models.LeagueMember
+	err := r.db.Where("user_id = ? AND league_id = ?", userID, leagueID).First(&member).Error
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return false, nil // User is not a player in this league
+			return false, nil // User is not a member in this league
 		}
-		return false, fmt.Errorf("failed to check player membership: %w", err) // Other database error
+		return false, fmt.Errorf("failed to check member membership: %w", err) // Other database error
 	}
-	return true, nil // User is a player in this league
+	return true, nil // User is a member in this league
 }
 
 // gets League by League ID with relationships preloaded

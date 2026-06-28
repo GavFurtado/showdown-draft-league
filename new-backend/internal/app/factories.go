@@ -14,11 +14,8 @@ func NewRepositories(db *gorm.DB) *Repositories {
 	return &Repositories{
 		UserRepository:           repositories.NewUserRepository(db),
 		LeagueRepository:         repositories.NewLeagueRepository(db),
-		PlayerRepository:         repositories.NewPlayerRepository(db),
 		DraftRepository:          repositories.NewDraftRepository(db),
 		GameRepository:           repositories.NewGameRepository(db),
-		LeaguePokemonRepository:  repositories.NewLeaguePokemonRepository(db),
-		DraftedPokemonRepository: repositories.NewDraftedPokemonRepository(db),
 		PokemonSpeciesRepository: repositories.NewPokemonSpeciesRepository(db),
 
 		DraftPickRepository:    repositories.NewDraftPickRepository(db),
@@ -53,10 +50,7 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 	)
 
 	transferService := services.NewTransferService(
-		repos.DraftedPokemonRepository,
-		repos.LeaguePokemonRepository,
 		repos.LeagueRepository,
-		repos.PlayerRepository,
 		repos.LeagueMemberRepository,
 	)
 
@@ -66,9 +60,9 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 		repos.LeagueMemberRepository,
 	)
 
-	gameService := services.NewGameService(repos.GameRepository, repos.LeagueRepository, repos.PlayerRepository, repos.LeagueMemberRepository)
+	gameService := services.NewGameService(repos.GameRepository, repos.LeagueRepository, repos.LeagueMemberRepository)
 
-	leagueService := services.NewLeagueService(repos.LeagueRepository, repos.PlayerRepository, repos.LeagueMemberRepository, repos.LeaguePokemonRepository, repos.DraftedPokemonRepository, repos.DraftRepository, repos.GameRepository)
+	leagueService := services.NewLeagueService(repos.LeagueRepository, repos.LeagueMemberRepository, repos.DraftRepository, repos.GameRepository)
 
 	draftService.SetSchedulerService(schedulerService)
 	schedulerService.SetDraftService(draftService.(services.DraftService))
@@ -94,11 +88,11 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 		DraftService:         draftService,
 		PokemonSpeciesService: services.NewPokemonSpeciesService(repos.PokemonSpeciesRepository),
 		SchedulerService:      schedulerService,
-		GameService:           services.NewGameService(repos.GameRepository, repos.LeagueRepository, repos.PlayerRepository, repos.LeagueMemberRepository),
+		GameService:           services.NewGameService(repos.GameRepository, repos.LeagueRepository, repos.LeagueMemberRepository),
 		TransferService:       transferService,
 
 		PoolEntryService:    services.NewPoolEntryService(repos.PoolEntryRepository, repos.LeagueRepository, repos.UserRepository, repos.PokemonSpeciesRepository),
-		LeagueMemberService: services.NewLeagueMemberService(repos.LeagueMemberRepository, repos.PlayerRepository, repos.LeagueRepository, repos.UserRepository, repos.DraftedPokemonRepository),
+		LeagueMemberService: services.NewLeagueMemberService(repos.LeagueMemberRepository, repos.LeagueRepository, repos.UserRepository),
 		DraftPickService:    services.NewDraftPickService(repos.DraftPickRepository, repos.DraftRepository),
 		ClaimService:        services.NewClaimService(repos.ClaimRepository),
 	}

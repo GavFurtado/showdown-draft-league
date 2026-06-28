@@ -16,9 +16,7 @@ import (
 
 func TestGameService_GeneratePlayoffBracket_Correct(t *testing.T) {
 	// ARRANGE
-	// Instantiate the EXISTING mocks from the mock_repositories package
 	mockLeagueRepo := new(mock_repos.MockLeagueRepository)
-	mockPlayerRepo := new(mock_repos.MockPlayerRepository)
 	mockLeagueMemberRepo := new(mock_repos.MockLeagueMemberRepository)
 	mockGameRepo := new(mock_repos.MockGameRepository)
 
@@ -48,7 +46,7 @@ func TestGameService_GeneratePlayoffBracket_Correct(t *testing.T) {
 	mockLeagueMemberRepo.On("GetByLeagueAndGroup", leagueID, 1).Return(mockMembers, nil)
 	mockGameRepo.On("CreateGames", mock.AnythingOfType("[]*models.Game")).Return(nil)
 
-	gameService := services.NewGameService(mockGameRepo, mockLeagueRepo, mockPlayerRepo, mockLeagueMemberRepo)
+	gameService := services.NewGameService(mockGameRepo, mockLeagueRepo, mockLeagueMemberRepo)
 
 	// ACT
 	err := gameService.GeneratePlayoffBracket(leagueID)
@@ -91,7 +89,6 @@ func TestGameService_GeneratePlayoffBracket_Correct(t *testing.T) {
 func TestGameService_GenerateRegularSeasonGames_Success(t *testing.T) {
 	// ARRANGE
 	mockLeagueRepo := new(mock_repos.MockLeagueRepository)
-	mockPlayerRepo := new(mock_repos.MockPlayerRepository)
 	mockLeagueMemberRepo := new(mock_repos.MockLeagueMemberRepository)
 	mockGameRepo := new(mock_repos.MockGameRepository)
 
@@ -120,7 +117,7 @@ func TestGameService_GenerateRegularSeasonGames_Success(t *testing.T) {
 		return len(games) == 6
 	})).Return(nil)
 
-	gameService := services.NewGameService(mockGameRepo, mockLeagueRepo, mockPlayerRepo, mockLeagueMemberRepo)
+	gameService := services.NewGameService(mockGameRepo, mockLeagueRepo, mockLeagueMemberRepo)
 
 	// ACT
 	err := gameService.GenerateRegularSeasonGames(leagueID)
@@ -135,7 +132,6 @@ func TestGameService_GenerateRegularSeasonGames_Success(t *testing.T) {
 func TestGameService_GenerateRegularSeasonGames_ErrGamesAlreadyGenerated(t *testing.T) {
 	// ARRANGE
 	mockLeagueRepo := new(mock_repos.MockLeagueRepository)
-	mockPlayerRepo := new(mock_repos.MockPlayerRepository)
 	mockLeagueMemberRepo := new(mock_repos.MockLeagueMemberRepository)
 	mockGameRepo := new(mock_repos.MockGameRepository)
 
@@ -152,7 +148,7 @@ func TestGameService_GenerateRegularSeasonGames_ErrGamesAlreadyGenerated(t *test
 	mockLeagueRepo.On("GetLeagueByID", leagueID).Return(mockLeague, nil)
 	mockGameRepo.On("HasGames", leagueID, enums.GameTypeRegularSeason).Return(true, nil).Once()
 
-	gameService := services.NewGameService(mockGameRepo, mockLeagueRepo, mockPlayerRepo, mockLeagueMemberRepo)
+	gameService := services.NewGameService(mockGameRepo, mockLeagueRepo, mockLeagueMemberRepo)
 
 	// ACT
 	err := gameService.GenerateRegularSeasonGames(leagueID)
@@ -162,14 +158,12 @@ func TestGameService_GenerateRegularSeasonGames_ErrGamesAlreadyGenerated(t *test
 	assert.Equal(t, types.ErrGamesAlreadyGenerated, err)
 	mockLeagueRepo.AssertExpectations(t)
 	mockGameRepo.AssertExpectations(t)
-	mockPlayerRepo.AssertNotCalled(t, "GetPlayersByLeagueAndGroupNumber")
 	mockGameRepo.AssertNotCalled(t, "CreateGames")
 }
 
 func TestGameService_GenerateRegularSeasonGames_ErrInvalidState(t *testing.T) {
 	// ARRANGE
 	mockLeagueRepo := new(mock_repos.MockLeagueRepository)
-	mockPlayerRepo := new(mock_repos.MockPlayerRepository)
 	mockLeagueMemberRepo := new(mock_repos.MockLeagueMemberRepository)
 	mockGameRepo := new(mock_repos.MockGameRepository)
 
@@ -188,25 +182,20 @@ func TestGameService_GenerateRegularSeasonGames_ErrInvalidState(t *testing.T) {
 	mockLeagueRepo.On("GetLeagueByID", leagueID).Return(mockLeague, nil)
 	mockGameRepo.On("HasGames", leagueID, enums.GameTypeRegularSeason).Return(false, nil).Once() // Expect this check first
 
-	gameService := services.NewGameService(mockGameRepo, mockLeagueRepo, mockPlayerRepo, mockLeagueMemberRepo)
+	gameService := services.NewGameService(mockGameRepo, mockLeagueRepo, mockLeagueMemberRepo)
 
 	// ACT
 	err := gameService.GenerateRegularSeasonGames(leagueID)
 
 	// ASSERT
 	assert.Error(t, err)
-	// We can check for a specific error if the service returns a custom error type
-	// For now, just asserting that an error is returned is sufficient.
 	mockLeagueRepo.AssertExpectations(t)
-	// Other repos should not have been called.
-	mockPlayerRepo.AssertNotCalled(t, "GetPlayersByLeagueAndGroupNumber")
 	mockGameRepo.AssertNotCalled(t, "CreateGames")
 }
 
 func TestGameService_GeneratePlayoffBracket_ErrInvalidConfig(t *testing.T) {
 	// ARRANGE
 	mockLeagueRepo := new(mock_repos.MockLeagueRepository)
-	mockPlayerRepo := new(mock_repos.MockPlayerRepository)
 	mockLeagueMemberRepo := new(mock_repos.MockLeagueMemberRepository)
 	mockGameRepo := new(mock_repos.MockGameRepository)
 
@@ -229,7 +218,7 @@ func TestGameService_GeneratePlayoffBracket_ErrInvalidConfig(t *testing.T) {
 	mockLeagueRepo.On("GetLeagueByID", leagueID).Return(mockLeague, nil)
 	mockLeagueMemberRepo.On("GetByLeagueAndGroup", leagueID, 1).Return(mockMembers, nil)
 
-	gameService := services.NewGameService(mockGameRepo, mockLeagueRepo, mockPlayerRepo, mockLeagueMemberRepo)
+	gameService := services.NewGameService(mockGameRepo, mockLeagueRepo, mockLeagueMemberRepo)
 
 	// ACT
 	err := gameService.GeneratePlayoffBracket(leagueID)

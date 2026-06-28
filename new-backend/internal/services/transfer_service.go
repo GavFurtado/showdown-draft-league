@@ -25,30 +25,21 @@ type TransferService interface {
 }
 
 type transferServiceImpl struct {
-	draftedPokemonRepo repositories.DraftedPokemonRepository
-	leaguePokemonRepo  repositories.LeaguePokemonRepository
-	leagueRepo         repositories.LeagueRepository
-	playerRepo         repositories.PlayerRepository
-	memberRepo         repositories.LeagueMemberRepository
-	schedulerService   SchedulerService
+	leagueRepo       repositories.LeagueRepository
+	memberRepo       repositories.LeagueMemberRepository
+	schedulerService SchedulerService
 
 	claimRepo     repositories.ClaimRepository
 	poolEntryRepo repositories.PoolEntryRepository
 }
 
 func NewTransferService(
-	draftedPokemonRepo repositories.DraftedPokemonRepository,
-	leaguePokemonRepo repositories.LeaguePokemonRepository,
 	leagueRepo repositories.LeagueRepository,
-	playerRepo repositories.PlayerRepository,
 	memberRepo repositories.LeagueMemberRepository,
 ) TransferService {
 	return &transferServiceImpl{
-		draftedPokemonRepo: draftedPokemonRepo,
-		leaguePokemonRepo:  leaguePokemonRepo,
-		leagueRepo:         leagueRepo,
-		playerRepo:         playerRepo,
-		memberRepo:         memberRepo,
+		leagueRepo: leagueRepo,
+		memberRepo: memberRepo,
 	}
 }
 
@@ -85,20 +76,20 @@ func (s *transferServiceImpl) StartTransferPeriod(leagueID uuid.UUID) error {
 	// 3. Update Player Credits (if applicable)
 	didAllPlayersAccrueCredits := true
 	if league.Format.TransfersCostCredits {
-		players, err := s.playerRepo.GetPlayersByLeague(leagueID)
+		members, err := s.memberRepo.GetByLeague(leagueID)
 		if err != nil {
-			log.Printf("ERROR: (TransferService: StartTransferPeriod) - Failed to get players for league %s: %v\n", leagueID, err)
+			log.Printf("ERROR: (TransferService: StartTransferPeriod) - Failed to get members for league %s: %v\n", leagueID, err)
 			return types.ErrInternalService
 		}
 
-		for _, player := range players {
-			player.TransferCredits += league.Format.TransferCreditsPerWindow
-			if player.TransferCredits > league.Format.TransferCreditCap {
-				player.TransferCredits = league.Format.TransferCreditCap
+		for _, member := range members {
+			member.TransferCredits += league.Format.TransferCreditsPerWindow
+			if member.TransferCredits > league.Format.TransferCreditCap {
+				member.TransferCredits = league.Format.TransferCreditCap
 			}
-			if _, err := s.playerRepo.UpdatePlayer(&player); err != nil {
+			if _, err := s.memberRepo.Update(&member); err != nil {
 				// Log the error but continue trying to update other players
-				log.Printf("ERROR: (TransferService: StartTransferPeriod) - Failed to update transfer credits for player %s (%s): %v\n", player.InLeagueName, player.ID, err)
+				log.Printf("ERROR: (TransferService: StartTransferPeriod) - Failed to update transfer credits for member %s: %v\n", member.ID, err)
 				didAllPlayersAccrueCredits = false
 			}
 		}
@@ -217,11 +208,11 @@ func (s *transferServiceImpl) DropPokemon(currentUser *models.User, leagueID, cl
 	}
 
 	// Authorize user is owner of claimed pokemon
-	player, err := s.playerRepo.GetPlayerByID(claim.PlayerID)
+	member, err := s.memberRepo.GetByID(claim.PlayerID)
 	if err != nil {
 		return types.ErrPlayerNotFound
 	}
-	if player.UserID != currentUser.ID {
+	if member.UserID != currentUser.ID {
 		return types.ErrUnauthorized
 	}
 
@@ -233,7 +224,7 @@ func (s *transferServiceImpl) DropPokemon(currentUser *models.User, leagueID, cl
 		return types.ErrInvalidState
 	}
 
-	if player.TransferCredits < league.Format.DropCost {
+	if member.TransferCredits < league.Format.DropCost {
 		return types.ErrInsufficientTransferCredits
 	}
 
@@ -242,9 +233,9 @@ func (s *transferServiceImpl) DropPokemon(currentUser *models.User, leagueID, cl
 	}
 
 	// Check if dropping this pokemon would put the player below the minimum
-	currentPokemonCount, err := s.claimRepo.GetActiveCountByPlayer(player.ID)
+	currentPokemonCount, err := s.claimRepo.GetActiveCountByPlayer(member.ID)
 	if err != nil {
-		log.Printf("LOG: (Error: TransferService.DropPokemon) - could not get claim count for player %s: %v", player.ID, err)
+		log.Printf("LOG: (Error: TransferService.DropPokemon) - could not get claim count for member %s: %v", member.ID, err)
 		return types.ErrInternalService
 	}
 	if currentPokemonCount <= int64(league.MinPokemonPerPlayer) {
@@ -263,7 +254,7 @@ func (s *transferServiceImpl) DropPokemon(currentUser *models.User, leagueID, cl
 		poolEntryID = poolEntry.ID
 	}
 
-	err = s.claimRepo.ReleaseTx(nil, claim, player, league.Format.DropCost, league.CurrentWeekNumber, poolEntryID)
+	err = s.claimRepo.ReleaseTx(nil, claim, member, league.Format.DropCost, league.CurrentWeekNumber, poolEntryID)
 	if err != nil {
 		log.Printf("LOG: (Error: TransferService.DropPokemon) - Failed to release claim with ID %s: %v", claimID, err)
 		return types.ErrInternalService
@@ -303,12 +294,12 @@ func (s *transferServiceImpl) PickupFreeAgent(currentUser *models.User, leagueID
 		return types.ErrInvalidState
 	}
 
-	player, err := s.playerRepo.GetPlayerByUserAndLeague(currentUser.ID, poolEntry.LeagueID)
+	member, err := s.memberRepo.GetByUserAndLeague(currentUser.ID, poolEntry.LeagueID)
 	if err != nil {
 		return types.ErrPlayerNotFound
 	}
 
-	if player.TransferCredits < league.Format.PickupCost {
+	if member.TransferCredits < league.Format.PickupCost {
 		return types.ErrInsufficientTransferCredits
 	}
 
@@ -317,9 +308,9 @@ func (s *transferServiceImpl) PickupFreeAgent(currentUser *models.User, leagueID
 	}
 
 	// Check if picking up this pokemon would put the player above the maximum
-	currentPokemonCount, err := s.claimRepo.GetActiveCountByPlayer(player.ID)
+	currentPokemonCount, err := s.claimRepo.GetActiveCountByPlayer(member.ID)
 	if err != nil {
-		log.Printf("LOG: (Error: TransferService.PickupFreeAgent) - could not get claim count for player %s: %v", player.ID, err)
+		log.Printf("LOG: (Error: TransferService.PickupFreeAgent) - could not get claim count for member %s: %v", member.ID, err)
 		return types.ErrInternalService
 	}
 	if currentPokemonCount >= int64(league.MaxPokemonPerPlayer) {
@@ -328,7 +319,7 @@ func (s *transferServiceImpl) PickupFreeAgent(currentUser *models.User, leagueID
 
 	newClaim := &models.Claim{
 		LeagueID:     poolEntry.LeagueID,
-		PlayerID:     player.ID,
+		PlayerID:     member.ID,
 		SpeciesID:    poolEntry.PokemonSpeciesID,
 		Source:       enums.ClaimSourceFreeAgent,
 		CostPaid:     *poolEntry.Cost,
@@ -336,7 +327,7 @@ func (s *transferServiceImpl) PickupFreeAgent(currentUser *models.User, leagueID
 		IsActive:     true,
 	}
 
-	if err := s.claimRepo.PickupFreeAgentTx(nil, player, newClaim, poolEntry, league.Format.PickupCost); err != nil {
+	if err := s.claimRepo.PickupFreeAgentTx(nil, member, newClaim, poolEntry, league.Format.PickupCost); err != nil {
 		log.Printf("LOG: (Error: TransferService.PickupFreeAgent) - Failed to complete pickup free agent transaction: %v", err)
 		return types.ErrInternalService
 	}
