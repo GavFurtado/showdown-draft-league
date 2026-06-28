@@ -21,7 +21,7 @@ type TransferService interface {
 	DropPokemon(currentUser *models.User, leagueID, claimID uuid.UUID) error
 	PickupFreeAgent(currentUser *models.User, leagueID, poolEntryID uuid.UUID) error
 	SetSchedulerService(schedulerService SchedulerService)
-	SetNewRepositories(claimRepo repositories.ClaimRepository, poolEntryRepo repositories.PoolEntryRepository)
+	SetNewRepositories(claimRepo repositories.ClaimRepository, poolEntryRepo repositories.PoolEntryRepository, memberRepo repositories.LeagueMemberRepository)
 }
 
 type transferServiceImpl struct {
@@ -29,9 +29,9 @@ type transferServiceImpl struct {
 	leaguePokemonRepo  repositories.LeaguePokemonRepository
 	leagueRepo         repositories.LeagueRepository
 	playerRepo         repositories.PlayerRepository
+	memberRepo         repositories.LeagueMemberRepository
 	schedulerService   SchedulerService
 
-	// New redesign repositories
 	claimRepo     repositories.ClaimRepository
 	poolEntryRepo repositories.PoolEntryRepository
 }
@@ -41,19 +41,21 @@ func NewTransferService(
 	leaguePokemonRepo repositories.LeaguePokemonRepository,
 	leagueRepo repositories.LeagueRepository,
 	playerRepo repositories.PlayerRepository,
+	memberRepo repositories.LeagueMemberRepository,
 ) TransferService {
 	return &transferServiceImpl{
 		draftedPokemonRepo: draftedPokemonRepo,
 		leaguePokemonRepo:  leaguePokemonRepo,
 		leagueRepo:         leagueRepo,
 		playerRepo:         playerRepo,
+		memberRepo:         memberRepo,
 	}
 }
 
-// SetNewRepositories injects the new redesign repositories.
-func (s *transferServiceImpl) SetNewRepositories(claimRepo repositories.ClaimRepository, poolEntryRepo repositories.PoolEntryRepository) {
+func (s *transferServiceImpl) SetNewRepositories(claimRepo repositories.ClaimRepository, poolEntryRepo repositories.PoolEntryRepository, memberRepo repositories.LeagueMemberRepository) {
 	s.claimRepo = claimRepo
 	s.poolEntryRepo = poolEntryRepo
+	s.memberRepo = memberRepo
 }
 
 func (s *transferServiceImpl) SetSchedulerService(schedulerService SchedulerService) {

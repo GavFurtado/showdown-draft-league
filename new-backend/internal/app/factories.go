@@ -32,7 +32,7 @@ func NewRepositories(db *gorm.DB) *Repositories {
 func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oauth2.Config) *Services {
 	// Instantiate early for core Dependencies
 	jwtService := services.NewJWTService(cfg.JWTSecret)
-	rbacService := services.NewRBACService(repos.LeagueRepository, repos.UserRepository, repos.PlayerRepository)
+	rbacService := services.NewRBACService(repos.LeagueRepository, repos.UserRepository, repos.LeagueMemberRepository)
 	// webhooks not implemented; this is temp and does nothing
 	webhookService := services.NewWebhookService()
 
@@ -43,14 +43,15 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 		repos.DraftRepository,
 		repos.DraftedPokemonRepository,
 		repos.PlayerRepository,
+		repos.LeagueMemberRepository,
 		&webhookService,
 	)
 
-	// Wire in the new redesign repositories to the draft service
 	draftService.SetNewRepositories(
 		repos.DraftPickRepository,
 		repos.ClaimRepository,
 		repos.PoolEntryRepository,
+		repos.LeagueMemberRepository,
 	)
 
 	schedulerService := services.NewSchedulerService(
@@ -64,17 +65,18 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 		repos.LeaguePokemonRepository,
 		repos.LeagueRepository,
 		repos.PlayerRepository,
+		repos.LeagueMemberRepository,
 	)
 
-	// Wire in the new redesign repositories to the transfer service
 	transferService.SetNewRepositories(
 		repos.ClaimRepository,
 		repos.PoolEntryRepository,
+		repos.LeagueMemberRepository,
 	)
 
-	gameService := services.NewGameService(repos.GameRepository, repos.LeagueRepository, repos.PlayerRepository)
+	gameService := services.NewGameService(repos.GameRepository, repos.LeagueRepository, repos.PlayerRepository, repos.LeagueMemberRepository)
 
-	leagueService := services.NewLeagueService(repos.LeagueRepository, repos.PlayerRepository, repos.LeaguePokemonRepository, repos.DraftedPokemonRepository, repos.DraftRepository, repos.GameRepository)
+	leagueService := services.NewLeagueService(repos.LeagueRepository, repos.PlayerRepository, repos.LeagueMemberRepository, repos.LeaguePokemonRepository, repos.DraftedPokemonRepository, repos.DraftRepository, repos.GameRepository)
 
 	// Inject circular dependencies using setter methods
 	draftService.SetSchedulerService(schedulerService)
@@ -111,7 +113,7 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 		),
 		PokemonSpeciesService: services.NewPokemonSpeciesService(repos.PokemonSpeciesRepository),
 		SchedulerService:      schedulerService,
-		GameService:           services.NewGameService(repos.GameRepository, repos.LeagueRepository, repos.PlayerRepository),
+		GameService:           services.NewGameService(repos.GameRepository, repos.LeagueRepository, repos.PlayerRepository, repos.LeagueMemberRepository),
 		TransferService:       transferService,
 	}
 }

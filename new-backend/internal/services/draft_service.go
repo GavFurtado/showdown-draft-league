@@ -27,19 +27,19 @@ type DraftService interface {
 	SkipTurn(currentUser *models.User, leagueID uuid.UUID) error
 	AutoSkipTurn(playerID, leagueID uuid.UUID) error
 	SetSchedulerService(schedulerService SchedulerService)
-	SetNewRepositories(draftPickRepo repositories.DraftPickRepository, claimRepo repositories.ClaimRepository, poolEntryRepo repositories.PoolEntryRepository)
+	SetNewRepositories(draftPickRepo repositories.DraftPickRepository, claimRepo repositories.ClaimRepository, poolEntryRepo repositories.PoolEntryRepository, memberRepo repositories.LeagueMemberRepository)
 }
 
 type draftServiceImpl struct {
 	draftRepo          repositories.DraftRepository
 	leagueRepo         repositories.LeagueRepository
 	playerRepo         repositories.PlayerRepository
+	memberRepo         repositories.LeagueMemberRepository
 	leaguePokemonRepo  repositories.LeaguePokemonRepository
 	draftedPokemonRepo repositories.DraftedPokemonRepository
 	webhookService     *WebhookService
 	schedulerService   SchedulerService
 
-	// New redesign repositories
 	draftPickRepo repositories.DraftPickRepository
 	claimRepo     repositories.ClaimRepository
 	poolEntryRepo repositories.PoolEntryRepository
@@ -51,27 +51,30 @@ func NewDraftService(
 	draftRepo repositories.DraftRepository,
 	draftedPokemonRepo repositories.DraftedPokemonRepository,
 	playerRepo repositories.PlayerRepository,
+	memberRepo repositories.LeagueMemberRepository,
 	webhookService *WebhookService,
 ) DraftService {
 	return &draftServiceImpl{
 		draftRepo:          draftRepo,
 		leagueRepo:         leagueRepo,
 		playerRepo:         playerRepo,
+		memberRepo:         memberRepo,
 		leaguePokemonRepo:  leaguePokemonRepo,
 		draftedPokemonRepo: draftedPokemonRepo,
 		webhookService:     webhookService,
 	}
 }
 
-// SetNewRepositories injects the new redesign repositories after construction (to avoid circular deps).
 func (s *draftServiceImpl) SetNewRepositories(
 	draftPickRepo repositories.DraftPickRepository,
 	claimRepo repositories.ClaimRepository,
 	poolEntryRepo repositories.PoolEntryRepository,
+	memberRepo repositories.LeagueMemberRepository,
 ) {
 	s.draftPickRepo = draftPickRepo
 	s.claimRepo = claimRepo
 	s.poolEntryRepo = poolEntryRepo
+	s.memberRepo = memberRepo
 }
 
 // SetSchedulerService injects the SchedulerService dependency into the DraftService.

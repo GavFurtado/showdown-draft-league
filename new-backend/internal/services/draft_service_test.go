@@ -21,6 +21,7 @@ type draftServiceMocks struct {
 	playerRepo         *mock_repositories.MockPlayerRepository
 	leaguePokemonRepo  *mock_repositories.MockLeaguePokemonRepository
 	draftedPokemonRepo *mock_repositories.MockDraftedPokemonRepository
+	leagueMemberRepo   *mock_repositories.MockLeagueMemberRepository
 	schedulerService   *mock_services.MockSchedulerService
 }
 
@@ -31,6 +32,7 @@ func setupDraftServiceTest() (services.DraftService, draftServiceMocks) {
 		playerRepo:         new(mock_repositories.MockPlayerRepository),
 		leaguePokemonRepo:  new(mock_repositories.MockLeaguePokemonRepository),
 		draftedPokemonRepo: new(mock_repositories.MockDraftedPokemonRepository),
+		leagueMemberRepo:   new(mock_repositories.MockLeagueMemberRepository),
 		schedulerService:   new(mock_services.MockSchedulerService),
 	}
 
@@ -41,6 +43,7 @@ func setupDraftServiceTest() (services.DraftService, draftServiceMocks) {
 		mocks.draftRepo,
 		mocks.draftedPokemonRepo,
 		mocks.playerRepo,
+		mocks.leagueMemberRepo,
 		nil,
 	)
 	service.SetSchedulerService(mocks.schedulerService)

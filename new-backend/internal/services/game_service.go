@@ -33,6 +33,7 @@ type gameServiceImpl struct {
 	gameRepo      repositories.GameRepository
 	leagueRepo    repositories.LeagueRepository
 	playerRepo    repositories.PlayerRepository
+	memberRepo    repositories.LeagueMemberRepository
 	leagueService LeagueService
 }
 
@@ -40,11 +41,13 @@ func NewGameService(
 	gameRepo repositories.GameRepository,
 	leagueRepo repositories.LeagueRepository,
 	playerRepo repositories.PlayerRepository,
+	memberRepo repositories.LeagueMemberRepository,
 ) GameService {
 	return &gameServiceImpl{
 		gameRepo:   gameRepo,
 		leagueRepo: leagueRepo,
 		playerRepo: playerRepo,
+		memberRepo: memberRepo,
 	}
 }
 
@@ -198,22 +201,20 @@ func (s *gameServiceImpl) GenerateRegularSeasonGames(leagueID uuid.UUID) error {
 		return types.ErrInvalidState
 	}
 
-	// GroupCount can only be 1 or 2
-	// For GroupCount=1, all Players are auto assigned GroupNumber 1 on player creation
-	playersByGroupNumber := make([][]models.Player, league.Format.GroupCount)
+	membersByGroupNumber := make([][]models.LeagueMember, league.Format.GroupCount)
 	for i := 0; i < league.Format.GroupCount; i++ {
-		players, err := s.playerRepo.GetPlayersByLeagueAndGroupNumber(league.ID, i+1)
+		members, err := s.memberRepo.GetByLeagueAndGroup(league.ID, i+1)
 		if err != nil {
-			log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Repository error fetching Players by League %s with Group Number %d: %v\n", league.ID, i+1, err)
+			log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Repository error fetching Members by League %s with Group Number %d: %v\n", league.ID, i+1, err)
 			return types.ErrInternalService
 		}
-		playersByGroupNumber[i] = players
+		membersByGroupNumber[i] = members
 	}
 
 	var allGeneratedGames []*models.Game
-	for groupIndex, playersInGroup := range playersByGroupNumber {
+	for groupIndex, membersInGroup := range membersByGroupNumber {
 		groupNumber := groupIndex + 1
-		games, err := s.generateRoundRobinGamesForGroup(league.ID, playersInGroup, groupNumber)
+		games, err := s.generateRoundRobinGamesForGroup(league.ID, membersInGroup, groupNumber)
 		if err != nil {
 			log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Error generating round-robin games for group %d in league %s: %v\n", groupNumber, leagueID, err)
 			return err
@@ -252,42 +253,37 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 		return fmt.Errorf("cannot have odd number of participants for playoffs")
 	}
 
-	playersByGroup := make([][]models.Player, league.Format.GroupCount)
+	membersByGroup := make([][]models.LeagueMember, league.Format.GroupCount)
 	for i := 0; i < league.Format.GroupCount; i++ {
-		playersOfGroupX, err := s.playerRepo.GetPlayersByLeagueAndGroupNumber(league.ID, i+1)
+		membersOfGroupX, err := s.memberRepo.GetByLeagueAndGroup(league.ID, i+1)
 		if err != nil {
-			log.Printf("ERROR: (Service: GeneratePlayoffBracket): error fetching players of group %d for league %s: %v", i+1, league.ID, err)
-			return fmt.Errorf("failed to fetch players for group %d: %w", i+1, err)
+			log.Printf("ERROR: (Service: GeneratePlayoffBracket): error fetching members of group %d for league %s: %v", i+1, league.ID, err)
+			return fmt.Errorf("failed to fetch members for group %d: %w", i+1, err)
 		}
-		playersByGroup[i] = playersOfGroupX
+		membersByGroup[i] = membersOfGroupX
 	}
 
-	seededPlayers, err := s.getSeededPlayers(league, playersByGroup)
+	seededMembers, err := s.getSeededPlayers(league, membersByGroup)
 	if err != nil {
-		log.Printf("ERROR: (Service: GeneratePlayoffBracket): error seeding players for playoffs for league %s: %v", league.ID, err)
+		log.Printf("ERROR: (Service: GeneratePlayoffBracket): error seeding members for playoffs for league %s: %v", league.ID, err)
 		return err
 	}
 
 	var generatedGames []*models.Game
 	if league.Format.PlayoffType == enums.LeaguePlayoffTypeSingleElim {
-		// Single Elimination
-		// Single Elim + Fully Seeded is an invalid league configuration
-		// STANDARD or BYES_ONLY are allowed
 		if league.Format.PlayoffSeedingType == enums.LeaguePlayoffSeedingTypeFullySeeded {
 			return fmt.Errorf("%w: %s and %s are incompatible playoff options",
 				types.ErrInvalidLeagueConfiguration,
 				enums.LeaguePlayoffTypeSingleElim,
 				enums.LeaguePlayoffSeedingTypeFullySeeded)
 		}
-		generatedGames, err = s.generateSingleEliminationBracket(league, seededPlayers)
+		generatedGames, err = s.generateSingleEliminationBracket(league, seededMembers)
 		if err != nil {
 			log.Printf("ERROR: (Service: GeneratePlayoffBracket) - Error generating single elimination bracket for league %s: %v\n", leagueID, err)
 			return err
 		}
 	} else {
-		// Double Elimination
-		// compatible with all types of PlayoffSeedingType
-		generatedGames, err = s.generateDoubleEliminationBracket(league, seededPlayers)
+		generatedGames, err = s.generateDoubleEliminationBracket(league, seededMembers)
 		if err != nil {
 			log.Printf("ERROR: (Service: GeneratePlayoffBracket) - Error generating single elimination bracket for league %s: %v\n", leagueID, err)
 			return err
@@ -309,11 +305,11 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 // generateSingleEliminationBracket generates the games for the single elimination bracket
 // It takes into account changes introduced by various Format.PlayoffSeedingType
 // returns a slice of all the generated Games and an error if generation failed
-func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League, seededPlayers []models.Player) ([]*models.Game, error) {
+func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League, seededMembers []models.LeagueMember) ([]*models.Game, error) {
 	var generatedGames []*models.Game
-	numParticipants := len(seededPlayers)
-	if numParticipants == 0 { // should already be validated by this point
-		return nil, fmt.Errorf("no players provided for bracket generation")
+	numParticipants := len(seededMembers)
+	if numParticipants == 0 {
+		return nil, fmt.Errorf("no members provided for bracket generation")
 	}
 
 	// Each round must have a power of 2 # of participants
@@ -335,39 +331,30 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 		return nil, fmt.Errorf("%w: Bye count is set to %d but valid is %d for %d participants", types.ErrInvalidLeagueConfiguration, league.Format.PlayoffByesCount, naturalByesNeeded, numParticipants)
 	}
 
-	var playersGettingByes []models.Player
-	var playersInRound1 []models.Player
+	var membersGettingByes []models.LeagueMember
+	var membersInRound1 []models.LeagueMember
 	if seedingType == enums.LeaguePlayoffSeedingTypeByesOnly {
-		// The first 'PlayoffByesCount' players get byes
-		playersGettingByes = seededPlayers[:league.Format.PlayoffByesCount]
-		// The remaining players play in Round 1
-		playersInRound1 = seededPlayers[league.Format.PlayoffByesCount:]
+		membersGettingByes = seededMembers[:league.Format.PlayoffByesCount]
+		membersInRound1 = seededMembers[league.Format.PlayoffByesCount:]
 	} else {
-		// If no byes, all players are in Round 1
-		playersInRound1 = seededPlayers
+		membersInRound1 = seededMembers
 	}
 
-	// --- First Round Game generation logic ---
 	var currentRoundGames []*models.Game
 	roundNumber, gameNumberInRound := 1, 0
-	for l, r := 0, len(playersInRound1)-1; l <= r; l, r = l+1, r-1 {
-		player1 := playersInRound1[l]
-		player2 := playersInRound1[r]
+	for l, r := 0, len(membersInRound1)-1; l <= r; l, r = l+1, r-1 {
+		member1 := membersInRound1[l]
+		member2 := membersInRound1[r]
 		var bracketPositionStr string
 
 		gameNumberInRound++
 		bracketPositionStr = fmt.Sprintf("Round %d: Game %d", roundNumber, gameNumberInRound)
 
-		// Create new game object
-		// NOTE: Why uuid.New()? Everywhere else we let db/gorm do it.
-		// because IDs are needed for other game objects.
-		// It isn't really needed for round 1 but
-		// left here for this explanation and for consistency
 		newGame := &models.Game{
 			ID:              uuid.New(),
 			LeagueID:        league.ID,
-			Player1ID:       player1.ID,
-			Player2ID:       player2.ID,
+			Player1ID:       member1.ID,
+			Player2ID:       member2.ID,
 			WinnerID:        nil,
 			LoserID:         nil,
 			Player1Wins:     0,
@@ -402,11 +389,8 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 			newGamePlayer1ID := uuid.Nil
 
 			byeGranted := false
-			// for round 2 games, check the playersGettingByes slice
-			// set the new round 2 game's player1ID to the valid player if it exists in the array
-			if roundNumber == 2 && j < len(playersGettingByes) {
-				// set uuid of newGamePlayer1ID
-				newGamePlayer1ID = playersGettingByes[j].ID
+			if roundNumber == 2 && j < len(membersGettingByes) {
+				newGamePlayer1ID = membersGettingByes[j].ID
 				j++
 				byeGranted = true
 			}
@@ -456,35 +440,32 @@ func (s *gameServiceImpl) generateSingleEliminationBracket(league *models.League
 	return generatedGames, nil
 }
 
-func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League, seededPlayers []models.Player) ([]*models.Game, error) {
-	// Upper Bracket (UB); Lower Bracket (LB)
+func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League, seededMembers []models.LeagueMember) ([]*models.Game, error) {
 	var generatedGames []*models.Game
-	numParticipants := len(seededPlayers)
-	if numParticipants == 0 { // should already be validated by this point
-		return nil, fmt.Errorf("no players provided for bracket generation")
+	numParticipants := len(seededMembers)
+	if numParticipants == 0 {
+		return nil, fmt.Errorf("no members provided for bracket generation")
 	}
 
 	seedingType := league.Format.PlayoffSeedingType
 	byeCount := league.Format.PlayoffByesCount
 	nextPowerOfTwo := s.getClosestPowerOfTwo(numParticipants)
-	playersGettingByes := []models.Player{}
-	playersStartingInUB1 := []models.Player{}
-	playersStartingInLB1 := []models.Player{} // only for fully seeded brackets
-	remainingPlayers := []models.Player{}     // numParticipants - Format.PlayoffByeCount
+	membersGettingByes := []models.LeagueMember{}
+	membersStartingInUB1 := []models.LeagueMember{}
+	membersStartingInLB1 := []models.LeagueMember{}
+	remainingMembers := []models.LeagueMember{}
 
 	if byeCount != 0 && seedingType == enums.LeaguePlayoffSeedingTypeStandard {
 		return nil, fmt.Errorf("%w: Bye count must be 0 for Standard Seeded brackets", types.ErrInvalidLeagueConfiguration)
 	}
 
-	// initialize remainingPlayers and playersGettingByes
 	if byeCount > 0 {
-		playersGettingByes = seededPlayers[:byeCount]
-		remainingPlayers = seededPlayers[byeCount:]
+		membersGettingByes = seededMembers[:byeCount]
+		remainingMembers = seededMembers[byeCount:]
 	} else {
-		remainingPlayers = seededPlayers
+		remainingMembers = seededMembers
 	}
 
-	// --- Initial validation of numParticipant ---
 	if seedingType == enums.LeaguePlayoffSeedingTypeByesOnly {
 		naturalByesNeeded := nextPowerOfTwo - numParticipants
 		if naturalByesNeeded != byeCount {
@@ -492,76 +473,67 @@ func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League
 				types.ErrInvalidLeagueConfiguration, numParticipants, byeCount, naturalByesNeeded)
 		}
 	} else if seedingType == enums.LeaguePlayoffSeedingTypeFullySeeded {
-		nPlayersGettingByes := len(playersGettingByes)
-		nRemainingPlayers := len(remainingPlayers) // nPlayers_UB1 + nPlayers_LB1
+		nMembersGettingByes := len(membersGettingByes)
+		nRemainingMembers := len(remainingMembers)
 
-		if nRemainingPlayers%3 != 0 {
-			return nil, fmt.Errorf("%w: For FULLY_SEEDED Double Elimination, number of players that don't get a bye (Current: %d) must be divisible by 3",
-				types.ErrInvalidLeagueConfiguration, nRemainingPlayers)
+		if nRemainingMembers%3 != 0 {
+			return nil, fmt.Errorf("%w: For FULLY_SEEDED Double Elimination, number of members that don't get a bye (Current: %d) must be divisible by 3",
+				types.ErrInvalidLeagueConfiguration, nRemainingMembers)
 		}
 
-		nPlayers_UB1 := (2 * nRemainingPlayers) / 3
-		if nPlayers_UB1 <= 0 || nPlayers_UB1%2 != 0 { // Must be positive even number
-			return nil, fmt.Errorf("%w: For FULLY_SEEDED Double Elimination, number of players starting in Upper Bracket Round 1 (Current: %d) must be a positive even number",
-				types.ErrInvalidLeagueConfiguration, nPlayersGettingByes)
+		nMembers_UB1 := (2 * nRemainingMembers) / 3
+		if nMembers_UB1 <= 0 || nMembers_UB1%2 != 0 {
+			return nil, fmt.Errorf("%w: For FULLY_SEEDED Double Elimination, number of members starting in Upper Bracket Round 1 (Current: %d) must be a positive even number",
+				types.ErrInvalidLeagueConfiguration, nMembersGettingByes)
 		}
 
-		// Total effective player count in Upper Bracket Round 2
-		nEffectivePlayers_UB2 := byeCount + (nPlayers_UB1 / 2)
-		if nEffectivePlayers_UB2 <= 0 || !isPowerOfTwo(nEffectivePlayers_UB2) {
-			return nil, fmt.Errorf("%w: For FULLY_SEEDED Double Elimination, the total effective number of players in Upper Bracket 2 (Current: %d) must be a positive power of two",
-				types.ErrInvalidLeagueConfiguration, nEffectivePlayers_UB2)
+		nEffectiveMembers_UB2 := byeCount + (nMembers_UB1 / 2)
+		if nEffectiveMembers_UB2 <= 0 || !isPowerOfTwo(nEffectiveMembers_UB2) {
+			return nil, fmt.Errorf("%w: For FULLY_SEEDED Double Elimination, the total effective number of members in Upper Bracket 2 (Current: %d) must be a positive power of two",
+				types.ErrInvalidLeagueConfiguration, nEffectiveMembers_UB2)
 		}
 
-		// For balanced bracket structure, # of players in UB Round 1 must be atleast twice the # of byes
-		// Disallows brackets where more players start in UB Round 2 than UB Round 1 that are otherwise valid
-		if nPlayers_UB1 < 2*byeCount {
-			return nil, fmt.Errorf("%w: For FULLY_SEEDED double elimination, the number of players receiving byes (Current: %d) cannot exceed the number of players starting in Upper Bracket Round 1 (%d) to maintain a balanced bracket structure",
-				types.ErrInvalidLeagueConfiguration, byeCount, nPlayers_UB1)
+		if nMembers_UB1 < 2*byeCount {
+			return nil, fmt.Errorf("%w: For FULLY_SEEDED double elimination, the number of members receiving byes (Current: %d) cannot exceed the number of members starting in Upper Bracket Round 1 (%d) to maintain a balanced bracket structure",
+				types.ErrInvalidLeagueConfiguration, byeCount, nMembers_UB1)
 		}
 
-		playersStartingInUB1 = remainingPlayers[:nPlayers_UB1]
-		playersStartingInLB1 = remainingPlayers[nPlayers_UB1:] // nRemainingPlayers / 3
-	} else { // Standard seeding
-		playersStartingInUB1 = seededPlayers // All players start in UB Round 1
+		membersStartingInUB1 = remainingMembers[:nMembers_UB1]
+		membersStartingInLB1 = remainingMembers[nMembers_UB1:]
+	} else {
+		membersStartingInUB1 = seededMembers
 		if !isPowerOfTwo(numParticipants) {
 			return nil, fmt.Errorf("%w: For STANDARD double elimination, number of participants must be a positive power of two", types.ErrInvalidLeagueConfiguration)
 		}
 	}
 
-	// This may or may not be calculated depending on seeding type, so we're recalculating it
-	var nEffectivePlayers_UB2 int
+	var nEffectiveMembers_UB2 int
 	if seedingType == enums.LeaguePlayoffSeedingTypeStandard {
-		// For standard, all participants play in R1, so UB2 participants are half of total.
-		// numParticipants is already validated to be a power of two.
-		nEffectivePlayers_UB2 = numParticipants / 2
+		nEffectiveMembers_UB2 = numParticipants / 2
 	} else {
-		// For BYES_ONLY and FULLY_SEEDED, calculate based on byes and UB R1 players.
-		nEffectivePlayers_UB2 = len(playersGettingByes) + (len(playersStartingInUB1) / 2)
+		nEffectiveMembers_UB2 = len(membersGettingByes) + (len(membersStartingInUB1) / 2)
 	}
-	if nEffectivePlayers_UB2 <= 0 || !isPowerOfTwo(nEffectivePlayers_UB2) {
-		return nil, fmt.Errorf("%w: Internal error: Calculated effective players for Upper Bracket Round 2 (%d) is not a positive power of two. This indicates a logic flaw in seeding validation",
-			types.ErrInternalService, nEffectivePlayers_UB2)
+	if nEffectiveMembers_UB2 <= 0 || !isPowerOfTwo(nEffectiveMembers_UB2) {
+		return nil, fmt.Errorf("%w: Internal error: Calculated effective members for Upper Bracket Round 2 (%d) is not a positive power of two. This indicates a logic flaw in seeding validation",
+			types.ErrInternalService, nEffectiveMembers_UB2)
 	}
 
 	var currentUBRoundGames []*models.Game
 	var currentLBRoundGames []*models.Game
 
-	// --- First UB Round Game generation ---
 	ubRoundNumber, lbRoundNumber, gameNumberInRound := 1, 1, 0
-	for l, r := 0, len(playersStartingInUB1)-1; l <= r; l, r = l+1, r-1 {
-		player1 := playersStartingInUB1[l]
-		player2 := playersStartingInUB1[r]
+	for l, r := 0, len(membersStartingInUB1)-1; l <= r; l, r = l+1, r-1 {
+		member1 := membersStartingInUB1[l]
+		member2 := membersStartingInUB1[r]
 
 		gameNumberInRound++
 		bracketPositionStr := fmt.Sprintf("Upper Round %d: Game %d", ubRoundNumber, gameNumberInRound)
 
-		// Create new game object
 		newGame := &models.Game{
 			ID:              uuid.New(),
 			LeagueID:        league.ID,
-			Player1ID:       player1.ID,
-			Player2ID:       player2.ID,
+			Player1ID:       member1.ID,
+			Player2ID:       member2.ID,
 			WinnerID:        nil,
 			LoserID:         nil,
 			Player1Wins:     0,
@@ -577,7 +549,6 @@ func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League
 	}
 	ubRoundNumber++
 
-	// ---  First LB Round Game Generation ---
 	gameNumberInRound = 0
 	i := 0
 	for i < len(currentUBRoundGames) {
@@ -585,25 +556,21 @@ func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League
 		bracketPositionStr := fmt.Sprintf("Lower Round %d: Game %d", lbRoundNumber, gameNumberInRound)
 		newGameID := uuid.New()
 
-		player1ID := uuid.Nil // Default to nil, will be set for FULLY_SEEDED if applicable
-		player2ID := uuid.Nil // Default to nil, as it's the feeder from UB
+		player1ID := uuid.Nil
+		player2ID := uuid.Nil
 
 		if seedingType == enums.LeaguePlayoffSeedingTypeFullySeeded {
-			if i < len(playersStartingInLB1) {
-				player1ID = playersStartingInLB1[i].ID
+			if i < len(membersStartingInLB1) {
+				player1ID = membersStartingInLB1[i].ID
 			}
-			// Link the one UB game whose loser feeds into this LB game
 			currentUBRoundGames[i].LoserToGameID = newGameID
-
-			i++ // Increment by 1 for fully seeded
-		} else { // For STANDARD and BYES_ONLY, losers of UB R1 play each other.
-			// Both player IDs are nil, to be filled by losers of currentUBRoundGames[i] and currentUBRoundGames[i+1]
-			// Link the two UB games whose losers feed into this LB game
+			i++
+		} else {
 			currentUBRoundGames[i].LoserToGameID = newGameID
 			if i+1 < len(currentUBRoundGames) {
 				currentUBRoundGames[i+1].LoserToGameID = newGameID
 			}
-			i += 2 // Increment by 2 for standard/byes
+			i += 2
 		}
 
 		newGame := &models.Game{
@@ -627,26 +594,15 @@ func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League
 	}
 	lbRoundNumber++
 
-	// --- Subsequent round generation for upper and lower bracket ---
 	totalUBRounds := getLog2(nextPowerOfTwo)
 	totalLBRounds := 2 * (totalUBRounds - 1)
 	j := 0
-	// Loop until only one game remains in UB round and one in LB round
-	// For every Upper bracket game from round 2 onwards,
-	// We do one "LB-Drop" round and then one "LB-Survival" round,
-	// until the Lower Final ("LB-Drop") round which consists of a singular game
-	// In "LB-Drop" rounds, Losers from the UB round enter the LB
-	// In "LB-Survival" rounds, the winners from previous LB round play against each other
-	// The UB Final is the exception. It corresponds to a single "LB-Drop" round
-	// i.e., the LB final.
 	for ubRoundNumber <= totalUBRounds {
-		// upper and lower bracket round pairs
 		var nextUBRoundGames []*models.Game
-		var nextLBRoundGames1 []*models.Game // For "LB-Drop"
-		var nextLBRoundGames2 []*models.Game // For "LB-Survival"
+		var nextLBRoundGames1 []*models.Game
+		var nextLBRoundGames2 []*models.Game
 		gameNumberInRound = 0
 
-		// Upper Bracket round
 		i := 0
 		for i < len(currentUBRoundGames) {
 			gameNumberInRound++
@@ -654,12 +610,9 @@ func (s *gameServiceImpl) generateDoubleEliminationBracket(league *models.League
 			newGameID := uuid.New()
 			player1ID := uuid.Nil
 
-			// for round 2 games, check the playersGettingByes array
-			// set the new round 2 game's player1ID to the valid player if it exists in the array
 			byeGranted := false
-			if ubRoundNumber == 2 && len(playersGettingByes) != 0 && j < len(playersGettingByes) {
-				// set uuid of player1ID
-				player1ID = playersGettingByes[j].ID
+			if ubRoundNumber == 2 && len(membersGettingByes) != 0 && j < len(membersGettingByes) {
+				player1ID = membersGettingByes[j].ID
 				j++
 				byeGranted = true
 			}
@@ -864,139 +817,94 @@ func isPowerOfTwo(N int) bool {
 // their overall seeding for the playoffs (e.g., 1st from Group A, 1st from Group B,
 // 2nd from Group A, 2nd from Group B, etc.).
 // It returns the final list of players who will participate in the bracket.
-func (s *gameServiceImpl) getSeededPlayers(league *models.League, playersByGroup [][]models.Player) ([]models.Player, error) {
-	var qualifyingPlayers []models.Player
+func (s *gameServiceImpl) getSeededPlayers(league *models.League, membersByGroup [][]models.LeagueMember) ([]models.LeagueMember, error) {
+	var qualifyingMembers []models.LeagueMember
 
-	// Determine how many players should qualify from each group.
-	// This assumes PlayoffParticipantCount is a multiple of GroupCount,
-	// or that any remainder is handled by league rules (e.g., wildcards, or simply fewer players).
-	// Validation for this divisibility should ideally happen at league creation/update.
-	numPlayersToQualifyPerGroup := league.Format.PlayoffParticipantCount / league.Format.GroupCount
+	numMembersToQualifyPerGroup := league.Format.PlayoffParticipantCount / league.Format.GroupCount
 
-	// 1. Sort players within each group
-	for i := range playersByGroup {
-		// Ensure the group is not empty before attempting to sort
-		if len(playersByGroup[i]) == 0 { // should never be true
-			log.Printf("INFO: (Service: getSeededPlayers) - Encountered an empty player group %d for league %s. Skipping group.\n", i+1, league.ID)
+	for i := range membersByGroup {
+		if len(membersByGroup[i]) == 0 {
+			log.Printf("INFO: (Service: getSeededPlayers) - Encountered an empty member group %d for league %s. Skipping group.\n", i+1, league.ID)
 			continue
 		}
-		sortPlayers(playersByGroup[i]) // Sorts in place
+		sortMembers(membersByGroup[i])
 	}
 
-	// 2. Interleave the top qualifiers from each group
-	// Iterate through the 'rank' within each group
-	for rank := range numPlayersToQualifyPerGroup {
-		// Then iterate through each group to pick the player at the current rank
+	for rank := range numMembersToQualifyPerGroup {
 		for groupIdx := range league.Format.GroupCount {
-			// Check if this group has a player at the current rank
-			if rank < len(playersByGroup[groupIdx]) { // should never be false
-				qualifyingPlayers = append(qualifyingPlayers, playersByGroup[groupIdx][rank])
+			if rank < len(membersByGroup[groupIdx]) {
+				qualifyingMembers = append(qualifyingMembers, membersByGroup[groupIdx][rank])
 			}
 		}
 	}
 
-	// Ensure we have exactly PlayoffParticipantCount players.
-	// This check is crucial if numPlayersToQualifyPerGroup * GroupCount < PlayoffParticipantCount
-	// or if some groups had fewer players than expected.
-	if len(qualifyingPlayers) != league.Format.PlayoffParticipantCount { // should never be true
-		log.Printf("ERROR: (Service: getSeededPlayers) - Mismatch in qualified players count. Expected %d, got %d for league %s. This might indicate an issue with league configuration or player data.\n",
-			league.Format.PlayoffParticipantCount, len(qualifyingPlayers), league.ID)
+	if len(qualifyingMembers) != league.Format.PlayoffParticipantCount {
+		log.Printf("ERROR: (Service: getSeededPlayers) - Mismatch in qualified members count. Expected %d, got %d for league %s.\n",
+			league.Format.PlayoffParticipantCount, len(qualifyingMembers), league.ID)
 		return nil, types.ErrInsufficientPlayersForPlayoffs
 	}
 
-	return qualifyingPlayers, nil
+	return qualifyingMembers, nil
 }
 
-// sortPlayers sorts (inplace) a slice of models.Player based on seeding criteria.
-// Primary sort: Wins (descending)
-// Secondary sort: Losses (ascending)
-// Tertiary sort: Player ID (arbitrary but consistent tie-breaker)
-func sortPlayers(players []models.Player) {
-	sort.Slice(players, func(i, j int) bool {
-		// Primary sort: More wins come first (descending)
-		if players[i].Wins != players[j].Wins {
-			return players[i].Wins > players[j].Wins
+func sortMembers(members []models.LeagueMember) {
+	sort.Slice(members, func(i, j int) bool {
+		if members[i].Wins != members[j].Wins {
+			return members[i].Wins > members[j].Wins
 		}
-
-		// Secondary sort: Fewer losses come first (ascending)
-		if players[i].Losses != players[j].Losses {
-			return players[i].Losses < players[j].Losses
+		if members[i].Losses != members[j].Losses {
+			return members[i].Losses < members[j].Losses
 		}
-
-		// Tertiary sort (tie-breaker): Use player ID for consistent ordering
-		// (UUID comparison directly might not be stable, converting to string is safer for consistent sort)
-		return players[i].ID.String() < players[j].ID.String()
+		return members[i].ID.String() < members[j].ID.String()
 	})
 }
 
-// generateRoundRobinGamesForGroup returns all the []*models.Game with Game.GroupNumber groupNumber,
-// and a shuffled Game.RoundNumber.
-// Does not persist to the database.
-// Uses the Circle Method algorithm. https://en.wikipedia.org/wiki/Round-robin_tournament#Circle_method
-// For groups with odd player counts, every round a player gets a bye (no game for that week)
-func (s *gameServiceImpl) generateRoundRobinGamesForGroup(leagueID uuid.UUID, players []models.Player, groupNumber int) ([]*models.Game, error) {
-	nActualPlayers := len(players)
-	if nActualPlayers < 2 {
-		// impossible since games cannot be scheduled in the first place
-		// as draft cannot be started there's just one player
-		// and games scheduling must happen after draft
+func (s *gameServiceImpl) generateRoundRobinGamesForGroup(leagueID uuid.UUID, members []models.LeagueMember, groupNumber int) ([]*models.Game, error) {
+	nActualMembers := len(members)
+	if nActualMembers < 2 {
 		return nil, nil
 	}
 
-	playerIDsForSchedule := make([]uuid.UUID, nActualPlayers)
-	for i, p := range players {
-		playerIDsForSchedule[i] = p.ID
+	memberIDsForSchedule := make([]uuid.UUID, nActualMembers)
+	for i, m := range members {
+		memberIDsForSchedule[i] = m.ID
 	}
 
-	// if the group has an odd number of players, we create a dummy player
-	// with uuid.Nil to indicate a bye
-	if nActualPlayers%2 == 1 {
-		playerIDsForSchedule = append(playerIDsForSchedule, uuid.Nil)
+	if nActualMembers%2 == 1 {
+		memberIDsForSchedule = append(memberIDsForSchedule, uuid.Nil)
 	}
 
-	numPlayerInCircle := len(playerIDsForSchedule)
-	numRounds := numPlayerInCircle - 1
+	numMembersInCircle := len(memberIDsForSchedule)
+	numRounds := numMembersInCircle - 1
 
-	// assign fixed player and rotating players
-	fixedPlayerID := playerIDsForSchedule[0]
-	rotatingPlayers := make([]uuid.UUID, numPlayerInCircle-1)
-	copy(rotatingPlayers, playerIDsForSchedule[1:]) // rest of the players
+	fixedMemberID := memberIDsForSchedule[0]
+	rotatingMembers := make([]uuid.UUID, numMembersInCircle-1)
+	copy(rotatingMembers, memberIDsForSchedule[1:])
 
-	var games []*models.Game // Game but with temporary group numbers that are later re-assigned
+	var games []*models.Game
 	for RoundIdx := range numRounds {
-		// Pairings for the current round
-
-		// Pair 1: Fixed Player vs Player opposite in the circle
-		playerOppositeID := rotatingPlayers[len(rotatingPlayers)/2]
-		if fixedPlayerID != uuid.Nil && playerOppositeID != uuid.Nil {
+		memberOppositeID := rotatingMembers[len(rotatingMembers)/2]
+		if fixedMemberID != uuid.Nil && memberOppositeID != uuid.Nil {
 			games = append(games, &models.Game{
 				LeagueID:    leagueID,
-				Player1ID:   fixedPlayerID,
-				Player2ID:   playerOppositeID,
+				Player1ID:   fixedMemberID,
+				Player2ID:   memberOppositeID,
 				Status:      enums.GameStatusScheduled,
 				GameType:    enums.GameTypeRegularSeason,
 				RoundNumber: RoundIdx,
 				GroupNumber: &groupNumber,
 			})
 		} else {
-			// One of the players has a bye for this game
-			// For regular season games, we do not make a game record of type Bye
-			// since the player doesn't get an advantage due to the bye
-			// They simply don't have a game to play this week
-			// Nothing has to be done. Absence of a game for the week indicates a bye
-			// log for debugging purposes
-			byePlayerID := fixedPlayerID
-			if byePlayerID == uuid.Nil {
-				byePlayerID = playerOppositeID
+			byeMemberID := fixedMemberID
+			if byeMemberID == uuid.Nil {
+				byeMemberID = memberOppositeID
 			}
-			fmt.Printf("\nINFO: (Service: generateRoundRobinGamesForGroup): Player %s (league %s) of group %d got a bye.\n", byePlayerID, leagueID, groupNumber)
+			fmt.Printf("\nINFO: (Service: generateRoundRobinGamesForGroup): Member %s (league %s) of group %d got a bye.\n", byeMemberID, leagueID, groupNumber)
 		}
 
-		// Remaining Pairs: Pair rest of the players with their opposite
-		// match first half with the other half and don't include the fixed player's opposite
-		for i := 0; i < len(rotatingPlayers)/2; i++ {
-			p1ID := rotatingPlayers[i]
-			p2ID := rotatingPlayers[len(rotatingPlayers)-1-i] // opposite player of 'i'
+		for i := 0; i < len(rotatingMembers)/2; i++ {
+			p1ID := rotatingMembers[i]
+			p2ID := rotatingMembers[len(rotatingMembers)-1-i]
 			if p1ID != uuid.Nil && p2ID != uuid.Nil {
 				games = append(games, &models.Game{
 					LeagueID:    leagueID,
@@ -1008,25 +916,21 @@ func (s *gameServiceImpl) generateRoundRobinGamesForGroup(leagueID uuid.UUID, pl
 					GroupNumber: &groupNumber,
 				})
 			} else {
-				// One of the players has a bye
-				byePlayerID := p1ID
-				if byePlayerID == uuid.Nil {
-					byePlayerID = p2ID
+				byeMemberID := p1ID
+				if byeMemberID == uuid.Nil {
+					byeMemberID = p2ID
 				}
-				fmt.Printf("INFO: (Service: generateRoundRobinGamesForGroup) Player %s (league %s) of group %d got a bye.", byePlayerID, leagueID, groupNumber)
+				fmt.Printf("INFO: (Service: generateRoundRobinGamesForGroup) Member %s (league %s) of group %d got a bye.", byeMemberID, leagueID, groupNumber)
 			}
 		}
 
-		// Rotate players for the next round
-		if len(rotatingPlayers) > 1 {
-			lastPlayer := rotatingPlayers[len(rotatingPlayers)-1]
-			// Shift all elements to right by 1
-			copy(rotatingPlayers[1:], rotatingPlayers[:len(rotatingPlayers)-1])
-			rotatingPlayers[0] = lastPlayer // move last player to first position
+		if len(rotatingMembers) > 1 {
+			lastMember := rotatingMembers[len(rotatingMembers)-1]
+			copy(rotatingMembers[1:], rotatingMembers[:len(rotatingMembers)-1])
+			rotatingMembers[0] = lastMember
 		}
 	}
 
-	// Create a slice of actual RoundNumbers (1-indexed) and shuffle it.
 	actualRoundNumbers := make([]int, numRounds)
 	for i := range numRounds {
 		actualRoundNumbers[i] = i + 1
@@ -1035,13 +939,11 @@ func (s *gameServiceImpl) generateRoundRobinGamesForGroup(leagueID uuid.UUID, pl
 		actualRoundNumbers[i], actualRoundNumbers[j] = actualRoundNumbers[j], actualRoundNumbers[i]
 	})
 
-	// Assign the shuffled actual RoundNumbers to games based on their conceptual RoundIdx.
 	for i := range games {
 		conceptualRoundIdx := games[i].RoundNumber
 		if conceptualRoundIdx >= 0 && conceptualRoundIdx < numRounds {
 			games[i].RoundNumber = actualRoundNumbers[conceptualRoundIdx]
 		} else {
-			// should never happen
 			log.Printf("ERROR: (Service: generateRoundRobinGamesForGroup) - Invalid conceptual RoundIdx %d found in game for league %s, group %d", conceptualRoundIdx, leagueID, groupNumber)
 			return nil, types.ErrInternalService
 		}
