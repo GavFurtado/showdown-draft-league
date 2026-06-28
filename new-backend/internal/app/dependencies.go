@@ -38,6 +38,12 @@ type Services struct {
 	SchedulerService      services.SchedulerService
 	GameService           services.GameService
 	TransferService       services.TransferService
+
+	// New redesign services
+	PoolEntryService    services.PoolEntryService
+	LeagueMemberService services.LeagueMemberService
+	DraftPickService    services.DraftPickService
+	ClaimService        services.ClaimService
 }
 
 type Controllers struct {
@@ -51,4 +57,10 @@ type Controllers struct {
 	DraftController          controllers.DraftController
 	GameController           controllers.GameController
 	TransferController       controllers.TransferController
+
+	// New redesign controllers
+	PoolEntryController    controllers.PoolEntryController
+	LeagueMemberController controllers.LeagueMemberController
+	DraftPickController    controllers.DraftPickController
+	ClaimController        controllers.ClaimController
 }

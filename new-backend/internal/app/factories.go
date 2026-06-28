@@ -115,6 +115,12 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 		SchedulerService:      schedulerService,
 		GameService:           services.NewGameService(repos.GameRepository, repos.LeagueRepository, repos.PlayerRepository, repos.LeagueMemberRepository),
 		TransferService:       transferService,
+
+		// New redesign services
+		PoolEntryService:    services.NewPoolEntryService(repos.PoolEntryRepository, repos.LeagueRepository, repos.UserRepository, repos.PokemonSpeciesRepository),
+		LeagueMemberService: services.NewLeagueMemberService(repos.LeagueMemberRepository, repos.PlayerRepository, repos.LeagueRepository, repos.UserRepository, repos.DraftedPokemonRepository),
+		DraftPickService:    services.NewDraftPickService(repos.DraftPickRepository, repos.DraftRepository),
+		ClaimService:        services.NewClaimService(repos.ClaimRepository),
 	}
 }
 
@@ -130,5 +136,11 @@ func NewControllers(services *Services, repos *Repositories, cfg *config.Config,
 		DraftController:          controllers.NewDraftController(services.DraftService),
 		GameController:           controllers.NewGameController(services.GameService, services.LeagueService),
 		TransferController:       controllers.NewTransferController(services.TransferService),
+
+		// New redesign controllers
+		PoolEntryController:    controllers.NewPoolEntryController(services.PoolEntryService),
+		LeagueMemberController: controllers.NewLeagueMemberController(services.LeagueMemberService),
+		DraftPickController:    controllers.NewDraftPickController(services.DraftPickService, services.DraftService),
+		ClaimController:        controllers.NewClaimController(services.ClaimService),
 	}
 }

@@ -20,6 +20,25 @@ const (
 	PermissionUpdatePlayerScore Permission = "update:player_score"
 	PermissionDeletePlayer      Permission = "delete:player"
 
+	// PoolEntry Permissions
+	PermissionCreatePoolEntry Permission = "create:pool_entry"
+	PermissionReadPoolEntry   Permission = "read:pool_entry"
+	PermissionUpdatePoolEntry Permission = "update:pool_entry"
+	PermissionDeletePoolEntry Permission = "delete:pool_entry"
+
+	// Member Permissions
+	PermissionCreateMember      Permission = "create:member"
+	PermissionReadMember        Permission = "read:member"
+	PermissionUpdateMember      Permission = "update:member"
+	PermissionUpdateMemberScore Permission = "update:member_score"
+	PermissionDeleteMember      Permission = "delete:member"
+
+	// DraftPick Permissions
+	PermissionReadDraftPick Permission = "read:draft_pick"
+
+	// Claim Permissions
+	PermissionReadClaim Permission = "read:claim"
+
 	// Draft Permissions
 	PermissionCreateDraft Permission = "create:draft"
 	PermissionReadDraft   Permission = "read:draft"
@@ -88,6 +107,12 @@ func init() {
 		PermissionUpdatePlayer,
 		PermissionCreateDraftedPokemon,
 		PermissionReportGame,
+
+		PermissionReadPoolEntry,
+		PermissionReadMember,
+		PermissionUpdateMember,
+		PermissionReadDraftPick,
+		PermissionReadClaim,
 	)
 
 	inheritPermissions(MRoleModerator, MRoleMember)
@@ -105,6 +130,11 @@ func init() {
 		PermissionStartTransferPeriod,
 		PermissionEndTransferPeriod,
 		PermissionFinalizeGame,
+
+		PermissionCreatePoolEntry,
+		PermissionUpdatePoolEntry,
+		PermissionCreateMember,
+		PermissionUpdateMemberScore,
 	)
 
 	inheritPermissions(MRoleOwner, MRoleModerator)
@@ -122,6 +152,9 @@ func init() {
 		PermissionCreatePlayerRoster,
 		PermissionDeletePlayerRoster,
 		PermissionUpdatePlayerRoster,
+
+		PermissionDeletePoolEntry,
+		PermissionDeleteMember,
 	)
 }
 

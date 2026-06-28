@@ -55,6 +55,29 @@ func RegisterRoutes(
 	{
 		api.GET("/profile", controllers.UserController.GetMyProfile)
 
+		// --- Member Routes ---
+		members := api.Group("/members")
+		{
+			members.GET("/:id",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadMember),
+				controllers.LeagueMemberController.GetByID)
+			members.GET("/:id/roster",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadMember),
+				controllers.LeagueMemberController.GetWithFullRoster)
+			members.PUT("/:id/profile",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateMember),
+				controllers.LeagueMemberController.UpdateProfile)
+			members.PUT("/:id/draft-points",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateMemberScore),
+				controllers.LeagueMemberController.UpdateDraftPoints)
+			members.PUT("/:id/record",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateMemberScore),
+				controllers.LeagueMemberController.UpdateRecord)
+			members.PUT("/:id/draft-position",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateMemberScore),
+				controllers.LeagueMemberController.UpdateDraftPosition)
+		}
+
 		leagues := api.Group("/leagues")
 		{
 			leagues.POST(
@@ -217,6 +240,74 @@ func RegisterRoutes(
 
 			}
 
+			// --- Pool Entry Routes ---
+			poolEntries := leagues.Group("/:leagueId/pool-entries")
+			{
+				poolEntries.GET("/",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPoolEntry),
+					controllers.PoolEntryController.GetByLeague)
+				poolEntries.GET("/:id",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPoolEntry),
+					controllers.PoolEntryController.GetByID)
+				poolEntries.GET("/available",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPoolEntry),
+					controllers.PoolEntryController.GetAvailableByLeague)
+				poolEntries.POST("/single",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreatePoolEntry),
+					controllers.PoolEntryController.Create)
+				poolEntries.POST("/batch",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreatePoolEntry),
+					controllers.PoolEntryController.CreateBatch)
+				poolEntries.PUT("/",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdatePoolEntry),
+					controllers.PoolEntryController.Update)
+			}
+
+			// --- League Member Routes ---
+			leagueMembers := leagues.Group("/:leagueId/members")
+			{
+				leagueMembers.GET("/",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadMember),
+					controllers.LeagueMemberController.GetByLeague)
+				leagueMembers.POST("/join",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateMember),
+					controllers.LeagueMemberController.JoinLeague)
+			}
+
+			// --- Draft Pick Routes ---
+			draftPicks := leagues.Group("/:leagueId/draft-picks")
+			{
+				draftPicks.GET("/",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadDraftPick),
+					controllers.DraftPickController.GetByDraft)
+				draftPicks.GET("/player/:playerId",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadDraftPick),
+					controllers.DraftPickController.GetByPlayer)
+				draftPicks.GET("/history",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadDraftPick),
+					controllers.DraftPickController.GetHistory)
+				draftPicks.GET("/next-pick-number",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadDraftPick),
+					controllers.DraftPickController.GetNextPickNumber)
+			}
+
+			// --- Claim Routes ---
+			claims := leagues.Group("/:leagueId/claims")
+			{
+				claims.GET("/",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadClaim),
+					controllers.ClaimController.GetActiveByLeague)
+				claims.GET("/:id",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadClaim),
+					controllers.ClaimController.GetByID)
+				claims.GET("/player/:playerId",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadClaim),
+					controllers.ClaimController.GetActiveByPlayer)
+				claims.GET("/released",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadClaim),
+					controllers.ClaimController.GetReleasedByLeague)
+			}
+
 			// Transfer Management Endpoints
 			transfers := leagues.Group(":leagueId/transfers")
 			{
@@ -243,6 +334,9 @@ func RegisterRoutes(
 			users.GET("/me/leagues", controllers.UserController.GetMyLeagues)
 			users.PUT("/profile", controllers.UserController.UpdateProfile)
 			users.GET("/:id/players", controllers.PlayerController.GetPlayersByUser)
+			users.GET("/:id/members",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadMember),
+				controllers.LeagueMemberController.GetByUser)
 		}
 
 	}

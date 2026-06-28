@@ -24,11 +24,11 @@ func TestGameService_GeneratePlayoffBracket_Correct(t *testing.T) {
 
 	leagueID := uuid.New()
 
-	playerA := models.Player{ID: uuid.New(), Wins: 10, Losses: 0} // Seed 1
-	playerB := models.Player{ID: uuid.New(), Wins: 8, Losses: 2}  // Seed 2
-	playerC := models.Player{ID: uuid.New(), Wins: 6, Losses: 4}  // Seed 3
-	playerD := models.Player{ID: uuid.New(), Wins: 4, Losses: 6}  // Seed 4
-	mockPlayers := []models.Player{playerC, playerA, playerD, playerB}
+	memberA := models.LeagueMember{ID: uuid.New(), Wins: 10, Losses: 0} // Seed 1
+	memberB := models.LeagueMember{ID: uuid.New(), Wins: 8, Losses: 2}  // Seed 2
+	memberC := models.LeagueMember{ID: uuid.New(), Wins: 6, Losses: 4}  // Seed 3
+	memberD := models.LeagueMember{ID: uuid.New(), Wins: 4, Losses: 6}  // Seed 4
+	mockMembers := []models.LeagueMember{memberC, memberA, memberD, memberB}
 
 	mockLeague := &models.League{
 		ID:     leagueID,
@@ -45,7 +45,7 @@ func TestGameService_GeneratePlayoffBracket_Correct(t *testing.T) {
 
 	// Define Mock Expectations using .On() with the imported mocks
 	mockLeagueRepo.On("GetLeagueByID", leagueID).Return(mockLeague, nil)
-	mockPlayerRepo.On("GetPlayersByLeagueAndGroupNumber", leagueID, 1).Return(mockPlayers, nil)
+	mockLeagueMemberRepo.On("GetByLeagueAndGroup", leagueID, 1).Return(mockMembers, nil)
 	mockGameRepo.On("CreateGames", mock.AnythingOfType("[]*models.Game")).Return(nil)
 
 	gameService := services.NewGameService(mockGameRepo, mockLeagueRepo, mockPlayerRepo, mockLeagueMemberRepo)
@@ -58,7 +58,7 @@ func TestGameService_GeneratePlayoffBracket_Correct(t *testing.T) {
 
 	// Assert that the mock methods were called as expected
 	mockLeagueRepo.AssertExpectations(t)
-	mockPlayerRepo.AssertExpectations(t)
+	mockLeagueMemberRepo.AssertExpectations(t)
 	mockGameRepo.AssertExpectations(t)
 
 	// Capture and inspect the argument passed to CreateGames
@@ -73,19 +73,19 @@ func TestGameService_GeneratePlayoffBracket_Correct(t *testing.T) {
 	}
 	assert.Len(t, round1Games, 2, "Should be 2 games in round 1")
 
-	// Check matchup 1: Seed 1 (playerA) vs Seed 4 (playerD)
-	match1Found := (round1Games[0].Player1ID == playerA.ID && round1Games[0].Player2ID == playerD.ID) ||
-		(round1Games[0].Player1ID == playerD.ID && round1Games[0].Player2ID == playerA.ID) ||
-		(round1Games[1].Player1ID == playerA.ID && round1Games[1].Player2ID == playerD.ID) ||
-		(round1Games[1].Player1ID == playerD.ID && round1Games[1].Player2ID == playerA.ID)
-	assert.True(t, match1Found, "Expected matchup between Seed 1 (Player A) and Seed 4 (Player D) was not found")
+	// Check matchup 1: Seed 1 (memberA) vs Seed 4 (memberD)
+	match1Found := (round1Games[0].Player1ID == memberA.ID && round1Games[0].Player2ID == memberD.ID) ||
+		(round1Games[0].Player1ID == memberD.ID && round1Games[0].Player2ID == memberA.ID) ||
+		(round1Games[1].Player1ID == memberA.ID && round1Games[1].Player2ID == memberD.ID) ||
+		(round1Games[1].Player1ID == memberD.ID && round1Games[1].Player2ID == memberA.ID)
+	assert.True(t, match1Found, "Expected matchup between Seed 1 (Member A) and Seed 4 (Member D) was not found")
 
-	// Check matchup 2: Seed 2 (playerB) vs Seed 3 (playerC)
-	match2Found := (round1Games[0].Player1ID == playerB.ID && round1Games[0].Player2ID == playerC.ID) ||
-		(round1Games[0].Player1ID == playerC.ID && round1Games[0].Player2ID == playerB.ID) ||
-		(round1Games[1].Player1ID == playerB.ID && round1Games[1].Player2ID == playerC.ID) ||
-		(round1Games[1].Player1ID == playerC.ID && round1Games[1].Player2ID == playerB.ID)
-	assert.True(t, match2Found, "Expected matchup between Seed 2 (Player B) and Seed 3 (Player C) was not found")
+	// Check matchup 2: Seed 2 (memberB) vs Seed 3 (memberC)
+	match2Found := (round1Games[0].Player1ID == memberB.ID && round1Games[0].Player2ID == memberC.ID) ||
+		(round1Games[0].Player1ID == memberC.ID && round1Games[0].Player2ID == memberB.ID) ||
+		(round1Games[1].Player1ID == memberB.ID && round1Games[1].Player2ID == memberC.ID) ||
+		(round1Games[1].Player1ID == memberC.ID && round1Games[1].Player2ID == memberB.ID)
+	assert.True(t, match2Found, "Expected matchup between Seed 2 (Member B) and Seed 3 (Member C) was not found")
 }
 
 func TestGameService_GenerateRegularSeasonGames_Success(t *testing.T) {
@@ -96,7 +96,7 @@ func TestGameService_GenerateRegularSeasonGames_Success(t *testing.T) {
 	mockGameRepo := new(mock_repos.MockGameRepository)
 
 	leagueID := uuid.New()
-	mockPlayers := []models.Player{
+	mockMembers := []models.LeagueMember{
 		{ID: uuid.New()},
 		{ID: uuid.New()},
 		{ID: uuid.New()},
@@ -114,7 +114,7 @@ func TestGameService_GenerateRegularSeasonGames_Success(t *testing.T) {
 
 	mockLeagueRepo.On("GetLeagueByID", leagueID).Return(mockLeague, nil)
 	mockGameRepo.On("HasGames", leagueID, enums.GameTypeRegularSeason).Return(false, nil).Once()
-	mockPlayerRepo.On("GetPlayersByLeagueAndGroupNumber", leagueID, 1).Return(mockPlayers, nil)
+	mockLeagueMemberRepo.On("GetByLeagueAndGroup", leagueID, 1).Return(mockMembers, nil)
 	// We expect 6 games for a 4-player round-robin.
 	mockGameRepo.On("CreateGames", mock.MatchedBy(func(games []*models.Game) bool {
 		return len(games) == 6
@@ -128,7 +128,7 @@ func TestGameService_GenerateRegularSeasonGames_Success(t *testing.T) {
 	// ASSERT
 	assert.NoError(t, err)
 	mockLeagueRepo.AssertExpectations(t)
-	mockPlayerRepo.AssertExpectations(t)
+	mockLeagueMemberRepo.AssertExpectations(t)
 	mockGameRepo.AssertExpectations(t)
 }
 
@@ -211,7 +211,7 @@ func TestGameService_GeneratePlayoffBracket_ErrInvalidConfig(t *testing.T) {
 	mockGameRepo := new(mock_repos.MockGameRepository)
 
 	leagueID := uuid.New()
-	mockPlayers := []models.Player{{ID: uuid.New()}, {ID: uuid.New()}}
+	mockMembers := []models.LeagueMember{{ID: uuid.New()}, {ID: uuid.New()}}
 
 	// This is an invalid configuration: Single Elimination cannot be Fully Seeded.
 	mockLeague := &models.League{
@@ -227,7 +227,7 @@ func TestGameService_GeneratePlayoffBracket_ErrInvalidConfig(t *testing.T) {
 	}
 
 	mockLeagueRepo.On("GetLeagueByID", leagueID).Return(mockLeague, nil)
-	mockPlayerRepo.On("GetPlayersByLeagueAndGroupNumber", leagueID, 1).Return(mockPlayers, nil)
+	mockLeagueMemberRepo.On("GetByLeagueAndGroup", leagueID, 1).Return(mockMembers, nil)
 
 	gameService := services.NewGameService(mockGameRepo, mockLeagueRepo, mockPlayerRepo, mockLeagueMemberRepo)
 
@@ -237,6 +237,6 @@ func TestGameService_GeneratePlayoffBracket_ErrInvalidConfig(t *testing.T) {
 	// ASSERT
 	assert.Error(t, err)
 	mockLeagueRepo.AssertExpectations(t)
-	mockPlayerRepo.AssertExpectations(t)
+	mockLeagueMemberRepo.AssertExpectations(t)
 	mockGameRepo.AssertNotCalled(t, "CreateGames")
 }
