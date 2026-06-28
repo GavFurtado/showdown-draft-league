@@ -1,11 +1,11 @@
 package middleware
 
 import (
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/google/uuid"
 	"log"
@@ -70,7 +70,7 @@ func LeagueRBACMiddleware(
 	return func(ctx *gin.Context) {
 		currentUser, exists := GetUserFromContext(ctx)
 		if !exists {
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "User not found in context"})
+			ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "User not found in context"})
 			return
 		}
 

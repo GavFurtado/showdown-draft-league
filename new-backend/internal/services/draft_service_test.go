@@ -72,7 +72,7 @@ func TestDraftService_MakePick(t *testing.T) {
 			LeagueID:                    leagueID,
 			Status:                      enums.DraftStatusOngoing,
 			CurrentPickOnClock:          1,
-			CurrentTurnPlayerID:         &playerID,
+			CurrentTurnMemberID:         &playerID,
 			PlayersWithAccumulatedPicks: make(models.PlayerAccumulatedPicks),
 		}
 		localInput := &requests.DraftMakePickRequestDTO{
@@ -132,7 +132,7 @@ func TestDraftService_MakePick(t *testing.T) {
 			LeagueID:            leagueID,
 			Status:              enums.DraftStatusOngoing,
 			CurrentPickOnClock:  1,
-			CurrentTurnPlayerID: &otherPlayerID, // Not the current player's turn
+			CurrentTurnMemberID: &otherPlayerID, // Not the current player's turn
 		}
 		localInput := &requests.DraftMakePickRequestDTO{
 			RequestedPickCount: 1,
@@ -168,7 +168,7 @@ func TestDraftService_MakePick(t *testing.T) {
 			LeagueID:                    leagueID,
 			Status:                      enums.DraftStatusOngoing,
 			CurrentPickOnClock:          1,
-			CurrentTurnPlayerID:         &playerID,
+			CurrentTurnMemberID:         &playerID,
 			PlayersWithAccumulatedPicks: make(models.PlayerAccumulatedPicks),
 		}
 		localInput := &requests.DraftMakePickRequestDTO{
@@ -210,7 +210,7 @@ func TestDraftService_MakePick(t *testing.T) {
 			LeagueID:                    leagueID,
 			Status:                      enums.DraftStatusOngoing,
 			CurrentPickOnClock:          1,
-			CurrentTurnPlayerID:         &playerID,
+			CurrentTurnMemberID:         &playerID,
 			PlayersWithAccumulatedPicks: make(models.PlayerAccumulatedPicks),
 		}
 		localInput := &requests.DraftMakePickRequestDTO{
@@ -258,7 +258,7 @@ func TestDraftService_MakePick(t *testing.T) {
 			LeagueID:                    leagueID,
 			Status:                      enums.DraftStatusOngoing,
 			CurrentPickOnClock:          1,
-			CurrentTurnPlayerID:         &playerID,
+			CurrentTurnMemberID:         &playerID,
 			PlayersWithAccumulatedPicks: make(models.PlayerAccumulatedPicks),
 		}
 		localInput := &requests.DraftMakePickRequestDTO{

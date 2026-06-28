@@ -16,7 +16,7 @@ type Draft struct {
 	ID                          uuid.UUID              `gorm:"type:uuid;primaryKey;default:gen_random_uuid();column:id" json:"ID"`
 	LeagueID                    uuid.UUID              `gorm:"type:uuid;not null;index;unique;column:league_id" json:"LeagueID"`
 	Status                      enums.DraftStatus      `gorm:"type:varchar(50);not null;default:'PENDING';column:status" json:"Status"`
-	CurrentTurnPlayerID         *uuid.UUID             `gorm:"type:uuid;index;column:current_turn_player_id" json:"CurrentTurnPlayerID"` // Nullable: Player whose turn it is
+	CurrentTurnMemberID         *uuid.UUID             `gorm:"type:uuid;index;column:current_turn_player_id" json:"CurrentTurnPlayerID"` // Nullable: Player whose turn it is
 	CurrentRound                int                    `gorm:"default:0;not null;column:current_round" json:"CurrentRound"`
 	CurrentPickInRound          int                    `gorm:"default:1;not null;column:current_pick_in_round" json:"CurrentPickInRound"`
 	CurrentPickOnClock          int                    `gorm:"default:1;not null" json:"CurrentPickOnClock"` // aka CurrentOverallPickNumber

@@ -192,8 +192,8 @@ func (r *leagueRepositoryImpl) GetLeagueWithFullDetails(id uuid.UUID) (*models.L
 	err := r.db.
 		Preload("Players").
 		Preload("Players.User").
-		Preload("LeaguePokemon").
-		Preload("LeaguePokemon.PokemonSpecies").
+		Preload("PoolEntries").
+		Preload("PoolEntries.PokemonSpecies").
 		First(&league, "id = ?", id).Error
 
 	if err != nil {

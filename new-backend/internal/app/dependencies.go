@@ -15,6 +15,11 @@ type Repositories struct {
 	DraftRepository          repositories.DraftRepository
 	DraftedPokemonRepository repositories.DraftedPokemonRepository
 	GameRepository           repositories.GameRepository
+
+	// New redesign repositories
+	DraftPickRepository repositories.DraftPickRepository
+	ClaimRepository     repositories.ClaimRepository
+	PoolEntryRepository repositories.PoolEntryRepository
 }
 
 type Services struct {

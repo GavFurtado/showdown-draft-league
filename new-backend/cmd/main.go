@@ -51,6 +51,9 @@ func main() {
 
 	// Auto-migrate database models
 	// Ensure the order respects foreign key dependencies.
+	// Note: Old LeaguePokemon and DraftedPokemon models are kept for backward compatibility
+	// during the data model redesign transition. The new models (PoolEntry, DraftPick, Claim)
+	// will replace them.
 	err = db.AutoMigrate(
 		&models.User{},
 		&models.League{},
@@ -60,6 +63,11 @@ func main() {
 		&models.DraftedPokemon{},
 		&models.Draft{},
 		&models.Game{},
+
+		// New redesign models
+		&models.PoolEntry{},
+		&models.DraftPick{},
+		&models.Claim{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to auto-migrate database: %v", err)

@@ -24,7 +24,7 @@ const (
 	DraftOrderTypeManual DraftOrderType = "MANUAL"
 )
 
-// Validate DraftStatus for database interactions
+// IsValid validates DraftStatus for database interactions
 func (ds DraftStatus) IsValid() bool {
 	switch ds {
 	case DraftStatusPending, DraftStatusOngoing, DraftStatusPaused, DraftStatusCompleted:
@@ -65,7 +65,7 @@ func (ds DraftStatus) Normalize() DraftStatus {
 	return DraftStatus(strings.ToUpper(string(ds)))
 }
 
-// Validate DraftOrderType for database interactions
+// IsValid Validate DraftOrderType for database interactions
 func (dot DraftOrderType) IsValid() bool {
 	switch dot {
 	case DraftOrderTypeRandom, DraftOrderTypeManual:

@@ -8,21 +8,22 @@ import (
 	"gorm.io/gorm"
 )
 
-type Player struct {
+// TODO: A lot more of these fields will have to become nullable since they don't apply to spectators
+type LeagueMember struct {
 	ID              uuid.UUID       `gorm:"type:uuid;primaryKey;default:gen_random_uuid();column:id" json:"ID"`
 	UserID          uuid.UUID       `gorm:"type:uuid;not null;column:user_id" json:"UserID"`
 	LeagueID        uuid.UUID       `gorm:"type:uuid;not null;column:league_id;uniqueIndex:idx_league_team_name" json:"LeagueID"`
-	InLeagueName    string          `gorm:"column:in_league_name" json:"InLeagueName"`
-	TeamName        string          `gorm:"not null;column:team_name;uniqueIndex:idx_league_team_name" json:"TeamName"`
+	InLeagueName    *string         `gorm:"column:in_league_name" json:"InLeagueName"`
+	TeamName        *string         `gorm:"not null;column:team_name;uniqueIndex:idx_league_team_name" json:"TeamName"`
 	Wins            int             `gorm:"default:0;not null;column:wins" json:"Wins"`
 	Losses          int             `gorm:"default:0;not null;column:losses" json:"Losses"`
 	DraftPoints     int             `gorm:"default:140;not null;column:draft_points" json:"DraftPoints"`
 	TransferCredits int             `gorm:"default:0;column:transfer_credits" json:"TransferCredits"`
 	DraftPosition   int             `gorm:"default:1;column:draft_position" json:"DraftPosition"` // turn order of player pick
-	GroupNumber     int             `gorm:"default:1;column:group_number" json:"GroupNumber"`     // group to which player belongs to
+	GroupNumber     int             `gorm:"default:1;column:group_number" json:"GroupNumber"`     // group to which member belongs to
 	SkipsLeft       int             `gorm:"column:skips_left" json:"SkipsLeft"`
 	Role            rbac.PlayerRole `gorm:"type:varchar(20);not null;default:'member';column:role" json:"Role"`
-	IsParticipating bool            `gorm:"column:is_participating" json:"IsParticipating"` // currently unused
+	IsParticipating bool            `gorm:"column:is_participating" json:"IsParticipating"` // whether a league member is a player
 	CreatedAt       time.Time       `gorm:"column:created_at" json:"CreatedAt"`
 	UpdatedAt       time.Time       `gorm:"column:updated_at" json:"UpdatedAt"`
 	DeletedAt       gorm.DeletedAt  `gorm:"index;column:deleted_at" json:"-"`

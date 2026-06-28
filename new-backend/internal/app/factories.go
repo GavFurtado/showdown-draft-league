@@ -20,6 +20,12 @@ func NewRepositories(db *gorm.DB) *Repositories {
 		GameRepository:           repositories.NewGameRepository(db),
 		LeaguePokemonRepository:  repositories.NewLeaguePokemonRepository(db),
 		PokemonSpeciesRepository: repositories.NewPokemonSpeciesRepository(db),
+
+		// New redesign repositories
+		DraftPickRepository:    repositories.NewDraftPickRepository(db),
+		ClaimRepository:        repositories.NewClaimRepository(db),
+		PoolEntryRepository:    repositories.NewPoolEntryRepository(db),
+		LeagueMemberRepository: repositories.NewLeagueMemberRepository(db),
 	}
 }
 
@@ -40,6 +46,13 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 		&webhookService,
 	)
 
+	// Wire in the new redesign repositories to the draft service
+	draftService.SetNewRepositories(
+		repos.DraftPickRepository,
+		repos.ClaimRepository,
+		repos.PoolEntryRepository,
+	)
+
 	schedulerService := services.NewSchedulerService(
 		&u.TaskHeap{},
 		repos.LeagueRepository,
@@ -51,6 +64,12 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 		repos.LeaguePokemonRepository,
 		repos.LeagueRepository,
 		repos.PlayerRepository,
+	)
+
+	// Wire in the new redesign repositories to the transfer service
+	transferService.SetNewRepositories(
+		repos.ClaimRepository,
+		repos.PoolEntryRepository,
 	)
 
 	gameService := services.NewGameService(repos.GameRepository, repos.LeagueRepository, repos.PlayerRepository)
@@ -66,7 +85,7 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 
 	schedulerService.SetLeagueService(leagueService)
 	leagueService.SetSchedulerService(schedulerService)
-	
+
 	gameService.SetLeagueService(leagueService)
 	leagueService.SetGameService(gameService)
 
