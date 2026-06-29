@@ -60,7 +60,7 @@ func TestDraftService_MakePick(t *testing.T) {
 	leagueID := uuid.New()
 	userID := uuid.New()
 	memberID := uuid.New()
-	leaguePokemonID := uuid.New()
+	poolEntryID := uuid.New()
 	pokemonSpeciesID := int64(1)
 
 	t.Run("Success - Make a valid pick", func(t *testing.T) {
@@ -82,13 +82,13 @@ func TestDraftService_MakePick(t *testing.T) {
 		localInput := &requests.DraftMakePickRequestDTO{
 			RequestedPickCount: 1,
 			RequestedPicks: []requests.RequestedPickDTO{
-				{LeaguePokemonID: leaguePokemonID, DraftPickNumber: 1},
+				{PoolEntryID: poolEntryID, DraftPickNumber: 1},
 			},
 		}
 
 		localCurrentUser := &models.User{ID: userID}
 		localPoolEntry := &models.PoolEntry{
-			ID:               leaguePokemonID,
+			ID:               poolEntryID,
 			LeagueID:         leagueID,
 			PokemonSpeciesID: pokemonSpeciesID,
 			Cost:             func(i int) *int { return &i }(50),
@@ -98,10 +98,10 @@ func TestDraftService_MakePick(t *testing.T) {
 		mocks.leagueRepo.On("GetLeagueByID", leagueID).Return(localLeague, nil).Once()
 		mocks.draftRepo.On("GetDraftByLeagueID", leagueID).Return(localDraft, nil).Once()
 		mocks.leagueMemberRepo.On("GetByUserAndLeague", userID, leagueID).Return(localMember, nil).Once()
-		mocks.poolEntryRepo.On("GetByIDs", leagueID, []uuid.UUID{leaguePokemonID}).Return([]models.PoolEntry{*localPoolEntry}, nil).Once()
+		mocks.poolEntryRepo.On("GetByIDs", leagueID, []uuid.UUID{poolEntryID}).Return([]models.PoolEntry{*localPoolEntry}, nil).Once()
 		mocks.leagueMemberRepo.On("GetCountByLeague", leagueID).Return(int64(1), nil).Once()
 		mocks.draftPickRepo.On("CreateBatch", mock.Anything).Return(nil).Once()
-		mocks.poolEntryRepo.On("MarkUnavailable", mock.Anything, leaguePokemonID).Return(nil).Once()
+		mocks.poolEntryRepo.On("MarkUnavailable", mock.Anything, poolEntryID).Return(nil).Once()
 		mocks.leagueMemberRepo.On("Update", mock.AnythingOfType("*models.LeagueMember")).Return(&models.LeagueMember{}, nil).Once()
 		mocks.claimRepo.On("Create", mock.AnythingOfType("*models.Claim")).Return(&models.Claim{}, nil).Once()
 		mocks.claimRepo.On("GetActiveCountByLeague", leagueID).Return(int64(1), nil).Once()
@@ -141,7 +141,7 @@ func TestDraftService_MakePick(t *testing.T) {
 		localInput := &requests.DraftMakePickRequestDTO{
 			RequestedPickCount: 1,
 			RequestedPicks: []requests.RequestedPickDTO{
-				{LeaguePokemonID: leaguePokemonID, DraftPickNumber: 1},
+				{PoolEntryID: poolEntryID, DraftPickNumber: 1},
 			},
 		}
 
@@ -175,7 +175,7 @@ func TestDraftService_MakePick(t *testing.T) {
 		localInput := &requests.DraftMakePickRequestDTO{
 			RequestedPickCount: 1,
 			RequestedPicks: []requests.RequestedPickDTO{
-				{LeaguePokemonID: leaguePokemonID, DraftPickNumber: 1},
+				{PoolEntryID: poolEntryID, DraftPickNumber: 1},
 			},
 		}
 
@@ -213,11 +213,11 @@ func TestDraftService_MakePick(t *testing.T) {
 		localInput := &requests.DraftMakePickRequestDTO{
 			RequestedPickCount: 1,
 			RequestedPicks: []requests.RequestedPickDTO{
-				{LeaguePokemonID: leaguePokemonID, DraftPickNumber: 1},
+				{PoolEntryID: poolEntryID, DraftPickNumber: 1},
 			},
 		}
 		unavailablePoolEntry := &models.PoolEntry{
-			ID:          leaguePokemonID,
+ID:               poolEntryID,
 			IsAvailable: false,
 		}
 
@@ -226,7 +226,7 @@ func TestDraftService_MakePick(t *testing.T) {
 		mocks.leagueRepo.On("GetLeagueByID", leagueID).Return(localLeague, nil).Once()
 		mocks.draftRepo.On("GetDraftByLeagueID", leagueID).Return(localDraft, nil).Once()
 		mocks.leagueMemberRepo.On("GetByUserAndLeague", userID, leagueID).Return(localMember, nil).Once()
-		mocks.poolEntryRepo.On("GetByIDs", leagueID, []uuid.UUID{leaguePokemonID}).Return([]models.PoolEntry{*unavailablePoolEntry}, nil).Once()
+		mocks.poolEntryRepo.On("GetByIDs", leagueID, []uuid.UUID{poolEntryID}).Return([]models.PoolEntry{*unavailablePoolEntry}, nil).Once()
 
 		err := service.MakePick(localCurrentUser, leagueID, localInput)
 
@@ -257,13 +257,13 @@ func TestDraftService_MakePick(t *testing.T) {
 		localInput := &requests.DraftMakePickRequestDTO{
 			RequestedPickCount: 1,
 			RequestedPicks: []requests.RequestedPickDTO{
-				{LeaguePokemonID: leaguePokemonID, DraftPickNumber: 1},
+				{PoolEntryID: poolEntryID, DraftPickNumber: 1},
 			},
 		}
 
 		localCurrentUser := &models.User{ID: userID}
 		localPoolEntry := &models.PoolEntry{
-			ID:               leaguePokemonID,
+			ID:               poolEntryID,
 			LeagueID:         leagueID,
 			PokemonSpeciesID: pokemonSpeciesID,
 			Cost:             func(i int) *int { return &i }(50),
@@ -273,7 +273,7 @@ func TestDraftService_MakePick(t *testing.T) {
 		mocks.leagueRepo.On("GetLeagueByID", leagueID).Return(localLeague, nil).Once()
 		mocks.draftRepo.On("GetDraftByLeagueID", leagueID).Return(localDraft, nil).Once()
 		mocks.leagueMemberRepo.On("GetByUserAndLeague", userID, leagueID).Return(localMember, nil).Once()
-		mocks.poolEntryRepo.On("GetByIDs", leagueID, []uuid.UUID{leaguePokemonID}).Return([]models.PoolEntry{*localPoolEntry}, nil).Once()
+		mocks.poolEntryRepo.On("GetByIDs", leagueID, []uuid.UUID{poolEntryID}).Return([]models.PoolEntry{*localPoolEntry}, nil).Once()
 		mocks.leagueMemberRepo.On("GetCountByLeague", leagueID).Return(int64(8), nil).Once()
 
 		err := service.MakePick(localCurrentUser, leagueID, localInput)

@@ -292,7 +292,7 @@ func (s *draftServiceImpl) MakePick(
 	allRequestedPoolEntries, err := s.fetchRequestedPoolEntries(league.ID, input)
 	if err != nil {
 		switch err {
-		case types.ErrLeaguePokemonNotFound:
+		case types.ErrPoolEntryNotFound:
 			log.Printf("LOG: (DraftService: MakePick) - (user %s) One or more pool entries were not found: %v\n", currentUser.ID, err)
 		case types.ErrConflict:
 			log.Printf("LOG: (DraftService: MakePick) - (user %s) One or more pool entries are not available for drafting: %v\n", currentUser.ID, err)
@@ -722,13 +722,13 @@ func (s *draftServiceImpl) executeNewPickTransactions(
 		// Get the entry in allRequestedPoolEntries
 		var currentPoolEntry *models.PoolEntry
 		for _, entry := range allRequestedPoolEntries {
-			if entry.ID == requestedPick.LeaguePokemonID {
+			if entry.ID == requestedPick.PoolEntryID {
 				currentPoolEntry = entry
 				break
 			}
 		}
 		if currentPoolEntry == nil {
-			return types.ErrLeaguePokemonNotFound
+			return types.ErrPoolEntryNotFound
 		}
 
 		poolEntryIDs = append(poolEntryIDs, currentPoolEntry.ID)
@@ -969,7 +969,7 @@ func (s *draftServiceImpl) fetchMemberResource(userID, leagueID uuid.UUID) (*mod
 func (s *draftServiceImpl) fetchRequestedPoolEntries(leagueID uuid.UUID, input *requests.DraftMakePickRequestDTO) ([]*models.PoolEntry, error) {
 	var poolEntryIDs []uuid.UUID
 	for _, requestedPick := range input.RequestedPicks {
-		poolEntryIDs = append(poolEntryIDs, requestedPick.LeaguePokemonID)
+		poolEntryIDs = append(poolEntryIDs, requestedPick.PoolEntryID)
 	}
 
 	allRequestedPoolEntries, err := s.poolEntryRepo.GetByIDs(leagueID, poolEntryIDs)
@@ -979,7 +979,7 @@ func (s *draftServiceImpl) fetchRequestedPoolEntries(leagueID uuid.UUID, input *
 
 	// Validate that all requested pokemon were actually returned and are available.
 	if len(allRequestedPoolEntries) != len(poolEntryIDs) {
-		return nil, types.ErrLeaguePokemonNotFound
+		return nil, types.ErrPoolEntryNotFound
 	}
 
 	var result []*models.PoolEntry

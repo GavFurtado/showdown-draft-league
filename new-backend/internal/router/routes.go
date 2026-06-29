@@ -104,10 +104,10 @@ func RegisterRoutes(
 					"/:gameId",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadGame),
 					controllers.GameController.GetGameByID)
-				games.GET(
-					"/players/:playerId",
-					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadGame),
-					controllers.GameController.GetGamesByPlayer)
+			games.GET(
+				"/members/:memberId",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadGame),
+				controllers.GameController.GetGamesByPlayer)
 				games.PUT(
 					"/report/:gameId",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReportGame),
@@ -137,17 +137,17 @@ func RegisterRoutes(
 
 					controllers.DraftController.StartDraft)
 
-				draft.POST("pick",
+			draft.POST("pick",
 
-					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateDraftedPokemon),
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateDraftPick),
 
-					controllers.DraftController.MakePick)
+				controllers.DraftController.MakePick)
 
-				draft.POST("skip",
+			draft.POST("skip",
 
-					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateDraftedPokemon),
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateDraftPick),
 
-					controllers.DraftController.SkipPick)
+				controllers.DraftController.SkipPick)
 
 			}
 
@@ -228,12 +228,12 @@ func RegisterRoutes(
 				transfers.POST("/end",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionEndTransferPeriod),
 					controllers.TransferController.EndTransferPeriod)
-				transfers.POST("/drop/:draftedPokemonId",
-					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateDraftedPokemon),
-					controllers.TransferController.DropPokemon)
-				transfers.POST("/pickup/:leaguePokemonId",
-					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateDraftedPokemon),
-					controllers.TransferController.PickupFreeAgent)
+			transfers.POST("/drop/:claimId",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateClaim),
+				controllers.TransferController.DropPokemon)
+			transfers.POST("/pickup/:poolEntryId",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateClaim),
+				controllers.TransferController.PickupFreeAgent)
 			}
 
 		}

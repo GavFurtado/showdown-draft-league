@@ -75,16 +75,16 @@ func (tc *transferControllerImpl) DropPokemon(ctx *gin.Context) {
 		return
 	}
 
-	draftedPokemonID, err := uuid.Parse(ctx.Param("draftedPokemonId"))
+	claimID, err := uuid.Parse(ctx.Param("claimId"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
 		return
 	}
 
-	if err := tc.transferService.DropPokemon(currentUser, leagueID, draftedPokemonID); err != nil {
+	if err := tc.transferService.DropPokemon(currentUser, leagueID, claimID); err != nil {
 		log.Printf("LOG: (TransferController: DropPokemon) - Service method error: %v\n", err)
 		switch err {
-		case types.ErrDraftedPokemonNotFound:
+		case types.ErrClaimNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		case types.ErrUnauthorized:
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
@@ -117,16 +117,16 @@ func (tc *transferControllerImpl) PickupFreeAgent(ctx *gin.Context) {
 		return
 	}
 
-	leaguePokemonID, err := uuid.Parse(ctx.Param("leaguePokemonId"))
+	poolEntryID, err := uuid.Parse(ctx.Param("poolEntryId"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
 		return
 	}
 
-	if err := tc.transferService.PickupFreeAgent(currentUser, leagueID, leaguePokemonID); err != nil {
+	if err := tc.transferService.PickupFreeAgent(currentUser, leagueID, poolEntryID); err != nil {
 		log.Printf("LOG: (TransferController: PickupFreeAgent) - Service method error: %v\n", err)
 		switch err {
-		case types.ErrLeaguePokemonNotFound:
+		case types.ErrPoolEntryNotFound:
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		case types.ErrInsufficientTransferCredits:
 			ctx.JSON(http.StatusForbidden, gin.H{"error": err.Error()})

@@ -199,7 +199,7 @@ func (s *transferServiceImpl) DropPokemon(currentUser *models.User, leagueID, cl
 	claim, err := s.claimRepo.GetByID(claimID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return types.ErrDraftedPokemonNotFound
+			return types.ErrClaimNotFound
 		}
 		return types.ErrInternalService
 	}
@@ -277,7 +277,7 @@ func (s *transferServiceImpl) PickupFreeAgent(currentUser *models.User, leagueID
 	poolEntry, err := s.poolEntryRepo.GetByID(poolEntryID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return types.ErrLeaguePokemonNotFound
+			return types.ErrPoolEntryNotFound
 		}
 		return types.ErrInternalService
 	}

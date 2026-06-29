@@ -10,6 +10,6 @@ type DraftMakePickRequestDTO struct {
 }
 
 type RequestedPickDTO struct {
-	LeaguePokemonID uuid.UUID `json:"LeaguePokemonID" binding:"required"`
+	PoolEntryID     uuid.UUID `json:"PoolEntryID" binding:"required"`
 	DraftPickNumber int       `json:"DraftPickNumber" binding:"required"`
 }

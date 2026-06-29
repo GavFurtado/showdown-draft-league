@@ -34,10 +34,13 @@ const (
 	PermissionDeleteMember      Permission = "delete:member"
 
 	// DraftPick Permissions
-	PermissionReadDraftPick Permission = "read:draft_pick"
+	PermissionReadDraftPick   Permission = "read:draft_pick"
+	PermissionCreateDraftPick Permission = "create:draft_pick"
 
 	// Claim Permissions
-	PermissionReadClaim Permission = "read:claim"
+	PermissionReadClaim   Permission = "read:claim"
+	PermissionCreateClaim Permission = "create:claim"
+	PermissionUpdateClaim Permission = "update:claim"
 
 	// Draft Permissions
 	PermissionCreateDraft Permission = "create:draft"
@@ -112,7 +115,10 @@ func init() {
 		PermissionReadMember,
 		PermissionUpdateMember,
 		PermissionReadDraftPick,
+		PermissionCreateDraftPick,
 		PermissionReadClaim,
+		PermissionCreateClaim,
+		PermissionUpdateClaim,
 	)
 
 	inheritPermissions(MRoleModerator, MRoleMember)

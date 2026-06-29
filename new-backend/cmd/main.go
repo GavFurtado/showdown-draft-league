@@ -55,6 +55,7 @@ func main() {
 		&models.PokemonSpecies{},
 		&models.Draft{},
 		&models.Game{},
+		&models.LeagueMember{},
 
 		&models.PoolEntry{},
 		&models.DraftPick{},
