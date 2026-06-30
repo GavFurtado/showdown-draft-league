@@ -36,32 +36,26 @@ type LeagueService interface {
 }
 
 type leagueServiceImpl struct {
-	leagueRepo         repositories.LeagueRepository
-	playerRepo         repositories.PlayerRepository
-	leaguePokemonRepo  repositories.LeaguePokemonRepository
-	draftedPokemonRepo repositories.DraftedPokemonRepository
-	draftRepo          repositories.DraftRepository
-	gameRepo           repositories.GameRepository
-	schedulerService   SchedulerService
-	transferService    TransferService
-	gameService        GameService // New dependency
+	leagueRepo       repositories.LeagueRepository
+	memberRepo       repositories.LeagueMemberRepository
+	draftRepo        repositories.DraftRepository
+	gameRepo         repositories.GameRepository
+	schedulerService SchedulerService
+	transferService  TransferService
+	gameService      GameService
 }
 
 func NewLeagueService(
 	leagueRepo repositories.LeagueRepository,
-	playerRepo repositories.PlayerRepository,
-	leaguePokemonRepo repositories.LeaguePokemonRepository,
-	draftedPokemonRepo repositories.DraftedPokemonRepository,
+	memberRepo repositories.LeagueMemberRepository,
 	draftRepo repositories.DraftRepository,
 	gameRepo repositories.GameRepository,
 ) LeagueService {
 	return &leagueServiceImpl{
-		leagueRepo:         leagueRepo,
-		playerRepo:         playerRepo,
-		leaguePokemonRepo:  leaguePokemonRepo,
-		draftedPokemonRepo: draftedPokemonRepo,
-		draftRepo:          draftRepo,
-		gameRepo:           gameRepo,
+		leagueRepo: leagueRepo,
+		memberRepo: memberRepo,
+		draftRepo:  draftRepo,
+		gameRepo:   gameRepo,
 	}
 }
 
@@ -110,6 +104,7 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.Leagu
 
 	league := &models.League{
 		Name:                 input.Name,
+		OwnerUserID:          userID,
 		RulesetDescription:   input.RulesetDescription,
 		MaxPokemonPerPlayer:  input.MaxPokemonPerPlayer,
 		MinPokemonPerPlayer:  input.MinPokemonPerPlayer,
@@ -125,24 +120,23 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.Leagu
 		return nil, fmt.Errorf("failed to create league: %w", err)
 	}
 
-	// TODO: creating an owner player should maybe not be done
-	ownerPlayer := &models.Player{
-		UserID:          userID,
-		LeagueID:        createdLeague.ID,
-		InLeagueName:    "League Owner",                       // Default, can be updated later
-		TeamName:        fmt.Sprintf("%s's Team", input.Name), // Default, can be updated later
-		IsParticipating: false,
-		DraftPoints:     int(createdLeague.StartingDraftPoints),
-		TransferCredits: 0,
-		GroupNumber:     1, // first player for the league so assigned this
-		Role:            rbac.PRoleOwner,
+	inLeagueName := "League Owner"
+	teamName := fmt.Sprintf("%s's Team", input.Name)
+
+	owner := &models.LeagueMember{
+		UserID:       userID,
+		LeagueID:     createdLeague.ID,
+		InLeagueName: &inLeagueName,
+		TeamName:     &teamName,
+		DraftPoints:  int(createdLeague.StartingDraftPoints),
+		GroupNumber:  1,
+		Role:         rbac.MRoleOwner,
 	}
 
-	_, err = s.playerRepo.CreatePlayer(ownerPlayer)
+	_, err = s.memberRepo.Create(owner)
 	if err != nil {
-		log.Printf("(Error: LeagueService.CreateLeague) - Failed to create owner player for league %s: %v\n", createdLeague.ID, err)
-		// TODO: Consider rolling back league creation if player creation fails
-		return nil, fmt.Errorf("failed to create league owner player: %w", err)
+		log.Printf("(Error: LeagueService.CreateLeague) - Failed to create owner for league %s: %v\n", createdLeague.ID, err)
+		return nil, fmt.Errorf("failed to create league owner: %w", err)
 	}
 
 	return createdLeague, nil

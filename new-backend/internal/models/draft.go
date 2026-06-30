@@ -16,7 +16,7 @@ type Draft struct {
 	ID                          uuid.UUID              `gorm:"type:uuid;primaryKey;default:gen_random_uuid();column:id" json:"ID"`
 	LeagueID                    uuid.UUID              `gorm:"type:uuid;not null;index;unique;column:league_id" json:"LeagueID"`
 	Status                      enums.DraftStatus      `gorm:"type:varchar(50);not null;default:'PENDING';column:status" json:"Status"`
-	CurrentTurnPlayerID         *uuid.UUID             `gorm:"type:uuid;index;column:current_turn_player_id" json:"CurrentTurnPlayerID"` // Nullable: Player whose turn it is
+	CurrentTurnMemberID         *uuid.UUID             `gorm:"type:uuid;index;column:current_turn_player_id" json:"CurrentTurnPlayerID"` // Nullable: Player whose turn it is
 	CurrentRound                int                    `gorm:"default:0;not null;column:current_round" json:"CurrentRound"`
 	CurrentPickInRound          int                    `gorm:"default:1;not null;column:current_pick_in_round" json:"CurrentPickInRound"`
 	CurrentPickOnClock          int                    `gorm:"default:1;not null" json:"CurrentPickOnClock"` // aka CurrentOverallPickNumber
@@ -30,8 +30,8 @@ type Draft struct {
 	DeletedAt                   gorm.DeletedAt         `gorm:"index;type:timestamp with time zone;column:deleted_at" json:"-"`
 
 	// Relationships
-	League            *League `gorm:"foreignKey:league_id;references:id" json:"League,omitempty"`
-	CurrentTurnPlayer *Player `gorm:"foreignKey:current_turn_player_id;references:id" json:"CurrentTurnPlayer,omitempty"`
+	League            *League       `gorm:"foreignKey:league_id;references:id" json:"League,omitempty"`
+	CurrentTurnMember *LeagueMember `gorm:"foreignKey:current_turn_player_id;references:id" json:"CurrentTurnMember,omitempty"`
 }
 
 // PlayerAccumulatedPicks is a custom type for storing a map of player IDs to their accumulated pick numbers.

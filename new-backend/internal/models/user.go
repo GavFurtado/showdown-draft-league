@@ -19,6 +19,5 @@ type User struct {
 	UpdatedAt time.Time      `gorm:"column:updated_at" json:"UpdatedAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index;column:deleted_at" json:"-"`
 	// Relationships
-	// LeaguesCreated []League `gorm:"foreignKey:CommissionerUserID;references:ID;inverseOf:CommissionerUser"` // List of Leagues this user has created
-	Players []Player `gorm:"foreignKey:user_id;references:id" json:"Players,omitempty"` // Player entities in various leagues
+	Members []LeagueMember `gorm:"foreignKey:user_id;references:id" json:"Members,omitempty"`
 }

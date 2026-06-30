@@ -19,17 +19,13 @@ import (
 
 func TestLeagueService_CreateLeague(t *testing.T) {
 	mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
-	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
-	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
-	mockDraftedPokemonRepo := new(mock_repositories.MockDraftedPokemonRepository)
+	mockLeagueMemberRepo := new(mock_repositories.MockLeagueMemberRepository)
 	mockDraftRepo := new(mock_repositories.MockDraftRepository)
 	mockGameRepo := new(mock_repositories.MockGameRepository)
 
 	service := services.NewLeagueService(
 		mockLeagueRepo,
-		mockPlayerRepo,
-		mockLeaguePokemonRepo,
-		mockDraftedPokemonRepo,
+		mockLeagueMemberRepo,
 		mockDraftRepo,
 		mockGameRepo,
 	)
@@ -67,22 +63,21 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 		createdLeague := *expectedLeague
 		createdLeague.ID = uuid.New()
 
-		expectedOwnerPlayer := &models.Player{
-			UserID:          testUserID,
-			LeagueID:        createdLeague.ID,
-			InLeagueName:    "League Owner",
-			TeamName:        fmt.Sprintf("%s's Team", input.Name),
-			IsParticipating: false,
-			DraftPoints:     1000,
-			GroupNumber:     1, // Service sets this to 1
-			Role:            rbac.PRoleOwner,
+		inLeagueName := "League Owner"
+		teamName := fmt.Sprintf("%s's Team", input.Name)
+		expectedOwnerMember := &models.LeagueMember{
+			UserID:       testUserID,
+			LeagueID:     createdLeague.ID,
+			InLeagueName: &inLeagueName,
+			TeamName:     &teamName,
+			DraftPoints:  1000,
+			GroupNumber:  1,
+			Role:         rbac.MRoleOwner,
 		}
-		createdPlayer := *expectedOwnerPlayer
-		createdPlayer.ID = uuid.New()
 
 		mockLeagueRepo.On("GetLeaguesCountWhereOwner", testUserID).Return(int64(0), nil).Once()
 		mockLeagueRepo.On("CreateLeague", mock.AnythingOfType("*models.League")).Return(&createdLeague, nil).Once()
-		mockPlayerRepo.On("CreatePlayer", expectedOwnerPlayer).Return(&createdPlayer, nil).Once()
+		mockLeagueMemberRepo.On("Create", expectedOwnerMember).Return(expectedOwnerMember, nil).Once()
 
 		result, err := service.CreateLeague(testUserID, input)
 		assert.NoError(t, err)
@@ -91,7 +86,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 		assert.Equal(t, input.Name, result.Name)
 
 		mockLeagueRepo.AssertExpectations(t)
-		mockPlayerRepo.AssertExpectations(t)
+		mockLeagueMemberRepo.AssertExpectations(t)
 	})
 
 	t.Run("Fails if user already has maximum leagues", func(t *testing.T) {
@@ -104,7 +99,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 
 		mockLeagueRepo.AssertExpectations(t)
 		mockLeagueRepo.AssertNotCalled(t, "CreateLeague")
-		mockPlayerRepo.AssertNotCalled(t, "CreatePlayer")
+		mockLeagueMemberRepo.AssertNotCalled(t, "Create")
 	})
 
 	t.Run("Fails if GetLeaguesCountWhereOwner returns error", func(t *testing.T) {
@@ -118,7 +113,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 
 		mockLeagueRepo.AssertExpectations(t)
 		mockLeagueRepo.AssertNotCalled(t, "CreateLeague")
-		mockPlayerRepo.AssertNotCalled(t, "CreatePlayer")
+		mockLeagueMemberRepo.AssertNotCalled(t, "Create")
 	})
 
 	t.Run("Fails if CreateLeague returns error", func(t *testing.T) {
@@ -132,10 +127,10 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 		assert.Contains(t, err.Error(), "failed to create league")
 
 		mockLeagueRepo.AssertExpectations(t)
-		mockPlayerRepo.AssertNotCalled(t, "CreatePlayer")
+		mockLeagueMemberRepo.AssertNotCalled(t, "Create")
 	})
 
-	t.Run("Fails if CreatePlayer returns error", func(t *testing.T) {
+	t.Run("Fails if CreateLeagueMember returns error", func(t *testing.T) {
 		expectedLeague := &models.League{
 			Name:                 input.Name,
 			RulesetDescription:   input.RulesetDescription,
@@ -148,34 +143,30 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 		createdLeague := *expectedLeague
 		createdLeague.ID = uuid.New()
 
-		dbError := errors.New("player creation error")
+		dbError := errors.New("member creation error")
 		mockLeagueRepo.On("GetLeaguesCountWhereOwner", testUserID).Return(int64(0), nil).Once()
 		mockLeagueRepo.On("CreateLeague", mock.AnythingOfType("*models.League")).Return(&createdLeague, nil).Once()
-		mockPlayerRepo.On("CreatePlayer", mock.AnythingOfType("*models.Player")).Return((*models.Player)(nil), dbError).Once()
+		mockLeagueMemberRepo.On("Create", mock.AnythingOfType("*models.LeagueMember")).Return((*models.LeagueMember)(nil), dbError).Once()
 
 		result, err := service.CreateLeague(testUserID, input)
 		assert.Error(t, err)
 		assert.Nil(t, result)
-		assert.Contains(t, err.Error(), "failed to create league owner player")
+		assert.Contains(t, err.Error(), "failed to create league owner")
 
 		mockLeagueRepo.AssertExpectations(t)
-		mockPlayerRepo.AssertExpectations(t)
+		mockLeagueMemberRepo.AssertExpectations(t)
 	})
 }
 
 func TestLeagueService_GetLeagueByIDForUser(t *testing.T) {
 	mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
-	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
-	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
-	mockDraftedPokemonRepo := new(mock_repositories.MockDraftedPokemonRepository)
+	mockLeagueMemberRepo := new(mock_repositories.MockLeagueMemberRepository)
 	mockDraftRepo := new(mock_repositories.MockDraftRepository)
 	mockGameRepo := new(mock_repositories.MockGameRepository)
 
 	service := services.NewLeagueService(
 		mockLeagueRepo,
-		mockPlayerRepo,
-		mockLeaguePokemonRepo,
-		mockDraftedPokemonRepo,
+		mockLeagueMemberRepo,
 		mockDraftRepo,
 		mockGameRepo,
 	)
@@ -218,17 +209,13 @@ func TestLeagueService_GetLeagueByIDForUser(t *testing.T) {
 
 func TestLeagueService_GetLeaguesByCommissioner(t *testing.T) {
 	mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
-	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
-	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
-	mockDraftedPokemonRepo := new(mock_repositories.MockDraftedPokemonRepository)
+	mockLeagueMemberRepo := new(mock_repositories.MockLeagueMemberRepository)
 	mockDraftRepo := new(mock_repositories.MockDraftRepository)
 	mockGameRepo := new(mock_repositories.MockGameRepository)
 
 	service := services.NewLeagueService(
 		mockLeagueRepo,
-		mockPlayerRepo,
-		mockLeaguePokemonRepo,
-		mockDraftedPokemonRepo,
+		mockLeagueMemberRepo,
 		mockDraftRepo,
 		mockGameRepo,
 	)
@@ -292,17 +279,13 @@ func TestLeagueService_GetLeaguesByCommissioner(t *testing.T) {
 
 func TestLeagueService_GetLeaguesByUser(t *testing.T) {
 	mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
-	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
-	mockLeaguePokemonRepo := new(mock_repositories.MockLeaguePokemonRepository)
-	mockDraftedPokemonRepo := new(mock_repositories.MockDraftedPokemonRepository)
+	mockLeagueMemberRepo := new(mock_repositories.MockLeagueMemberRepository)
 	mockDraftRepo := new(mock_repositories.MockDraftRepository)
 	mockGameRepo := new(mock_repositories.MockGameRepository)
 
 	service := services.NewLeagueService(
 		mockLeagueRepo,
-		mockPlayerRepo,
-		mockLeaguePokemonRepo,
-		mockDraftedPokemonRepo,
+		mockLeagueMemberRepo,
 		mockDraftRepo,
 		mockGameRepo,
 	)

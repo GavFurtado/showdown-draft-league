@@ -2,56 +2,46 @@ package rbac
 
 import "strings"
 
-// PlayerRole represents the role of a player within a league.
-type PlayerRole string
+type MemberRole string
 
 const (
-	PRoleOwner     PlayerRole = "owner"
-	PRoleModerator PlayerRole = "moderator"
-	PRoleMember    PlayerRole = "member"
+	MRoleOwner     MemberRole = "OWNER"
+	MRoleModerator MemberRole = "MODERATOR"
+	MRoleMember    MemberRole = "MEMBER"
 )
 
-// IsValid checks if the PlayerRole is one of the defined roles.
-func (pr PlayerRole) IsValid() bool {
-	switch pr {
-	case PRoleOwner, PRoleModerator, PRoleMember:
+func (role MemberRole) IsValid() bool {
+	switch role {
+	case MRoleOwner, MRoleModerator, MRoleMember:
 		return true
 	}
 	return false
 }
 
-// HasPermission checks if the role has a specific permission.
-// This method will delegate to a centralized permission map.
-func (pr PlayerRole) HasPermission(permission Permission) bool {
-	// Permissions are defined in permissions.go
-	// This function will be implemented once permissions.go is created
-	return rolePermissions[pr][permission]
+func (role MemberRole) HasPermission(permission Permission) bool {
+	return rolePermissions[role][permission]
 }
 
-// IsOwner checks if the player role is Owner.
-func (pr PlayerRole) IsOwner() bool {
-	return pr == PRoleOwner
+func (role MemberRole) IsOwner() bool {
+	return role == MRoleOwner
 }
 
-// IsModerator checks if the player role is Moderator (or Owner, as Owner implies Moderator).
-func (pr PlayerRole) IsModerator() bool {
-	return pr == PRoleModerator || pr == PRoleOwner
+func (role MemberRole) IsModerator() bool {
+	return role == MRoleModerator || role == MRoleOwner
 }
 
-// IsMember checks if the player role is Member (or Moderator/Owner, as they imply Member).
-func (pr PlayerRole) IsMember() bool {
-	return pr == PRoleMember || pr == PRoleModerator || pr == PRoleOwner
+func (role MemberRole) IsMember() bool {
+	return role == MRoleMember || role == MRoleModerator || role == MRoleOwner
 }
 
-// ParsePlayerRole parses a string into a PlayerRole, case-insensitively.
-func ParsePlayerRole(roleStr string) (PlayerRole, bool) {
+func ParseMemberRole(roleStr string) (MemberRole, bool) {
 	switch strings.ToLower(roleStr) {
 	case "owner":
-		return PRoleOwner, true
+		return MRoleOwner, true
 	case "moderator":
-		return PRoleModerator, true
+		return MRoleModerator, true
 	case "member":
-		return PRoleMember, true
+		return MRoleMember, true
 	default:
 		return "", false
 	}

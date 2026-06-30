@@ -65,27 +65,23 @@ func (r *userRepositoryImpl) UpdateUser(user *models.User) (*models.User, error)
 func (r *userRepositoryImpl) GetUserLeagues(userID uuid.UUID) ([]*models.League, error) {
 	var user models.User
 
-	// Fetch the user, preloading their players and each player's associated league.
 	err := r.db.
-		Preload("Players").        // Preload the Player records for this user
-		Preload("Players.League"). // For each Player, preload its associated League
-		Where("id = ?", userID).   // Find the specific user
-		First(&user).Error         // Fetch the user
+		Preload("Members").
+		Preload("Members.League").
+		Where("id = ?", userID).
+		First(&user).Error
 
 	if err != nil {
 		return nil, err
 	}
 
-	// Extract the unique Leagues from the preloaded Players slice
-	// collect unique leagues
-	leagues := make([]*models.League, 0, len(user.Players))
+	leagues := make([]*models.League, 0, len(user.Members))
 	uniqueLeagues := make(map[uuid.UUID]struct{})
 
-	for _, player := range user.Players {
-		// Check if the league has already been added to avoid duplicates
-		if _, ok := uniqueLeagues[player.League.ID]; !ok {
-			leagues = append(leagues, player.League)
-			uniqueLeagues[player.League.ID] = struct{}{}
+	for _, member := range user.Members {
+		if _, ok := uniqueLeagues[member.League.ID]; !ok {
+			leagues = append(leagues, member.League)
+			uniqueLeagues[member.League.ID] = struct{}{}
 		}
 	}
 

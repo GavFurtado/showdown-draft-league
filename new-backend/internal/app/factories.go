@@ -14,30 +14,33 @@ func NewRepositories(db *gorm.DB) *Repositories {
 	return &Repositories{
 		UserRepository:           repositories.NewUserRepository(db),
 		LeagueRepository:         repositories.NewLeagueRepository(db),
-		PlayerRepository:         repositories.NewPlayerRepository(db),
 		DraftRepository:          repositories.NewDraftRepository(db),
-		DraftedPokemonRepository: repositories.NewDraftedPokemonRepository(db),
 		GameRepository:           repositories.NewGameRepository(db),
-		LeaguePokemonRepository:  repositories.NewLeaguePokemonRepository(db),
 		PokemonSpeciesRepository: repositories.NewPokemonSpeciesRepository(db),
+
+		DraftPickRepository:    repositories.NewDraftPickRepository(db),
+		ClaimRepository:        repositories.NewClaimRepository(db),
+		PoolEntryRepository:    repositories.NewPoolEntryRepository(db),
+		LeagueMemberRepository: repositories.NewLeagueMemberRepository(db),
 	}
 }
 
 func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oauth2.Config) *Services {
-	// Instantiate early for core Dependencies
 	jwtService := services.NewJWTService(cfg.JWTSecret)
-	rbacService := services.NewRBACService(repos.LeagueRepository, repos.UserRepository, repos.PlayerRepository)
-	// webhooks not implemented; this is temp and does nothing
+	rbacService := services.NewRBACService(repos.LeagueRepository, repos.UserRepository, repos.LeagueMemberRepository)
 	webhookService := services.NewWebhookService()
 
-	// Create services without circular dependencies initially
 	draftService := services.NewDraftService(
 		repos.LeagueRepository,
-		repos.LeaguePokemonRepository,
 		repos.DraftRepository,
-		repos.DraftedPokemonRepository,
-		repos.PlayerRepository,
+		repos.LeagueMemberRepository,
 		&webhookService,
+	)
+
+	draftService.SetNewRepositories(
+		repos.DraftPickRepository,
+		repos.ClaimRepository,
+		repos.PoolEntryRepository,
 	)
 
 	schedulerService := services.NewSchedulerService(
@@ -47,17 +50,20 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 	)
 
 	transferService := services.NewTransferService(
-		repos.DraftedPokemonRepository,
-		repos.LeaguePokemonRepository,
 		repos.LeagueRepository,
-		repos.PlayerRepository,
+		repos.LeagueMemberRepository,
 	)
 
-	gameService := services.NewGameService(repos.GameRepository, repos.LeagueRepository, repos.PlayerRepository)
+	transferService.SetNewRepositories(
+		repos.ClaimRepository,
+		repos.PoolEntryRepository,
+		repos.LeagueMemberRepository,
+	)
 
-	leagueService := services.NewLeagueService(repos.LeagueRepository, repos.PlayerRepository, repos.LeaguePokemonRepository, repos.DraftedPokemonRepository, repos.DraftRepository, repos.GameRepository)
+	gameService := services.NewGameService(repos.GameRepository, repos.LeagueRepository, repos.LeagueMemberRepository)
 
-	// Inject circular dependencies using setter methods
+	leagueService := services.NewLeagueService(repos.LeagueRepository, repos.LeagueMemberRepository, repos.DraftRepository, repos.GameRepository)
+
 	draftService.SetSchedulerService(schedulerService)
 	schedulerService.SetDraftService(draftService.(services.DraftService))
 
@@ -66,7 +72,7 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 
 	schedulerService.SetLeagueService(leagueService)
 	leagueService.SetSchedulerService(schedulerService)
-	
+
 	gameService.SetLeagueService(leagueService)
 	leagueService.SetGameService(gameService)
 
@@ -77,23 +83,18 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 		UserService:          services.NewUserService(repos.UserRepository),
 		RBACService:          rbacService,
 		WebhookService:       webhookService,
-		LeaguePokemonService: services.NewLeaguePokemonService(repos.LeaguePokemonRepository, repos.LeagueRepository, repos.UserRepository, repos.PokemonSpeciesRepository),
 		LeagueService:        leagueService,
-		PlayerService:        services.NewPlayerService(repos.PlayerRepository, repos.LeagueRepository, repos.UserRepository, repos.DraftedPokemonRepository),
 		AuthService:          services.NewAuthService(repos.UserRepository, jwtService, discordOauthConfig),
 		DraftService:         draftService,
-		DraftedPokemonService: services.NewDraftedPokemonService(
-			repos.DraftedPokemonRepository,
-			repos.UserRepository,
-			repos.LeagueRepository,
-			repos.PlayerRepository,
-			repos.PokemonSpeciesRepository,
-			repos.LeaguePokemonRepository,
-		),
 		PokemonSpeciesService: services.NewPokemonSpeciesService(repos.PokemonSpeciesRepository),
 		SchedulerService:      schedulerService,
-		GameService:           services.NewGameService(repos.GameRepository, repos.LeagueRepository, repos.PlayerRepository),
+		GameService:           services.NewGameService(repos.GameRepository, repos.LeagueRepository, repos.LeagueMemberRepository),
 		TransferService:       transferService,
+
+		PoolEntryService:    services.NewPoolEntryService(repos.PoolEntryRepository, repos.LeagueRepository, repos.UserRepository, repos.PokemonSpeciesRepository),
+		LeagueMemberService: services.NewLeagueMemberService(repos.LeagueMemberRepository, repos.LeagueRepository, repos.UserRepository),
+		DraftPickService:    services.NewDraftPickService(repos.DraftPickRepository, repos.DraftRepository),
+		ClaimService:        services.NewClaimService(repos.ClaimRepository),
 	}
 }
 
@@ -101,13 +102,15 @@ func NewControllers(services *Services, repos *Repositories, cfg *config.Config,
 	return &Controllers{
 		AuthController:           *controllers.NewAuthController(services.AuthService, cfg, discordOauthConfig),
 		LeagueController:         controllers.NewLeagueController(services.LeagueService),
-		PlayerController:         controllers.NewPlayerController(services.PlayerService),
 		UserController:           controllers.NewUserController(services.UserService),
 		PokemonSpeciesController: controllers.NewPokemonSpeciesController(services.PokemonSpeciesService),
-		LeaguePokemonController:  controllers.NewLeaguePokemonSpeciesController(services.LeaguePokemonService),
-		DraftedPokemonController: controllers.NewDraftedPokemonController(services.DraftedPokemonService),
 		DraftController:          controllers.NewDraftController(services.DraftService),
 		GameController:           controllers.NewGameController(services.GameService, services.LeagueService),
 		TransferController:       controllers.NewTransferController(services.TransferService),
+
+		PoolEntryController:    controllers.NewPoolEntryController(services.PoolEntryService),
+		LeagueMemberController: controllers.NewLeagueMemberController(services.LeagueMemberService),
+		DraftPickController:    controllers.NewDraftPickController(services.DraftPickService, services.DraftService),
+		ClaimController:        controllers.NewClaimController(services.ClaimService),
 	}
 }

@@ -7,7 +7,7 @@ type Permission string
 const (
 	// League Permissions
 	// PermissionCreateLeague is redundant; League is created then Players
-	//	reating a League is tied to User and not a Player or their role. Kept in to understand the roles (ig)
+	// creating a League is tied to User and not a Player or their role. Kept in to understand the roles
 	PermissionCreateLeague Permission = "create:league"
 	PermissionReadLeague   Permission = "read:league"
 	PermissionUpdateLeague Permission = "update:league"
@@ -19,6 +19,28 @@ const (
 	PermissionUpdatePlayer      Permission = "update:player_info"
 	PermissionUpdatePlayerScore Permission = "update:player_score"
 	PermissionDeletePlayer      Permission = "delete:player"
+
+	// PoolEntry Permissions
+	PermissionCreatePoolEntry Permission = "create:pool_entry"
+	PermissionReadPoolEntry   Permission = "read:pool_entry"
+	PermissionUpdatePoolEntry Permission = "update:pool_entry"
+	PermissionDeletePoolEntry Permission = "delete:pool_entry"
+
+	// Member Permissions
+	PermissionCreateMember      Permission = "create:member"
+	PermissionReadMember        Permission = "read:member"
+	PermissionUpdateMember      Permission = "update:member"
+	PermissionUpdateMemberScore Permission = "update:member_score"
+	PermissionDeleteMember      Permission = "delete:member"
+
+	// DraftPick Permissions
+	PermissionReadDraftPick   Permission = "read:draft_pick"
+	PermissionCreateDraftPick Permission = "create:draft_pick"
+
+	// Claim Permissions
+	PermissionReadClaim   Permission = "read:claim"
+	PermissionCreateClaim Permission = "create:claim"
+	PermissionUpdateClaim Permission = "update:claim"
 
 	// Draft Permissions
 	PermissionCreateDraft Permission = "create:draft"
@@ -66,18 +88,15 @@ const (
 	PermissionReadPokemonSpecies Permission = "read:pokemon_species"
 )
 
-// rolePermissions maps each PlayerRole to a set of permissions it possesses.
-// This map is initialized in the init() function to handle inheritance.
-var rolePermissions = make(map[PlayerRole]map[Permission]bool)
+var rolePermissions = make(map[MemberRole]map[Permission]bool)
 
 func init() {
 	// Initialize permissions for each role
-	rolePermissions[PRoleMember] = make(map[Permission]bool)
-	rolePermissions[PRoleModerator] = make(map[Permission]bool)
-	rolePermissions[PRoleOwner] = make(map[Permission]bool)
+	rolePermissions[MRoleMember] = make(map[Permission]bool)
+	rolePermissions[MRoleModerator] = make(map[Permission]bool)
+	rolePermissions[MRoleOwner] = make(map[Permission]bool)
 
-	// Member permissions
-	setPermissions(PRoleMember,
+	setPermissions(MRoleMember,
 		PermissionReadLeague,
 		PermissionReadPlayer,
 		PermissionReadDraft,
@@ -91,11 +110,19 @@ func init() {
 		PermissionUpdatePlayer,
 		PermissionCreateDraftedPokemon,
 		PermissionReportGame,
+
+		PermissionReadPoolEntry,
+		PermissionReadMember,
+		PermissionUpdateMember,
+		PermissionReadDraftPick,
+		PermissionCreateDraftPick,
+		PermissionReadClaim,
+		PermissionCreateClaim,
+		PermissionUpdateClaim,
 	)
 
-	// Moderator permissions inherit from Member and add more
-	inheritPermissions(PRoleModerator, PRoleMember)
-	setPermissions(PRoleModerator,
+	inheritPermissions(MRoleModerator, MRoleMember)
+	setPermissions(MRoleModerator,
 		PermissionUpdatePlayerScore,
 		PermissionUpdateLeague,
 		PermissionUpdateDraft,
@@ -109,11 +136,15 @@ func init() {
 		PermissionStartTransferPeriod,
 		PermissionEndTransferPeriod,
 		PermissionFinalizeGame,
+
+		PermissionCreatePoolEntry,
+		PermissionUpdatePoolEntry,
+		PermissionCreateMember,
+		PermissionUpdateMemberScore,
 	)
 
-	// Owner permissions inherit from Moderator and add more
-	inheritPermissions(PRoleOwner, PRoleModerator)
-	setPermissions(PRoleOwner,
+	inheritPermissions(MRoleOwner, MRoleModerator)
+	setPermissions(MRoleOwner,
 		PermissionCreateLeague,
 		PermissionDeleteLeague,
 		PermissionDeletePlayer,
@@ -127,18 +158,19 @@ func init() {
 		PermissionCreatePlayerRoster,
 		PermissionDeletePlayerRoster,
 		PermissionUpdatePlayerRoster,
+
+		PermissionDeletePoolEntry,
+		PermissionDeleteMember,
 	)
 }
 
-// setPermissions is a helper to assign multiple permissions to a role.
-func setPermissions(role PlayerRole, perms ...Permission) {
+func setPermissions(role MemberRole, perms ...Permission) {
 	for _, perm := range perms {
 		rolePermissions[role][perm] = true
 	}
 }
 
-// inheritPermissions copies all permissions from a parent role to a child role.
-func inheritPermissions(child, parent PlayerRole) {
+func inheritPermissions(child, parent MemberRole) {
 	for perm, has := range rolePermissions[parent] {
 		if has {
 			rolePermissions[child][perm] = true

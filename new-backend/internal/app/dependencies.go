@@ -9,22 +9,21 @@ import (
 type Repositories struct {
 	LeagueRepository         repositories.LeagueRepository
 	UserRepository           repositories.UserRepository
-	PlayerRepository         repositories.PlayerRepository
 	PokemonSpeciesRepository repositories.PokemonSpeciesRepository
-	LeaguePokemonRepository  repositories.LeaguePokemonRepository
 	DraftRepository          repositories.DraftRepository
-	DraftedPokemonRepository repositories.DraftedPokemonRepository
 	GameRepository           repositories.GameRepository
+
+	DraftPickRepository    repositories.DraftPickRepository
+	ClaimRepository        repositories.ClaimRepository
+	PoolEntryRepository    repositories.PoolEntryRepository
+	LeagueMemberRepository repositories.LeagueMemberRepository
 }
 
 type Services struct {
 	AuthService           services.AuthService
 	DraftService          services.DraftService
-	DraftedPokemonService services.DraftedPokemonService
 	JWTService            services.JWTService
-	LeaguePokemonService  services.LeaguePokemonService
 	LeagueService         services.LeagueService
-	PlayerService         services.PlayerService
 	PokemonSpeciesService services.PokemonSpeciesService
 	RBACService           services.RBACService
 	UserService           services.UserService
@@ -32,17 +31,24 @@ type Services struct {
 	SchedulerService      services.SchedulerService
 	GameService           services.GameService
 	TransferService       services.TransferService
+
+	PoolEntryService    services.PoolEntryService
+	LeagueMemberService services.LeagueMemberService
+	DraftPickService    services.DraftPickService
+	ClaimService        services.ClaimService
 }
 
 type Controllers struct {
 	AuthController           controllers.AuthController
 	LeagueController         controllers.LeagueController
-	PlayerController         controllers.PlayerController
 	UserController           controllers.UserController
 	PokemonSpeciesController controllers.PokemonSpeciesController
-	LeaguePokemonController  controllers.LeaguePokemonController
-	DraftedPokemonController controllers.DraftedPokemonController
 	DraftController          controllers.DraftController
 	GameController           controllers.GameController
 	TransferController       controllers.TransferController
+
+	PoolEntryController    controllers.PoolEntryController
+	LeagueMemberController controllers.LeagueMemberController
+	DraftPickController    controllers.DraftPickController
+	ClaimController        controllers.ClaimController
 }

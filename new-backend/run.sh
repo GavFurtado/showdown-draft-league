@@ -4,7 +4,7 @@
 if [ -f .env ]; then
   export $(grep -v '^#' .env | xargs)
 else
-  echo "[INFO] No .env file found. Using default or system environment variables."
+  echo "run.sh: No .env file found. Using default or system environment variables."
 fi
 
 # recompile on dev builds every time

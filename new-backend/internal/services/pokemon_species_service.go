@@ -22,8 +22,7 @@ type PokemonSpeciesService interface {
 }
 
 type pokemonServiceImpl struct {
-	pokemonRepo       repositories.PokemonSpeciesRepository
-	leaguePokemonRepo repositories.LeaguePokemonRepository
+	pokemonRepo repositories.PokemonSpeciesRepository
 }
 
 func NewPokemonSpeciesService(

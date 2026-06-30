@@ -1,8 +1,8 @@
 .env
 data/all_pokemon_data.json
-OpenCode.md
 .opencode/
 docs/
 ./server
 server
+./main
 logs/

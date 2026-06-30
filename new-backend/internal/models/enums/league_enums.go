@@ -8,10 +8,12 @@ import (
 )
 
 // enum types
+
 type LeagueStatus string
 type LeagueSeasonType string
 type LeaguePlayoffType string
 type LeaguePlayoffSeedingType string
+type LeagueVisibility string
 
 const (
 	LeagueStatusPending           LeagueStatus = "PENDING"
@@ -44,11 +46,15 @@ const (
 	LeaguePlayoffSeedingTypeByesOnly    LeaguePlayoffSeedingType = "BYES_ONLY"
 )
 
+const (
+	LeagueVisibilityPublic  LeagueVisibility = "PUBLIC"
+	LeagueVisibilityPrivate LeagueVisibility = "PRIVATE"
+)
+
 // ------------------------
 //  Enum Related Functions
 // ------------------------
 
-// LeagueStatus stuff
 var LeagueStatuses = []LeagueStatus{
 	LeagueStatusPending,
 	LeagueStatusSetup,
@@ -66,12 +72,11 @@ func (ls LeagueStatus) IsValid() bool {
 	return slices.Contains(LeagueStatuses, ls)
 }
 
-// Stringer() interface implementation in case it's needed
 func (ls LeagueStatus) String() string {
 	return string(ls)
 }
 
-// Value() implements the driver.Valuer interface for GORM/database saving.
+// Value implements the driver.Valuer interface for GORM/database saving.
 // Tells GORM how to convert the custom type into a database-compatible type (string).
 func (ls LeagueStatus) Value() (driver.Value, error) {
 	if !ls.IsValid() {
@@ -161,12 +166,12 @@ func (pt LeaguePlayoffType) IsValid() bool {
 	return slices.Contains(LeaguePlayoffTypes, pt)
 }
 
-// Stringer() interface implementation in case it's needed
+// String interface implementation in case it's needed
 func (pt LeaguePlayoffType) String() string {
 	return string(pt)
 }
 
-// Value() implements the driver.Valuer interface for GORM/database saving.
+// Value implements the driver.Valuer interface for GORM/database saving.
 // Tells GORM how to convert the custom type into a database-compatible type (string).
 func (pt LeaguePlayoffType) Value() (driver.Value, error) {
 	if !pt.IsValid() {
@@ -210,12 +215,12 @@ func (p LeaguePlayoffSeedingType) IsValid() bool {
 	return slices.Contains(LeaguePlayoffSeedingTypes, p)
 }
 
-// Stringer() interface implementation in case it's needed
+// String interface implementation in case it's needed
 func (p LeaguePlayoffSeedingType) String() string {
 	return string(p)
 }
 
-// Value() implements the driver.Valuer interface for GORM/database saving.
+// Value implements the driver.Valuer interface for GORM/database saving.
 // Tells GORM how to convert the custom type into a database-compatible type (string).
 func (p LeaguePlayoffSeedingType) Value() (driver.Value, error) {
 	if !p.IsValid() {
@@ -242,5 +247,53 @@ func (p *LeaguePlayoffSeedingType) Scan(value any) error {
 		return fmt.Errorf("invalid LeaguePlayoffType value retrieved from DB: %s", str)
 	}
 	*p = newPlayoffSeedingType
+	return nil
+}
+
+//
+// LeagueVisibility stuff
+//
+
+var LeagueVisibilities = []LeagueVisibility{
+	LeagueVisibilityPublic,
+	LeagueVisibilityPrivate,
+}
+
+func (v LeagueVisibility) IsValid() bool {
+	return slices.Contains(LeagueVisibilities, v)
+}
+
+// String interface implementation in case it's needed
+func (v LeagueVisibility) String() string {
+	return string(v)
+}
+
+// Value implements the driver.Valuer interface for GORM/database saving.
+// Tells GORM how to convert the custom type into a database-compatible type (string).
+func (v LeagueVisibility) Value() (driver.Value, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("invalid LeagueVisibility value: %s", v)
+	}
+	return string(v), nil
+}
+
+// Scan implements the sql.Scanner interface for GORM/database loading.
+// Tells GORM how to convert the database string back into the custom type.
+func (v *LeagueVisibility) Scan(value any) error {
+	if value == nil {
+		*v = ""
+		return nil
+	}
+	str, ok := value.(string)
+	if !ok {
+		return fmt.Errorf("LeagueVisibility: expected string, got %T", value)
+	}
+
+	// Capitalize to keep everything normalized
+	newVisibility := LeagueVisibility(strings.ToUpper(str))
+	if !newVisibility.IsValid() {
+		return fmt.Errorf("invalid LeagueVisibility value retrieved from DB: %s", str)
+	}
+	*v = newVisibility
 	return nil
 }

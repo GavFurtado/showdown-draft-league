@@ -40,14 +40,14 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		if userID, err := c.authService.VerifyToken(token); err == nil {
 			// 3. Valid token -> go straight to frontend dashboard
 			log.Printf("user already authenticated: %s\n", userID)
-			ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/my-leagues", c.cfg.AppBaseURL))
+			ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/my-leagues", c.cfg.APP_BASE_URL))
 			return
 		}
 	}
 
 	// 4. No valid token -> begin Discord OAuth flow
 	state := uuid.New().String()
-	ctx.SetCookie("oauthstate", state, 300, "/", c.cfg.AppBaseURL, false, true)
+	ctx.SetCookie("oauthstate", state, 300, "/", c.cfg.APP_BASE_URL, false, true)
 
 	url := c.discordOauthConfig.AuthCodeURL(state)
 	ctx.Redirect(http.StatusTemporaryRedirect, url)
@@ -62,7 +62,7 @@ func (c *AuthController) DiscCallback(ctx *gin.Context) {
 		return
 	}
 
-	ctx.SetCookie("oauthstate", "", -1, "/", c.cfg.AppBaseURL, false, true) // Clear the state cookie
+	ctx.SetCookie("oauthstate", "", -1, "/", c.cfg.APP_BASE_URL, false, true) // Clear the state cookie
 
 	code := ctx.Query("code")
 	if code == "" {
@@ -77,16 +77,16 @@ func (c *AuthController) DiscCallback(ctx *gin.Context) {
 		return
 	}
 
-	httpOnly := c.cfg.Environment != "dev" // set httpOnly to false if Environment is "dev"
+	httpOnly := c.cfg.ENVIRONMENT != "dev" // set httpOnly to false if Environment is "dev"
 	// Set JWT as an HTTP-only cookie
 	const sessionTokenPeriod = int((time.Hour * 24 * 3 * 30 / time.Second)) // 90 days
-	ctx.SetCookie("token", jwtToken, sessionTokenPeriod, "/", c.cfg.BackendBaseURL, false, httpOnly)
+	ctx.SetCookie("token", jwtToken, sessionTokenPeriod, "/", c.cfg.BACKEND_BASE_URL, false, httpOnly)
 
 	// Redirect to dashboard
-	ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/dashboard", c.cfg.AppBaseURL))
+	ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/dashboard", c.cfg.APP_BASE_URL))
 }
 
 func (c *AuthController) Logout(ctx *gin.Context) {
-	ctx.SetCookie("token", "", -1, "/", c.cfg.BackendBaseURL, false, true) // clear the token cookie
+	ctx.SetCookie("token", "", -1, "/", c.cfg.BACKEND_BASE_URL, false, true) // clear the token cookie
 	ctx.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }

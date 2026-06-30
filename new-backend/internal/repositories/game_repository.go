@@ -364,10 +364,10 @@ func (r *gameRepositoryImpl) finalizeGame(tx *gorm.DB, gameID uuid.UUID, loserID
 
 // incrementPlayerStats is a private helper to atomically increment player stats within a transaction.
 func (r *gameRepositoryImpl) incrementPlayerStats(tx *gorm.DB, winnerID, loserID uuid.UUID) error {
-	if err := tx.Model(&models.Player{}).Where("id = ?", winnerID).Update("wins", gorm.Expr("wins + 1")).Error; err != nil {
+	if err := tx.Model(&models.LeagueMember{}).Where("id = ?", winnerID).Update("wins", gorm.Expr("wins + 1")).Error; err != nil {
 		return fmt.Errorf("(Repository: incrementPlayerStats) - failed to increment winner's wins: %w", err)
 	}
-	if err := tx.Model(&models.Player{}).Where("id = ?", loserID).Update("losses", gorm.Expr("losses + 1")).Error; err != nil {
+	if err := tx.Model(&models.LeagueMember{}).Where("id = ?", loserID).Update("losses", gorm.Expr("losses + 1")).Error; err != nil {
 		return fmt.Errorf("(Repository: incrementPlayerStats) - failed to increment loser's losses: %w", err)
 	}
 	return nil
@@ -375,10 +375,10 @@ func (r *gameRepositoryImpl) incrementPlayerStats(tx *gorm.DB, winnerID, loserID
 
 // decrementPlayerStats is a private helper to atomically decrement player stats within a transaction.
 func (r *gameRepositoryImpl) decrementPlayerStats(tx *gorm.DB, winnerID, loserID uuid.UUID) error {
-	if err := tx.Model(&models.Player{}).Where("id = ?", winnerID).Update("wins", gorm.Expr("wins - 1")).Error; err != nil {
+	if err := tx.Model(&models.LeagueMember{}).Where("id = ?", winnerID).Update("wins", gorm.Expr("wins - 1")).Error; err != nil {
 		return fmt.Errorf("(Repository: decrementPlayerStats) - failed to decrement winner's wins: %w", err)
 	}
-	if err := tx.Model(&models.Player{}).Where("id = ?", loserID).Update("losses", gorm.Expr("losses - 1")).Error; err != nil {
+	if err := tx.Model(&models.LeagueMember{}).Where("id = ?", loserID).Update("losses", gorm.Expr("losses - 1")).Error; err != nil {
 		return fmt.Errorf("(Repository: decrementPlayerStats) - failed to decrement loser's losses: %w", err)
 	}
 	return nil
