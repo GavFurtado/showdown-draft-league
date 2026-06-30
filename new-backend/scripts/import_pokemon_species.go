@@ -30,7 +30,7 @@ func main() {
 		},
 	)
 
-	db, err := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{
+	db, err := gorm.Open(postgres.Open(cfg.DATABASE_URL), &gorm.Config{
 		Logger: newLogger,
 	})
 	if err != nil {

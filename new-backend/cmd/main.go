@@ -22,7 +22,7 @@ func main() {
 
 	// CORS config
 	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowOrigins = []string{cfg.AppBaseURL}
+	corsConfig.AllowOrigins = []string{cfg.APP_BASE_URL}
 	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"}
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
 	corsConfig.ExposeHeaders = []string{"Content-Length"}
@@ -31,9 +31,9 @@ func main() {
 
 	// discord OauthConfig
 	discordOauthConfig := &oauth2.Config{
-		ClientID:     cfg.DiscordClientID,
-		ClientSecret: cfg.DiscordClientSecret,
-		RedirectURL:  cfg.DiscordRedirectURI,
+		ClientID:     cfg.DISCORD_CLIENT_ID,
+		ClientSecret: cfg.DISCORD_CLIENT_SECRET,
+		RedirectURL:  cfg.DISCORD_REDIRECT_URI,
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  "https://discord.com/api/oauth2/authorize",
 			TokenURL: "https://discord.com/api/oauth2/token",
@@ -44,7 +44,7 @@ func main() {
 	log.SetFlags(0) // no date/time.
 
 	// Connect to PostgreSQL database
-	db, err := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(cfg.DATABASE_URL), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -56,7 +56,6 @@ func main() {
 		&models.Draft{},
 		&models.Game{},
 		&models.LeagueMember{},
-
 		&models.PoolEntry{},
 		&models.DraftPick{},
 		&models.Claim{},
@@ -76,7 +75,7 @@ func main() {
 	}
 
 	// Start the server
-	port := cfg.Port
+	port := cfg.PORT
 	if port == "" {
 		port = "8080" // Default port
 	}

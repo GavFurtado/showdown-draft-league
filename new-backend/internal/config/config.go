@@ -8,15 +8,15 @@ import (
 )
 
 type Config struct {
-	Environment         string
-	DiscordClientID     string
-	DiscordClientSecret string
-	DiscordRedirectURI  string
-	AppBaseURL          string
-	BackendBaseURL      string
-	DatabaseURL         string
-	JWTSecret           string
-	Port                string
+	ENVIRONMENT           string
+	DISCORD_CLIENT_ID     string
+	DISCORD_CLIENT_SECRET string
+	DISCORD_REDIRECT_URI  string
+	APP_BASE_URL          string
+	BACKEND_BASE_URL      string
+	DATABASE_URL          string
+	JWT_SECRET            string
+	PORT                  string
 }
 
 func LoadConfig() *Config {
@@ -28,19 +28,19 @@ func LoadConfig() *Config {
 	}
 
 	cfg := &Config{
-		Environment:         getEnv("ENV"),
-		DiscordClientID:     getEnv("DISCORD_CLIENT_ID"),
-		DiscordClientSecret: getEnv("DISCORD_CLIENT_SECRET"),
-		DiscordRedirectURI:  getEnv("DISCORD_REDIRECT_URI"),
-		AppBaseURL:          getEnv("APP_BASE_URL"),
-		BackendBaseURL:      getEnv("BACKEND_BASE_URL"),
-		DatabaseURL:         getEnv("DATABASE_URL"),
-		JWTSecret:           getEnv("JWT_SECRET"),
-		Port:                getEnv("PORT"),
+		ENVIRONMENT:           getEnv("ENV"),
+		DISCORD_CLIENT_ID:     getEnv("DISCORD_CLIENT_ID"),
+		DISCORD_CLIENT_SECRET: getEnv("DISCORD_CLIENT_SECRET"),
+		DISCORD_REDIRECT_URI:  getEnv("DISCORD_REDIRECT_URI"),
+		APP_BASE_URL:          getEnv("APP_BASE_URL"),
+		BACKEND_BASE_URL:      getEnv("BACKEND_BASE_URL"),
+		DATABASE_URL:          getEnv("DATABASE_URL"),
+		JWT_SECRET:            getEnv("JWT_SECRET"),
+		PORT:                  getEnv("PORT"),
 	}
 
-	Assert(!(cfg.DiscordClientID == "" || cfg.DiscordClientSecret == "" || cfg.DiscordRedirectURI == "" ||
-		cfg.AppBaseURL == "" || cfg.DatabaseURL == "" || cfg.JWTSecret == ""),
+	Assert(!(cfg.DISCORD_CLIENT_ID == "" || cfg.DISCORD_CLIENT_SECRET == "" || cfg.DISCORD_REDIRECT_URI == "" ||
+		cfg.APP_BASE_URL == "" || cfg.DATABASE_URL == "" || cfg.JWT_SECRET == ""),
 		"Missing required environment variables for Discord OAuth or database connection.")
 
 	return cfg
