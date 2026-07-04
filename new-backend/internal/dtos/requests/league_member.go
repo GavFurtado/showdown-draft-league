@@ -5,10 +5,10 @@ import (
 )
 
 type LeagueMemberCreateRequestDTO struct {
-	UserID       uuid.UUID `json:"UserID" binding:"required"`
-	LeagueID     uuid.UUID `json:"LeagueID" binding:"required"`
-	InLeagueName *string   `json:"InLeagueName" binding:"omitempty" validate:"min=3,max=20"`
-	TeamName     *string   `json:"TeamName" binding:"omitempty" validate:"min=3,max=20"`
+	UserID       uuid.UUID `json:"UserID" validate:"required"`
+	LeagueID     uuid.UUID `json:"LeagueID" validate:"required"`
+	InLeagueName *string   `json:"InLeagueName" validate:"omitempty,min=3,max=20"`
+	TeamName     *string   `json:"TeamName" validate:"omitempty,min=3,max=20"`
 }
 
 type UpdateLeagueMemberInfoRequestDTO struct {

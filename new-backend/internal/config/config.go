@@ -1,10 +1,11 @@
 package config
 
 import (
-	. "github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
-	"github.com/joho/godotenv"
 	"log"
 	"os"
+
+	. "github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {

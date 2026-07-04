@@ -21,7 +21,15 @@ func NewUserController(userService services.UserService) UserController {
 	}
 }
 
-// GetMyProfile gets current user profile.
+// GetMyProfile godoc
+//
+//	@Summary		Get my profile
+//	@Description	Your user profile
+//	@Tags			Users
+//	@Success		200	{object}	models.User
+//	@Failure		401	{object}	map[string]interface{}
+//	@Failure		500	{object}	map[string]interface{}
+//	@Router			/api/profile [get]
 func (ctrl *UserController) GetMyProfile(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
@@ -44,8 +52,15 @@ func (ctrl *UserController) GetMyProfile(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, user)
 }
 
-// GetMyDiscordDetails gets current user's discord details
-// main use case is for the profile on navbar
+// GetMyDiscordDetails godoc
+//
+//	@Summary		Get my Discord details
+//	@Description	Discord account info for the navbar
+//	@Tags			Users
+//	@Success		200	{object}	responses.DiscordUserResponse
+//	@Failure		401	{object}	map[string]interface{}
+//	@Failure		404	{object}	map[string]interface{}
+//	@Router			/api/users/me/discord [get]
 func (ctrl *UserController) GetMyDiscordDetails(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
@@ -68,8 +83,18 @@ func (ctrl *UserController) GetMyDiscordDetails(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, discordDetails)
 }
 
-// UpdateProfile updates a user's profile
-// currently (29/06/25) only does Showdown Username cuz that's the only thing that should be updatable
+// UpdateProfile godoc
+//
+//	@Summary		Update my profile
+//	@Description	Update your profile info
+//	@Tags			Users
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		requests.UserUpdateProfileRequestDTO	true	"Profile fields to update"
+//	@Success		200		{object}	models.User
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Router			/api/users/profile [put]
 func (ctrl *UserController) UpdateProfile(ctx *gin.Context) {
 	// doesn't have admin override (can be done if we just have userID in req instead and modify the service a little bit)
 	currentUser, exists := middleware.GetUserFromContext(ctx)
@@ -95,6 +120,15 @@ func (ctrl *UserController) UpdateProfile(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, updatedUser)
 }
 
+// GetMyLeagues godoc
+//
+//	@Summary		Get my leagues
+//	@Description	Leagues you're a member of
+//	@Tags			Users
+//	@Success		200	{array}		models.League
+//	@Failure		401	{object}	map[string]interface{}
+//	@Failure		500	{object}	map[string]interface{}
+//	@Router			/api/users/me/leagues [get]
 func (ctrl *UserController) GetMyLeagues(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {

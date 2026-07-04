@@ -71,7 +71,7 @@ func (s *leagueServiceImpl) SetTransferService(transferService TransferService) 
 	s.transferService = transferService
 }
 
-// handles the business logic for creating a new league.
+// CreateLeague handles the business logic for creating a new league.
 func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.LeagueCreateRequestDTO) (*models.League, error) {
 	const maxLeaguesCommisionable = 2
 	const maxGroupsAllowed = 2
@@ -111,6 +111,8 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.Leagu
 		StartingDraftPoints:  input.StartingDraftPoints,
 		NewPlayerGroupNumber: newPlayerGroupNumber,
 		Format:               &input.Format,
+		Visibility:           input.Visibility,
+		MaxPlayers:           input.MaxPlayers,
 	}
 	league.StartDate = time.Now()
 

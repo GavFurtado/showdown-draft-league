@@ -33,6 +33,17 @@ func NewDraftPickController(
 	}
 }
 
+// GetByDraft godoc
+//
+//	@Summary		Get draft picks
+//	@Description	All picks made in a draft
+//	@Tags			Draft Picks
+//	@Produce		json
+//	@Param			leagueId	path		string	true	"League ID"
+//	@Success		200			{array}		models.DraftPick
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		404			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/draft-picks [get]
 func (c *draftPickControllerImpl) GetByDraft(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
@@ -65,6 +76,17 @@ func (c *draftPickControllerImpl) GetByDraft(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, picks)
 }
 
+// GetByPlayer godoc
+//
+//	@Summary		Get picks by player
+//	@Description	Draft picks for a specific player
+//	@Tags			Draft Picks
+//	@Produce		json
+//	@Param			leagueId	path		string	true	"League ID"
+//	@Param			playerId	path		string	true	"Player ID"
+//	@Success		200			{array}		models.DraftPick
+//	@Failure		400			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/draft-picks/player/{playerId} [get]
 func (c *draftPickControllerImpl) GetByPlayer(ctx *gin.Context) {
 	playerID, err := uuid.Parse(ctx.Param("playerId"))
 	if err != nil {
@@ -85,6 +107,17 @@ func (c *draftPickControllerImpl) GetByPlayer(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, picks)
 }
 
+// GetHistory godoc
+//
+//	@Summary		Get draft pick history
+//	@Description	Full history of all draft picks
+//	@Tags			Draft Picks
+//	@Produce		json
+//	@Param			leagueId	path		string	true	"League ID"
+//	@Success		200			{array}		models.DraftPick
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		404			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/draft-picks/history [get]
 func (c *draftPickControllerImpl) GetHistory(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
@@ -107,6 +140,17 @@ func (c *draftPickControllerImpl) GetHistory(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, history)
 }
 
+// GetNextPickNumber godoc
+//
+//	@Summary		Get next pick number
+//	@Description	The next pick number in the draft
+//	@Tags			Draft Picks
+//	@Produce		json
+//	@Param			leagueId	path		string	true	"League ID"
+//	@Success		200			{object}	map[string]interface{}
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		404			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/draft-picks/next-pick-number [get]
 func (c *draftPickControllerImpl) GetNextPickNumber(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {

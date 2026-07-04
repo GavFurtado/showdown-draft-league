@@ -35,6 +35,17 @@ func NewLeagueMemberController(leagueMemberService services.LeagueMemberService)
 	}
 }
 
+// GetByID godoc
+//
+//	@Summary		Get a league member
+//	@Description	Member details
+//	@Tags			League Members
+//	@Produce		json
+//	@Param			id	path		string	true	"Member ID"
+//	@Success		200	{object}	models.LeagueMember
+//	@Failure		400	{object}	map[string]interface{}
+//	@Failure		404	{object}	map[string]interface{}
+//	@Router			/api/members/{id} [get]
 func (c *leagueMemberControllerImpl) GetByID(ctx *gin.Context) {
 	memberID, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
@@ -86,6 +97,16 @@ func (c *leagueMemberControllerImpl) GetByUserAndLeague(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, member)
 }
 
+// GetByLeague godoc
+//
+//	@Summary		Get league members
+//	@Description	All members of a league
+//	@Tags			League Members
+//	@Produce		json
+//	@Param			leagueId	path		string	true	"League ID"
+//	@Success		200			{array}		models.LeagueMember
+//	@Failure		400			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/members [get]
 func (c *leagueMemberControllerImpl) GetByLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
@@ -106,6 +127,16 @@ func (c *leagueMemberControllerImpl) GetByLeague(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, members)
 }
 
+// GetByUser godoc
+//
+//	@Summary		Get members by user
+//	@Description	All league memberships for a user
+//	@Tags			League Members
+//	@Produce		json
+//	@Param			id	path		string	true	"User ID"
+//	@Success		200	{array}		models.LeagueMember
+//	@Failure		400	{object}	map[string]interface{}
+//	@Router			/api/users/{id}/members [get]
 func (c *leagueMemberControllerImpl) GetByUser(ctx *gin.Context) {
 	userID, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
@@ -126,6 +157,17 @@ func (c *leagueMemberControllerImpl) GetByUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, members)
 }
 
+// GetWithFullRoster godoc
+//
+//	@Summary		Get member with full roster
+//	@Description	Member details including all drafted Pokemon
+//	@Tags			League Members
+//	@Produce		json
+//	@Param			id	path		string	true	"Member ID"
+//	@Success		200	{object}	models.LeagueMember
+//	@Failure		400	{object}	map[string]interface{}
+//	@Failure		404	{object}	map[string]interface{}
+//	@Router			/api/members/{id}/roster [get]
 func (c *leagueMemberControllerImpl) GetWithFullRoster(ctx *gin.Context) {
 	memberID, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
@@ -148,6 +190,21 @@ func (c *leagueMemberControllerImpl) GetWithFullRoster(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, member)
 }
 
+// JoinLeague godoc
+//
+//	@Summary		Join a league
+//	@Description	Add a member to a league
+//	@Tags			League Members
+//	@Accept			json
+//	@Produce		json
+//	@Param			leagueId	path		string									true	"League ID"
+//	@Param			request		body		requests.LeagueMemberCreateRequestDTO	true	"Member details"
+//	@Success		200			{object}	models.LeagueMember
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		401			{object}	map[string]interface{}
+//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		409			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/members/join [post]
 func (c *leagueMemberControllerImpl) JoinLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
@@ -192,6 +249,21 @@ func (c *leagueMemberControllerImpl) JoinLeague(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, member)
 }
 
+// UpdateProfile godoc
+//
+//	@Summary		Update member profile
+//	@Description	Update in-league name or team name
+//	@Tags			League Members
+//	@Accept			json
+//	@Produce		json
+//	@Param			id		path		string										true	"Member ID"
+//	@Param			request	body		requests.UpdateLeagueMemberInfoRequestDTO	true	"Profile fields"
+//	@Success		200		{object}	models.LeagueMember
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		409		{object}	map[string]interface{}
+//	@Router			/api/members/{id}/profile [put]
 func (c *leagueMemberControllerImpl) UpdateProfile(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
@@ -237,6 +309,19 @@ func (c *leagueMemberControllerImpl) UpdateProfile(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, member)
 }
 
+// UpdateDraftPoints godoc
+//
+//	@Summary		Update member's draft points
+//	@Description	Set a member's draft points
+//	@Tags			League Members
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		string	true	"Member ID"
+//	@Success		200	{object}	models.LeagueMember
+//	@Failure		400	{object}	map[string]interface{}
+//	@Failure		401	{object}	map[string]interface{}
+//	@Failure		404	{object}	map[string]interface{}
+//	@Router			/api/members/{id}/draft-points [put]
 func (c *leagueMemberControllerImpl) UpdateDraftPoints(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
@@ -251,7 +336,7 @@ func (c *leagueMemberControllerImpl) UpdateDraftPoints(ctx *gin.Context) {
 	}
 
 	var req struct {
-		DraftPoints *int `json:"DraftPoints" binding:"required"`
+		DraftPoints *int `json:"DraftPoints" validate:"required"`
 	}
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Missing or invalid DraftPoints"})
@@ -277,6 +362,19 @@ func (c *leagueMemberControllerImpl) UpdateDraftPoints(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, member)
 }
 
+// UpdateRecord godoc
+//
+//	@Summary		Update member's record
+//	@Description	Set wins and losses for a member
+//	@Tags			League Members
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		string	true	"Member ID"
+//	@Success		200	{object}	models.LeagueMember
+//	@Failure		400	{object}	map[string]interface{}
+//	@Failure		401	{object}	map[string]interface{}
+//	@Failure		404	{object}	map[string]interface{}
+//	@Router			/api/members/{id}/record [put]
 func (c *leagueMemberControllerImpl) UpdateRecord(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
@@ -291,8 +389,8 @@ func (c *leagueMemberControllerImpl) UpdateRecord(ctx *gin.Context) {
 	}
 
 	var req struct {
-		Wins   *int `json:"Wins" binding:"required"`
-		Losses *int `json:"Losses" binding:"required"`
+		Wins   *int `json:"Wins" validate:"required"`
+		Losses *int `json:"Losses" validate:"required"`
 	}
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Missing or invalid Wins/Losses"})
@@ -318,6 +416,19 @@ func (c *leagueMemberControllerImpl) UpdateRecord(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, member)
 }
 
+// UpdateDraftPosition godoc
+//
+//	@Summary		Update member's draft position
+//	@Description	Set the draft order position for a member
+//	@Tags			League Members
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		string	true	"Member ID"
+//	@Success		200	{object}	models.LeagueMember
+//	@Failure		400	{object}	map[string]interface{}
+//	@Failure		401	{object}	map[string]interface{}
+//	@Failure		404	{object}	map[string]interface{}
+//	@Router			/api/members/{id}/draft-position [put]
 func (c *leagueMemberControllerImpl) UpdateDraftPosition(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
@@ -332,7 +443,7 @@ func (c *leagueMemberControllerImpl) UpdateDraftPosition(ctx *gin.Context) {
 	}
 
 	var req struct {
-		DraftPosition *int `json:"DraftPosition" binding:"required"`
+		DraftPosition *int `json:"DraftPosition" validate:"required"`
 	}
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Missing or invalid DraftPosition"})

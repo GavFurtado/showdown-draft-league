@@ -31,8 +31,18 @@ func NewLeagueController(leagueService services.LeagueService) LeagueController 
 	}
 }
 
-// POST /api/leagues
-// creates a new league if the current user has less than 2 Leagues commisioned
+// CreateLeague godoc
+//
+//	@Summary		Create a league
+//	@Description	Create a new league
+//	@Tags			Leagues
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		requests.LeagueCreateRequestDTO	true	"League config"
+//	@Success		200		{object}	models.League
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Router			/api/leagues [post]
 func (ctrl *leagueControllerImpl) CreateLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
@@ -69,8 +79,18 @@ func (ctrl *leagueControllerImpl) CreateLeague(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, league)
 }
 
-// GET /api/leagues/:id
-// handles fetching a league by ID for an authorized user.
+// GetLeague godoc
+//
+//	@Summary		Get a league
+//	@Description	League details and settings
+//	@Tags			Leagues
+//	@Produce		json
+//	@Param			leagueId	path		string	true	"League ID"
+//	@Success		200			{object}	models.League
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		403			{object}	map[string]interface{}
+//	@Failure		404			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId} [get]
 func (ctrl *leagueControllerImpl) GetLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
