@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/gin-gonic/gin"
 )
 
@@ -41,8 +41,15 @@ func NewPokemonSpeciesController(pokemonService services.PokemonSpeciesService) 
 	}
 }
 
-// GET api/pokemon_species/
-// GetAllPokemonSpecies get all pokemon species
+// GetAllPokemonSpecies godoc
+//
+//	@Summary		Get all Pokemon
+//	@Description	Full list of available Pokemon species
+//	@Tags			Pokemon
+//	@Produce		json
+//	@Success		200	{array}		responses.PokemonSpeciesListResponseDTO
+//	@Failure		500	{object}	map[string]interface{}
+//	@Router			/api/pokemon_species [get]
 func (c *pokemonSpeciesControllerImpl) GetAllPokemonSpecies(ctx *gin.Context) {
 	pokemonDTOs, err := c.pokemonService.GetAllPokemonSpecies()
 	if err != nil {
@@ -57,8 +64,17 @@ func (c *pokemonSpeciesControllerImpl) GetAllPokemonSpecies(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, pokemonDTOs)
 }
 
-// GET api/pokemon_species/:id
-// GetPokemonSpeciesByID returns a PokemonSpecies by it's internal ID
+// GetPokemonSpeciesByID godoc
+//
+//	@Summary		Get a Pokemon by ID
+//	@Description	Pokemon species by internal ID
+//	@Tags			Pokemon
+//	@Produce		json
+//	@Param			id	path		int	true	"Pokemon ID"
+//	@Success		200	{object}	models.PokemonSpecies
+//	@Failure		400	{object}	map[string]interface{}
+//	@Failure		404	{object}	map[string]interface{}
+//	@Router			/api/pokemon_species/{id} [get]
 func (c *pokemonSpeciesControllerImpl) GetPokemonSpeciesByID(ctx *gin.Context) {
 	pokemonIDstr := ctx.Param("id")
 	pokemonID, err := strconv.ParseInt(pokemonIDstr, 10, 64)
@@ -84,8 +100,17 @@ func (c *pokemonSpeciesControllerImpl) GetPokemonSpeciesByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, pokemon)
 }
 
-// GET api/pokemon_species/name/:name
-// GetPokemonSpeciesByID returns a PokemonSpecies by it's name
+// GetPokemonSpeciesByName godoc
+//
+//	@Summary		Get a Pokemon by name
+//	@Description	Pokemon species by name
+//	@Tags			Pokemon
+//	@Produce		json
+//	@Param			name	path		string	true	"Pokemon name"
+//	@Success		200		{object}	models.PokemonSpecies
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Router			/api/pokemon_species/name/{name} [get]
 func (c *pokemonSpeciesControllerImpl) GetPokemonSpeciesByName(ctx *gin.Context) {
 	pokemonName := ctx.Param("name")
 	if pokemonName == "" {

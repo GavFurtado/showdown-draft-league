@@ -26,7 +26,7 @@ func NewRepositories(db *gorm.DB) *Repositories {
 }
 
 func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oauth2.Config) *Services {
-	jwtService := services.NewJWTService(cfg.JWTSecret)
+	jwtService := services.NewJWTService(cfg.JWT_SECRET)
 	rbacService := services.NewRBACService(repos.LeagueRepository, repos.UserRepository, repos.LeagueMemberRepository)
 	webhookService := services.NewWebhookService()
 
@@ -79,13 +79,13 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 	leagueService.SetTransferService(transferService)
 
 	return &Services{
-		JWTService:           *jwtService,
-		UserService:          services.NewUserService(repos.UserRepository),
-		RBACService:          rbacService,
-		WebhookService:       webhookService,
-		LeagueService:        leagueService,
-		AuthService:          services.NewAuthService(repos.UserRepository, jwtService, discordOauthConfig),
-		DraftService:         draftService,
+		JWTService:            *jwtService,
+		UserService:           services.NewUserService(repos.UserRepository),
+		RBACService:           rbacService,
+		WebhookService:        webhookService,
+		LeagueService:         leagueService,
+		AuthService:           services.NewAuthService(repos.UserRepository, jwtService, discordOauthConfig),
+		DraftService:          draftService,
 		PokemonSpeciesService: services.NewPokemonSpeciesService(repos.PokemonSpeciesRepository),
 		SchedulerService:      schedulerService,
 		GameService:           services.NewGameService(repos.GameRepository, repos.LeagueRepository, repos.LeagueMemberRepository),
@@ -100,7 +100,7 @@ func NewServices(repos *Repositories, cfg *config.Config, discordOauthConfig *oa
 
 func NewControllers(services *Services, repos *Repositories, cfg *config.Config, discordOauthConfig *oauth2.Config) *Controllers {
 	return &Controllers{
-		AuthController:           *controllers.NewAuthController(services.AuthService, cfg, discordOauthConfig),
+		AuthController:           controllers.NewAuthController(services.AuthService, cfg, discordOauthConfig),
 		LeagueController:         controllers.NewLeagueController(services.LeagueService),
 		UserController:           controllers.NewUserController(services.UserService),
 		PokemonSpeciesController: controllers.NewPokemonSpeciesController(services.PokemonSpeciesService),

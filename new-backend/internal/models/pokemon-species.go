@@ -4,8 +4,9 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type PokemonSpecies struct {
@@ -44,12 +45,12 @@ type Ability struct {
 // Value implements the driver.Valuer interface for BaseStats.
 func (bs BaseStats) Value() (driver.Value, error) {
 	m := map[string]int{
-		"hp":               bs.Hp,
-		"attack":           bs.Attack,
-		"defense":          bs.Defense,
-		"special_attack":   bs.SpecialAttack,
-		"special_defense":  bs.SpecialDefense,
-		"speed":            bs.Speed,
+		"hp":              bs.Hp,
+		"attack":          bs.Attack,
+		"defense":         bs.Defense,
+		"special_attack":  bs.SpecialAttack,
+		"special_defense": bs.SpecialDefense,
+		"speed":           bs.Speed,
 	}
 	return json.Marshal(m)
 }

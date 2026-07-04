@@ -27,6 +27,17 @@ func NewClaimController(claimService services.ClaimService) ClaimController {
 	}
 }
 
+// GetByID godoc
+//
+//	@Summary		Get a claim
+//	@Description	Claim details
+//	@Tags			Claims
+//	@Produce		json
+//	@Param			id	path		string	true	"Claim ID"
+//	@Success		200	{object}	models.Claim
+//	@Failure		400	{object}	map[string]interface{}
+//	@Failure		404	{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/claims/{id} [get]
 func (c *claimControllerImpl) GetByID(ctx *gin.Context) {
 	claimID, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
@@ -49,6 +60,17 @@ func (c *claimControllerImpl) GetByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, claim)
 }
 
+// GetActiveByPlayer godoc
+//
+//	@Summary		Get claims by player
+//	@Description	Active claims for a specific player
+//	@Tags			Claims
+//	@Produce		json
+//	@Param			leagueId	path		string	true	"League ID"
+//	@Param			playerId	path		string	true	"Player ID"
+//	@Success		200			{array}		models.Claim
+//	@Failure		400			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/claims/player/{playerId} [get]
 func (c *claimControllerImpl) GetActiveByPlayer(ctx *gin.Context) {
 	playerID, err := uuid.Parse(ctx.Param("playerId"))
 	if err != nil {
@@ -69,6 +91,16 @@ func (c *claimControllerImpl) GetActiveByPlayer(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, claims)
 }
 
+// GetActiveByLeague godoc
+//
+//	@Summary		Get active claims
+//	@Description	All active claims in a league
+//	@Tags			Claims
+//	@Produce		json
+//	@Param			leagueId	path		string	true	"League ID"
+//	@Success		200			{array}		models.Claim
+//	@Failure		400			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/claims [get]
 func (c *claimControllerImpl) GetActiveByLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
@@ -89,6 +121,16 @@ func (c *claimControllerImpl) GetActiveByLeague(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, claims)
 }
 
+// GetReleasedByLeague godoc
+//
+//	@Summary		Get released Pokemon
+//	@Description	All released Pokemon in a league
+//	@Tags			Claims
+//	@Produce		json
+//	@Param			leagueId	path		string	true	"League ID"
+//	@Success		200			{array}		models.Claim
+//	@Failure		400			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/claims/released [get]
 func (c *claimControllerImpl) GetReleasedByLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {

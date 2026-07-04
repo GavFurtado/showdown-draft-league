@@ -11,13 +11,13 @@ import (
 
 type LeagueFormat struct {
 	IsSnakeRoundDraft           bool                           `json:"IsSnakeRoundDraft"`
-	DraftOrderType              enums.DraftOrderType           `json:"DraftOrderType"`
-	SeasonType                  enums.LeagueSeasonType         `json:"SeasonType"`
+	DraftOrderType              enums.DraftOrderType           `json:"DraftOrderType" validate:"isValid"`
+	SeasonType                  enums.LeagueSeasonType         `json:"SeasonType" validate:"isValid"`
 	GroupCount                  int                            `json:"GroupCount"`
-	PlayoffType                 enums.LeaguePlayoffType        `json:"PlayoffType"`
+	PlayoffType                 enums.LeaguePlayoffType        `json:"PlayoffType" validate:"isValid"`
 	PlayoffParticipantCount     int                            `json:"PlayoffParticipantCount"`
 	PlayoffByesCount            int                            `json:"PlayoffByesCount"`
-	PlayoffSeedingType          enums.LeaguePlayoffSeedingType `json:"PlayoffSeedingType"`
+	PlayoffSeedingType          enums.LeaguePlayoffSeedingType `json:"PlayoffSeedingType" validate:"isValid"`
 	AllowTransfers              bool                           `json:"AllowTransfers"`
 	TransfersCostCredits        bool                           `json:"TransfersCostCredits"`
 	TransferCreditsPerWindow    int                            `json:"TransferCreditsPerWindow"`

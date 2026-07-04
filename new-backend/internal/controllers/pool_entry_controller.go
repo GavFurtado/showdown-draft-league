@@ -31,6 +31,17 @@ func NewPoolEntryController(poolEntryService services.PoolEntryService) PoolEntr
 	}
 }
 
+// GetByID godoc
+//
+//	@Summary		Get a pool entry
+//	@Description	Pool entry details
+//	@Tags			Pool Entries
+//	@Produce		json
+//	@Param			id	path		string	true	"Pool Entry ID"
+//	@Success		200	{object}	models.PoolEntry
+//	@Failure		400	{object}	map[string]interface{}
+//	@Failure		404	{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/pool-entries/{id} [get]
 func (c *poolEntryControllerImpl) GetByID(ctx *gin.Context) {
 	entryID, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
@@ -53,6 +64,17 @@ func (c *poolEntryControllerImpl) GetByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, entry)
 }
 
+// GetByLeague godoc
+//
+//	@Summary		Get pool entries by league
+//	@Description	All pool entries for a league
+//	@Tags			Pool Entries
+//	@Produce		json
+//	@Param			leagueId	path		string	true	"League ID"
+//	@Success		200			{array}		models.PoolEntry
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		404			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/pool-entries [get]
 func (c *poolEntryControllerImpl) GetByLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
@@ -75,6 +97,17 @@ func (c *poolEntryControllerImpl) GetByLeague(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, entries)
 }
 
+// GetAvailableByLeague godoc
+//
+//	@Summary		Get available pool entries
+//	@Description	Unclaimed Pokemon available in the pool
+//	@Tags			Pool Entries
+//	@Produce		json
+//	@Param			leagueId	path		string	true	"League ID"
+//	@Success		200			{array}		models.PoolEntry
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		404			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/pool-entries/available [get]
 func (c *poolEntryControllerImpl) GetAvailableByLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
@@ -97,6 +130,20 @@ func (c *poolEntryControllerImpl) GetAvailableByLeague(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, entries)
 }
 
+// Create godoc
+//
+//	@Summary		Create a pool entry
+//	@Description	Add a Pokemon to the draft pool
+//	@Tags			Pool Entries
+//	@Accept			json
+//	@Produce		json
+//	@Param			leagueId	path		string								true	"League ID"
+//	@Param			request		body		requests.PoolEntryCreateRequestDTO	true	"Pool entry"
+//	@Success		200			{object}	models.PoolEntry
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		403			{object}	map[string]interface{}
+//	@Failure		404			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/pool-entries/single [post]
 func (c *poolEntryControllerImpl) Create(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
@@ -129,6 +176,20 @@ func (c *poolEntryControllerImpl) Create(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, entry)
 }
 
+// CreateBatch godoc
+//
+//	@Summary		Create pool entries in batch
+//	@Description	Add multiple Pokemon to the draft pool
+//	@Tags			Pool Entries
+//	@Accept			json
+//	@Produce		json
+//	@Param			leagueId	path		string									true	"League ID"
+//	@Param			request		body		[]requests.PoolEntryCreateRequestDTO	true	"Pool entries"
+//	@Success		200			{array}		models.PoolEntry
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		403			{object}	map[string]interface{}
+//	@Failure		404			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/pool-entries/batch [post]
 func (c *poolEntryControllerImpl) CreateBatch(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
@@ -161,6 +222,20 @@ func (c *poolEntryControllerImpl) CreateBatch(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, entries)
 }
 
+// Update godoc
+//
+//	@Summary		Update a pool entry
+//	@Description	Modify a pool entry's cost or availability
+//	@Tags			Pool Entries
+//	@Accept			json
+//	@Produce		json
+//	@Param			leagueId	path		string								true	"League ID"
+//	@Param			request		body		requests.PoolEntryUpdateRequestDTO	true	"Updated entry"
+//	@Success		200			{object}	models.PoolEntry
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		403			{object}	map[string]interface{}
+//	@Failure		404			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/pool-entries [put]
 func (c *poolEntryControllerImpl) Update(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {

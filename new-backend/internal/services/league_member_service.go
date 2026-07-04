@@ -166,13 +166,13 @@ func (s *leagueMemberServiceImpl) Create(currentUser *models.User, input *reques
 	teamName := *input.TeamName
 
 	member := models.LeagueMember{
-		UserID:       input.UserID,
-		LeagueID:     input.LeagueID,
-		InLeagueName: &inLeagueName,
-		TeamName:     &teamName,
-		DraftPoints:  int(league.StartingDraftPoints),
-		Wins:         0,
-		Losses:       0,
+		UserID:        input.UserID,
+		LeagueID:      input.LeagueID,
+		InLeagueName:  &inLeagueName,
+		TeamName:      &teamName,
+		DraftPoints:   int(league.StartingDraftPoints),
+		Wins:          0,
+		Losses:        0,
 		DraftPosition: 0,
 		GroupNumber:   league.NewPlayerGroupNumber,
 		SkipsLeft:     league.MaxPokemonPerPlayer - league.MinPokemonPerPlayer,

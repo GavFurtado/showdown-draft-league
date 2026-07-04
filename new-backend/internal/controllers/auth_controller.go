@@ -13,7 +13,13 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type AuthController struct {
+type AuthController interface {
+	Login(ctx *gin.Context)
+	DiscordCallback(ctx *gin.Context)
+	Logout(ctx *gin.Context)
+}
+
+type authControllerImpl struct {
 	authService        services.AuthService
 	cfg                *config.Config
 	discordOauthConfig *oauth2.Config
@@ -23,16 +29,22 @@ func NewAuthController(
 	authService services.AuthService,
 	cfg *config.Config,
 	oauthConfig *oauth2.Config,
-) *AuthController {
-	return &AuthController{
+) AuthController {
+	return &authControllerImpl{
 		authService:        authService,
 		cfg:                cfg,
 		discordOauthConfig: oauthConfig,
 	}
 }
 
-// NOTE: the skip to frontend my-leagues page could maybe cause problems in edge case scenarios i haven't thought of (probably)
-func (c *AuthController) Login(ctx *gin.Context) {
+// Login godoc
+//
+//	@Summary		Login with Discord
+//	@Description	Redirects to Discord for authentication
+//	@Tags			Auth
+//	@Success		307
+//	@Router			/auth/discord/login [get]
+func (c *authControllerImpl) Login(ctx *gin.Context) {
 	// 1. Check for existing JWT cookie
 	token, err := ctx.Cookie("token")
 	if err == nil {
@@ -53,8 +65,18 @@ func (c *AuthController) Login(ctx *gin.Context) {
 	ctx.Redirect(http.StatusTemporaryRedirect, url)
 }
 
-// handles the Discord OAuth2 callback
-func (c *AuthController) DiscCallback(ctx *gin.Context) {
+// DiscordCallback godoc
+//
+//	@Summary		Discord OAuth callback
+//	@Description	Handles the OAuth callback from Discord
+//	@Tags			Auth
+//	@Param			state	query	string	true	"OAuth state token"
+//	@Param			code	query	string	true	"Authorization code from Discord"
+//	@Success		307
+//	@Failure		400	{object}	map[string]interface{}
+//	@Failure		500	{object}	map[string]interface{}
+//	@Router			/auth/discord/callback [get]
+func (c *authControllerImpl) DiscordCallback(ctx *gin.Context) {
 	storedState, err := ctx.Cookie("oauthstate")
 	if err != nil || storedState == "" || storedState != ctx.Query("state") {
 		log.Printf("(Error: DiscCallback) - OAuth state mismatch or missing. Stored=%s, query=%s, err=%v", storedState, ctx.Query("state"), err)
@@ -78,6 +100,7 @@ func (c *AuthController) DiscCallback(ctx *gin.Context) {
 	}
 
 	httpOnly := c.cfg.ENVIRONMENT != "dev" // set httpOnly to false if Environment is "dev"
+
 	// Set JWT as an HTTP-only cookie
 	const sessionTokenPeriod = int((time.Hour * 24 * 3 * 30 / time.Second)) // 90 days
 	ctx.SetCookie("token", jwtToken, sessionTokenPeriod, "/", c.cfg.BACKEND_BASE_URL, false, httpOnly)
@@ -86,7 +109,14 @@ func (c *AuthController) DiscCallback(ctx *gin.Context) {
 	ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/dashboard", c.cfg.APP_BASE_URL))
 }
 
-func (c *AuthController) Logout(ctx *gin.Context) {
+// Logout godoc
+//
+//	@Summary		Logout
+//	@Description	Clears the session cookie
+//	@Tags			Auth
+//	@Success		200	{object}	map[string]interface{}
+//	@Router			/auth/logout [post]
+func (c *authControllerImpl) Logout(ctx *gin.Context) {
 	ctx.SetCookie("token", "", -1, "/", c.cfg.BACKEND_BASE_URL, false, true) // clear the token cookie
 	ctx.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }

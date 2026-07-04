@@ -27,7 +27,7 @@ type Game struct {
 	GameType            enums.GameType   `gorm:"not null;default:'REGULAR_SEASON;column:game_type" json:"GameType"`
 	Status              enums.GameStatus `gorm:"type:varchar(50);not null;default:'SCHEDULED';column:status" json:"Status"`
 	BracketPosition     *string          `gorm:"column:bracket_position" json:"BracketPosition"` // flavour text for the type of playoff game
-	ShowdownReplayLinks []string         `gorm:"type:jsonb;column:showdown_replay_links" binding:"url" json:"ShowdownReplayLinks"`
+	ShowdownReplayLinks []string         `gorm:"type:jsonb;column:showdown_replay_links" validate:"url" json:"ShowdownReplayLinks"`
 
 	ReportingPlayerID *uuid.UUID `gorm:"type:uuid;column:reporting_player_id" json:"ReportingPlayerID,omitempty"`
 	ApproverID        *uuid.UUID `gorm:"type:uuid;column:approver_id" json:"ApproverID,omitempty"`

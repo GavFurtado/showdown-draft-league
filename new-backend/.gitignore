@@ -5,4 +5,9 @@ docs/
 ./server
 server
 ./main
+main
 logs/
+
+# Swagger generated
+api/swagger.json
+api/swagger.yaml

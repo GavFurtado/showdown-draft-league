@@ -5,11 +5,11 @@ import (
 )
 
 type DraftMakePickRequestDTO struct {
-	RequestedPickCount int                `json:"RequestedPickCount" binding:"required"`
-	RequestedPicks     []RequestedPickDTO `json:"RequestedPicks" binding:"required"`
+	RequestedPickCount int                `json:"RequestedPickCount" validate:"required"`
+	RequestedPicks     []RequestedPickDTO `json:"RequestedPicks" validate:"required"`
 }
 
 type RequestedPickDTO struct {
-	PoolEntryID     uuid.UUID `json:"PoolEntryID" binding:"required"`
-	DraftPickNumber int       `json:"DraftPickNumber" binding:"required"`
+	PoolEntryID     uuid.UUID `json:"PoolEntryID" validate:"required"`
+	DraftPickNumber int       `json:"DraftPickNumber" validate:"required"`
 }

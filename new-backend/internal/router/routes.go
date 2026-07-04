@@ -1,12 +1,16 @@
 package routes
 
 import (
+	_ "github.com/GavFurtado/showdown-draft-league/new-backend/api"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/app"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/config"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/middleware"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm"
+	"net/http"
 )
 
 func RegisterRoutes(
@@ -31,6 +35,9 @@ func RegisterRoutes(
 	// These do not require any authorization
 	r.GET("/", HomeHandler) // eventually a landing page
 
+	// API Documentation
+	r.GET("/api/docs/*any", docsHandler(ginSwagger.WrapHandler(swaggerFiles.Handler)))
+
 	// Pokemon Species routes
 	pokemonSpecies := r.Group("/api/pokemon_species")
 	{
@@ -44,7 +51,7 @@ func RegisterRoutes(
 	authGroup := r.Group("/auth")
 	{
 		authGroup.GET("/discord/login", controllers.AuthController.Login)
-		authGroup.GET("/discord/callback", controllers.AuthController.DiscCallback)
+		authGroup.GET("/discord/callback", controllers.AuthController.DiscordCallback)
 		authGroup.POST("/logout", controllers.AuthController.Logout)
 	}
 
@@ -104,10 +111,10 @@ func RegisterRoutes(
 					"/:gameId",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadGame),
 					controllers.GameController.GetGameByID)
-			games.GET(
-				"/members/:memberId",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadGame),
-				controllers.GameController.GetGamesByPlayer)
+				games.GET(
+					"/members/:memberId",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadGame),
+					controllers.GameController.GetGamesByPlayer)
 				games.PUT(
 					"/report/:gameId",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReportGame),
@@ -137,17 +144,17 @@ func RegisterRoutes(
 
 					controllers.DraftController.StartDraft)
 
-			draft.POST("pick",
+				draft.POST("pick",
 
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateDraftPick),
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateDraftPick),
 
-				controllers.DraftController.MakePick)
+					controllers.DraftController.MakePick)
 
-			draft.POST("skip",
+				draft.POST("skip",
 
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateDraftPick),
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateDraftPick),
 
-				controllers.DraftController.SkipPick)
+					controllers.DraftController.SkipPick)
 
 			}
 
@@ -228,12 +235,12 @@ func RegisterRoutes(
 				transfers.POST("/end",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionEndTransferPeriod),
 					controllers.TransferController.EndTransferPeriod)
-			transfers.POST("/drop/:claimId",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateClaim),
-				controllers.TransferController.DropPokemon)
-			transfers.POST("/pickup/:poolEntryId",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateClaim),
-				controllers.TransferController.PickupFreeAgent)
+				transfers.POST("/drop/:claimId",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateClaim),
+					controllers.TransferController.DropPokemon)
+				transfers.POST("/pickup/:poolEntryId",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateClaim),
+					controllers.TransferController.PickupFreeAgent)
 			}
 
 		}
@@ -255,4 +262,14 @@ func RegisterRoutes(
 // this is temporary
 func HomeHandler(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "Welcome to Pokemon Showdown Draft League!"})
+}
+
+func docsHandler(next gin.HandlerFunc) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Param("any") == "/" {
+			c.Redirect(http.StatusMovedPermanently, "/api/docs/index.html")
+			return
+		}
+		next(c)
+	}
 }

@@ -40,6 +40,18 @@ func NewGameController(
 	}
 }
 
+// GetGameByID godoc
+//
+//	@Summary		Get a game
+//	@Description	Game details
+//	@Tags			Games
+//	@Produce		json
+//	@Param			leagueId	path		string	true	"League ID"
+//	@Param			gameId		path		string	true	"Game ID"
+//	@Success		200			{object}	map[string]interface{}
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		404			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/games/{gameId} [get]
 func (c *gameControllerImpl) GetGameByID(ctx *gin.Context) {
 	gameID, err := uuid.Parse(ctx.Param("gameId"))
 	if err != nil {
@@ -63,6 +75,16 @@ func (c *gameControllerImpl) GetGameByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"game": game})
 }
 
+// GetGamesByLeague godoc
+//
+//	@Summary		Get league games
+//	@Description	All games in a league
+//	@Tags			Games
+//	@Produce		json
+//	@Param			leagueId	path		string	true	"League ID"
+//	@Success		200			{object}	map[string]interface{}
+//	@Failure		400			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/games [get]
 func (c *gameControllerImpl) GetGamesByLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
@@ -85,6 +107,17 @@ func (c *gameControllerImpl) GetGamesByLeague(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"games": games})
 }
 
+// GetGamesByPlayer godoc
+//
+//	@Summary		Get games by player
+//	@Description	All games for a specific player
+//	@Tags			Games
+//	@Produce		json
+//	@Param			leagueId	path		string	true	"League ID"
+//	@Param			memberId	path		string	true	"Member ID"
+//	@Success		200			{object}	map[string]interface{}
+//	@Failure		400			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/games/members/{memberId} [get]
 func (c *gameControllerImpl) GetGamesByPlayer(ctx *gin.Context) {
 	playerID, err := uuid.Parse(ctx.Param("playerId"))
 	if err != nil {
@@ -108,7 +141,21 @@ func (c *gameControllerImpl) GetGamesByPlayer(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"games": games})
 }
 
-// ReportGame handles a player reporting a game result.
+// ReportGame godoc
+//
+//	@Summary		Report a game result
+//	@Description	Submit a game result for approval
+//	@Tags			Games
+//	@Accept			json
+//	@Produce		json
+//	@Param			leagueId	path		string							true	"League ID"
+//	@Param			gameId		path		string							true	"Game ID"
+//	@Param			request		body		requests.ReportGameRequestDTO	true	"Game result"
+//	@Success		200			{object}	map[string]interface{}
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		401			{object}	map[string]interface{}
+//	@Failure		404			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/games/report/{gameId} [put]
 func (c *gameControllerImpl) ReportGame(ctx *gin.Context) {
 	gameID, err := uuid.Parse(ctx.Param("gameId"))
 	if err != nil {
@@ -150,7 +197,21 @@ func (c *gameControllerImpl) ReportGame(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Game result reported successfully for approval"})
 }
 
-// FinalizeGame handles league staff finalizing a game result (approve, submit, or retroactively edit).
+// FinalizeGame godoc
+//
+//	@Summary		Finalize a game result
+//	@Description	Approve and finalize a reported game
+//	@Tags			Games
+//	@Accept			json
+//	@Produce		json
+//	@Param			leagueId	path		string							true	"League ID"
+//	@Param			gameId		path		string							true	"Game ID"
+//	@Param			request		body		requests.FinalizeGameRequestDTO	true	"Finalization data"
+//	@Success		200			{object}	map[string]interface{}
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		401			{object}	map[string]interface{}
+//	@Failure		404			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/games/finalize/{gameId} [put]
 func (c *gameControllerImpl) FinalizeGame(ctx *gin.Context) {
 	gameID, err := uuid.Parse(ctx.Param("gameId"))
 	if err != nil {
@@ -190,6 +251,19 @@ func (c *gameControllerImpl) FinalizeGame(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Game result finalized successfully"})
 }
 
+// StartRegularSeason godoc
+//
+//	@Summary		Start regular season
+//	@Description	Generate the regular season schedule
+//	@Tags			Games
+//	@Produce		json
+//	@Param			leagueId	path		string	true	"League ID"
+//	@Success		200			{object}	map[string]interface{}
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		401			{object}	map[string]interface{}
+//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		409			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/games/start-season [post]
 func (c *gameControllerImpl) StartRegularSeason(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
@@ -220,6 +294,18 @@ func (c *gameControllerImpl) StartRegularSeason(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Regular season started successfully"})
 }
 
+// GeneratePlayoffBracket godoc
+//
+//	@Summary		Generate playoff bracket
+//	@Description	Create the playoff bracket for a league
+//	@Tags			Games
+//	@Produce		json
+//	@Param			leagueId	path		string	true	"League ID"
+//	@Success		200			{object}	map[string]interface{}
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		401			{object}	map[string]interface{}
+//	@Failure		404			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/games/generate-playoffs [post]
 func (c *gameControllerImpl) GeneratePlayoffBracket(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {

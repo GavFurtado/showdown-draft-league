@@ -31,6 +31,18 @@ func NewDraftController(draftService services.DraftService) DraftController {
 	}
 }
 
+// GetDraftByID godoc
+//
+//	@Summary		Get a draft
+//	@Description	Draft details by ID
+//	@Tags			Drafts
+//	@Produce		json
+//	@Param			leagueId	path		string	true	"League ID"
+//	@Param			draftId		path		string	true	"Draft ID"
+//	@Success		200			{object}	models.Draft
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		404			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/draft/{draftId} [get]
 func (dc *draftControllerImpl) GetDraftByID(ctx *gin.Context) {
 	draftIDStr := ctx.Param("draftId")
 	draftID, err := uuid.Parse(draftIDStr)
@@ -55,6 +67,17 @@ func (dc *draftControllerImpl) GetDraftByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, draft)
 }
 
+// GetDraftByLeagueID godoc
+//
+//	@Summary		Get draft by league
+//	@Description	Current draft for a league
+//	@Tags			Drafts
+//	@Produce		json
+//	@Param			leagueId	path		string	true	"League ID"
+//	@Success		200			{object}	models.Draft
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		404			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/draft [get]
 func (dc *draftControllerImpl) GetDraftByLeagueID(ctx *gin.Context) {
 	leagueIDStr := ctx.Param("leagueId")
 	leagueID, err := uuid.Parse(leagueIDStr)
@@ -79,6 +102,17 @@ func (dc *draftControllerImpl) GetDraftByLeagueID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, draft)
 }
 
+// StartDraft godoc
+//
+//	@Summary		Start a draft
+//	@Description	Start the draft for a league
+//	@Tags			Drafts
+//	@Produce		json
+//	@Param			leagueId		path		int	true	"League ID"
+//	@Param			turnTimeLimit	query		int	false	"Turn time limit in minutes"	default(120)
+//	@Success		200				{object}	models.Draft
+//	@Failure		400				{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/draft/start [post]
 func (dc *draftControllerImpl) StartDraft(ctx *gin.Context) {
 	leagueIDStr := ctx.Param("leagueId")
 
@@ -119,6 +153,21 @@ func (dc *draftControllerImpl) StartDraft(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, draft)
 }
 
+// MakePick godoc
+//
+//	@Summary		Make a draft pick
+//	@Description	Select a Pokemon in the draft
+//	@Tags			Drafts
+//	@Accept			json
+//	@Produce		json
+//	@Param			leagueId	path		string								true	"League ID"
+//	@Param			request		body		requests.DraftMakePickRequestDTO	true	"Pick details"
+//	@Success		200			{object}	map[string]interface{}
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		401			{object}	map[string]interface{}
+//	@Failure		403			{object}	map[string]interface{}
+//	@Failure		409			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/draft/pick [post]
 func (dc *draftControllerImpl) MakePick(c *gin.Context) {
 	leagueIDStr := c.Param("leagueId")
 	leagueID, err := uuid.Parse(leagueIDStr)
@@ -164,6 +213,19 @@ func (dc *draftControllerImpl) MakePick(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Pick successful"})
 }
 
+// SkipPick godoc
+//
+//	@Summary		Skip your turn
+//	@Description	Pass on your pick in the draft
+//	@Tags			Drafts
+//	@Produce		json
+//	@Param			leagueId	path		string	true	"League ID"
+//	@Success		200			{object}	map[string]interface{}
+//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		401			{object}	map[string]interface{}
+//	@Failure		403			{object}	map[string]interface{}
+//	@Failure		409			{object}	map[string]interface{}
+//	@Router			/api/leagues/{leagueId}/draft/skip [post]
 func (dc *draftControllerImpl) SkipPick(c *gin.Context) {
 	leagueIDStr := c.Param("leagueId")
 	leagueID, err := uuid.Parse(leagueIDStr)

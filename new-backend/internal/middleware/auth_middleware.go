@@ -1,6 +1,9 @@
 package middleware
 
 import (
+	"log"
+	"net/http"
+
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
@@ -8,8 +11,6 @@ import (
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/google/uuid"
-	"log"
-	"net/http"
 )
 
 type AuthMiddlewareDependencies struct {
