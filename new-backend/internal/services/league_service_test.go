@@ -3,6 +3,7 @@ package services_test
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -24,6 +25,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 	mockGameRepo := new(mock_repositories.MockGameRepository)
 
 	service := services.NewLeagueService(
+		slog.Default(),
 		mockLeagueRepo,
 		mockLeagueMemberRepo,
 		mockDraftRepo,
@@ -165,6 +167,7 @@ func TestLeagueService_GetLeagueByIDForUser(t *testing.T) {
 	mockGameRepo := new(mock_repositories.MockGameRepository)
 
 	service := services.NewLeagueService(
+		slog.Default(),
 		mockLeagueRepo,
 		mockLeagueMemberRepo,
 		mockDraftRepo,
@@ -214,6 +217,7 @@ func TestLeagueService_GetLeaguesByCommissioner(t *testing.T) {
 	mockGameRepo := new(mock_repositories.MockGameRepository)
 
 	service := services.NewLeagueService(
+		slog.Default(),
 		mockLeagueRepo,
 		mockLeagueMemberRepo,
 		mockDraftRepo,
@@ -284,6 +288,7 @@ func TestLeagueService_GetLeaguesByUser(t *testing.T) {
 	mockGameRepo := new(mock_repositories.MockGameRepository)
 
 	service := services.NewLeagueService(
+		slog.Default(),
 		mockLeagueRepo,
 		mockLeagueMemberRepo,
 		mockDraftRepo,

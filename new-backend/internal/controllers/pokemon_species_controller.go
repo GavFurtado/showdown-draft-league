@@ -1,12 +1,13 @@
 package controllers
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -32,11 +33,13 @@ type PokemonSpeciesController interface {
 }
 
 type pokemonSpeciesControllerImpl struct {
+	logger         *slog.Logger
 	pokemonService services.PokemonSpeciesService
 }
 
-func NewPokemonSpeciesController(pokemonService services.PokemonSpeciesService) PokemonSpeciesController {
+func NewPokemonSpeciesController(logger *slog.Logger, pokemonService services.PokemonSpeciesService) PokemonSpeciesController {
 	return &pokemonSpeciesControllerImpl{
+		logger:         utils.LoggerWithService(logger, "PokemonSpeciesController"),
 		pokemonService: pokemonService,
 	}
 }
@@ -53,11 +56,8 @@ func NewPokemonSpeciesController(pokemonService services.PokemonSpeciesService) 
 func (c *pokemonSpeciesControllerImpl) GetAllPokemonSpecies(ctx *gin.Context) {
 	pokemonDTOs, err := c.pokemonService.GetAllPokemonSpecies()
 	if err != nil {
-		log.Printf("LOG: (Error: PokemonSpeciesController.GetAllPokemonSpecies) - Service failed: %v\n", err)
-		// The service method GetAllPokemonSpecies currently only returns types.ErrInternalService
-		// if an error occurs. It does not return types.ErrPokemonSpeciesNotFound.
-		// Therefore, we handle it as a generic internal server error.
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve Pokemon species due to an internal error"})
+		c.logger.Error("Service failed", "error", err, "method", "GetAllPokemonSpecies")
+		sendError(ctx, http.StatusInternalServerError, "Failed to retrieve Pokemon species due to an internal error")
 		return
 	}
 
@@ -79,24 +79,23 @@ func (c *pokemonSpeciesControllerImpl) GetPokemonSpeciesByID(ctx *gin.Context) {
 	pokemonIDstr := ctx.Param("id")
 	pokemonID, err := strconv.ParseInt(pokemonIDstr, 10, 64)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	pokemon, err := c.pokemonService.GetPokemonSpeciesByID(pokemonID)
 	if err != nil {
-		log.Printf("LOG: (PokemonSpeciesController: GetPokemonSpeciesByID): Service method Error: ")
+		c.logger.Error("Service method error", "error", err, "method", "GetPokemonSpeciesByID")
 		switch err {
 		case types.ErrPokemonSpeciesNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrPokemonSpeciesNotFound.Error()})
+			sendError(ctx, http.StatusNotFound, types.ErrPokemonSpeciesNotFound.Error())
 			return
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 			return
 		}
 	}
 
-	// Success
 	ctx.JSON(http.StatusOK, pokemon)
 }
 
@@ -114,22 +113,21 @@ func (c *pokemonSpeciesControllerImpl) GetPokemonSpeciesByID(ctx *gin.Context) {
 func (c *pokemonSpeciesControllerImpl) GetPokemonSpeciesByName(ctx *gin.Context) {
 	pokemonName := ctx.Param("name")
 	if pokemonName == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	pokemon, err := c.pokemonService.GetPokemonSpeciesByName(pokemonName)
 	if err != nil {
-		log.Printf("LOG: (PokemonSpeciesController: GetPokemonSpeciesByName): Service method Error: ")
+		c.logger.Error("Service method error", "error", err, "method", "GetPokemonSpeciesByName")
 		switch err {
 		case types.ErrPokemonSpeciesNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrPokemonSpeciesNotFound.Error()})
+			sendError(ctx, http.StatusNotFound, types.ErrPokemonSpeciesNotFound.Error())
 			return
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 			return
 		}
 	}
-	// Success
 	ctx.JSON(http.StatusOK, pokemon)
 }

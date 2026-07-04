@@ -1,11 +1,12 @@
 package controllers
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -18,11 +19,13 @@ type ClaimController interface {
 }
 
 type claimControllerImpl struct {
+	logger       *slog.Logger
 	claimService services.ClaimService
 }
 
-func NewClaimController(claimService services.ClaimService) ClaimController {
+func NewClaimController(logger *slog.Logger, claimService services.ClaimService) ClaimController {
 	return &claimControllerImpl{
+		logger:       utils.LoggerWithService(logger, "ClaimController"),
 		claimService: claimService,
 	}
 }
@@ -41,18 +44,18 @@ func NewClaimController(claimService services.ClaimService) ClaimController {
 func (c *claimControllerImpl) GetByID(ctx *gin.Context) {
 	claimID, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	claim, err := c.claimService.GetByID(claimID)
 	if err != nil {
-		log.Printf("LOG: (ClaimController: GetByID) - Service method error: %v\n", err)
+		c.logger.Error("Service method error", "error", err, "method", "GetByID")
 		switch err {
 		case types.ErrClaimNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrClaimNotFound.Error()})
+			sendError(ctx, http.StatusNotFound, types.ErrClaimNotFound.Error())
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}
@@ -74,16 +77,16 @@ func (c *claimControllerImpl) GetByID(ctx *gin.Context) {
 func (c *claimControllerImpl) GetActiveByPlayer(ctx *gin.Context) {
 	playerID, err := uuid.Parse(ctx.Param("playerId"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	claims, err := c.claimService.GetActiveByPlayer(playerID)
 	if err != nil {
-		log.Printf("LOG: (ClaimController: GetActiveByPlayer) - Service method error: %v\n", err)
+		c.logger.Error("Service method error", "error", err, "method", "GetActiveByPlayer")
 		switch {
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}
@@ -104,16 +107,16 @@ func (c *claimControllerImpl) GetActiveByPlayer(ctx *gin.Context) {
 func (c *claimControllerImpl) GetActiveByLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	claims, err := c.claimService.GetActiveByLeague(leagueID)
 	if err != nil {
-		log.Printf("LOG: (ClaimController: GetActiveByLeague) - Service method error: %v\n", err)
+		c.logger.Error("Service method error", "error", err, "method", "GetActiveByLeague")
 		switch {
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}
@@ -134,16 +137,16 @@ func (c *claimControllerImpl) GetActiveByLeague(ctx *gin.Context) {
 func (c *claimControllerImpl) GetReleasedByLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	claims, err := c.claimService.GetReleasedByLeague(leagueID)
 	if err != nil {
-		log.Printf("LOG: (ClaimController: GetReleasedByLeague) - Service method error: %v\n", err)
+		c.logger.Error("Service method error", "error", err, "method", "GetReleasedByLeague")
 		switch {
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}

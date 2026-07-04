@@ -3,7 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"math/bits"
 	"math/rand/v2"
 	"sort"
@@ -13,6 +13,7 @@ import (
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -30,18 +31,21 @@ type GameService interface {
 }
 
 type gameServiceImpl struct {
-	gameRepo      repositories.GameRepository
-	leagueRepo    repositories.LeagueRepository
-	memberRepo    repositories.LeagueMemberRepository
+	logger       *slog.Logger
+	gameRepo     repositories.GameRepository
+	leagueRepo   repositories.LeagueRepository
+	memberRepo   repositories.LeagueMemberRepository
 	leagueService LeagueService
 }
 
 func NewGameService(
+	logger *slog.Logger,
 	gameRepo repositories.GameRepository,
 	leagueRepo repositories.LeagueRepository,
 	memberRepo repositories.LeagueMemberRepository,
 ) GameService {
 	return &gameServiceImpl{
+		logger:     utils.LoggerWithService(logger, "GameService"),
 		gameRepo:   gameRepo,
 		leagueRepo: leagueRepo,
 		memberRepo: memberRepo,
@@ -178,14 +182,14 @@ func (s *gameServiceImpl) FinalizeGameResult(gameID uuid.UUID, dto *requests.Fin
 func (s *gameServiceImpl) GenerateRegularSeasonGames(leagueID uuid.UUID) error {
 	league, err := s.fetchLeagueResource(leagueID)
 	if err != nil {
-		log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Couldn't fetch league %s: %v\n", leagueID, err)
+		s.logger.Error("GenerateRegularSeasonGames - couldn't fetch league", "league_id", leagueID, "error", err)
 		return err
 	}
 
 	// Check if games have already been generated for this league
 	gamesExist, err := s.gameRepo.HasGames(leagueID, enums.GameTypeRegularSeason)
 	if err != nil {
-		log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Failed to check for existing games for league %s: %v\n", leagueID, err)
+		s.logger.Error("GenerateRegularSeasonGames - failed to check for existing games", "league_id", leagueID, "error", err)
 		return types.ErrInternalService
 	}
 	if gamesExist {
@@ -194,7 +198,7 @@ func (s *gameServiceImpl) GenerateRegularSeasonGames(leagueID uuid.UUID) error {
 
 	// League needs to be in POST_DRAFT status and not a BRACKET_ONLY Season League
 	if league.Status != enums.LeagueStatusPostDraft && league.Format.SeasonType == enums.LeagueSeasonTypeBracketOnly {
-		log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - League %s not in valid state to generate season bracket: %v\n", leagueID, err)
+		s.logger.Error("GenerateRegularSeasonGames - league not in valid state to generate season bracket", "league_id", leagueID, "error", err)
 		return types.ErrInvalidState
 	}
 
@@ -202,7 +206,7 @@ func (s *gameServiceImpl) GenerateRegularSeasonGames(leagueID uuid.UUID) error {
 	for i := 0; i < league.Format.GroupCount; i++ {
 		members, err := s.memberRepo.GetByLeagueAndGroup(league.ID, i+1)
 		if err != nil {
-			log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Repository error fetching Members by League %s with Group Number %d: %v\n", league.ID, i+1, err)
+			s.logger.Error("GenerateRegularSeasonGames - repository error fetching members by league and group", "league_id", league.ID, "group_number", i+1, "error", err)
 			return types.ErrInternalService
 		}
 		membersByGroupNumber[i] = members
@@ -213,7 +217,7 @@ func (s *gameServiceImpl) GenerateRegularSeasonGames(leagueID uuid.UUID) error {
 		groupNumber := groupIndex + 1
 		games, err := s.generateRoundRobinGamesForGroup(league.ID, membersInGroup, groupNumber)
 		if err != nil {
-			log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Error generating round-robin games for group %d in league %s: %v\n", groupNumber, leagueID, err)
+			s.logger.Error("GenerateRegularSeasonGames - error generating round-robin games for group", "group", groupNumber, "league_id", leagueID, "error", err)
 			return err
 		}
 		allGeneratedGames = append(allGeneratedGames, games...)
@@ -222,7 +226,7 @@ func (s *gameServiceImpl) GenerateRegularSeasonGames(leagueID uuid.UUID) error {
 	if len(allGeneratedGames) > 0 {
 		err = s.gameRepo.CreateGames(allGeneratedGames)
 		if err != nil {
-			log.Printf("ERROR: (Service: GenerateRegularSeasonGames) - Repository error creating games for league %s: %v\n", leagueID, err)
+			s.logger.Error("GenerateRegularSeasonGames - repository error creating games", "league_id", leagueID, "error", err)
 			return types.ErrInternalService
 		}
 	}
@@ -232,7 +236,7 @@ func (s *gameServiceImpl) GenerateRegularSeasonGames(leagueID uuid.UUID) error {
 func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 	league, err := s.fetchLeagueResource(leagueID)
 	if err != nil {
-		log.Printf("ERROR: (Service: GeneratePlayoffBracket) - Couldn't fetch league %s: %v\n", leagueID, err)
+		s.logger.Error("GeneratePlayoffBracket - couldn't fetch league", "league_id", leagueID, "error", err)
 		return err
 	}
 
@@ -242,7 +246,7 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 
 	if (league.Format.SeasonType == enums.LeagueSeasonTypeBracketOnly && league.Status != enums.LeagueStatusPostDraft) ||
 		(league.Format.SeasonType == enums.LeagueSeasonTypeHybrid && league.Status != enums.LeagueStatusPostRegularSeason) {
-		log.Printf("ERROR: (Service: GeneratePlayoffBracket) - League not in valid status to generate playoff bracket.\n")
+		s.logger.Error("GeneratePlayoffBracket - league not in valid status to generate playoff bracket")
 		return err
 	}
 
@@ -254,7 +258,7 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 	for i := 0; i < league.Format.GroupCount; i++ {
 		membersOfGroupX, err := s.memberRepo.GetByLeagueAndGroup(league.ID, i+1)
 		if err != nil {
-			log.Printf("ERROR: (Service: GeneratePlayoffBracket): error fetching members of group %d for league %s: %v", i+1, league.ID, err)
+			s.logger.Error("GeneratePlayoffBracket - error fetching members of group", "group", i+1, "league_id", league.ID, "error", err)
 			return fmt.Errorf("failed to fetch members for group %d: %w", i+1, err)
 		}
 		membersByGroup[i] = membersOfGroupX
@@ -262,7 +266,7 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 
 	seededMembers, err := s.getSeededPlayers(league, membersByGroup)
 	if err != nil {
-		log.Printf("ERROR: (Service: GeneratePlayoffBracket): error seeding members for playoffs for league %s: %v", league.ID, err)
+		s.logger.Error("GeneratePlayoffBracket - error seeding members for playoffs", "league_id", league.ID, "error", err)
 		return err
 	}
 
@@ -276,20 +280,20 @@ func (s *gameServiceImpl) GeneratePlayoffBracket(leagueID uuid.UUID) error {
 		}
 		generatedGames, err = s.generateSingleEliminationBracket(league, seededMembers)
 		if err != nil {
-			log.Printf("ERROR: (Service: GeneratePlayoffBracket) - Error generating single elimination bracket for league %s: %v\n", leagueID, err)
+			s.logger.Error("GeneratePlayoffBracket - error generating bracket", "league_id", leagueID, "error", err)
 			return err
 		}
 	} else {
 		generatedGames, err = s.generateDoubleEliminationBracket(league, seededMembers)
 		if err != nil {
-			log.Printf("ERROR: (Service: GeneratePlayoffBracket) - Error generating single elimination bracket for league %s: %v\n", leagueID, err)
+			s.logger.Error("GeneratePlayoffBracket - error generating bracket", "league_id", leagueID, "error", err)
 			return err
 		}
 	}
 	if len(generatedGames) > 0 {
 		err = s.gameRepo.CreateGames(generatedGames)
 		if err != nil {
-			log.Printf("ERROR: (Service: GeneratePlayoffBracket) - Repository error creating games for league %s: %v\n", leagueID, err)
+			s.logger.Error("GeneratePlayoffBracket - repository error creating games", "league_id", leagueID, "error", err)
 			return types.ErrInternalService
 		}
 	}
@@ -821,7 +825,7 @@ func (s *gameServiceImpl) getSeededPlayers(league *models.League, membersByGroup
 
 	for i := range membersByGroup {
 		if len(membersByGroup[i]) == 0 {
-			log.Printf("INFO: (Service: getSeededPlayers) - Encountered an empty member group %d for league %s. Skipping group.\n", i+1, league.ID)
+			s.logger.Info("getSeededPlayers - empty member group, skipping", "group", i+1, "league_id", league.ID)
 			continue
 		}
 		sortMembers(membersByGroup[i])
@@ -836,8 +840,7 @@ func (s *gameServiceImpl) getSeededPlayers(league *models.League, membersByGroup
 	}
 
 	if len(qualifyingMembers) != league.Format.PlayoffParticipantCount {
-		log.Printf("ERROR: (Service: getSeededPlayers) - Mismatch in qualified members count. Expected %d, got %d for league %s.\n",
-			league.Format.PlayoffParticipantCount, len(qualifyingMembers), league.ID)
+		s.logger.Error("getSeededPlayers - mismatch in qualified members count", "expected", league.Format.PlayoffParticipantCount, "got", len(qualifyingMembers), "league_id", league.ID)
 		return nil, types.ErrInsufficientPlayersForPlayoffs
 	}
 
@@ -896,7 +899,7 @@ func (s *gameServiceImpl) generateRoundRobinGamesForGroup(leagueID uuid.UUID, me
 			if byeMemberID == uuid.Nil {
 				byeMemberID = memberOppositeID
 			}
-			fmt.Printf("\nINFO: (Service: generateRoundRobinGamesForGroup): Member %s (league %s) of group %d got a bye.\n", byeMemberID, leagueID, groupNumber)
+			s.logger.Info("generateRoundRobinGamesForGroup - member got a bye", "member_id", byeMemberID, "league_id", leagueID, "group", groupNumber)
 		}
 
 		for i := 0; i < len(rotatingMembers)/2; i++ {
@@ -917,7 +920,7 @@ func (s *gameServiceImpl) generateRoundRobinGamesForGroup(leagueID uuid.UUID, me
 				if byeMemberID == uuid.Nil {
 					byeMemberID = p2ID
 				}
-				fmt.Printf("INFO: (Service: generateRoundRobinGamesForGroup) Member %s (league %s) of group %d got a bye.", byeMemberID, leagueID, groupNumber)
+				s.logger.Info("generateRoundRobinGamesForGroup - member got a bye", "member_id", byeMemberID, "league_id", leagueID, "group", groupNumber)
 			}
 		}
 
@@ -941,7 +944,7 @@ func (s *gameServiceImpl) generateRoundRobinGamesForGroup(leagueID uuid.UUID, me
 		if conceptualRoundIdx >= 0 && conceptualRoundIdx < numRounds {
 			games[i].RoundNumber = actualRoundNumbers[conceptualRoundIdx]
 		} else {
-			log.Printf("ERROR: (Service: generateRoundRobinGamesForGroup) - Invalid conceptual RoundIdx %d found in game for league %s, group %d", conceptualRoundIdx, leagueID, groupNumber)
+			s.logger.Error("generateRoundRobinGamesForGroup - invalid conceptual RoundIdx", "round_idx", conceptualRoundIdx, "league_id", leagueID, "group", groupNumber)
 			return nil, types.ErrInternalService
 		}
 	}

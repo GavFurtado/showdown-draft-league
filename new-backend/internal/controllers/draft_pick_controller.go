@@ -2,11 +2,12 @@ package controllers
 
 import (
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -19,15 +20,18 @@ type DraftPickController interface {
 }
 
 type draftPickControllerImpl struct {
+	logger           *slog.Logger
 	draftPickService services.DraftPickService
 	draftService     services.DraftService
 }
 
 func NewDraftPickController(
+	logger *slog.Logger,
 	draftPickService services.DraftPickService,
 	draftService services.DraftService,
 ) DraftPickController {
 	return &draftPickControllerImpl{
+		logger:           utils.LoggerWithService(logger, "DraftPickController"),
 		draftPickService: draftPickService,
 		draftService:     draftService,
 	}
@@ -47,28 +51,28 @@ func NewDraftPickController(
 func (c *draftPickControllerImpl) GetByDraft(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	draft, err := c.draftService.GetDraftByLeagueID(leagueID)
 	if err != nil {
-		log.Printf("LOG: (DraftPickController: GetByDraft) - failed to get draft: %v\n", err)
+		c.logger.Error("failed to get draft", "error", err, "method", "GetByDraft")
 		switch {
 		case errors.Is(err, types.ErrDraftNotFound):
-			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrDraftNotFound.Error()})
+			sendError(ctx, http.StatusNotFound, types.ErrDraftNotFound.Error())
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}
 
 	picks, err := c.draftPickService.GetByDraft(draft.ID)
 	if err != nil {
-		log.Printf("LOG: (DraftPickController: GetByDraft) - Service method error: %v\n", err)
+		c.logger.Error("Service method error", "error", err, "method", "GetByDraft")
 		switch {
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}
@@ -90,16 +94,16 @@ func (c *draftPickControllerImpl) GetByDraft(ctx *gin.Context) {
 func (c *draftPickControllerImpl) GetByPlayer(ctx *gin.Context) {
 	playerID, err := uuid.Parse(ctx.Param("playerId"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	picks, err := c.draftPickService.GetByPlayer(playerID)
 	if err != nil {
-		log.Printf("LOG: (DraftPickController: GetByPlayer) - Service method error: %v\n", err)
+		c.logger.Error("Service method error", "error", err, "method", "GetByPlayer")
 		switch {
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}
@@ -121,18 +125,18 @@ func (c *draftPickControllerImpl) GetByPlayer(ctx *gin.Context) {
 func (c *draftPickControllerImpl) GetHistory(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	history, err := c.draftPickService.GetHistory(leagueID)
 	if err != nil {
-		log.Printf("LOG: (DraftPickController: GetHistory) - Service method error: %v\n", err)
+		c.logger.Error("Service method error", "error", err, "method", "GetHistory")
 		switch {
 		case errors.Is(err, types.ErrDraftNotFound):
-			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrDraftNotFound.Error()})
+			sendError(ctx, http.StatusNotFound, types.ErrDraftNotFound.Error())
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}
@@ -154,28 +158,28 @@ func (c *draftPickControllerImpl) GetHistory(ctx *gin.Context) {
 func (c *draftPickControllerImpl) GetNextPickNumber(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	draft, err := c.draftService.GetDraftByLeagueID(leagueID)
 	if err != nil {
-		log.Printf("LOG: (DraftPickController: GetNextPickNumber) - failed to get draft: %v\n", err)
+		c.logger.Error("failed to get draft", "error", err, "method", "GetNextPickNumber")
 		switch {
 		case errors.Is(err, types.ErrDraftNotFound):
-			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrDraftNotFound.Error()})
+			sendError(ctx, http.StatusNotFound, types.ErrDraftNotFound.Error())
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}
 
 	nextPickNumber, err := c.draftPickService.GetNextPickNumber(draft.ID)
 	if err != nil {
-		log.Printf("LOG: (DraftPickController: GetNextPickNumber) - Service method error: %v\n", err)
+		c.logger.Error("Service method error", "error", err, "method", "GetNextPickNumber")
 		switch {
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}

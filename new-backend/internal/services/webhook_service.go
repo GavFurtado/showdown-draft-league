@@ -1,7 +1,9 @@
 package services
 
 import (
-	"fmt"
+	"log/slog"
+
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 )
 
 // handles sending notifications to external webhooks.
@@ -10,11 +12,13 @@ type WebhookService interface {
 }
 
 type webhookService struct {
-	// not sure what to put here yet
+	logger *slog.Logger
 }
 
-func NewWebhookService() WebhookService {
-	return &webhookService{}
+func NewWebhookService(logger *slog.Logger) WebhookService {
+	return &webhookService{
+		logger: utils.LoggerWithService(logger, "WebhookService"),
+	}
 }
 
 // sends a message to the specified webhook URL.
@@ -25,7 +29,7 @@ func (s *webhookService) SendWebhookMessage(webhookURL string, message string) e
 		// No webhook configured, just return without error :(
 		return nil
 	}
-	fmt.Printf("WEBHOOK PLACEHOLDER: Attempting to send message to %s with content: %s\n", webhookURL, message)
+	s.logger.Info("webhook placeholder - attempting to send message", "webhook_url", webhookURL, "message", message)
 
 	return nil
 }

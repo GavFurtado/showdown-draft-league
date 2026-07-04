@@ -3,12 +3,13 @@ package services
 import (
 	"container/heap"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 	u "github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 )
 
@@ -24,6 +25,7 @@ type SchedulerService interface {
 }
 
 type schedulerServiceImpl struct {
+	logger          *slog.Logger
 	tasks           *u.TaskHeap
 	taskMap         map[string]*u.ScheduledTask
 	taskChan        chan *u.ScheduledTask
@@ -37,11 +39,13 @@ type schedulerServiceImpl struct {
 }
 
 func NewSchedulerService(
+	logger *slog.Logger,
 	tasks *u.TaskHeap,
 	leagueRepo repositories.LeagueRepository,
 	draftRepo repositories.DraftRepository,
 ) SchedulerService {
 	return &schedulerServiceImpl{
+		logger:         utils.LoggerWithService(logger, "SchedulerService"),
 		tasks:          tasks,
 		taskMap:        make(map[string]*u.ScheduledTask),
 		taskChan:       make(chan *u.ScheduledTask, 5),
@@ -77,14 +81,14 @@ func (s *schedulerServiceImpl) Start() error {
 	// Fetch all ongoing drafts
 	drafts, err := s.draftRepo.GetAllDraftsByStatus(enums.DraftStatusOngoing)
 	if err != nil {
-		log.Printf("LOG: (SchedulerService: Start) - error fetching drafts with status %s: %v\n", enums.DraftStatusOngoing, err)
+		s.logger.Error("Start - error fetching drafts with status", "status", enums.DraftStatusOngoing, "error", err)
 		return err
 	}
 
 	// Fetch leagues that use the transfer credit system
 	leagues, err := s.leagueRepo.GetLeaguesThatAllowTransfers()
 	if err != nil {
-		log.Printf("LOG: (SchedulerService: Start) - error fetching leagues with transfers enabled: %v\n", err)
+		s.logger.Error("Start - error fetching leagues with transfers enabled", "error", err)
 		return err
 	}
 
@@ -92,7 +96,7 @@ func (s *schedulerServiceImpl) Start() error {
 	// If the server restarts during a transfer window, we still need to make sure the next tick is scheduled.
 	ongoingLeagues, err := s.leagueRepo.GetLeaguesByStatuses([]enums.LeagueStatus{enums.LeagueStatusRegularSeason, enums.LeagueStatusTransferWindow})
 	if err != nil {
-		log.Printf("LOG: (SchedulerService: Start) - error fetching ongoing regular season/transfer window leagues: %v\n", err)
+		s.logger.Error("Start - error fetching ongoing regular season/transfer window leagues", "error", err)
 		return err
 	}
 	for _, league := range ongoingLeagues {
@@ -100,7 +104,7 @@ func (s *schedulerServiceImpl) Start() error {
 			// If a tick is in the past, execute it immediately. Otherwise, schedule it for its designated time.
 			executeAt := *league.NextWeeklyTick
 			if executeAt.Before(time.Now()) {
-				log.Printf("LOG: (SchedulerService: Start) - Weekly tick for league %s is overdue. Scheduling for immediate execution.\n", league.ID)
+				s.logger.Warn("Start - weekly tick for league is overdue, scheduling for immediate execution", "league_id", league.ID)
 				executeAt = time.Now()
 			}
 
@@ -114,7 +118,7 @@ func (s *schedulerServiceImpl) Start() error {
 			}
 			heap.Push(s.tasks, newTask)
 			s.taskMap[newTask.ID] = newTask
-			log.Printf("LOG: (SchedulerService: Start) - Restored weekly tick for league %s, scheduled for %s.\n", league.ID, executeAt.String())
+			s.logger.Info("Start - restored weekly tick for league", "league_id", league.ID, "execute_at", executeAt.String())
 		}
 	}
 
@@ -123,7 +127,7 @@ func (s *schedulerServiceImpl) Start() error {
 	var leaguesInSeasonOrBracketOnly []*models.League
 	for _, league := range leagues {
 		if league.Format == nil {
-			log.Printf("WARN: (SchedulerService: Start) - League %s has nil Format. Skipping.\n", league.ID)
+			s.logger.Warn("Start - league has nil Format, skipping", "league_id", league.ID)
 			continue
 		}
 		if league.Status == enums.LeagueStatusTransferWindow {
@@ -158,7 +162,7 @@ func (s *schedulerServiceImpl) Start() error {
 
 	for _, league := range leaguesInTransferWindow {
 		if league.Format.NextTransferWindowStart == nil {
-			log.Printf("WARN: (SchedulerService: Start) - League %s is in TransferWindow but NextTransferWindowStart is nil. Skipping.\n", league.ID)
+			s.logger.Warn("Start - league is in TransferWindow but NextTransferWindowStart is nil, skipping", "league_id", league.ID)
 			continue
 		}
 		windowStartTime := league.Format.NextTransferWindowStart
@@ -179,7 +183,7 @@ func (s *schedulerServiceImpl) Start() error {
 
 	for _, league := range leaguesInSeasonOrBracketOnly {
 		if league.Format.NextTransferWindowStart == nil {
-			log.Printf("WARN: (SchedulerService: Start) - League %s is in Season/Bracket but NextTransferWindowStart is nil. Skipping.\n", league.ID)
+			s.logger.Warn("Start - league is in Season/Bracket but NextTransferWindowStart is nil, skipping", "league_id", league.ID)
 			continue
 		}
 		nextWindowStartTime := league.Format.NextTransferWindowStart
@@ -196,7 +200,7 @@ func (s *schedulerServiceImpl) Start() error {
 		s.taskMap[newTask.ID] = newTask
 	}
 
-	log.Printf("LOG: (SchedulerService: Start) - Running Scheduler\n")
+	s.logger.Info("Start - running scheduler")
 	go s.runSchedulerLoop()
 
 	return nil
@@ -209,7 +213,7 @@ func (s *schedulerServiceImpl) RegisterTask(task *u.ScheduledTask) {
 	s.taskMap[task.ID] = task
 	// send to the channel for the scheduler loop to pick up
 	s.taskChan <- task
-	log.Printf("LOG: (SchedulerService: RegisterTask) - Task registered: %s (Type: %s, ExecuteAt: %s)\n", task.ID, task.Type, task.ExecuteAt)
+	s.logger.Info("RegisterTask - task registered", "task_id", task.ID, "type", task.Type, "execute_at", task.ExecuteAt)
 }
 
 // runSchedulerLoop is the main loop of the scheduler that processes tasks.
@@ -222,41 +226,41 @@ func (s *schedulerServiceImpl) runSchedulerLoop() {
 		if exists { // if there was a task
 			if upcomingTask.ExecuteAt.Before(now) {
 				// task is overdue; execute now
-				fmt.Printf("LOG: (SchedulerService: runSchedulerLoop) - A task is overdue. Executing now...\n")
+				s.logger.Info("a task is overdue, executing now")
 				timer = time.NewTimer(0) // fire new timer immediately to execute task
 			} else {
 				// the task is not due yet; wait till due
 				waitDuration := upcomingTask.ExecuteAt.Sub(now)
 				timer = time.NewTimer(waitDuration)
-				fmt.Printf("LOG: (SchedulerService: runSchedulerLoop) - Task(s) are scheduled but not due. Earliest due task in: %s\n", waitDuration)
+				s.logger.Info("task(s) are scheduled but not due", "wait_duration", waitDuration)
 				s.tasks.Print()
 			}
 		} else {
 			// no tasks on the priority queue, wait for a task
-			fmt.Printf("LOG: (SchedulerService: runSchedulerLoop) - no tasks on the queue, waiting...\n")
+			s.logger.Info("no tasks on the queue, waiting")
 			timer = time.NewTimer(time.Hour * 24 * 365 * 10) // long ahh time
 		}
 
 		select {
 		case newTask := <-s.taskChan:
 			// a new task has been submitted by another service
-			fmt.Printf("LOG: Scheduler recieved a new task: %s (Type: %s, ExecuteAt: %s)\n", newTask.ID, newTask.Type, newTask.ExecuteAt)
+			s.logger.Info("scheduler received a new task", "task_id", newTask.ID, "type", newTask.Type, "execute_at", newTask.ExecuteAt)
 			heap.Push(s.tasks, newTask)
 		case <-s.rescheduleChan:
-			fmt.Println("LOG: (SchedulerService: runSchedulerLoop) - Reschedule signal received. Re-evaluating next task.")
+			s.logger.Info("reschedule signal received, re-evaluating next task")
 			// nothing else needs to be done here. timer will be rescheduled in the following iteration
 			continue
 		case <-timer.C:
 			// timer fired; execute the scheduled task
 			task := heap.Pop(s.tasks).(*u.ScheduledTask)
-			fmt.Printf("LOG: Scheduler executing task: %s (Type: %s, ExecuteAt: %s)\n", task.ID, task.Type, task.ExecuteAt)
+			s.logger.Info("scheduler executing task", "task_id", task.ID, "type", task.Type, "execute_at", task.ExecuteAt)
 			// Execute the task using the injected DraftTaskExecutor
 			s.executeTask(task)
 			delete(s.taskMap, task.ID)
 		case <-s.stopChan:
 			// currently nothing sends a signal to this channel
 			// Stop() call was made
-			fmt.Printf("LOG: Scheduler received stop signal. Shutting Down. Scheduler can be restarted by restarting the server.\n")
+			s.logger.Info("scheduler received stop signal, shutting down")
 			if timer != nil {
 				timer.Stop()
 			}
@@ -271,7 +275,7 @@ func (s *schedulerServiceImpl) runSchedulerLoop() {
 func (s *schedulerServiceImpl) DeregisterTask(taskID string) {
 	task, exists := s.taskMap[taskID]
 	if !exists {
-		log.Printf("WARN: (SchedulerService: DeregisterTask) - Attempted to deregister non-existent task: %s\n", taskID)
+		s.logger.Warn("DeregisterTask - attempted to deregister non-existent task", "task_id", taskID)
 		return
 	}
 
@@ -280,7 +284,7 @@ func (s *schedulerServiceImpl) DeregisterTask(taskID string) {
 
 	// Remove from the map
 	delete(s.taskMap, taskID)
-	log.Printf("LOG: (SchedulerService: DeregisterTask) - Task deregistered: %s\n", taskID)
+	s.logger.Info("DeregisterTask - task deregistered", "task_id", taskID)
 
 	s.rescheduleChan <- struct{}{}
 }
@@ -290,66 +294,66 @@ func (s *schedulerServiceImpl) executeTask(task *u.ScheduledTask) {
 	switch task.Type {
 	case u.TaskTypeDraftTurnTimeout:
 		if payload, ok := task.Payload.(u.PayloadDraftTurnTimeout); ok {
-			log.Printf("LOG: (SchedulerService: executeTask) - Draft turn timeout for LeagueID: %s, PlayerID: %s\n", payload.LeagueID, payload.PlayerID)
+			s.logger.Info("executeTask - draft turn timeout", "league_id", payload.LeagueID, "player_id", payload.PlayerID)
 			if s.draftService == nil {
-				log.Printf("ERROR: (SchedulerService: executeTask) - DraftService is not set. Cannot auto-skip turn for LeagueID: %s, PlayerID: %s\n", payload.LeagueID, payload.PlayerID)
+				s.logger.Error("executeTask - DraftService is not set, cannot auto-skip turn", "league_id", payload.LeagueID, "player_id", payload.PlayerID)
 				return
 			}
 
 			if err := s.draftService.AutoSkipTurn(payload.PlayerID, payload.LeagueID); err != nil {
-				log.Printf("ERROR: (SchedulerService: executeTask) - error occured in AutoSkipTurn: %v\n", err)
+				s.logger.Error("executeTask - error occurred in AutoSkipTurn", "error", err)
 				return
 			}
 		} else {
-			log.Printf("ERROR: (SchedulerService: executeTask) - Invalid payload type for DraftTurnTimeout task ID %s\n", task.ID)
+			s.logger.Error("executeTask - invalid payload type for DraftTurnTimeout task", "task_id", task.ID)
 		}
 
 	case u.TaskTypeTransferPeriodEnd:
 		if payload, ok := task.Payload.(u.PayloadTransferPeriodEnd); ok {
-			log.Printf("LOG: (SchedulerService: executeTask) - Transfer period end for LeagueID: %s\n", payload.LeagueID)
+			s.logger.Info("executeTask - transfer period end", "league_id", payload.LeagueID)
 			if s.transferService == nil {
-				log.Printf("ERROR: (SchedulerService: executeTask) - TransferService is not set. Cannot end transfer period for LeagueID: %s\n", payload.LeagueID)
+				s.logger.Error("executeTask - TransferService is not set, cannot end transfer period", "league_id", payload.LeagueID)
 				return
 			}
 
 			if err := s.transferService.EndTransferPeriod(payload.LeagueID); err != nil {
-				log.Printf("ERROR: (SchedulerService: executeTask) - error occured in EndTransferPeriod: %v\n", err)
+				s.logger.Error("executeTask - error occurred in EndTransferPeriod", "error", err)
 				return
 			}
 		} else {
-			log.Printf("ERROR: (SchedulerService: executeTask) - Invalid payload type for TransferPeriodEnd task ID %s\n", task.ID)
+			s.logger.Error("executeTask - invalid payload type for TransferPeriodEnd task", "task_id", task.ID)
 		}
 
 	case u.TaskTypeTransferPeriodStart:
 		if payload, ok := task.Payload.(u.PayloadTransferPeriodStart); ok {
-			log.Printf("LOG: (SchedulerService: executeTask) - Transfer Window Start for LeagueID: %s\n", payload.LeagueID)
+			s.logger.Info("executeTask - transfer window start", "league_id", payload.LeagueID)
 			if s.transferService == nil {
-				log.Printf("ERROR: (SchedulerService: executeTask) - TransferService is not set. Cannot start transfer period for LeagueID: %s\n", payload.LeagueID)
+				s.logger.Error("executeTask - TransferService is not set, cannot start transfer period", "league_id", payload.LeagueID)
 				return
 			}
 			if err := s.transferService.StartTransferPeriod(payload.LeagueID); err != nil {
-				log.Printf("ERROR: (SchedulerService: executeTask) - error occured in StartTransferPeriod: %v\n", err)
+				s.logger.Error("executeTask - error occurred in StartTransferPeriod", "error", err)
 				return
 			}
 		} else {
-			log.Printf("ERROR: (SchedulerService: executeTask) - Invalid payload type for StartTransferPeriod task ID %s. Expected PayloadTransferCreditAccrual.\n", task.ID)
+			s.logger.Error("executeTask - invalid payload type for StartTransferPeriod task", "task_id", task.ID)
 		}
 	case u.TaskTypeLeagueWeeklyTick:
 		if payload, ok := task.Payload.(u.PayloadLeagueWeeklyTick); ok {
-			log.Printf("LOG: (SchedulerService: executeTask) - League weekly tick for LeagueID: %s\n", payload.LeagueID)
+			s.logger.Info("executeTask - league weekly tick", "league_id", payload.LeagueID)
 			if s.leagueService == nil {
-				log.Printf("ERROR: (SchedulerService: executeTask) - LeagueService is not set. Cannot process weekly tick for LeagueID: %s\n", payload.LeagueID)
+				s.logger.Error("executeTask - LeagueService is not set, cannot process weekly tick", "league_id", payload.LeagueID)
 				return
 			}
 			if err := s.leagueService.ProcessWeeklyTick(payload.LeagueID); err != nil {
-				log.Printf("ERROR: (SchedulerService: executeTask) - error occurred in ProcessWeeklyTick: %v\n", err)
+				s.logger.Error("executeTask - error occurred in ProcessWeeklyTick", "error", err)
 				return
 			}
 		} else {
-			log.Printf("ERROR: (SchedulerService: executeTask) - Invalid payload type for LeagueWeeklyTick task ID %s.\n", task.ID)
+			s.logger.Error("executeTask - invalid payload type for LeagueWeeklyTick task", "task_id", task.ID)
 		}
 	default:
-		log.Printf("ERROR: (SchedulerService: executeTask) - Unknown task type: %d for task ID %s\n", task.Type, task.ID)
+		s.logger.Error("executeTask - unknown task type", "task_type", task.Type, "task_id", task.ID)
 	}
 }
 

@@ -2,13 +2,14 @@ package services
 
 import (
 	"errors"
-	"log"
+	"log/slog"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/responses"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -23,11 +24,13 @@ type UserService interface {
 
 type userServiceImpl struct {
 	userRepo repositories.UserRepository
+	logger   *slog.Logger
 }
 
-func NewUserService(userRepo repositories.UserRepository) UserService {
+func NewUserService(logger *slog.Logger, userRepo repositories.UserRepository) UserService {
 	return &userServiceImpl{
 		userRepo: userRepo,
+		logger:   utils.LoggerWithService(logger, "UserService"),
 	}
 }
 
@@ -38,7 +41,7 @@ func (s *userServiceImpl) GetMyProfileHandler(userID uuid.UUID) (*models.User, e
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, types.ErrUserNotFound
 		}
-		log.Printf("(Error: GetMyProfileHandler) - Failed to get user %s from repository: %v", userID, err)
+		s.logger.Error("GetMyProfileHandler - failed to get user from repository", "user_id", userID, "error", err)
 		return nil, types.ErrInternalService
 	}
 	return user, nil
@@ -51,7 +54,7 @@ func (s *userServiceImpl) GetMyDiscordDetailsHandler(userID uuid.UUID) (*respons
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, types.ErrUserNotFound
 		}
-		log.Printf("(Error: GetMyDiscordDetailsHandler) - Failed to get user %s from repository: %v", userID, err)
+		s.logger.Error("GetMyDiscordDetailsHandler - failed to get user from repository", "user_id", userID, "error", err)
 		return nil, types.ErrInternalService
 	}
 
@@ -66,14 +69,14 @@ func (s *userServiceImpl) GetMyDiscordDetailsHandler(userID uuid.UUID) (*respons
 
 // updates profile with request fields
 func (s *userServiceImpl) UpdateProfileHandler(userID uuid.UUID, input requests.UserUpdateProfileRequestDTO) (*models.User, error) {
-	log.Printf("UserService: UpdateProfileHandler called for user %s with request: %+v", userID, input)
+	s.logger.Info("UpdateProfileHandler called", "user_id", userID, "request", input)
 
 	user, err := s.userRepo.GetUserByID(userID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, types.ErrUserNotFound
 		}
-		log.Printf("(Error: UpdateProfileHandler) - User fetch failed: %s", err.Error())
+		s.logger.Error("UpdateProfileHandler - user fetch failed", "error", err.Error())
 		return nil, types.ErrInternalService
 	}
 
@@ -83,7 +86,7 @@ func (s *userServiceImpl) UpdateProfileHandler(userID uuid.UUID, input requests.
 
 	updatedUser, err := s.userRepo.UpdateUser(user)
 	if err != nil {
-		log.Printf("(Error: UpdateProfileHandler) - Update failed: %v", err)
+		s.logger.Error("UpdateProfileHandler - update failed", "error", err)
 		return nil, types.ErrInternalService
 	}
 
@@ -91,16 +94,16 @@ func (s *userServiceImpl) UpdateProfileHandler(userID uuid.UUID, input requests.
 }
 
 func (s *userServiceImpl) GetMyLeaguesHandler(userID uuid.UUID) ([]*models.League, error) {
-	log.Printf("UserService: GetMyLeaguesHandler called for user %s", userID)
+	s.logger.Info("GetMyLeaguesHandler called", "user_id", userID)
 
 	leagues, err := s.userRepo.GetUserLeagues(userID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Printf("UserService: User %s not found when fetching leagues.", userID)
+			s.logger.Warn("user not found when fetching leagues", "user_id", userID)
 			return nil, types.ErrUserNotFound
 		}
 		// other errors
-		log.Printf("UserService: Failed to retrieve leagues for user %s: %v", userID, err)
+		s.logger.Error("failed to retrieve leagues for user", "user_id", userID, "error", err)
 		return nil, types.ErrInternalService
 	}
 

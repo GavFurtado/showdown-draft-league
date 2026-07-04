@@ -2,14 +2,14 @@ package controllers
 
 import (
 	"errors"
-	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/middleware"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -22,11 +22,13 @@ type LeagueController interface {
 }
 
 type leagueControllerImpl struct {
+	logger        *slog.Logger
 	leagueService services.LeagueService
 }
 
-func NewLeagueController(leagueService services.LeagueService) LeagueController {
+func NewLeagueController(logger *slog.Logger, leagueService services.LeagueService) LeagueController {
 	return &leagueControllerImpl{
+		logger:        utils.LoggerWithService(logger, "LeagueController"),
 		leagueService: leagueService,
 	}
 }
@@ -46,32 +48,31 @@ func NewLeagueController(leagueService services.LeagueService) LeagueController 
 func (ctrl *leagueControllerImpl) CreateLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
-		log.Printf("(Error: CreateLeague) - no user in context\n")
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": types.ErrNoUserInContext.Error()})
+		ctrl.logger.Error("no user in context", "method", "CreateLeague")
+		sendError(ctx, http.StatusUnauthorized, types.ErrNoUserInContext.Error())
 		return
 	}
 
 	var req requests.LeagueCreateRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		sendError(ctx, http.StatusBadRequest, "bad request")
 		return
 	}
 
-	fmt.Printf("INFO: (Controller: CreateLeague) - Received league creation request: %v", req)
+	ctrl.logger.Info("Received league creation request", "request", req)
 
 	league, err := ctrl.leagueService.CreateLeague(currentUser.ID, &req)
 	if err != nil {
-		log.Printf("(Error: CreateLeague) - Service failed: %v\n", err)
-		// Check for specific service errors to return appropriate HTTP status
+		ctrl.logger.Error("Service failed", "error", err, "method", "CreateLeague")
 		switch {
 		case errors.Is(err, types.ErrMaxLeagueCreationLimitReached):
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrMaxLeagueCreationLimitReached.Error()})
+			sendError(ctx, http.StatusBadRequest, types.ErrMaxLeagueCreationLimitReached.Error())
 		case errors.Is(err, types.ErrExceedsMaxAllowableGroupCount):
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrExceedsMaxAllowableGroupCount.Error()})
+			sendError(ctx, http.StatusBadRequest, types.ErrExceedsMaxAllowableGroupCount.Error())
 		case errors.Is(err, types.ErrInvalidLeagueConfiguration):
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			sendError(ctx, http.StatusBadRequest, err.Error())
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create league"})
+			sendError(ctx, http.StatusInternalServerError, "Failed to create league")
 		}
 		return
 	}
@@ -94,8 +95,8 @@ func (ctrl *leagueControllerImpl) CreateLeague(ctx *gin.Context) {
 func (ctrl *leagueControllerImpl) GetLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
-		log.Printf("(Error: GetLeague) - no user in context\n")
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrNoUserInContext.Error()})
+		ctrl.logger.Error("no user in context", "method", "GetLeague")
+		sendError(ctx, http.StatusInternalServerError, types.ErrNoUserInContext.Error())
 		return
 	}
 
@@ -103,29 +104,27 @@ func (ctrl *leagueControllerImpl) GetLeague(ctx *gin.Context) {
 
 	leagueID, err := uuid.Parse(leagueIDStr)
 	if err != nil {
-		log.Printf("(Error: GetLeague) - Invalid league ID format: %v\n", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		ctrl.logger.Error("Invalid league ID format", "error", err)
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	league, err := ctrl.leagueService.GetLeagueByIDForUser(currentUser.ID, leagueID)
 	if err != nil {
-		log.Printf("(Error: GetLeague) - Service failed: %v\n", err)
+		ctrl.logger.Error("Service failed", "error", err, "method", "GetLeague")
 
 		if err.Error() == "not authorized to view this league" {
-			ctx.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			sendError(ctx, http.StatusForbidden, err.Error())
 			return
 		}
 		if err.Error() == "failed to retrieve league: record not found" {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "League not found"})
+			sendError(ctx, http.StatusNotFound, "League not found")
 			return
 		}
-		// other errors
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve league"})
+		sendError(ctx, http.StatusInternalServerError, "Failed to retrieve league")
 		return
 	}
 
 	ctx.JSON(http.StatusOK, league)
 }
 
-// other league controllers

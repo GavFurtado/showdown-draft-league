@@ -2,13 +2,14 @@ package services
 
 import (
 	"errors"
-	"log"
+	"log/slog"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -27,9 +28,11 @@ type poolEntryServiceImpl struct {
 	leagueRepo         repositories.LeagueRepository
 	userRepo           repositories.UserRepository
 	pokemonSpeciesRepo repositories.PokemonSpeciesRepository
+	logger             *slog.Logger
 }
 
 func NewPoolEntryService(
+	logger *slog.Logger,
 	poolEntryRepo repositories.PoolEntryRepository,
 	leagueRepo repositories.LeagueRepository,
 	userRepo repositories.UserRepository,
@@ -40,6 +43,7 @@ func NewPoolEntryService(
 		leagueRepo:         leagueRepo,
 		userRepo:           userRepo,
 		pokemonSpeciesRepo: pokemonSpeciesRepo,
+		logger:             utils.LoggerWithService(logger, "PoolEntryService"),
 	}
 }
 
@@ -47,10 +51,10 @@ func (s *poolEntryServiceImpl) getLeagueByID(leagueID, currentUserID uuid.UUID) 
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Printf("(Service: PoolEntryService.getLeagueByID) - could not find league %s. (currentUser.ID: %s)\n", leagueID, currentUserID)
+			s.logger.Warn("getLeagueByID - league not found", "league_id", leagueID, "current_user_id", currentUserID)
 			return nil, types.ErrLeagueNotFound
 		}
-		log.Printf("(Service: PoolEntryService.getLeagueByID) - could not retrieve league by leagueID %s (currentUser.ID: %s)\n", leagueID, currentUserID)
+		s.logger.Error("getLeagueByID - could not retrieve league", "league_id", leagueID, "current_user_id", currentUserID, "error", err)
 		return nil, types.ErrInternalService
 	}
 	return league, nil
@@ -60,10 +64,10 @@ func (s *poolEntryServiceImpl) getPokemonSpeciesByID(pokemonSpeciesID int64) (*m
 	pokemon, err := s.pokemonSpeciesRepo.GetPokemonSpeciesByID(pokemonSpeciesID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Printf("(Service: PoolEntryService.getPokemonSpeciesByID) - pokemon %d species not found: %v\n", pokemonSpeciesID, err)
+			s.logger.Warn("getPokemonSpeciesByID - pokemon species not found", "species_id", pokemonSpeciesID, "error", err)
 			return nil, types.ErrPokemonSpeciesNotFound
 		}
-		log.Printf("(Service: PoolEntryService.getPokemonSpeciesByID) - could not retrieve pokemon species %d.\n", pokemonSpeciesID)
+		s.logger.Error("getPokemonSpeciesByID - could not retrieve pokemon species", "species_id", pokemonSpeciesID, "error", err)
 		return nil, types.ErrInternalService
 	}
 	return pokemon, nil
@@ -75,7 +79,7 @@ func (s *poolEntryServiceImpl) GetByID(id uuid.UUID) (*models.PoolEntry, error) 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, types.ErrPoolEntryNotFound
 		}
-		log.Printf("(Service: PoolEntryService.GetByID) - failed: %v\n", err)
+		s.logger.Error("GetByID - failed", "error", err)
 		return nil, types.ErrInternalService
 	}
 	return entry, nil
@@ -87,7 +91,7 @@ func (s *poolEntryServiceImpl) GetByLeague(leagueID uuid.UUID) ([]models.PoolEnt
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, types.ErrLeagueNotFound
 		}
-		log.Printf("(Service: PoolEntryService.GetByLeague) - failed: %v\n", err)
+		s.logger.Error("GetByLeague - failed", "error", err)
 		return nil, types.ErrInternalService
 	}
 	return entries, nil
@@ -99,7 +103,7 @@ func (s *poolEntryServiceImpl) GetAvailableByLeague(leagueID uuid.UUID) ([]model
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, types.ErrLeagueNotFound
 		}
-		log.Printf("(Service: PoolEntryService.GetAvailableByLeague) - failed: %v\n", err)
+		s.logger.Error("GetAvailableByLeague - failed", "error", err)
 		return nil, types.ErrInternalService
 	}
 	return entries, nil
@@ -112,7 +116,7 @@ func (s *poolEntryServiceImpl) Create(currentUser *models.User, input *requests.
 	}
 
 	if league.Status != enums.LeagueStatusSetup {
-		log.Printf("LOG: (Service: PoolEntryService.Create) - operation not allowed for current league status: %s for user %s", league.Status, currentUser.ID)
+		s.logger.Warn("Create - operation not allowed for current league status", "league_status", league.Status, "user_id", currentUser.ID)
 		return nil, types.ErrInvalidState
 	}
 
@@ -130,11 +134,11 @@ func (s *poolEntryServiceImpl) Create(currentUser *models.User, input *requests.
 
 	created, err := s.poolEntryRepo.Create(entry)
 	if err != nil {
-		log.Printf("LOG: (Service: PoolEntryService.Create) - failed: %v\n", err)
+		s.logger.Error("Create - failed", "error", err)
 		return nil, types.ErrInternalService
 	}
 
-	log.Printf("LOG: (Service: PoolEntryService.Create) - Successfully created pool entry for league %s, species %d", input.LeagueID, input.PokemonSpeciesID)
+	s.logger.Info("Create - successfully created pool entry", "league_id", input.LeagueID, "species_id", input.PokemonSpeciesID)
 	return created, nil
 }
 
@@ -158,7 +162,7 @@ func (s *poolEntryServiceImpl) CreateBatch(currentUser *models.User, inputs []re
 		}
 
 		if league.Status != enums.LeagueStatusSetup {
-			log.Printf("LOG: (Service: PoolEntryService.CreateBatch) - operation not allowed for current league status: %s for user %s", league.Status, currentUser.ID)
+			s.logger.Warn("CreateBatch - operation not allowed for current league status", "league_status", league.Status, "user_id", currentUser.ID)
 			return nil, types.ErrInvalidState
 		}
 
@@ -177,11 +181,11 @@ func (s *poolEntryServiceImpl) CreateBatch(currentUser *models.User, inputs []re
 
 	created, err := s.poolEntryRepo.CreateBatch(entriesToCreate)
 	if err != nil {
-		log.Printf("LOG: (Service: PoolEntryService.CreateBatch) - failed: %v\n", err)
+		s.logger.Error("CreateBatch - failed", "error", err)
 		return nil, types.ErrInternalService
 	}
 
-	log.Printf("LOG: (Service: PoolEntryService.CreateBatch) - Successfully batch created %d pool entries", len(created))
+	s.logger.Info("CreateBatch - successfully batch created pool entries", "count", len(created))
 	return created, nil
 }
 
@@ -189,26 +193,26 @@ func (s *poolEntryServiceImpl) Update(currentUser *models.User, input *requests.
 	existing, err := s.poolEntryRepo.GetByID(input.PoolEntryID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Printf("(Service: PoolEntryService.Update) - pool entry %s does not exist: %v\n", input.PoolEntryID, err)
+			s.logger.Warn("Update - pool entry does not exist", "pool_entry_id", input.PoolEntryID, "error", err)
 			return nil, types.ErrPoolEntryNotFound
 		}
-		log.Printf("(Service: PoolEntryService.Update) - could not fetch pool entry: %s\n", err.Error())
+		s.logger.Error("Update - could not fetch pool entry", "error", err.Error())
 		return nil, types.ErrInternalService
 	}
 
 	league, err := s.leagueRepo.GetLeagueByID(existing.LeagueID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Printf("(Service: PoolEntryService.Update) - league %s does not exist: %s\n", existing.LeagueID, err.Error())
+			s.logger.Warn("Update - league does not exist", "league_id", existing.LeagueID, "error", err.Error())
 			return nil, types.ErrLeagueNotFound
 		}
-		log.Printf("(Service: PoolEntryService.Update) - could not fetch league %s: %v\n", existing.LeagueID, err)
+		s.logger.Error("Update - could not fetch league", "league_id", existing.LeagueID, "error", err)
 		return nil, types.ErrInternalService
 	}
 
 	if currentUser.Role != "admin" &&
 		(league.Status != enums.LeagueStatusSetup && league.Status != enums.LeagueStatusDrafting) {
-		log.Printf("(Service: PoolEntryService.Update) - operation not allowed for current league status: %s for user %s", league.Status, currentUser.ID)
+		s.logger.Warn("Update - operation not allowed for current league status", "league_status", league.Status, "user_id", currentUser.ID)
 		return nil, types.ErrInvalidState
 	}
 
@@ -221,10 +225,10 @@ func (s *poolEntryServiceImpl) Update(currentUser *models.User, input *requests.
 
 	updated, err := s.poolEntryRepo.Update(existing)
 	if err != nil {
-		log.Printf("(Service: PoolEntryService.Update) - failed: %s\n", err.Error())
+		s.logger.Error("Update - failed", "error", err.Error())
 		return nil, types.ErrInternalService
 	}
 
-	log.Printf("(Service: PoolEntryService.Update) - Successfully updated pool entry %s", updated.ID)
+	s.logger.Info("Update - successfully updated pool entry", "pool_entry_id", updated.ID)
 	return updated, nil
 }

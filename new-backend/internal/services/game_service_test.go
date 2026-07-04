@@ -1,6 +1,7 @@
 package services_test
 
 import (
+	"log/slog"
 	"testing"
 
 	"github.com/google/uuid"
@@ -46,7 +47,7 @@ func TestGameService_GeneratePlayoffBracket_Correct(t *testing.T) {
 	mockLeagueMemberRepo.On("GetByLeagueAndGroup", leagueID, 1).Return(mockMembers, nil)
 	mockGameRepo.On("CreateGames", mock.AnythingOfType("[]*models.Game")).Return(nil)
 
-	gameService := services.NewGameService(mockGameRepo, mockLeagueRepo, mockLeagueMemberRepo)
+		gameService := services.NewGameService(slog.Default(), mockGameRepo, mockLeagueRepo, mockLeagueMemberRepo)
 
 	// ACT
 	err := gameService.GeneratePlayoffBracket(leagueID)
@@ -117,7 +118,7 @@ func TestGameService_GenerateRegularSeasonGames_Success(t *testing.T) {
 		return len(games) == 6
 	})).Return(nil)
 
-	gameService := services.NewGameService(mockGameRepo, mockLeagueRepo, mockLeagueMemberRepo)
+		gameService := services.NewGameService(slog.Default(), mockGameRepo, mockLeagueRepo, mockLeagueMemberRepo)
 
 	// ACT
 	err := gameService.GenerateRegularSeasonGames(leagueID)
@@ -148,7 +149,7 @@ func TestGameService_GenerateRegularSeasonGames_ErrGamesAlreadyGenerated(t *test
 	mockLeagueRepo.On("GetLeagueByID", leagueID).Return(mockLeague, nil)
 	mockGameRepo.On("HasGames", leagueID, enums.GameTypeRegularSeason).Return(true, nil).Once()
 
-	gameService := services.NewGameService(mockGameRepo, mockLeagueRepo, mockLeagueMemberRepo)
+		gameService := services.NewGameService(slog.Default(), mockGameRepo, mockLeagueRepo, mockLeagueMemberRepo)
 
 	// ACT
 	err := gameService.GenerateRegularSeasonGames(leagueID)
@@ -182,7 +183,7 @@ func TestGameService_GenerateRegularSeasonGames_ErrInvalidState(t *testing.T) {
 	mockLeagueRepo.On("GetLeagueByID", leagueID).Return(mockLeague, nil)
 	mockGameRepo.On("HasGames", leagueID, enums.GameTypeRegularSeason).Return(false, nil).Once() // Expect this check first
 
-	gameService := services.NewGameService(mockGameRepo, mockLeagueRepo, mockLeagueMemberRepo)
+		gameService := services.NewGameService(slog.Default(), mockGameRepo, mockLeagueRepo, mockLeagueMemberRepo)
 
 	// ACT
 	err := gameService.GenerateRegularSeasonGames(leagueID)
@@ -218,7 +219,7 @@ func TestGameService_GeneratePlayoffBracket_ErrInvalidConfig(t *testing.T) {
 	mockLeagueRepo.On("GetLeagueByID", leagueID).Return(mockLeague, nil)
 	mockLeagueMemberRepo.On("GetByLeagueAndGroup", leagueID, 1).Return(mockMembers, nil)
 
-	gameService := services.NewGameService(mockGameRepo, mockLeagueRepo, mockLeagueMemberRepo)
+		gameService := services.NewGameService(slog.Default(), mockGameRepo, mockLeagueRepo, mockLeagueMemberRepo)
 
 	// ACT
 	err := gameService.GeneratePlayoffBracket(leagueID)

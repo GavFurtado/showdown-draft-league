@@ -2,12 +2,13 @@ package controllers
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/config"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
@@ -20,17 +21,20 @@ type AuthController interface {
 }
 
 type authControllerImpl struct {
+	logger             *slog.Logger
 	authService        services.AuthService
 	cfg                *config.Config
 	discordOauthConfig *oauth2.Config
 }
 
 func NewAuthController(
+	logger *slog.Logger,
 	authService services.AuthService,
 	cfg *config.Config,
 	oauthConfig *oauth2.Config,
 ) AuthController {
 	return &authControllerImpl{
+		logger:             utils.LoggerWithService(logger, "AuthController"),
 		authService:        authService,
 		cfg:                cfg,
 		discordOauthConfig: oauthConfig,
@@ -51,7 +55,7 @@ func (c *authControllerImpl) Login(ctx *gin.Context) {
 		// 2. Try to validate it
 		if userID, err := c.authService.VerifyToken(token); err == nil {
 			// 3. Valid token -> go straight to frontend dashboard
-			log.Printf("user already authenticated: %s\n", userID)
+			c.logger.Info("user already authenticated", "user_id", userID)
 			ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/my-leagues", c.cfg.APP_BASE_URL))
 			return
 		}
@@ -79,23 +83,23 @@ func (c *authControllerImpl) Login(ctx *gin.Context) {
 func (c *authControllerImpl) DiscordCallback(ctx *gin.Context) {
 	storedState, err := ctx.Cookie("oauthstate")
 	if err != nil || storedState == "" || storedState != ctx.Query("state") {
-		log.Printf("(Error: DiscCallback) - OAuth state mismatch or missing. Stored=%s, query=%s, err=%v", storedState, ctx.Query("state"), err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Input"})
+		c.logger.Error("OAuth state mismatch or missing", "stored", storedState, "query", ctx.Query("state"), "error", err)
+		sendError(ctx, http.StatusBadRequest, "Invalid Input")
 		return
 	}
 
-	ctx.SetCookie("oauthstate", "", -1, "/", c.cfg.APP_BASE_URL, false, true) // Clear the state cookie
+	ctx.SetCookie("oauthstate", "", -1, "/", c.cfg.APP_BASE_URL, false, true)
 
 	code := ctx.Query("code")
 	if code == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Authorization code not provided"})
+		sendError(ctx, http.StatusBadRequest, "Authorization code not provided")
 		return
 	}
 
 	_, jwtToken, err := c.authService.HandleDiscordCallback(ctx, code)
 	if err != nil {
-		log.Printf("(Error: DiscCallback) - AuthService failed: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Authentication failed"})
+		c.logger.Error("AuthService failed", "error", err)
+		sendError(ctx, http.StatusInternalServerError, "Authentication failed")
 		return
 	}
 

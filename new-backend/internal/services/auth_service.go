@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -13,6 +13,7 @@ import (
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/responses"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 )
@@ -27,6 +28,7 @@ type authServiceImpl struct {
 	userRepo           repositories.UserRepository
 	jwtService         *JWTService
 	discordOauthConfig *oauth2.Config
+	logger             *slog.Logger
 }
 
 func (s *authServiceImpl) VerifyToken(token string) (uuid.UUID, error) {
@@ -35,6 +37,7 @@ func (s *authServiceImpl) VerifyToken(token string) (uuid.UUID, error) {
 
 // creates a new instance of AuthService, receiving the pre-configured oauth2.Config.
 func NewAuthService(
+	logger *slog.Logger,
 	userRepo repositories.UserRepository,
 	jwtService *JWTService,
 	oauthConfig *oauth2.Config,
@@ -43,6 +46,7 @@ func NewAuthService(
 		userRepo:           userRepo,
 		jwtService:         jwtService,
 		discordOauthConfig: oauthConfig,
+		logger:             utils.LoggerWithService(logger, "AuthService"),
 	}
 }
 
@@ -62,7 +66,7 @@ func (s *authServiceImpl) HandleDiscordCallback(ctx context.Context, code string
 	user, err := s.userRepo.GetUserByDiscordID(discordUser.ID)
 	if err != nil {
 		if err.Error() == "record not found" {
-			log.Printf("Creating new user for Discord ID: %s", discordUser.ID)
+			s.logger.Info("creating new user for Discord ID", "discord_id", discordUser.ID)
 			newUser := models.User{
 				DiscordID:        discordUser.ID,
 				DiscordUsername:  fmt.Sprintf("%s#%s", discordUser.Username, discordUser.Discriminator), // Combine if discriminator still exists for old users
@@ -91,7 +95,7 @@ func (s *authServiceImpl) HandleDiscordCallback(ctx context.Context, code string
 			user.DiscordAvatarURL = getDiscordAvatarURL(discordUser.ID, discordUser.Avatar)
 			user.UpdatedAt = time.Now()
 			if _, updateErr := s.userRepo.UpdateUser(user); updateErr != nil {
-				log.Printf("Warning: Failed to update user details for Discord ID %s: %v", discordUser.ID, updateErr)
+				s.logger.Warn("failed to update user details for Discord ID", "discord_id", discordUser.ID, "error", updateErr)
 			}
 		}
 	}

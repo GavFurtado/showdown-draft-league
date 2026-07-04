@@ -2,7 +2,7 @@ package services
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
@@ -36,6 +36,7 @@ type LeagueService interface {
 }
 
 type leagueServiceImpl struct {
+	logger           *slog.Logger
 	leagueRepo       repositories.LeagueRepository
 	memberRepo       repositories.LeagueMemberRepository
 	draftRepo        repositories.DraftRepository
@@ -46,12 +47,14 @@ type leagueServiceImpl struct {
 }
 
 func NewLeagueService(
+	logger *slog.Logger,
 	leagueRepo repositories.LeagueRepository,
 	memberRepo repositories.LeagueMemberRepository,
 	draftRepo repositories.DraftRepository,
 	gameRepo repositories.GameRepository,
 ) LeagueService {
 	return &leagueServiceImpl{
+		logger:     utils.LoggerWithService(logger, "LeagueService"),
 		leagueRepo: leagueRepo,
 		memberRepo: memberRepo,
 		draftRepo:  draftRepo,
@@ -79,7 +82,7 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.Leagu
 	// check if user already has two owned leagues
 	count, err := s.leagueRepo.GetLeaguesCountWhereOwner(userID)
 	if err != nil {
-		log.Printf("(Error: LeagueService.CreateLeague) - Could not get commissioner league count for user %s: %v\n", userID, err)
+		s.logger.Error("CreateLeague - could not get commissioner league count", "user_id", userID, "error", err)
 		return nil, fmt.Errorf("failed to check commissioner league count: %w", err)
 	}
 
@@ -118,7 +121,7 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.Leagu
 
 	createdLeague, err := s.leagueRepo.CreateLeague(league)
 	if err != nil {
-		log.Printf("(Error: LeagueService.CreateLeague) - Failed to create league for user %s: %v\n", userID, err)
+		s.logger.Error("CreateLeague - failed to create league", "user_id", userID, "error", err)
 		return nil, fmt.Errorf("failed to create league: %w", err)
 	}
 
@@ -137,7 +140,7 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.Leagu
 
 	_, err = s.memberRepo.Create(owner)
 	if err != nil {
-		log.Printf("(Error: LeagueService.CreateLeague) - Failed to create owner for league %s: %v\n", createdLeague.ID, err)
+		s.logger.Error("CreateLeague - failed to create owner", "league_id", createdLeague.ID, "error", err)
 		return nil, fmt.Errorf("failed to create league owner: %w", err)
 	}
 
@@ -151,7 +154,7 @@ func (s *leagueServiceImpl) GetLeagueByIDForUser(userID, leagueID uuid.UUID) (*m
 	// Retrieve the league
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
-		log.Printf("(Error: LeagueService.GetLeagueByIDForUser) - Could not get league %s for user %d: %v\n", leagueID, userID, err)
+		s.logger.Error("GetLeagueByIDForUser - could not get league", "league_id", leagueID, "user_id", userID, "error", err)
 		return nil, fmt.Errorf("failed to retrieve league: %w", err)
 	}
 
@@ -165,7 +168,7 @@ func (s *leagueServiceImpl) GetLeaguesByCommissioner(
 ) ([]models.League, error) {
 	leagues, err := s.leagueRepo.GetLeaguesByOwner(userID)
 	if err != nil {
-		log.Printf("(Error: LeagueService.GetLeaguesByCommissioner) - Failed to get commissioner leagues for user %s: %v\n", userID, err)
+		s.logger.Error("GetLeaguesByCommissioner - failed to get commissioner leagues", "user_id", userID, "error", err)
 		return nil, fmt.Errorf("failed to retrieve commissioner leagues: %w", err)
 	}
 
@@ -176,7 +179,7 @@ func (s *leagueServiceImpl) GetLeaguesByCommissioner(
 func (s *leagueServiceImpl) GetLeaguesByUser(userID uuid.UUID, currentUser *models.User) ([]models.League, error) {
 	leagues, err := s.leagueRepo.GetLeaguesByUser(userID)
 	if err != nil {
-		log.Printf("(Error: LeagueService.GetLeaguesByUser) - Failed to get leagues for user %s: %v\n", userID, err)
+		s.logger.Error("GetLeaguesByUser - failed to get leagues", "user_id", userID, "error", err)
 		return nil, fmt.Errorf("failed to retrieve leagues: %w", err)
 	}
 	return leagues, nil
@@ -189,19 +192,19 @@ func (s *leagueServiceImpl) GetLeaguesByUser(userID uuid.UUID, currentUser *mode
 func (s *leagueServiceImpl) StartRegularSeason(leagueID uuid.UUID) error {
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
-		log.Printf("ERROR: (LeagueService: StartRegularSeason) - Failed to fetch league %s: %v\n", leagueID, err)
+		s.logger.Error("StartRegularSeason - failed to fetch league", "league_id", leagueID, "error", err)
 		return types.ErrLeagueNotFound
 	}
 
 	// 1. Validate League Status
 	if league.Status != enums.LeagueStatusPostDraft {
-		log.Printf("ERROR: (LeagueService: StartRegularSeason) - League %s is not in POST_DRAFT status, cannot start regular season. Current status: %s\n", leagueID, league.Status)
+		s.logger.Error("StartRegularSeason - league is not in POST_DRAFT status", "league_id", leagueID, "status", league.Status)
 		return types.ErrInvalidState
 	}
 
 	// 2. Generate Regular Season Games
 	if err := s.gameService.GenerateRegularSeasonGames(leagueID); err != nil {
-		log.Printf("ERROR: (LeagueService: StartRegularSeason) - Failed to generate regular season games for league %s: %v\n", leagueID, err)
+		s.logger.Error("StartRegularSeason - failed to generate regular season games", "league_id", leagueID, "error", err)
 		return fmt.Errorf("failed to generate regular season games: %w", err)
 	}
 
@@ -211,17 +214,17 @@ func (s *leagueServiceImpl) StartRegularSeason(leagueID uuid.UUID) error {
 	league.CurrentWeekNumber = 1 // Season starts at Week 1
 	league.RegularSeasonStartDate = &now
 	if _, err := s.leagueRepo.UpdateLeague(league); err != nil {
-		log.Printf("ERROR: (LeagueService: StartRegularSeason) - Failed to update league %s status, current week number, and regular season start date: %v\n", leagueID, err)
+		s.logger.Error("StartRegularSeason - failed to update league status and week info", "league_id", leagueID, "error", err)
 		return fmt.Errorf("failed to update league status: %w", err)
 	}
-	log.Printf("LOG: (LeagueService: StartRegularSeason) - League %s status updated to REGULAR_SEASON, CurrentWeekNumber set to %d, RegularSeasonStartDate set to %s.\n", leagueID, league.CurrentWeekNumber, league.RegularSeasonStartDate.String())
+	s.logger.Info("StartRegularSeason - league status updated to REGULAR_SEASON", "league_id", leagueID, "week", league.CurrentWeekNumber, "start_date", league.RegularSeasonStartDate.String())
 
 	// 4. Schedule the very first LeagueWeeklyTick
 	// The first tick should occur 7 days from now to advance to Week 2.
 	firstTickTime := now.Add(7 * 24 * time.Hour)
 	league.NextWeeklyTick = &firstTickTime
 	if _, err := s.leagueRepo.UpdateLeague(league); err != nil {
-		log.Printf("ERROR: (LeagueService: StartRegularSeason) - Failed to update league %s with next weekly tick time: %v\n", leagueID, err)
+		s.logger.Error("StartRegularSeason - failed to update league with next weekly tick time", "league_id", leagueID, "error", err)
 		return fmt.Errorf("failed to update league with next weekly tick time: %w", err)
 	}
 
@@ -234,16 +237,16 @@ func (s *leagueServiceImpl) StartRegularSeason(leagueID uuid.UUID) error {
 		},
 	}
 	s.schedulerService.RegisterTask(firstTickTask)
-	log.Printf("LOG: (LeagueService: StartRegularSeason) - First weekly tick for league %s scheduled for %s.\n", leagueID, firstTickTime.String())
+	s.logger.Info("StartRegularSeason - first weekly tick scheduled", "league_id", leagueID, "tick_time", firstTickTime.String())
 
 	// 5. Trigger first transfer window if applicable
 	// This will call transferService.StartTransferPeriod, which will then schedule its own EndTransferPeriod.
 	if league.Format.AllowTransfers && league.Format.TransferWindowFrequencyDays > 0 {
 		weeksBetweenWindows := league.Format.TransferWindowFrequencyDays / 7
 		if weeksBetweenWindows > 0 && (league.CurrentWeekNumber-1)%weeksBetweenWindows == 0 {
-			log.Printf("LOG: (LeagueService: StartRegularSeason) - Triggering initial transfer window for league %s.\n", leagueID)
+			s.logger.Info("StartRegularSeason - triggering initial transfer window", "league_id", leagueID)
 			if err := s.transferService.StartTransferPeriod(leagueID); err != nil {
-				log.Printf("ERROR: (LeagueService: StartRegularSeason) - Failed to trigger initial transfer period for league %s: %v\n", leagueID, err)
+				s.logger.Error("StartRegularSeason - failed to trigger initial transfer period", "league_id", leagueID, "error", err)
 				// Log but don't fail the whole season start, transfer window issues can be manually resolved.
 			}
 		}
@@ -258,17 +261,17 @@ func (s *leagueServiceImpl) StartRegularSeason(leagueID uuid.UUID) error {
 func (s *leagueServiceImpl) ProcessWeeklyTick(leagueID uuid.UUID) error {
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
-		log.Printf("ERROR: (LeagueService: ProcessWeeklyTick) - Failed to fetch league %s: %v\n", leagueID, err)
+		s.logger.Error("ProcessWeeklyTick - failed to fetch league", "league_id", leagueID, "error", err)
 		return types.ErrLeagueNotFound
 	}
 
 	if league.Status != enums.LeagueStatusRegularSeason {
-		log.Printf("INFO: (LeagueService: ProcessWeeklyTick) - League %s is not in REGULAR_SEASON. Skipping weekly tick. Status: %s\n", leagueID, league.Status)
+		s.logger.Info("ProcessWeeklyTick - league not in REGULAR_SEASON, skipping weekly tick", "league_id", leagueID, "status", league.Status)
 		return nil // Not an error, just not applicable
 	}
 
 	if league.RegularSeasonStartDate == nil {
-		log.Printf("ERROR: (LeagueService: ProcessWeeklyTick) - League %s has no RegularSeasonStartDate. Cannot process tick.\n", leagueID)
+		s.logger.Error("ProcessWeeklyTick - league has no RegularSeasonStartDate", "league_id", leagueID)
 		return fmt.Errorf("league %s is missing RegularSeasonStartDate", leagueID)
 	}
 
@@ -281,11 +284,11 @@ func (s *leagueServiceImpl) ProcessWeeklyTick(leagueID uuid.UUID) error {
 
 	if calculatedCurrentWeek > oldWeekNumber {
 		// Weeks were missed or it's a natural advancement. Update the CurrentWeekNumber.
-		log.Printf("INFO: (LeagueService: ProcessWeeklyTick) - Advancing week for league %s from %d to %d.\n", leagueID, oldWeekNumber, calculatedCurrentWeek)
+		s.logger.Info("ProcessWeeklyTick - advancing week", "league_id", leagueID, "old_week", oldWeekNumber, "new_week", calculatedCurrentWeek)
 		league.CurrentWeekNumber = calculatedCurrentWeek
 	} else {
 		// System is already up-to-date. Log this and fall through to ensure next tick is scheduled correctly.
-		log.Printf("INFO: (LeagueService: ProcessWeeklyTick) - League %s: Already at or beyond calculated week %d (current: %d). Re-scheduling next tick.\n", leagueID, calculatedCurrentWeek, oldWeekNumber)
+		s.logger.Info("ProcessWeeklyTick - already at or beyond calculated week, re-scheduling next tick", "league_id", leagueID, "calculated_week", calculatedCurrentWeek, "current_week", oldWeekNumber)
 	}
 
 	// Calculate and schedule the next LeagueWeeklyTick based on the CURRENT correct week
@@ -294,7 +297,7 @@ func (s *leagueServiceImpl) ProcessWeeklyTick(leagueID uuid.UUID) error {
 
 	// Save the updated league state BEFORE scheduling the task
 	if _, err := s.leagueRepo.UpdateLeague(league); err != nil {
-		log.Printf("ERROR: (LeagueService: ProcessWeeklyTick) - Failed to save updated league %s after weekly tick processing: %v\n", leagueID, err)
+		s.logger.Error("ProcessWeeklyTick - failed to save updated league after weekly tick processing", "league_id", leagueID, "error", err)
 		return fmt.Errorf("failed to save league after weekly tick: %w", err)
 	}
 
@@ -306,22 +309,22 @@ func (s *leagueServiceImpl) ProcessWeeklyTick(leagueID uuid.UUID) error {
 		Payload:   utils.PayloadLeagueWeeklyTick{LeagueID: league.ID},
 	}
 	s.schedulerService.RegisterTask(nextTickTask)
-	log.Printf("LOG: (LeagueService: ProcessWeeklyTick) - Next weekly tick for league %s scheduled for %s (Start of Week %d).\n", leagueID, nextTickTime.String(), league.CurrentWeekNumber+1)
+	s.logger.Info("ProcessWeeklyTick - next weekly tick scheduled", "league_id", leagueID, "tick_time", nextTickTime.String(), "next_week", league.CurrentWeekNumber+1)
 
 	// Check for transfer windows ONLY on a natural single-week advancement.
 	if calculatedCurrentWeek == oldWeekNumber+1 {
 		if league.Format.AllowTransfers {
 			weeksBetweenWindows := league.Format.TransferWindowFrequencyDays / 7
 			if weeksBetweenWindows > 0 && (league.CurrentWeekNumber-1)%weeksBetweenWindows == 0 {
-				log.Printf("LOG: (LeagueService: ProcessWeeklyTick) - Natural week advancement. Triggering transfer window for league %s for Week %d.\n", leagueID, league.CurrentWeekNumber)
+				s.logger.Info("ProcessWeeklyTick - natural week advancement, triggering transfer window", "league_id", leagueID, "week", league.CurrentWeekNumber)
 				if err := s.transferService.StartTransferPeriod(leagueID); err != nil {
-					log.Printf("ERROR: (LeagueService: ProcessWeeklyTick) - Failed to trigger transfer period for league %s: %v\n", leagueID, err)
+					s.logger.Error("ProcessWeeklyTick - failed to trigger transfer period", "league_id", leagueID, "error", err)
 				}
 			}
 		}
 	} else if calculatedCurrentWeek > oldWeekNumber {
 		// A multi-week jump occurred. Log it, but do not trigger any transfer windows.
-		log.Printf("WARN: (LeagueService: ProcessWeeklyTick) - League %s jumped from week %d to %d. Transfer window checks are bypassed for this tick.\n", leagueID, oldWeekNumber, calculatedCurrentWeek)
+		s.logger.Warn("ProcessWeeklyTick - league jumped weeks, transfer window checks bypassed", "league_id", leagueID, "old_week", oldWeekNumber, "new_week", calculatedCurrentWeek)
 	}
 
 	return nil

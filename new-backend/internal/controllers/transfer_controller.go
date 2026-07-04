@@ -1,13 +1,14 @@
 package controllers
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/middleware"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -20,11 +21,13 @@ type TransferController interface {
 }
 
 type transferControllerImpl struct {
+	logger          *slog.Logger
 	transferService services.TransferService
 }
 
-func NewTransferController(transferService services.TransferService) TransferController {
+func NewTransferController(logger *slog.Logger, transferService services.TransferService) TransferController {
 	return &transferControllerImpl{
+		logger:          utils.LoggerWithService(logger, "TransferController"),
 		transferService: transferService,
 	}
 }
@@ -43,12 +46,12 @@ func (tc *transferControllerImpl) StartTransferPeriod(c *gin.Context) {
 	leagueIDStr := c.Param("leagueId")
 	leagueID, err := uuid.Parse(leagueIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid league ID"})
+		sendError(c, http.StatusBadRequest, "Invalid league ID")
 		return
 	}
 
 	if err := tc.transferService.StartTransferPeriod(leagueID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transfer period", "details": err.Error()})
+		sendError(c, http.StatusInternalServerError, "Failed to start transfer period")
 		return
 	}
 
@@ -69,12 +72,12 @@ func (tc *transferControllerImpl) EndTransferPeriod(c *gin.Context) {
 	leagueIDStr := c.Param("leagueId")
 	leagueID, err := uuid.Parse(leagueIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		sendError(c, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	if err := tc.transferService.EndTransferPeriod(leagueID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to end transfer period", "details": err.Error()})
+		sendError(c, http.StatusInternalServerError, "Failed to end transfer period")
 		return
 	}
 
@@ -99,38 +102,38 @@ func (tc *transferControllerImpl) EndTransferPeriod(c *gin.Context) {
 func (tc *transferControllerImpl) DropPokemon(ctx *gin.Context) {
 	currentUser, err := tc.getUserFromContext(ctx)
 	if err != nil {
-		return // response already sent
+		return
 	}
 
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	claimID, err := uuid.Parse(ctx.Param("claimId"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	if err := tc.transferService.DropPokemon(currentUser, leagueID, claimID); err != nil {
-		log.Printf("LOG: (TransferController: DropPokemon) - Service method error: %v\n", err)
+		tc.logger.Error("Service method error", "error", err, "method", "DropPokemon")
 		switch err {
 		case types.ErrClaimNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			sendError(ctx, http.StatusNotFound, err.Error())
 		case types.ErrUnauthorized:
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			sendError(ctx, http.StatusUnauthorized, err.Error())
 		case types.ErrInvalidState:
-			ctx.JSON(http.StatusConflict, gin.H{"error": "League is not in a transfer window"})
+			sendError(ctx, http.StatusConflict, "League is not in a transfer window")
 		case types.ErrPokemonAlreadyReleased:
-			ctx.JSON(http.StatusConflict, gin.H{"error": "Pokemon has already been released"})
+			sendError(ctx, http.StatusConflict, "Pokemon has already been released")
 		case types.ErrInsufficientTransferCredits:
-			ctx.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			sendError(ctx, http.StatusForbidden, err.Error())
 		case types.ErrForbidden:
-			ctx.JSON(http.StatusForbidden, gin.H{"error": "Pokemon not in this league"})
+			sendError(ctx, http.StatusForbidden, "Pokemon not in this league")
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}
@@ -155,36 +158,36 @@ func (tc *transferControllerImpl) DropPokemon(ctx *gin.Context) {
 func (tc *transferControllerImpl) PickupFreeAgent(ctx *gin.Context) {
 	currentUser, err := tc.getUserFromContext(ctx)
 	if err != nil {
-		return // response already sent
+		return
 	}
 
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	poolEntryID, err := uuid.Parse(ctx.Param("poolEntryId"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	if err := tc.transferService.PickupFreeAgent(currentUser, leagueID, poolEntryID); err != nil {
-		log.Printf("LOG: (TransferController: PickupFreeAgent) - Service method error: %v\n", err)
+		tc.logger.Error("Service method error", "error", err, "method", "PickupFreeAgent")
 		switch err {
 		case types.ErrPoolEntryNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			sendError(ctx, http.StatusNotFound, err.Error())
 		case types.ErrInsufficientTransferCredits:
-			ctx.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			sendError(ctx, http.StatusForbidden, err.Error())
 		case types.ErrInvalidState:
-			ctx.JSON(http.StatusConflict, gin.H{"error": "League is not in a transfer window"})
+			sendError(ctx, http.StatusConflict, "League is not in a transfer window")
 		case types.ErrConflict:
-			ctx.JSON(http.StatusConflict, gin.H{"error": "Pokemon is not available to sign"})
+			sendError(ctx, http.StatusConflict, "Pokemon is not available to sign")
 		case types.ErrForbidden:
-			ctx.JSON(http.StatusForbidden, gin.H{"error": "Pokemon not in this league"})
+			sendError(ctx, http.StatusForbidden, "Pokemon not in this league")
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}
@@ -196,8 +199,8 @@ func (tc *transferControllerImpl) PickupFreeAgent(ctx *gin.Context) {
 func (tc *transferControllerImpl) getUserFromContext(ctx *gin.Context) (*models.User, error) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
-		log.Printf("LOG: (TransferController: getUserFromContext) - no user in context\n")
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrNoUserInContext.Error()})
+		tc.logger.Error("no user in context", "method", "getUserFromContext")
+		sendError(ctx, http.StatusBadRequest, types.ErrNoUserInContext.Error())
 		return nil, types.ErrNoUserInContext
 	}
 	return currentUser, nil

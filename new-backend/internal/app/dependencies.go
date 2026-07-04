@@ -1,6 +1,8 @@
 package app
 
 import (
+	"log/slog"
+
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/controllers"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
@@ -20,6 +22,7 @@ type Repositories struct {
 }
 
 type Services struct {
+	Logger                *slog.Logger
 	AuthService           services.AuthService
 	DraftService          services.DraftService
 	JWTService            services.JWTService

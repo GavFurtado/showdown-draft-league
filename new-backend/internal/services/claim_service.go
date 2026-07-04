@@ -2,11 +2,12 @@ package services
 
 import (
 	"errors"
-	"log"
+	"log/slog"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -20,10 +21,14 @@ type ClaimService interface {
 
 type claimServiceImpl struct {
 	claimRepo repositories.ClaimRepository
+	logger    *slog.Logger
 }
 
-func NewClaimService(claimRepo repositories.ClaimRepository) ClaimService {
-	return &claimServiceImpl{claimRepo: claimRepo}
+func NewClaimService(logger *slog.Logger, claimRepo repositories.ClaimRepository) ClaimService {
+	return &claimServiceImpl{
+		claimRepo: claimRepo,
+		logger:    utils.LoggerWithService(logger, "ClaimService"),
+	}
 }
 
 func (s *claimServiceImpl) GetByID(id uuid.UUID) (*models.Claim, error) {
@@ -32,7 +37,7 @@ func (s *claimServiceImpl) GetByID(id uuid.UUID) (*models.Claim, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, types.ErrClaimNotFound
 		}
-		log.Printf("(Service: ClaimService.GetByID) - failed: %v\n", err)
+		s.logger.Error("GetByID - failed", "error", err)
 		return nil, types.ErrInternalService
 	}
 	return claim, nil
@@ -41,7 +46,7 @@ func (s *claimServiceImpl) GetByID(id uuid.UUID) (*models.Claim, error) {
 func (s *claimServiceImpl) GetActiveByPlayer(playerID uuid.UUID) ([]models.Claim, error) {
 	claims, err := s.claimRepo.GetActiveByPlayer(playerID)
 	if err != nil {
-		log.Printf("(Service: ClaimService.GetActiveByPlayer) - failed: %v\n", err)
+		s.logger.Error("GetActiveByPlayer - failed", "error", err)
 		return nil, types.ErrInternalService
 	}
 	return claims, nil
@@ -50,7 +55,7 @@ func (s *claimServiceImpl) GetActiveByPlayer(playerID uuid.UUID) ([]models.Claim
 func (s *claimServiceImpl) GetActiveByLeague(leagueID uuid.UUID) ([]models.Claim, error) {
 	claims, err := s.claimRepo.GetActiveByLeague(leagueID)
 	if err != nil {
-		log.Printf("(Service: ClaimService.GetActiveByLeague) - failed: %v\n", err)
+		s.logger.Error("GetActiveByLeague - failed", "error", err)
 		return nil, types.ErrInternalService
 	}
 	return claims, nil
@@ -59,7 +64,7 @@ func (s *claimServiceImpl) GetActiveByLeague(leagueID uuid.UUID) ([]models.Claim
 func (s *claimServiceImpl) GetReleasedByLeague(leagueID uuid.UUID) ([]models.Claim, error) {
 	claims, err := s.claimRepo.GetReleasedByLeague(leagueID)
 	if err != nil {
-		log.Printf("(Service: ClaimService.GetReleasedByLeague) - failed: %v\n", err)
+		s.logger.Error("GetReleasedByLeague - failed", "error", err)
 		return nil, types.ErrInternalService
 	}
 	return claims, nil

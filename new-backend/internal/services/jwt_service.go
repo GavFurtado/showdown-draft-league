@@ -30,7 +30,7 @@ func (s *JWTService) GenerateToken(userID uuid.UUID) (string, error) {
 
 	tokenString, err := token.SignedString(s.secretKey)
 	if err != nil {
-		return "", fmt.Errorf("(Error: GenerateToken) - Failed to sign token: %w", err)
+		return "", fmt.Errorf("failed to sign token: %w", err)
 	}
 
 	return tokenString, err
@@ -39,27 +39,27 @@ func (s *JWTService) GenerateToken(userID uuid.UUID) (string, error) {
 func (s *JWTService) ValidateToken(tokenString string) (uuid.UUID, error) {
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("(Error: jwt.Parse) - unexpected signing method: %s", t.Header["alg"])
+			return nil, fmt.Errorf("unexpected signing method: %s", t.Header["alg"])
 		}
 		return s.secretKey, nil
 	})
 
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("Invalid token: %w", err)
+			return uuid.Nil, fmt.Errorf("invalid token: %w", err)
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		userIDStr, ok := claims["user_id"].(string)
 		if !ok {
-			return uuid.Nil, fmt.Errorf("(Error: ValidateToken) - user_id claim is not a string")
+			return uuid.Nil, fmt.Errorf("user_id claim is not a string")
 		}
 
 		userID, err := uuid.Parse(userIDStr)
 		if err != nil {
-			return uuid.Nil, fmt.Errorf("(Error: ValidateToken) - Invalid user_id UUID format: %w", err)
+			return uuid.Nil, fmt.Errorf("invalid user_id UUID format: %w", err)
 		}
 		return userID, nil
 	}
 
-	return uuid.Nil, fmt.Errorf("(Error: ValidateToken) - Invalid token claims")
+	return uuid.Nil, fmt.Errorf("invalid token claims")
 }

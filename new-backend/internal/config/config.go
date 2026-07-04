@@ -1,7 +1,7 @@
 package config
 
 import (
-	"log"
+	"log/slog"
 	"os"
 
 	. "github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
@@ -25,7 +25,7 @@ func LoadConfig() *Config {
 	// Load environment variables from .env file
 	err := godotenv.Load()
 	if err != nil {
-		log.Printf("Warning: .env file not found or could not be loaded: %v", err)
+		slog.Warn(".env file not found or could not be loaded", "error", err)
 	}
 
 	cfg := &Config{
@@ -50,7 +50,8 @@ func LoadConfig() *Config {
 func getEnv(key string) string {
 	value := os.Getenv(key)
 	if value == "" {
-		log.Fatalf("Environment variable %s not set", key)
+		slog.Error("Environment variable not set", "key", key)
+		os.Exit(1)
 	}
 	return value
 }
