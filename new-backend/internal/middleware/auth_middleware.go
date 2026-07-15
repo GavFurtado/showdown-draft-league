@@ -99,9 +99,8 @@ func LeagueRBACMiddleware(
 				ctx.AbortWithStatusJSON(http.StatusInternalServerError, responses.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", ctx.Request.URL.Path))
 				return
 			}
-			// some record not found error (atleast it should be)
-			GetLogger(ctx).Error("rbac access check failed", "error", err)
-			ctx.AbortWithStatusJSON(http.StatusNotFound, responses.NewErrorResponse(http.StatusNotFound, "Record Not Found", ctx.Request.URL.Path))
+			GetLogger(ctx).Warn("rbac access check failed", "error", err)
+			ctx.AbortWithStatusJSON(http.StatusNotFound, responses.NewErrorResponse(http.StatusNotFound, err.Error(), ctx.Request.URL.Path))
 			return
 		}
 		if !ok {
