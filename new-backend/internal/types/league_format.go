@@ -19,7 +19,7 @@ type LeagueFormat struct {
 	PlayoffByesCount            int                            `json:"PlayoffByesCount"`
 	PlayoffSeedingType          enums.LeaguePlayoffSeedingType `json:"PlayoffSeedingType" validate:"isValid"`
 	AllowTransfers              bool                           `json:"AllowTransfers"`
-	TransfersCostCredits        bool                           `json:"TransfersCostCredits"`
+	TransferUsesCredits         bool                           `json:"TransferUsesCredits"`
 	TransferCreditsPerWindow    int                            `json:"TransferCreditsPerWindow"`
 	TransferCreditCap           int                            `json:"TransferCreditCap"`
 	TransferWindowFrequencyDays int                            `json:"TransferWindowFrequencyDays"`
@@ -65,11 +65,11 @@ func (f *LeagueFormat) Scan(value any) error {
 	if val, ok := m["playoff_seeding_type"].(string); ok {
 		f.PlayoffSeedingType = enums.LeaguePlayoffSeedingType(val)
 	}
-	if val, ok := m["allow_transfer"].(bool); ok {
+	if val, ok := m["allow_transfers"].(bool); ok {
 		f.AllowTransfers = val
 	}
-	if val, ok := m["transfers_cost_credits"].(bool); ok {
-		f.TransfersCostCredits = val
+	if val, ok := m["transfer_uses_credits"].(bool); ok {
+		f.TransferUsesCredits = val
 	}
 	if val, ok := m["transfer_credits_per_window"].(float64); ok {
 		f.TransferCreditsPerWindow = int(val)
@@ -110,8 +110,8 @@ func (f LeagueFormat) Value() (driver.Value, error) {
 		"playoff_participant_count":      f.PlayoffParticipantCount,
 		"playoff_byes_count":             f.PlayoffByesCount,
 		"playoff_seeding_type":           f.PlayoffSeedingType,
-		"allow_trading":                  f.AllowTransfers,
-		"allow_transfer_credits":         f.TransfersCostCredits,
+		"allow_transfers":                f.AllowTransfers,
+		"transfer_uses_credits":          f.TransferUsesCredits,
 		"transfer_credits_per_window":    f.TransferCreditsPerWindow,
 		"transfer_credit_cap":            f.TransferCreditCap,
 		"transfer_window_frequency_days": f.TransferWindowFrequencyDays,
