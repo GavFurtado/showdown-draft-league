@@ -122,15 +122,20 @@ func (h *customHandler) Handle(_ context.Context, r slog.Record) error {
 	if r.PC != 0 {
 		frames := runtime.CallersFrames([]uintptr{r.PC})
 		frame, _ := frames.Next()
+		buf = append(buf, ' ')
 		buf = append(buf, colorCyan...)
 		buf = append(buf, "func"...)
 		buf = append(buf, colorReset...)
 		buf = append(buf, '=')
 		trimmed := trimModulePath(frame.Function)
 		buf = append(buf, trimmed...)
-		buf = append(buf, ' ')
 	}
 
+	buf = append(buf, ' ')
+	buf = append(buf, colorCyan...)
+	buf = append(buf, "message"...)
+	buf = append(buf, colorReset...)
+	buf = append(buf, '=')
 	buf = append(buf, r.Message...)
 
 	buf = append(buf, '\n')
