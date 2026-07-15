@@ -15,7 +15,7 @@ type LeagueFormatRequestDTO struct {
 	PlayoffByesCount            int                            `json:"PlayoffByesCount"`
 	PlayoffSeedingType          enums.LeaguePlayoffSeedingType `json:"PlayoffSeedingType" validate:"isValid"`
 	AllowTransfers              bool                           `json:"AllowTransfers"`
-	TransfersCostCredits        bool                           `json:"TransfersCostCredits"`
+	TransferUsesCredits         bool                           `json:"TransfersCostCredits"`
 	TransferCreditsPerWindow    int                            `json:"TransferCreditsPerWindow"`
 	TransferCreditCap           int                            `json:"TransferCreditCap"`
 	TransferWindowFrequencyDays int                            `json:"TransferWindowFrequencyDays"`
@@ -35,7 +35,7 @@ func (f LeagueFormatRequestDTO) ToLeagueFormat() types.LeagueFormat {
 		PlayoffByesCount:            f.PlayoffByesCount,
 		PlayoffSeedingType:          f.PlayoffSeedingType,
 		AllowTransfers:              f.AllowTransfers,
-		TransfersCostCredits:        f.TransfersCostCredits,
+		TransferUsesCredits:         f.TransferUsesCredits,
 		TransferCreditsPerWindow:    f.TransferCreditsPerWindow,
 		TransferCreditCap:           f.TransferCreditCap,
 		TransferWindowFrequencyDays: f.TransferWindowFrequencyDays,

@@ -78,7 +78,7 @@ func (s *transferServiceImpl) StartTransferPeriod(leagueID uuid.UUID) error {
 
 	// 3. Update Player Credits (if applicable)
 	didAllPlayersAccrueCredits := true
-	if league.Format.TransfersCostCredits {
+	if league.Format.TransferUsesCredits {
 		members, err := s.memberRepo.GetByLeague(leagueID)
 		if err != nil {
 			s.logger.Error("StartTransferPeriod - failed to get members", "league_id", leagueID, "error", err)
@@ -123,7 +123,7 @@ func (s *transferServiceImpl) StartTransferPeriod(leagueID uuid.UUID) error {
 		return types.ErrInternalService
 	}
 
-	if !league.Format.TransfersCostCredits {
+	if !league.Format.TransferUsesCredits {
 		s.logger.Info("StartTransferPeriod - transfer window started", "league_id", leagueID)
 	} else {
 		if !didAllPlayersAccrueCredits {
@@ -173,7 +173,7 @@ func (s *transferServiceImpl) EndTransferPeriod(leagueID uuid.UUID) error {
 		// If frequency is 0 or less, don't schedule a next window.
 		league.Format.NextTransferWindowStart = nil
 		league.Format.AllowTransfers = false
-		league.Format.TransfersCostCredits = false
+		league.Format.TransferUsesCredits = false
 	}
 
 	// 5. Save Changes

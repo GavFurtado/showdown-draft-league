@@ -3460,14 +3460,14 @@ const docTemplate = `{
                 "TransferCreditsPerWindow": {
                     "type": "integer"
                 },
+                "TransferUsesCredits": {
+                    "type": "boolean"
+                },
                 "TransferWindowDuration": {
                     "type": "integer"
                 },
                 "TransferWindowFrequencyDays": {
                     "type": "integer"
-                },
-                "TransfersCostCredits": {
-                    "type": "boolean"
                 }
             }
         }
