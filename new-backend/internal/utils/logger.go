@@ -1,3 +1,13 @@
+// Package utils provides a custom slog handler and logging helpers.
+//
+// Logging convention (slog standard):
+//
+//	logger.Info("message", "key1", val1, "key2", val2)
+//	logger.Warn("message", "error", err)
+//	logger.Error("message", "user_id", id, "role", role)
+//
+// Args after the message are alternating key-value pairs.
+// Always use string keys. Common keys: "error", "user_id", "role", "service", "method".
 package utils
 
 import (
@@ -24,6 +34,9 @@ var (
 	rootLoggerOnce sync.Once
 )
 
+// InitSlog initialises the root slog.Logger with a custom handler
+// (positional timestamp/level, ANSI colours, key=value attrs, func=, message=).
+// Must be called once at startup before any logging occurs.
 func InitSlog() {
 	rootLoggerOnce.Do(func() {
 		handler := &customHandler{
@@ -35,10 +48,24 @@ func InitSlog() {
 	})
 }
 
+// RootLogger returns the root logger initialised by InitSlog.
 func RootLogger() *slog.Logger {
 	return rootLogger
 }
 
+// LoggerWithService returns a child logger with a "service" attribute attached.
+//
+// Usage in constructors:
+//
+//	logger := utils.LoggerWithService(rootLogger, "AuthService")
+//
+// All subsequent calls to logger.Info / logger.Warn / logger.Error / logger.Debug
+// will include service=AuthService in every log line.
+//
+// Those methods follow slog's standard (msg string, args ...any) signature,
+// where args are alternating key-value pairs:
+//
+//	logger.Info("user logged in", "user_id", id, "role", role)
 func LoggerWithService(logger *slog.Logger, service string) *slog.Logger {
 	return logger.With("service", service)
 }

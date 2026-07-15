@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/config"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/responses"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 	"github.com/gin-gonic/gin"
@@ -14,6 +15,8 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// AuthController does auth flow
+// TODO: Refresh Token based auth flow
 type AuthController interface {
 	Login(ctx *gin.Context)
 	DiscordCallback(ctx *gin.Context)
@@ -47,6 +50,7 @@ func NewAuthController(
 //	@Description	Redirects to Discord for authentication
 //	@Tags			Auth
 //	@Success		307
+//	@Security		none
 //	@Router			/auth/discord/login [get]
 func (c *authControllerImpl) Login(ctx *gin.Context) {
 	// 1. Check for existing JWT cookie
@@ -63,7 +67,7 @@ func (c *authControllerImpl) Login(ctx *gin.Context) {
 
 	// 4. No valid token -> begin Discord OAuth flow
 	state := uuid.New().String()
-	ctx.SetCookie("oauthstate", state, 300, "/", c.cfg.APP_BASE_URL, false, true)
+	ctx.SetCookie("oauthstate", state, 300, "/", "", false, true)
 
 	url := c.discordOauthConfig.AuthCodeURL(state)
 	ctx.Redirect(http.StatusTemporaryRedirect, url)
@@ -76,9 +80,10 @@ func (c *authControllerImpl) Login(ctx *gin.Context) {
 //	@Tags			Auth
 //	@Param			state	query	string	true	"OAuth state token"
 //	@Param			code	query	string	true	"Authorization code from Discord"
-//	@Success		307
-//	@Failure		400	{object}	map[string]interface{}
-//	@Failure		500	{object}	map[string]interface{}
+//	@Success		200	{object}	responses.TokenResponse
+//	@Failure		400	{object}	responses.ErrorResponse
+//	@Failure		500	{object}	responses.ErrorResponse
+//	@Security		none
 //	@Router			/auth/discord/callback [get]
 func (c *authControllerImpl) DiscordCallback(ctx *gin.Context) {
 	storedState, err := ctx.Cookie("oauthstate")
@@ -88,7 +93,7 @@ func (c *authControllerImpl) DiscordCallback(ctx *gin.Context) {
 		return
 	}
 
-	ctx.SetCookie("oauthstate", "", -1, "/", c.cfg.APP_BASE_URL, false, true)
+	ctx.SetCookie("oauthstate", "", -1, "/", "", false, true)
 
 	code := ctx.Query("code")
 	if code == "" {
@@ -109,8 +114,8 @@ func (c *authControllerImpl) DiscordCallback(ctx *gin.Context) {
 	const sessionTokenPeriod = int((time.Hour * 24 * 3 * 30 / time.Second)) // 90 days
 	ctx.SetCookie("token", jwtToken, sessionTokenPeriod, "/", c.cfg.BACKEND_BASE_URL, false, httpOnly)
 
-	// Redirect to dashboard
-	ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/dashboard", c.cfg.APP_BASE_URL))
+	// Return JWT as JSON
+	ctx.JSON(http.StatusOK, responses.TokenResponse{Token: jwtToken})
 }
 
 // Logout godoc
@@ -119,6 +124,7 @@ func (c *authControllerImpl) DiscordCallback(ctx *gin.Context) {
 //	@Description	Clears the session cookie
 //	@Tags			Auth
 //	@Success		200	{object}	map[string]interface{}
+//	@Security		none
 //	@Router			/auth/logout [post]
 func (c *authControllerImpl) Logout(ctx *gin.Context) {
 	ctx.SetCookie("token", "", -1, "/", c.cfg.BACKEND_BASE_URL, false, true) // clear the token cookie

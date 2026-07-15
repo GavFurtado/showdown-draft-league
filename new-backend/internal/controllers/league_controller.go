@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -55,7 +56,8 @@ func (ctrl *leagueControllerImpl) CreateLeague(ctx *gin.Context) {
 
 	var req requests.LeagueCreateRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		sendError(ctx, http.StatusBadRequest, "bad request")
+		ctrl.logger.Warn("failed to bind create league request", "error", err)
+		sendError(ctx, http.StatusBadRequest, fmt.Sprintf("bad request: %v", err))
 		return
 	}
 
@@ -127,4 +129,3 @@ func (ctrl *leagueControllerImpl) GetLeague(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, league)
 }
-

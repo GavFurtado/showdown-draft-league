@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/responses"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
@@ -27,9 +28,9 @@ func AuthMiddleware(
 	deps AuthMiddlewareDependencies,
 ) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		token, err := ctx.Cookie("token")
-		if err != nil {
-			GetLogger(ctx).Warn("missing or invalid token cookie", "error", err)
+		token := extractToken(ctx)
+		if token == "" {
+			GetLogger(ctx).Warn("missing or invalid token")
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, responses.NewErrorResponse(http.StatusUnauthorized, "Missing or invalid token", ctx.Request.URL.Path))
 			return
 		}
@@ -117,6 +118,19 @@ func LeagueRBACMiddleware(
 
 		ctx.Next()
 	}
+}
+
+// extractToken retrieves the JWT from the Authorization header first, falling back to cookie.
+func extractToken(ctx *gin.Context) string {
+	auth := ctx.GetHeader("Authorization")
+	if strings.HasPrefix(auth, "Bearer ") {
+		return strings.TrimPrefix(auth, "Bearer ")
+	}
+	token, err := ctx.Cookie("token")
+	if err != nil {
+		return ""
+	}
+	return token
 }
 
 // Helper for Controllers to get current user context

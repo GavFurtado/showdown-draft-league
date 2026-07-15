@@ -113,7 +113,7 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.Leagu
 		MinPokemonPerPlayer:  input.MinPokemonPerPlayer,
 		StartingDraftPoints:  input.StartingDraftPoints,
 		NewPlayerGroupNumber: newPlayerGroupNumber,
-		Format:               &input.Format,
+		Format:               input.Format.ToLeagueFormatPtr(),
 		Visibility:           input.Visibility,
 		MaxPlayers:           input.MaxPlayers,
 	}

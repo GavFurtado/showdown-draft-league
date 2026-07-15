@@ -5,6 +5,10 @@
 //	@description	Pokemon draft league management API
 //	@host			localhost:8080
 //	@BasePath		/
+//	@securityDefinitions.apikey BearerAuth
+//	@in header
+//	@name Authorization
+//	@Security BearerAuth
 package main
 
 import (

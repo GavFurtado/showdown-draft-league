@@ -39,7 +39,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 		RulesetDescription:  "Test rules",
 		MaxPokemonPerPlayer: 6,
 		StartingDraftPoints: 1000,
-		Format: types.LeagueFormat{
+		Format: requests.LeagueFormatRequestDTO{
 			SeasonType:               "ROUND_ROBIN_ONLY",
 			GroupCount:               1,
 			PlayoffType:              "single",
@@ -60,7 +60,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 			MaxPokemonPerPlayer:  input.MaxPokemonPerPlayer,
 			StartingDraftPoints:  input.StartingDraftPoints,
 			NewPlayerGroupNumber: 1, // Service sets this to 1 when GroupCount is 1
-			Format:               &input.Format,
+			Format:               input.Format.ToLeagueFormatPtr(),
 		}
 		createdLeague := *expectedLeague
 		createdLeague.ID = uuid.New()
@@ -139,7 +139,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 			MaxPokemonPerPlayer:  input.MaxPokemonPerPlayer,
 			StartingDraftPoints:  input.StartingDraftPoints,
 			NewPlayerGroupNumber: 1, // Must match the service's logic
-			Format:               &input.Format,
+			Format:               input.Format.ToLeagueFormatPtr(),
 		}
 
 		createdLeague := *expectedLeague

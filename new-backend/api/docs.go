@@ -2068,6 +2068,11 @@ const docTemplate = `{
         },
         "/api/pokemon_species": {
             "get": {
+                "security": [
+                    {
+                        "none": []
+                    }
+                ],
                 "description": "Full list of available Pokemon species",
                 "produces": [
                     "application/json"
@@ -2089,8 +2094,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/responses.ErrorResponse"
                         }
                     }
                 }
@@ -2098,6 +2102,11 @@ const docTemplate = `{
         },
         "/api/pokemon_species/name/{name}": {
             "get": {
+                "security": [
+                    {
+                        "none": []
+                    }
+                ],
                 "description": "Pokemon species by name",
                 "produces": [
                     "application/json"
@@ -2125,15 +2134,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/responses.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/responses.ErrorResponse"
                         }
                     }
                 }
@@ -2141,6 +2148,11 @@ const docTemplate = `{
         },
         "/api/pokemon_species/{id}": {
             "get": {
+                "security": [
+                    {
+                        "none": []
+                    }
+                ],
                 "description": "Pokemon species by internal ID",
                 "produces": [
                     "application/json"
@@ -2168,15 +2180,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/responses.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/responses.ErrorResponse"
                         }
                     }
                 }
@@ -2367,6 +2377,11 @@ const docTemplate = `{
         },
         "/auth/discord/callback": {
             "get": {
+                "security": [
+                    {
+                        "none": []
+                    }
+                ],
                 "description": "Handles the OAuth callback from Discord",
                 "tags": [
                     "Auth"
@@ -2389,21 +2404,22 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "307": {
-                        "description": "Temporary Redirect"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.TokenResponse"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/responses.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/responses.ErrorResponse"
                         }
                     }
                 }
@@ -2411,6 +2427,11 @@ const docTemplate = `{
         },
         "/auth/discord/login": {
             "get": {
+                "security": [
+                    {
+                        "none": []
+                    }
+                ],
                 "description": "Redirects to Discord for authentication",
                 "tags": [
                     "Auth"
@@ -2425,6 +2446,11 @@ const docTemplate = `{
         },
         "/auth/logout": {
             "post": {
+                "security": [
+                    {
+                        "none": []
+                    }
+                ],
                 "description": "Clears the session cookie",
                 "tags": [
                     "Auth"
@@ -3105,7 +3131,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "Format": {
-                    "$ref": "#/definitions/types.LeagueFormat"
+                    "$ref": "#/definitions/requests.LeagueFormatRequestDTO"
                 },
                 "MaxPlayers": {
                     "type": "integer",
@@ -3135,6 +3161,59 @@ const docTemplate = `{
                 },
                 "Visibility": {
                     "$ref": "#/definitions/enums.LeagueVisibility"
+                }
+            }
+        },
+        "requests.LeagueFormatRequestDTO": {
+            "type": "object",
+            "properties": {
+                "AllowTransfers": {
+                    "type": "boolean"
+                },
+                "DraftOrderType": {
+                    "$ref": "#/definitions/enums.DraftOrderType"
+                },
+                "DropCost": {
+                    "type": "integer"
+                },
+                "GroupCount": {
+                    "type": "integer"
+                },
+                "IsSnakeRoundDraft": {
+                    "type": "boolean"
+                },
+                "PickupCost": {
+                    "type": "integer"
+                },
+                "PlayoffByesCount": {
+                    "type": "integer"
+                },
+                "PlayoffParticipantCount": {
+                    "type": "integer"
+                },
+                "PlayoffSeedingType": {
+                    "$ref": "#/definitions/enums.LeaguePlayoffSeedingType"
+                },
+                "PlayoffType": {
+                    "$ref": "#/definitions/enums.LeaguePlayoffType"
+                },
+                "SeasonType": {
+                    "$ref": "#/definitions/enums.LeagueSeasonType"
+                },
+                "TransferCreditCap": {
+                    "type": "integer"
+                },
+                "TransferCreditsPerWindow": {
+                    "type": "integer"
+                },
+                "TransferWindowDuration": {
+                    "type": "integer"
+                },
+                "TransferWindowFrequencyDays": {
+                    "type": "integer"
+                },
+                "TransfersCostCredits": {
+                    "type": "boolean"
                 }
             }
         },
@@ -3301,6 +3380,26 @@ const docTemplate = `{
                 }
             }
         },
+        "responses.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "Error": {
+                    "type": "string"
+                },
+                "Message": {
+                    "type": "string"
+                },
+                "Path": {
+                    "type": "string"
+                },
+                "Status": {
+                    "type": "integer"
+                },
+                "Timestamp": {
+                    "type": "string"
+                }
+            }
+        },
         "responses.PokemonSpeciesListResponseDTO": {
             "type": "object",
             "properties": {
@@ -3318,6 +3417,14 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "responses.TokenResponse": {
+            "type": "object",
+            "properties": {
+                "Token": {
+                    "type": "string"
                 }
             }
         },
@@ -3376,6 +3483,13 @@ const docTemplate = `{
                     "type": "boolean"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`

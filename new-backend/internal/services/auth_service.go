@@ -18,7 +18,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// defines the interface for authentication-related business logic.
+// AuthService defines the interface for authentication-related business logic.
 type AuthService interface {
 	HandleDiscordCallback(ctx context.Context, code string) (*models.User, string, error)
 	VerifyToken(token string) (uuid.UUID, error)
@@ -35,7 +35,7 @@ func (s *authServiceImpl) VerifyToken(token string) (uuid.UUID, error) {
 	return s.jwtService.ValidateToken(token)
 }
 
-// creates a new instance of AuthService, receiving the pre-configured oauth2.Config.
+// NewAuthService creates a new instance of AuthService, receiving the pre-configured oauth2.Config.
 func NewAuthService(
 	logger *slog.Logger,
 	userRepo repositories.UserRepository,

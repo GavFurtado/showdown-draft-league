@@ -51,7 +51,8 @@ func NewPokemonSpeciesController(logger *slog.Logger, pokemonService services.Po
 //	@Tags			Pokemon
 //	@Produce		json
 //	@Success		200	{array}		responses.PokemonSpeciesListResponseDTO
-//	@Failure		500	{object}	map[string]interface{}
+//	@Failure		500	{object}	responses.ErrorResponse
+//	@Security		none
 //	@Router			/api/pokemon_species [get]
 func (c *pokemonSpeciesControllerImpl) GetAllPokemonSpecies(ctx *gin.Context) {
 	pokemonDTOs, err := c.pokemonService.GetAllPokemonSpecies()
@@ -72,8 +73,9 @@ func (c *pokemonSpeciesControllerImpl) GetAllPokemonSpecies(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			id	path		int	true	"Pokemon ID"
 //	@Success		200	{object}	models.PokemonSpecies
-//	@Failure		400	{object}	map[string]interface{}
-//	@Failure		404	{object}	map[string]interface{}
+//	@Failure		400	{object}	responses.ErrorResponse
+//	@Failure		404	{object}	responses.ErrorResponse
+//	@Security		none
 //	@Router			/api/pokemon_species/{id} [get]
 func (c *pokemonSpeciesControllerImpl) GetPokemonSpeciesByID(ctx *gin.Context) {
 	pokemonIDstr := ctx.Param("id")
@@ -107,8 +109,9 @@ func (c *pokemonSpeciesControllerImpl) GetPokemonSpeciesByID(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			name	path		string	true	"Pokemon name"
 //	@Success		200		{object}	models.PokemonSpecies
-//	@Failure		400		{object}	map[string]interface{}
-//	@Failure		404		{object}	map[string]interface{}
+//	@Failure		400		{object}	responses.ErrorResponse
+//	@Failure		404		{object}	responses.ErrorResponse
+//	@Security		none
 //	@Router			/api/pokemon_species/name/{name} [get]
 func (c *pokemonSpeciesControllerImpl) GetPokemonSpeciesByName(ctx *gin.Context) {
 	pokemonName := ctx.Param("name")

@@ -26,7 +26,7 @@ type LeagueFormat struct {
 	TransferWindowDuration      int                            `json:"TransferWindowDuration"`
 	DropCost                    int                            `json:"DropCost"`
 	PickupCost                  int                            `json:"PickupCost"`
-	NextTransferWindowStart     *time.Time                     `json:"NextTransferWindowStart"`
+	NextTransferWindowStart     *time.Time                     `json:"NextTransferWindowStart,omitempty"`
 }
 
 // Scan implements the sql.Scanner interface for GORM JSONB deserialization.
