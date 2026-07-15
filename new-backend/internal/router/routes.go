@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"net/http"
+
 	_ "github.com/GavFurtado/showdown-draft-league/new-backend/api"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/app"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/config"
@@ -10,7 +12,6 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 func RegisterRoutes(
@@ -33,7 +34,7 @@ func RegisterRoutes(
 
 	// ---- Public Routes ---
 	// These do not require any authorization
-	r.GET("/", HomeHandler) // eventually a landing page
+	r.GET("/", HomeHandler)
 
 	// API Documentation
 	r.GET("/api/docs/*any", docsHandler(ginSwagger.WrapHandler(swaggerFiles.Handler)))

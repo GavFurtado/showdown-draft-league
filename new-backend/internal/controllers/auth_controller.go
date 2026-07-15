@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -53,19 +52,6 @@ func NewAuthController(
 //	@Security		none
 //	@Router			/auth/discord/login [get]
 func (c *authControllerImpl) Login(ctx *gin.Context) {
-	// 1. Check for existing JWT cookie
-	token, err := ctx.Cookie("token")
-	if err == nil {
-		// 2. Try to validate it
-		if userID, err := c.authService.VerifyToken(token); err == nil {
-			// 3. Valid token -> go straight to frontend dashboard
-			c.logger.Info("user already authenticated", "user_id", userID)
-			ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/my-leagues", c.cfg.APP_BASE_URL))
-			return
-		}
-	}
-
-	// 4. No valid token -> begin Discord OAuth flow
 	state := uuid.New().String()
 	ctx.SetCookie("oauthstate", state, 300, "/", "", false, true)
 

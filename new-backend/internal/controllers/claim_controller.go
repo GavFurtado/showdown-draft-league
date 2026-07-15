@@ -36,10 +36,13 @@ func NewClaimController(logger *slog.Logger, claimService services.ClaimService)
 //	@Description	Claim details
 //	@Tags			Claims
 //	@Produce		json
-//	@Param			id	path		string	true	"Claim ID"
-//	@Success		200	{object}	models.Claim
-//	@Failure		400	{object}	responses.ErrorResponse
-//	@Failure		404	{object}	responses.ErrorResponse
+//	@Param			leagueId	path		string	true	"League ID"
+//	@Param			id			path		string	true	"Claim ID"
+//	@Success		200			{object}	models.Claim
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		401			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
+//	@Failure		500			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/claims/{id} [get]
 func (c *claimControllerImpl) GetByID(ctx *gin.Context) {
 	claimID, err := uuid.Parse(ctx.Param("id"))
@@ -73,6 +76,10 @@ func (c *claimControllerImpl) GetByID(ctx *gin.Context) {
 //	@Param			playerId	path		string	true	"Player ID"
 //	@Success		200			{array}		models.Claim
 //	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		401			{object}	responses.ErrorResponse
+//	@Failure		403			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
+//	@Failure		500			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/claims/player/{playerId} [get]
 func (c *claimControllerImpl) GetActiveByPlayer(ctx *gin.Context) {
 	playerID, err := uuid.Parse(ctx.Param("playerId"))
@@ -103,6 +110,10 @@ func (c *claimControllerImpl) GetActiveByPlayer(ctx *gin.Context) {
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Success		200			{array}		models.Claim
 //	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		401			{object}	responses.ErrorResponse
+//	@Failure		403			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
+//	@Failure		500			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/claims [get]
 func (c *claimControllerImpl) GetActiveByLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
@@ -133,6 +144,10 @@ func (c *claimControllerImpl) GetActiveByLeague(ctx *gin.Context) {
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Success		200			{array}		models.Claim
 //	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		401			{object}	responses.ErrorResponse
+//	@Failure		403			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
+//	@Failure		500			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/claims/released [get]
 func (c *claimControllerImpl) GetReleasedByLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
