@@ -46,8 +46,8 @@ func NewLeagueMemberController(logger *slog.Logger, leagueMemberService services
 //	@Produce		json
 //	@Param			id	path		string	true	"Member ID"
 //	@Success		200	{object}	models.LeagueMember
-//	@Failure		400	{object}	map[string]interface{}
-//	@Failure		404	{object}	map[string]interface{}
+//	@Failure		400	{object}	responses.ErrorResponse
+//	@Failure		404	{object}	responses.ErrorResponse
 //	@Router			/api/members/{id} [get]
 func (c *leagueMemberControllerImpl) GetByID(ctx *gin.Context) {
 	memberID, err := uuid.Parse(ctx.Param("id"))
@@ -108,7 +108,7 @@ func (c *leagueMemberControllerImpl) GetByUserAndLeague(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Success		200			{array}		models.LeagueMember
-//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/members [get]
 func (c *leagueMemberControllerImpl) GetByLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
@@ -138,7 +138,7 @@ func (c *leagueMemberControllerImpl) GetByLeague(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			id	path		string	true	"User ID"
 //	@Success		200	{array}		models.LeagueMember
-//	@Failure		400	{object}	map[string]interface{}
+//	@Failure		400	{object}	responses.ErrorResponse
 //	@Router			/api/users/{id}/members [get]
 func (c *leagueMemberControllerImpl) GetByUser(ctx *gin.Context) {
 	userID, err := uuid.Parse(ctx.Param("id"))
@@ -168,8 +168,8 @@ func (c *leagueMemberControllerImpl) GetByUser(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			id	path		string	true	"Member ID"
 //	@Success		200	{object}	models.LeagueMember
-//	@Failure		400	{object}	map[string]interface{}
-//	@Failure		404	{object}	map[string]interface{}
+//	@Failure		400	{object}	responses.ErrorResponse
+//	@Failure		404	{object}	responses.ErrorResponse
 //	@Router			/api/members/{id}/roster [get]
 func (c *leagueMemberControllerImpl) GetWithFullRoster(ctx *gin.Context) {
 	memberID, err := uuid.Parse(ctx.Param("id"))
@@ -203,10 +203,10 @@ func (c *leagueMemberControllerImpl) GetWithFullRoster(ctx *gin.Context) {
 //	@Param			leagueId	path		string									true	"League ID"
 //	@Param			request		body		requests.LeagueMemberCreateRequestDTO	true	"Member details"
 //	@Success		200			{object}	models.LeagueMember
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		401			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
-//	@Failure		409			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		401			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
+//	@Failure		409			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/members/join [post]
 func (c *leagueMemberControllerImpl) JoinLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
@@ -262,10 +262,10 @@ func (c *leagueMemberControllerImpl) JoinLeague(ctx *gin.Context) {
 //	@Param			id		path		string										true	"Member ID"
 //	@Param			request	body		requests.UpdateLeagueMemberInfoRequestDTO	true	"Profile fields"
 //	@Success		200		{object}	models.LeagueMember
-//	@Failure		400		{object}	map[string]interface{}
-//	@Failure		401		{object}	map[string]interface{}
-//	@Failure		404		{object}	map[string]interface{}
-//	@Failure		409		{object}	map[string]interface{}
+//	@Failure		400		{object}	responses.ErrorResponse
+//	@Failure		401		{object}	responses.ErrorResponse
+//	@Failure		404		{object}	responses.ErrorResponse
+//	@Failure		409		{object}	responses.ErrorResponse
 //	@Router			/api/members/{id}/profile [put]
 func (c *leagueMemberControllerImpl) UpdateProfile(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
@@ -321,9 +321,9 @@ func (c *leagueMemberControllerImpl) UpdateProfile(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			id	path		string	true	"Member ID"
 //	@Success		200	{object}	models.LeagueMember
-//	@Failure		400	{object}	map[string]interface{}
-//	@Failure		401	{object}	map[string]interface{}
-//	@Failure		404	{object}	map[string]interface{}
+//	@Failure		400	{object}	responses.ErrorResponse
+//	@Failure		401	{object}	responses.ErrorResponse
+//	@Failure		404	{object}	responses.ErrorResponse
 //	@Router			/api/members/{id}/draft-points [put]
 func (c *leagueMemberControllerImpl) UpdateDraftPoints(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
@@ -374,9 +374,9 @@ func (c *leagueMemberControllerImpl) UpdateDraftPoints(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			id	path		string	true	"Member ID"
 //	@Success		200	{object}	models.LeagueMember
-//	@Failure		400	{object}	map[string]interface{}
-//	@Failure		401	{object}	map[string]interface{}
-//	@Failure		404	{object}	map[string]interface{}
+//	@Failure		400	{object}	responses.ErrorResponse
+//	@Failure		401	{object}	responses.ErrorResponse
+//	@Failure		404	{object}	responses.ErrorResponse
 //	@Router			/api/members/{id}/record [put]
 func (c *leagueMemberControllerImpl) UpdateRecord(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
@@ -428,9 +428,9 @@ func (c *leagueMemberControllerImpl) UpdateRecord(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			id	path		string	true	"Member ID"
 //	@Success		200	{object}	models.LeagueMember
-//	@Failure		400	{object}	map[string]interface{}
-//	@Failure		401	{object}	map[string]interface{}
-//	@Failure		404	{object}	map[string]interface{}
+//	@Failure		400	{object}	responses.ErrorResponse
+//	@Failure		401	{object}	responses.ErrorResponse
+//	@Failure		404	{object}	responses.ErrorResponse
 //	@Router			/api/members/{id}/draft-position [put]
 func (c *leagueMemberControllerImpl) UpdateDraftPosition(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)

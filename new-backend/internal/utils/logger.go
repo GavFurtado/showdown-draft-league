@@ -27,6 +27,7 @@ const (
 	colorYellow = "\033[33m"
 	colorCyan   = "\033[36m"
 	colorDim    = "\033[2m"
+	colorBold   = "\033[1m"
 )
 
 var (
@@ -121,12 +122,15 @@ func (h *customHandler) Handle(_ context.Context, r slog.Record) error {
 	if r.PC != 0 {
 		frames := runtime.CallersFrames([]uintptr{r.PC})
 		frame, _ := frames.Next()
-		buf = append(buf, " func="...)
+		buf = append(buf, colorCyan...)
+		buf = append(buf, "func"...)
+		buf = append(buf, colorReset...)
+		buf = append(buf, '=')
 		trimmed := trimModulePath(frame.Function)
 		buf = append(buf, trimmed...)
+		buf = append(buf, ' ')
 	}
 
-	buf = append(buf, " message="...)
 	buf = append(buf, r.Message...)
 
 	buf = append(buf, '\n')
@@ -140,13 +144,13 @@ func (h *customHandler) Handle(_ context.Context, r slog.Record) error {
 func (h *customHandler) appendAttr(buf []byte, a slog.Attr) []byte {
 	if a.Value.Kind() == slog.KindGroup {
 		for _, attr := range a.Value.Group() {
-			buf = append(buf, a.Key...)
-			buf = append(buf, '.')
 			buf = h.appendAttr(buf, attr)
 		}
 		return buf
 	}
+	buf = append(buf, colorCyan...)
 	buf = append(buf, a.Key...)
+	buf = append(buf, colorReset...)
 	buf = append(buf, '=')
 	switch a.Key {
 	case "request_id", "user_id", "league_id", "pool_entry_id",

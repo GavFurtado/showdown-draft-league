@@ -43,8 +43,8 @@ func NewLeagueController(logger *slog.Logger, leagueService services.LeagueServi
 //	@Produce		json
 //	@Param			request	body		requests.LeagueCreateRequestDTO	true	"League config"
 //	@Success		200		{object}	models.League
-//	@Failure		400		{object}	map[string]interface{}
-//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		400		{object}	responses.ErrorResponse
+//	@Failure		401		{object}	responses.ErrorResponse
 //	@Router			/api/leagues [post]
 func (ctrl *leagueControllerImpl) CreateLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
@@ -90,9 +90,9 @@ func (ctrl *leagueControllerImpl) CreateLeague(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Success		200			{object}	models.League
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		403			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		403			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId} [get]
 func (ctrl *leagueControllerImpl) GetLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)

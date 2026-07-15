@@ -42,8 +42,8 @@ func NewPoolEntryController(logger *slog.Logger, poolEntryService services.PoolE
 //	@Produce		json
 //	@Param			id	path		string	true	"Pool Entry ID"
 //	@Success		200	{object}	models.PoolEntry
-//	@Failure		400	{object}	map[string]interface{}
-//	@Failure		404	{object}	map[string]interface{}
+//	@Failure		400	{object}	responses.ErrorResponse
+//	@Failure		404	{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/pool-entries/{id} [get]
 func (c *poolEntryControllerImpl) GetByID(ctx *gin.Context) {
 	entryID, err := uuid.Parse(ctx.Param("id"))
@@ -75,8 +75,8 @@ func (c *poolEntryControllerImpl) GetByID(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Success		200			{array}		models.PoolEntry
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/pool-entries [get]
 func (c *poolEntryControllerImpl) GetByLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
@@ -108,8 +108,8 @@ func (c *poolEntryControllerImpl) GetByLeague(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Success		200			{array}		models.PoolEntry
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/pool-entries/available [get]
 func (c *poolEntryControllerImpl) GetAvailableByLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
@@ -143,9 +143,9 @@ func (c *poolEntryControllerImpl) GetAvailableByLeague(ctx *gin.Context) {
 //	@Param			leagueId	path		string								true	"League ID"
 //	@Param			request		body		requests.PoolEntryCreateRequestDTO	true	"Pool entry"
 //	@Success		200			{object}	models.PoolEntry
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		403			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		403			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/pool-entries/single [post]
 func (c *poolEntryControllerImpl) Create(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
@@ -189,9 +189,9 @@ func (c *poolEntryControllerImpl) Create(ctx *gin.Context) {
 //	@Param			leagueId	path		string									true	"League ID"
 //	@Param			request		body		[]requests.PoolEntryCreateRequestDTO	true	"Pool entries"
 //	@Success		200			{array}		models.PoolEntry
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		403			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		403			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/pool-entries/batch [post]
 func (c *poolEntryControllerImpl) CreateBatch(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
@@ -235,9 +235,9 @@ func (c *poolEntryControllerImpl) CreateBatch(ctx *gin.Context) {
 //	@Param			leagueId	path		string								true	"League ID"
 //	@Param			request		body		requests.PoolEntryUpdateRequestDTO	true	"Updated entry"
 //	@Success		200			{object}	models.PoolEntry
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		403			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		403			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/pool-entries [put]
 func (c *poolEntryControllerImpl) Update(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)

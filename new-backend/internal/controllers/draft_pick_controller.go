@@ -45,8 +45,8 @@ func NewDraftPickController(
 //	@Produce		json
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Success		200			{array}		models.DraftPick
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/draft-picks [get]
 func (c *draftPickControllerImpl) GetByDraft(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
@@ -89,7 +89,7 @@ func (c *draftPickControllerImpl) GetByDraft(ctx *gin.Context) {
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Param			playerId	path		string	true	"Player ID"
 //	@Success		200			{array}		models.DraftPick
-//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/draft-picks/player/{playerId} [get]
 func (c *draftPickControllerImpl) GetByPlayer(ctx *gin.Context) {
 	playerID, err := uuid.Parse(ctx.Param("playerId"))
@@ -119,8 +119,8 @@ func (c *draftPickControllerImpl) GetByPlayer(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Success		200			{array}		models.DraftPick
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/draft-picks/history [get]
 func (c *draftPickControllerImpl) GetHistory(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
@@ -152,8 +152,8 @@ func (c *draftPickControllerImpl) GetHistory(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Success		200			{object}	map[string]interface{}
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/draft-picks/next-pick-number [get]
 func (c *draftPickControllerImpl) GetNextPickNumber(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))

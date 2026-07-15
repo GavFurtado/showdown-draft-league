@@ -53,8 +53,8 @@ func NewGameController(
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Param			gameId		path		string	true	"Game ID"
 //	@Success		200			{object}	map[string]interface{}
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/games/{gameId} [get]
 func (c *gameControllerImpl) GetGameByID(ctx *gin.Context) {
 	gameID, err := uuid.Parse(ctx.Param("gameId"))
@@ -88,7 +88,7 @@ func (c *gameControllerImpl) GetGameByID(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Success		200			{object}	map[string]interface{}
-//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/games [get]
 func (c *gameControllerImpl) GetGamesByLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
@@ -122,7 +122,7 @@ func (c *gameControllerImpl) GetGamesByLeague(ctx *gin.Context) {
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Param			memberId	path		string	true	"Member ID"
 //	@Success		200			{object}	map[string]interface{}
-//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/games/members/{memberId} [get]
 func (c *gameControllerImpl) GetGamesByPlayer(ctx *gin.Context) {
 	playerID, err := uuid.Parse(ctx.Param("playerId"))
@@ -159,9 +159,9 @@ func (c *gameControllerImpl) GetGamesByPlayer(ctx *gin.Context) {
 //	@Param			gameId		path		string							true	"Game ID"
 //	@Param			request		body		requests.ReportGameRequestDTO	true	"Game result"
 //	@Success		200			{object}	map[string]interface{}
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		401			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		401			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/games/report/{gameId} [put]
 func (c *gameControllerImpl) ReportGame(ctx *gin.Context) {
 	gameID, err := uuid.Parse(ctx.Param("gameId"))
@@ -213,9 +213,9 @@ func (c *gameControllerImpl) ReportGame(ctx *gin.Context) {
 //	@Param			gameId		path		string							true	"Game ID"
 //	@Param			request		body		requests.FinalizeGameRequestDTO	true	"Finalization data"
 //	@Success		200			{object}	map[string]interface{}
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		401			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		401			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/games/finalize/{gameId} [put]
 func (c *gameControllerImpl) FinalizeGame(ctx *gin.Context) {
 	gameID, err := uuid.Parse(ctx.Param("gameId"))
@@ -264,10 +264,10 @@ func (c *gameControllerImpl) FinalizeGame(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Success		200			{object}	map[string]interface{}
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		401			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
-//	@Failure		409			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		401			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
+//	@Failure		409			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/games/start-season [post]
 func (c *gameControllerImpl) StartRegularSeason(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
@@ -307,9 +307,9 @@ func (c *gameControllerImpl) StartRegularSeason(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Success		200			{object}	map[string]interface{}
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		401			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		401			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/games/generate-playoffs [post]
 func (c *gameControllerImpl) GeneratePlayoffBracket(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))

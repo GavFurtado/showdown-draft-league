@@ -29,8 +29,8 @@ func NewUserController(logger *slog.Logger, userService services.UserService) Us
 //	@Description	Your user profile
 //	@Tags			Users
 //	@Success		200	{object}	models.User
-//	@Failure		401	{object}	map[string]interface{}
-//	@Failure		500	{object}	map[string]interface{}
+//	@Failure		401	{object}	responses.ErrorResponse
+//	@Failure		500	{object}	responses.ErrorResponse
 //	@Router			/api/profile [get]
 func (ctrl *UserController) GetMyProfile(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
@@ -60,8 +60,8 @@ func (ctrl *UserController) GetMyProfile(ctx *gin.Context) {
 //	@Description	Discord account info for the navbar
 //	@Tags			Users
 //	@Success		200	{object}	responses.DiscordUserResponse
-//	@Failure		401	{object}	map[string]interface{}
-//	@Failure		404	{object}	map[string]interface{}
+//	@Failure		401	{object}	responses.ErrorResponse
+//	@Failure		404	{object}	responses.ErrorResponse
 //	@Router			/api/users/me/discord [get]
 func (ctrl *UserController) GetMyDiscordDetails(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
@@ -94,8 +94,8 @@ func (ctrl *UserController) GetMyDiscordDetails(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			request	body		requests.UserUpdateProfileRequestDTO	true	"Profile fields to update"
 //	@Success		200		{object}	models.User
-//	@Failure		400		{object}	map[string]interface{}
-//	@Failure		401		{object}	map[string]interface{}
+//	@Failure		400		{object}	responses.ErrorResponse
+//	@Failure		401		{object}	responses.ErrorResponse
 //	@Router			/api/users/profile [put]
 func (ctrl *UserController) UpdateProfile(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
@@ -127,8 +127,8 @@ func (ctrl *UserController) UpdateProfile(ctx *gin.Context) {
 //	@Description	Leagues you're a member of
 //	@Tags			Users
 //	@Success		200	{array}		models.League
-//	@Failure		401	{object}	map[string]interface{}
-//	@Failure		500	{object}	map[string]interface{}
+//	@Failure		401	{object}	responses.ErrorResponse
+//	@Failure		500	{object}	responses.ErrorResponse
 //	@Router			/api/users/me/leagues [get]
 func (ctrl *UserController) GetMyLeagues(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)

@@ -40,7 +40,7 @@ func NewTransferController(logger *slog.Logger, transferService services.Transfe
 //	@Produce		json
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Success		200			{object}	map[string]interface{}
-//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/transfers/start [post]
 func (tc *transferControllerImpl) StartTransferPeriod(c *gin.Context) {
 	leagueIDStr := c.Param("leagueId")
@@ -66,7 +66,7 @@ func (tc *transferControllerImpl) StartTransferPeriod(c *gin.Context) {
 //	@Produce		json
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Success		200			{object}	map[string]interface{}
-//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/transfers/end [post]
 func (tc *transferControllerImpl) EndTransferPeriod(c *gin.Context) {
 	leagueIDStr := c.Param("leagueId")
@@ -93,11 +93,11 @@ func (tc *transferControllerImpl) EndTransferPeriod(c *gin.Context) {
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Param			claimId		path		string	true	"Claim ID"
 //	@Success		200			{object}	map[string]interface{}
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		401			{object}	map[string]interface{}
-//	@Failure		403			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
-//	@Failure		409			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		401			{object}	responses.ErrorResponse
+//	@Failure		403			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
+//	@Failure		409			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/transfers/drop/{claimId} [post]
 func (tc *transferControllerImpl) DropPokemon(ctx *gin.Context) {
 	currentUser, err := tc.getUserFromContext(ctx)
@@ -150,10 +150,10 @@ func (tc *transferControllerImpl) DropPokemon(ctx *gin.Context) {
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Param			poolEntryId	path		string	true	"Pool Entry ID"
 //	@Success		200			{object}	map[string]interface{}
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		403			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
-//	@Failure		409			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		403			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
+//	@Failure		409			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/transfers/pickup/{poolEntryId} [post]
 func (tc *transferControllerImpl) PickupFreeAgent(ctx *gin.Context) {
 	currentUser, err := tc.getUserFromContext(ctx)
