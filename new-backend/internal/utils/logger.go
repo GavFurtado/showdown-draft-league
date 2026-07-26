@@ -1,6 +1,6 @@
 // Package utils provides a custom slog handler and logging helpers.
 //
-// Logging convention (slog standard):
+// Logging convention:
 //
 //	logger.Info("message", "key1", val1, "key2", val2)
 //	logger.Warn("message", "error", err)
@@ -37,7 +37,6 @@ var (
 
 // InitSlog initialises the root slog.Logger with a custom handler
 // (positional timestamp/level, ANSI colours, key=value attrs, func=, message=).
-// Must be called once at startup before any logging occurs.
 func InitSlog() {
 	rootLoggerOnce.Do(func() {
 		handler := &customHandler{

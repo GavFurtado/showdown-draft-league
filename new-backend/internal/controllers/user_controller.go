@@ -88,7 +88,7 @@ func (ctrl *UserController) GetMyDiscordDetails(ctx *gin.Context) {
 // UpdateProfile godoc
 //
 //	@Summary		Update my profile
-//	@Description	Update your profile info
+//	@Description	Update the user's profile info
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
@@ -124,7 +124,7 @@ func (ctrl *UserController) UpdateProfile(ctx *gin.Context) {
 // GetMyLeagues godoc
 //
 //	@Summary		Get my leagues
-//	@Description	Leagues you're a member of
+//	@Description	Leagues the user a member of
 //	@Tags			Users
 //	@Success		200	{array}		models.League
 //	@Failure		401	{object}	responses.ErrorResponse
