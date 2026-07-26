@@ -1,9 +1,10 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
+	"strings"
 
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/responses"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
@@ -27,33 +28,35 @@ func AuthMiddleware(
 	deps AuthMiddlewareDependencies,
 ) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		token, err := ctx.Cookie("token")
-		if err != nil {
-			log.Printf("LOG: (Middleware: AuthMiddleware) - missing or invalid token cookie: %v\n", err)
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Missing or invalid token"})
+		token := extractToken(ctx)
+		if token == "" {
+			GetLogger(ctx).Warn("missing or invalid token")
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, responses.NewErrorResponse(http.StatusUnauthorized, "Missing or invalid token", ctx.Request.URL.Path))
 			return
 		}
 
 		// validate token
 		userID, err := deps.JWTService.ValidateToken(token)
 		if err != nil {
-			log.Printf("(Error: AuthMiddleware): Invalid token")
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			GetLogger(ctx).Warn("invalid token")
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, responses.NewErrorResponse(http.StatusUnauthorized, "Invalid token", ctx.Request.URL.Path))
 			return
 		}
 
 		user, err := deps.UserRepo.GetUserByID(userID)
 		if err != nil {
 			if err.Error() == "record not found" {
-				log.Printf("(Error: AuthMiddleware): User ID %s not found in DB: %v", userID, err)
-				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+				GetLogger(ctx).Warn("user ID not found in DB", "user_id", userID, "error", err)
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized, responses.NewErrorResponse(http.StatusUnauthorized, "User not found", ctx.Request.URL.Path))
 				return
 			}
 			// Other errors (DB)
-			log.Printf("(Error: AuthMiddleware): Database error fetching user %s: %v", userID, err)
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error during authentication"})
+			GetLogger(ctx).Error("database error fetching user", "user_id", userID, "error", err)
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, responses.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error during authentication", ctx.Request.URL.Path))
 			return
 		}
+
+		SetUserOnLogger(ctx, userID.String(), string(user.Role))
 
 		ctx.Set("currentUser", user)
 		ctx.Set("currentUserID", userID)
@@ -71,13 +74,13 @@ func LeagueRBACMiddleware(
 	return func(ctx *gin.Context) {
 		currentUser, exists := GetUserFromContext(ctx)
 		if !exists {
-			ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "User not found in context"})
+			ctx.AbortWithStatusJSON(http.StatusNotFound, responses.NewErrorResponse(http.StatusNotFound, "User not found in context", ctx.Request.URL.Path))
 			return
 		}
 
 		// bypass checks if user is an admin
 		if currentUser.Role == "admin" {
-			log.Printf("LOG: [BYPASS: RBAC Middleware]: Skipped check for admin user %s (%s)\n", currentUser.DiscordUsername, currentUser.ID)
+			GetLogger(ctx).Info("rbac bypass for admin user", "username", currentUser.DiscordUsername, "user_id", currentUser.ID)
 			ctx.Next()
 			return
 		}
@@ -85,7 +88,7 @@ func LeagueRBACMiddleware(
 		leagueIDStr := ctx.Param("leagueId")
 		leagueID, err := uuid.Parse(leagueIDStr)
 		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid league ID format"})
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, responses.NewErrorResponse(http.StatusBadRequest, "Invalid league ID format", ctx.Request.URL.Path))
 			return
 		}
 
@@ -93,16 +96,15 @@ func LeagueRBACMiddleware(
 		player, ok, err := deps.RBACService.CanAccess(currentUser.ID, leagueID, requiredPermission)
 		if err != nil {
 			if err == types.ErrInternalService {
-				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+				ctx.AbortWithStatusJSON(http.StatusInternalServerError, responses.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", ctx.Request.URL.Path))
 				return
 			}
-			// some record not found error (atleast it should be)
-			log.Printf("(Error: LeagueRBACMiddleware) - %s", err.Error())
-			ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record Not Found"})
+			GetLogger(ctx).Warn("rbac access check failed", "error", err)
+			ctx.AbortWithStatusJSON(http.StatusNotFound, responses.NewErrorResponse(http.StatusNotFound, err.Error(), ctx.Request.URL.Path))
 			return
 		}
 		if !ok {
-			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Forbidden: Insufficient permissions for this league"})
+			ctx.AbortWithStatusJSON(http.StatusForbidden, responses.NewErrorResponse(http.StatusForbidden, "Forbidden: Insufficient permissions for this league", ctx.Request.URL.Path))
 			return
 		}
 
@@ -115,6 +117,19 @@ func LeagueRBACMiddleware(
 
 		ctx.Next()
 	}
+}
+
+// extractToken retrieves the JWT from the Authorization header first, falling back to cookie.
+func extractToken(ctx *gin.Context) string {
+	auth := ctx.GetHeader("Authorization")
+	if strings.HasPrefix(auth, "Bearer ") {
+		return strings.TrimPrefix(auth, "Bearer ")
+	}
+	token, err := ctx.Cookie("token")
+	if err != nil {
+		return ""
+	}
+	return token
 }
 
 // Helper for Controllers to get current user context

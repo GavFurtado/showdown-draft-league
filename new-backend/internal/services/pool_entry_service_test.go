@@ -2,6 +2,7 @@ package services_test
 
 import (
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
@@ -23,6 +24,7 @@ func setupPoolEntryServiceTest() (services.PoolEntryService, *mock_repos.MockPoo
 	mockPokemonSpeciesRepo := new(mock_repos.MockPokemonSpeciesRepository)
 
 	service := services.NewPoolEntryService(
+		slog.Default(),
 		mockPoolEntryRepo,
 		mockLeagueRepo,
 		mockUserRepo,

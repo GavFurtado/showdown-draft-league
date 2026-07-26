@@ -2,6 +2,7 @@ package services_test
 
 import (
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
@@ -17,7 +18,7 @@ import (
 
 func TestUserService_GetMyProfileHandler(t *testing.T) {
 	mockUserRepo := new(mock_repositories.MockUserRepository)
-	service := services.NewUserService(mockUserRepo)
+	service := services.NewUserService(slog.Default(), mockUserRepo)
 
 	userID := uuid.New()
 
@@ -53,7 +54,7 @@ func TestUserService_GetMyProfileHandler(t *testing.T) {
 
 func TestUserService_GetMyDiscordDetailsHandler(t *testing.T) {
 	mockUserRepo := new(mock_repositories.MockUserRepository)
-	service := services.NewUserService(mockUserRepo)
+	service := services.NewUserService(slog.Default(), mockUserRepo)
 
 	userID := uuid.New()
 
@@ -90,7 +91,7 @@ func TestUserService_GetMyDiscordDetailsHandler(t *testing.T) {
 
 func TestUserService_UpdateProfileHandler(t *testing.T) {
 	mockUserRepo := new(mock_repositories.MockUserRepository)
-	service := services.NewUserService(mockUserRepo)
+	service := services.NewUserService(slog.Default(), mockUserRepo)
 
 	userID := uuid.New()
 	showdownName := "newshowdown"
@@ -145,7 +146,7 @@ func TestUserService_UpdateProfileHandler(t *testing.T) {
 
 func TestUserService_GetMyLeaguesHandler(t *testing.T) {
 	mockUserRepo := new(mock_repositories.MockUserRepository)
-	service := services.NewUserService(mockUserRepo)
+	service := services.NewUserService(slog.Default(), mockUserRepo)
 
 	userID := uuid.New()
 

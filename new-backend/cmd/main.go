@@ -5,19 +5,25 @@
 //	@description	Pokemon draft league management API
 //	@host			localhost:8080
 //	@BasePath		/
+//	@securityDefinitions.apikey BearerAuth
+//	@in header
+//	@name Authorization
+//	@Security BearerAuth
 package main
 
 import (
-	"fmt"
-	"log"
+	"log/slog"
+	"os"
 	"reflect"
 	"strings"
 	"time"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/app"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/config"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/middleware"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	routes "github.com/GavFurtado/showdown-draft-league/new-backend/internal/router"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -36,6 +42,8 @@ import (
 func main() {
 	// Load application configuration
 	cfg := config.LoadConfig()
+
+	utils.InitSlog()
 
 	// CORS config
 	corsConfig := cors.DefaultConfig()
@@ -57,8 +65,6 @@ func main() {
 		},
 		Scopes: []string{"identify"},
 	}
-
-	log.SetFlags(0) // no date/time.
 
 	// Register generic isValid custom validator on Gin's Validator engine.
 	// Used for enum validation. String-based enums are uppercased first
@@ -83,7 +89,8 @@ func main() {
 	// Connect to PostgreSQL database
 	db, err := gorm.Open(postgres.Open(cfg.DATABASE_URL), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		slog.Error("Failed to connect to database", "error", err)
+		os.Exit(1)
 	}
 
 	// TODO: dev only. In fact, even as far as dev only this is not ideal
@@ -100,17 +107,20 @@ func main() {
 		&models.Claim{},
 	)
 	if err != nil {
-		log.Fatalf("Failed to auto-migrate database: %v", err)
+		slog.Error("Failed to auto-migrate database", "error", err)
+		os.Exit(1)
 	}
 
 	// Initialize Repositories, Servies and Controllers
 	appRepositories := app.NewRepositories(db)
-	appServices := app.NewServices(appRepositories, cfg, discordOauthConfig)
-	appControllers := app.NewControllers(appServices, appRepositories, cfg, discordOauthConfig)
+	rootLogger := utils.RootLogger()
+	appServices := app.NewServices(rootLogger, appRepositories, cfg, discordOauthConfig)
+	appControllers := app.NewControllers(rootLogger, appServices, appRepositories, cfg, discordOauthConfig)
 
 	// Start the scheduler
 	if err := appServices.SchedulerService.Start(); err != nil {
-		log.Fatalf("Failed to start scheduler: %v", err)
+		slog.Error("Failed to start scheduler", "error", err)
+		os.Exit(1)
 	}
 
 	// Start the server
@@ -121,14 +131,17 @@ func main() {
 	server := gin.New()
 
 	// --- Global Middlewares ---
-	server.Use(gin.Recovery(), gin.Logger())
+	server.Use(gin.Recovery())
+	server.Use(gin.Logger())
+	server.Use(middleware.RequestContextMiddleware())
 	server.Use(cors.New(corsConfig))
 
 	routes.RegisterRoutes(server, db, cfg, appRepositories, appServices, appControllers)
 
 	// Run server
-	fmt.Printf("Server started...\n")
+	slog.Info("server started", "port", port)
 	if err := server.Run(":" + port); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
+		slog.Error("server failed to start", "error", err)
+		os.Exit(1)
 	}
 }

@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"net/http"
+
 	_ "github.com/GavFurtado/showdown-draft-league/new-backend/api"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/app"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/config"
@@ -10,7 +12,6 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 func RegisterRoutes(
@@ -33,7 +34,7 @@ func RegisterRoutes(
 
 	// ---- Public Routes ---
 	// These do not require any authorization
-	r.GET("/", HomeHandler) // eventually a landing page
+	r.GET("/", HomeHandler)
 
 	// API Documentation
 	r.GET("/api/docs/*any", docsHandler(ginSwagger.WrapHandler(swaggerFiles.Handler)))
@@ -89,40 +90,49 @@ func RegisterRoutes(
 		{
 			leagues.POST(
 				"/",
-				controllers.LeagueController.CreateLeague)
+				controllers.LeagueController.CreateLeague,
+			)
 			leagues.GET(
 				"/:leagueId",
-				controllers.LeagueController.GetLeague)
+				controllers.LeagueController.GetLeague,
+			)
 			games := leagues.Group("/:leagueId/games")
 			{
 				games.POST(
 					"/start-season",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateGame),
-					controllers.GameController.StartRegularSeason)
+					controllers.GameController.StartRegularSeason,
+				)
 				games.POST(
 					"/generate-playoffs",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateGame),
-					controllers.GameController.GeneratePlayoffBracket)
+					controllers.GameController.GeneratePlayoffBracket,
+				)
 				games.GET(
 					"",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadGame),
-					controllers.GameController.GetGamesByLeague)
+					controllers.GameController.GetGamesByLeague,
+				)
 				games.GET(
 					"/:gameId",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadGame),
-					controllers.GameController.GetGameByID)
+					controllers.GameController.GetGameByID,
+				)
 				games.GET(
 					"/members/:memberId",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadGame),
-					controllers.GameController.GetGamesByPlayer)
+					controllers.GameController.GetGamesByPlayer,
+				)
 				games.PUT(
 					"/report/:gameId",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReportGame),
-					controllers.GameController.ReportGame)
+					controllers.GameController.ReportGame,
+				)
 				games.PUT(
 					"/finalize/:gameId",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionFinalizeGame), // Requires staff permissions
-					controllers.GameController.FinalizeGame)
+					controllers.GameController.FinalizeGame,
+				)
 			}
 
 			// not implmented yet

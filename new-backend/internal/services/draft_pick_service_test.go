@@ -2,6 +2,7 @@ package services_test
 
 import (
 	"errors"
+	"log/slog"
 	"testing"
 
 	mock_repos "github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/repositories"
@@ -19,6 +20,7 @@ func setupDraftPickServiceTest() (services.DraftPickService, *mock_repos.MockDra
 	mockDraftRepo := new(mock_repos.MockDraftRepository)
 
 	service := services.NewDraftPickService(
+		slog.Default(),
 		mockDraftPickRepo,
 		mockDraftRepo,
 	)

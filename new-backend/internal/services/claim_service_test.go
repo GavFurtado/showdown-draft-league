@@ -2,6 +2,7 @@ package services_test
 
 import (
 	"errors"
+	"log/slog"
 	"testing"
 
 	mock_repos "github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/repositories"
@@ -16,7 +17,7 @@ import (
 
 func setupClaimServiceTest() (services.ClaimService, *mock_repos.MockClaimRepository) {
 	mockClaimRepo := new(mock_repos.MockClaimRepository)
-	service := services.NewClaimService(mockClaimRepo)
+	service := services.NewClaimService(slog.Default(), mockClaimRepo)
 	return service, mockClaimRepo
 }
 

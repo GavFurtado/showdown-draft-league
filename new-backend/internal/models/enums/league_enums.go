@@ -9,11 +9,13 @@ import (
 
 // enum types
 
-type LeagueStatus string
-type LeagueSeasonType string
-type LeaguePlayoffType string
-type LeaguePlayoffSeedingType string
-type LeagueVisibility string
+type (
+	LeagueStatus             string
+	LeagueSeasonType         string
+	LeaguePlayoffType        string
+	LeaguePlayoffSeedingType string
+	LeagueVisibility         string
+)
 
 const (
 	LeagueStatusPending           LeagueStatus = "PENDING"

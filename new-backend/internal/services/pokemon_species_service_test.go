@@ -2,6 +2,7 @@ package services_test
 
 import (
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/responses"
@@ -15,7 +16,7 @@ import (
 
 func TestPokemonSpeciesService_GetPokemonSpeciesByID(t *testing.T) {
 	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
-	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo)
+	service := services.NewPokemonSpeciesService(slog.Default(), mockPokemonSpeciesRepo)
 
 	pokemonID := int64(1)
 
@@ -58,7 +59,7 @@ func TestPokemonSpeciesService_GetPokemonSpeciesByID(t *testing.T) {
 
 func TestPokemonSpeciesService_GetPokemonSpeciesByName(t *testing.T) {
 	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
-	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo)
+	service := services.NewPokemonSpeciesService(slog.Default(), mockPokemonSpeciesRepo)
 
 	pokemonName := "Pikachu"
 
@@ -101,7 +102,7 @@ func TestPokemonSpeciesService_GetPokemonSpeciesByName(t *testing.T) {
 
 func TestPokemonSpeciesService_GetAllPokemonSpecies(t *testing.T) {
 	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
-	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo)
+	service := services.NewPokemonSpeciesService(slog.Default(), mockPokemonSpeciesRepo)
 
 	t.Run("Successfully gets all pokemon species", func(t *testing.T) {
 		expectedPokemon := []models.PokemonSpecies{
@@ -144,7 +145,7 @@ func TestPokemonSpeciesService_GetAllPokemonSpecies(t *testing.T) {
 
 func TestPokemonSpeciesService_ListPokemonSpecies(t *testing.T) {
 	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
-	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo)
+	service := services.NewPokemonSpeciesService(slog.Default(), mockPokemonSpeciesRepo)
 
 	filter := "Pika"
 
@@ -182,7 +183,7 @@ func TestPokemonSpeciesService_ListPokemonSpecies(t *testing.T) {
 
 func TestPokemonSpeciesService_CreatePokemonSpecies(t *testing.T) {
 	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
-	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo)
+	service := services.NewPokemonSpeciesService(slog.Default(), mockPokemonSpeciesRepo)
 
 	newPokemon := &models.PokemonSpecies{ID: 3, Name: "Bulbasaur"}
 
@@ -266,7 +267,7 @@ func TestPokemonSpeciesService_CreatePokemonSpecies(t *testing.T) {
 
 func TestPokemonSpeciesService_UpdatePokemonSpecies(t *testing.T) {
 	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
-	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo)
+	service := services.NewPokemonSpeciesService(slog.Default(), mockPokemonSpeciesRepo)
 
 	updatedPokemon := &models.PokemonSpecies{ID: 1, Name: "UpdatedPikachu"}
 
@@ -321,7 +322,7 @@ func TestPokemonSpeciesService_UpdatePokemonSpecies(t *testing.T) {
 
 func TestPokemonSpeciesService_DeletePokemonSpecies(t *testing.T) {
 	mockPokemonSpeciesRepo := new(mock_repositories.MockPokemonSpeciesRepository)
-	service := services.NewPokemonSpeciesService(mockPokemonSpeciesRepo)
+	service := services.NewPokemonSpeciesService(slog.Default(), mockPokemonSpeciesRepo)
 
 	pokemonID := int64(1)
 

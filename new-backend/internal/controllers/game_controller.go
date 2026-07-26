@@ -3,13 +3,14 @@ package controllers
 import (
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -26,15 +27,18 @@ type GameController interface {
 }
 
 type gameControllerImpl struct {
+	logger        *slog.Logger
 	gameService   services.GameService
 	leagueService services.LeagueService
 }
 
 func NewGameController(
+	logger *slog.Logger,
 	gameService services.GameService,
 	leagueService services.LeagueService,
 ) GameController {
 	return &gameControllerImpl{
+		logger:        utils.LoggerWithService(logger, "GameController"),
 		gameService:   gameService,
 		leagueService: leagueService,
 	}
@@ -49,25 +53,26 @@ func NewGameController(
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Param			gameId		path		string	true	"Game ID"
 //	@Success		200			{object}	map[string]interface{}
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/games/{gameId} [get]
 func (c *gameControllerImpl) GetGameByID(ctx *gin.Context) {
 	gameID, err := uuid.Parse(ctx.Param("gameId"))
 	if err != nil {
-		log.Printf("ERROR: (Controller: GetGameByID) - Error parsing gameId param: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		c.logger.Error("Error parsing gameId param", "error", err)
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
+		return
 	}
 	leagueID, _ := uuid.Parse(ctx.Param("leagueId"))
 
 	var game *models.Game
 	if game, err = c.gameService.GetGameByID(gameID); err != nil {
-		log.Printf("ERROR: (Controller: GetGameByID) - Error fetching game (League %s) by ID %s: %v", leagueID, gameID, err)
+		c.logger.Error("Error fetching game by ID", "league_id", leagueID, "game_id", gameID, "error", err)
 		switch {
 		case errors.Is(err, types.ErrGameNotFound):
-			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrGameNotFound.Error()})
+			sendError(ctx, http.StatusNotFound, types.ErrGameNotFound.Error())
 		case errors.Is(err, types.ErrInternalService):
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}
@@ -83,23 +88,24 @@ func (c *gameControllerImpl) GetGameByID(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Success		200			{object}	map[string]interface{}
-//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/games [get]
 func (c *gameControllerImpl) GetGamesByLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
-		log.Printf("ERROR: (Controller: GetGamesByLeague) - Error parsing leagueId param: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		c.logger.Error("Error parsing leagueId param", "error", err)
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
+		return
 	}
 
 	var games []models.Game
 	if games, err = c.gameService.GetGamesByLeague(leagueID); err != nil {
-		log.Printf("ERROR: (Controller: GetGamesByLeague) - Error fetching Games for League %s : %v", leagueID, err)
+		c.logger.Error("Error fetching Games for League", "league_id", leagueID, "error", err)
 		switch {
 		case errors.Is(err, types.ErrGameNotFound):
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Games not found for league"})
+			sendError(ctx, http.StatusBadRequest, "Games not found for league")
 		case errors.Is(err, types.ErrInternalService):
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}
@@ -116,24 +122,25 @@ func (c *gameControllerImpl) GetGamesByLeague(ctx *gin.Context) {
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Param			memberId	path		string	true	"Member ID"
 //	@Success		200			{object}	map[string]interface{}
-//	@Failure		400			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/games/members/{memberId} [get]
 func (c *gameControllerImpl) GetGamesByPlayer(ctx *gin.Context) {
 	playerID, err := uuid.Parse(ctx.Param("playerId"))
 	if err != nil {
-		log.Printf("ERROR: (Controller: GetGamesByPlayer) - Error parsing playerId param: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		c.logger.Error("Error parsing playerId param", "error", err)
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
+		return
 	}
 	leagueID, _ := uuid.Parse(ctx.Param("leagueId"))
 
 	var games []models.Game
 	if games, err = c.gameService.GetGamesByPlayer(playerID); err != nil {
-		log.Printf("ERROR: (Controller: GetGameByID) - Error fetching Games for League %s : %v", leagueID, err)
+		c.logger.Error("Error fetching Games for League", "league_id", leagueID, "error", err)
 		switch {
 		case errors.Is(err, gorm.ErrRecordNotFound):
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Player/Games not found for league"})
+			sendError(ctx, http.StatusBadRequest, "Player/Games not found for league")
 		case errors.Is(err, types.ErrInternalService):
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}
@@ -152,44 +159,42 @@ func (c *gameControllerImpl) GetGamesByPlayer(ctx *gin.Context) {
 //	@Param			gameId		path		string							true	"Game ID"
 //	@Param			request		body		requests.ReportGameRequestDTO	true	"Game result"
 //	@Success		200			{object}	map[string]interface{}
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		401			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		401			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/games/report/{gameId} [put]
 func (c *gameControllerImpl) ReportGame(ctx *gin.Context) {
 	gameID, err := uuid.Parse(ctx.Param("gameId"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	var dto requests.ReportGameRequestDTO
 	if err := ctx.ShouldBindJSON(&dto); err != nil {
-		log.Printf("ERROR: (Controller: ReportGame): Error binding request: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid request payload: %v", err)})
+		c.logger.Error("Error binding request", "error", err)
+		sendError(ctx, http.StatusBadRequest, fmt.Sprintf("Invalid request payload: %v", err))
 		return
 	}
 
-	// reporterID is the current player
-	// arguably unecessary but idgaf
 	reporterIDStr, exists := ctx.Get("playerID")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Player ID not found in context"})
+		sendError(ctx, http.StatusUnauthorized, "Player ID not found in context")
 		return
 	}
 	dto.ReporterID = reporterIDStr.(uuid.UUID)
 
 	if err := c.gameService.ReportGameResult(gameID, &dto); err != nil {
-		log.Printf("ERROR: (Controller: ReportGame) - %s\n", err.Error())
+		c.logger.Error("ReportGame error", "error", err)
 		switch {
 		case errors.Is(err, types.ErrConflict):
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "This game is either already finalized or is pending approval"})
+			sendError(ctx, http.StatusBadRequest, "This game is either already finalized or is pending approval")
 		case errors.Is(err, types.ErrInvalidInput), errors.Is(err, types.ErrUnauthorized):
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			sendError(ctx, http.StatusBadRequest, err.Error())
 		case errors.Is(err, types.ErrGameNotFound):
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "Game not found"})
+			sendError(ctx, http.StatusNotFound, "Game not found")
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to report game result: %v", err)})
+			sendError(ctx, http.StatusInternalServerError, fmt.Sprintf("Failed to report game result: %v", err))
 		}
 		return
 	}
@@ -208,42 +213,42 @@ func (c *gameControllerImpl) ReportGame(ctx *gin.Context) {
 //	@Param			gameId		path		string							true	"Game ID"
 //	@Param			request		body		requests.FinalizeGameRequestDTO	true	"Finalization data"
 //	@Success		200			{object}	map[string]interface{}
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		401			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		401			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/games/finalize/{gameId} [put]
 func (c *gameControllerImpl) FinalizeGame(ctx *gin.Context) {
 	gameID, err := uuid.Parse(ctx.Param("gameId"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid game ID format"})
+		sendError(ctx, http.StatusBadRequest, "Invalid game ID format")
 		return
 	}
 
 	var dto requests.FinalizeGameRequestDTO
 	if err := ctx.ShouldBindJSON(&dto); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid request payload: %v", err)})
+		sendError(ctx, http.StatusBadRequest, fmt.Sprintf("Invalid request payload: %v", err))
 		return
 	}
 
 	finalizerIDStr, exists := ctx.Get("playerID")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Player ID not found in context"})
+		sendError(ctx, http.StatusUnauthorized, "Player ID not found in context")
 		return
 	}
 	finalizerID := finalizerIDStr.(uuid.UUID)
 	dto.FinalizerID = finalizerID
 
 	if err := c.gameService.FinalizeGameResult(gameID, &dto); err != nil {
-		log.Printf("ERROR: (Controller: FinalizeGameResult) - %s\n", err.Error())
+		c.logger.Error("FinalizeGameResult error", "error", err)
 		switch {
 		case errors.Is(err, types.ErrConflict):
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Game status not valid to Finalize"})
+			sendError(ctx, http.StatusBadRequest, "Game status not valid to Finalize")
 		case errors.Is(err, types.ErrInvalidInput):
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			sendError(ctx, http.StatusBadRequest, err.Error())
 		case errors.Is(err, types.ErrGameNotFound):
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "Game not found"})
+			sendError(ctx, http.StatusNotFound, "Game not found")
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to finalize game result: %v", err)})
+			sendError(ctx, http.StatusInternalServerError, fmt.Sprintf("Failed to finalize game result: %v", err))
 		}
 		return
 	}
@@ -259,34 +264,34 @@ func (c *gameControllerImpl) FinalizeGame(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Success		200			{object}	map[string]interface{}
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		401			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
-//	@Failure		409			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		401			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
+//	@Failure		409			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/games/start-season [post]
 func (c *gameControllerImpl) StartRegularSeason(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
-		log.Printf("ERROR: (Controller: StartRegularSeason) - Error parsing leagueId param: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		c.logger.Error("Error parsing leagueId param", "error", err)
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	if err := c.leagueService.StartRegularSeason(leagueID); err != nil {
-		log.Printf("ERROR: (Controller: StartRegularSeason) - Error starting regular season for League %s : %v", leagueID, err)
+		c.logger.Error("Error starting regular season for League", "league_id", leagueID, "error", err)
 		switch {
 		case errors.Is(err, types.ErrUnauthorized):
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			sendError(ctx, http.StatusUnauthorized, err.Error())
 		case errors.Is(err, types.ErrLeagueNotFound):
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "League not found"})
+			sendError(ctx, http.StatusNotFound, "League not found")
 		case errors.Is(err, types.ErrInvalidState):
-			ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			sendError(ctx, http.StatusConflict, err.Error())
 		case errors.Is(err, types.ErrInvalidInput):
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			sendError(ctx, http.StatusBadRequest, err.Error())
 		case errors.Is(err, types.ErrGamesAlreadyGenerated):
-			ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			sendError(ctx, http.StatusConflict, err.Error())
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to start regular season: %v", err)})
+			sendError(ctx, http.StatusInternalServerError, fmt.Sprintf("Failed to start regular season: %v", err))
 		}
 		return
 	}
@@ -302,29 +307,29 @@ func (c *gameControllerImpl) StartRegularSeason(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Success		200			{object}	map[string]interface{}
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		401			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		401			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/games/generate-playoffs [post]
 func (c *gameControllerImpl) GeneratePlayoffBracket(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
-		log.Printf("ERROR: (Controller: GeneratePlayoffBracket) - Error parsing leagueId param: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		c.logger.Error("Error parsing leagueId param", "error", err)
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	if err := c.gameService.GeneratePlayoffBracket(leagueID); err != nil {
-		log.Printf("ERROR: (Controller: GeneratePlayoffBracket) - Error generating playoff bracket for League %s : %v", leagueID, err)
+		c.logger.Error("Error generating playoff bracket for League", "league_id", leagueID, "error", err)
 		switch {
 		case errors.Is(err, types.ErrUnauthorized):
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			sendError(ctx, http.StatusUnauthorized, err.Error())
 		case errors.Is(err, types.ErrLeagueNotFound):
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "League not found"})
+			sendError(ctx, http.StatusNotFound, "League not found")
 		case errors.Is(err, types.ErrInvalidInput):
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			sendError(ctx, http.StatusBadRequest, err.Error())
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to generate playoff bracket: %v", err)})
+			sendError(ctx, http.StatusInternalServerError, fmt.Sprintf("Failed to generate playoff bracket: %v", err))
 		}
 		return
 	}

@@ -2,6 +2,7 @@ package services_test
 
 import (
 	"errors"
+	"log/slog"
 	"testing"
 
 	mock_repos "github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/repositories"
@@ -20,6 +21,7 @@ func setupLeagueMemberServiceTest() (services.LeagueMemberService, *mock_repos.M
 	mockUserRepo := new(mock_repos.MockUserRepository)
 
 	service := services.NewLeagueMemberService(
+		slog.Default(),
 		mockMemberRepo,
 		mockLeagueRepo,
 		mockUserRepo,

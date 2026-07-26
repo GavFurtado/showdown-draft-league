@@ -1,13 +1,14 @@
 package controllers
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/middleware"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -22,11 +23,13 @@ type PoolEntryController interface {
 }
 
 type poolEntryControllerImpl struct {
+	logger           *slog.Logger
 	poolEntryService services.PoolEntryService
 }
 
-func NewPoolEntryController(poolEntryService services.PoolEntryService) PoolEntryController {
+func NewPoolEntryController(logger *slog.Logger, poolEntryService services.PoolEntryService) PoolEntryController {
 	return &poolEntryControllerImpl{
+		logger:           utils.LoggerWithService(logger, "PoolEntryController"),
 		poolEntryService: poolEntryService,
 	}
 }
@@ -39,24 +42,24 @@ func NewPoolEntryController(poolEntryService services.PoolEntryService) PoolEntr
 //	@Produce		json
 //	@Param			id	path		string	true	"Pool Entry ID"
 //	@Success		200	{object}	models.PoolEntry
-//	@Failure		400	{object}	map[string]interface{}
-//	@Failure		404	{object}	map[string]interface{}
+//	@Failure		400	{object}	responses.ErrorResponse
+//	@Failure		404	{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/pool-entries/{id} [get]
 func (c *poolEntryControllerImpl) GetByID(ctx *gin.Context) {
 	entryID, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	entry, err := c.poolEntryService.GetByID(entryID)
 	if err != nil {
-		log.Printf("LOG: (PoolEntryController: GetByID) - Service method error: %v\n", err)
+		c.logger.Error("Service method error", "error", err, "method", "GetByID")
 		switch err {
 		case types.ErrPoolEntryNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrPoolEntryNotFound.Error()})
+			sendError(ctx, http.StatusNotFound, types.ErrPoolEntryNotFound.Error())
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}
@@ -72,24 +75,24 @@ func (c *poolEntryControllerImpl) GetByID(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Success		200			{array}		models.PoolEntry
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/pool-entries [get]
 func (c *poolEntryControllerImpl) GetByLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	entries, err := c.poolEntryService.GetByLeague(leagueID)
 	if err != nil {
-		log.Printf("LOG: (PoolEntryController: GetByLeague) - Service method error: %v\n", err)
+		c.logger.Error("Service method error", "error", err, "method", "GetByLeague")
 		switch err {
 		case types.ErrLeagueNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrLeagueNotFound.Error()})
+			sendError(ctx, http.StatusNotFound, types.ErrLeagueNotFound.Error())
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}
@@ -105,24 +108,24 @@ func (c *poolEntryControllerImpl) GetByLeague(ctx *gin.Context) {
 //	@Produce		json
 //	@Param			leagueId	path		string	true	"League ID"
 //	@Success		200			{array}		models.PoolEntry
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/pool-entries/available [get]
 func (c *poolEntryControllerImpl) GetAvailableByLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrParsingParams.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
 	entries, err := c.poolEntryService.GetAvailableByLeague(leagueID)
 	if err != nil {
-		log.Printf("LOG: (PoolEntryController: GetAvailableByLeague) - Service method error: %v\n", err)
+		c.logger.Error("Service method error", "error", err, "method", "GetAvailableByLeague")
 		switch err {
 		case types.ErrLeagueNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrLeagueNotFound.Error()})
+			sendError(ctx, http.StatusNotFound, types.ErrLeagueNotFound.Error())
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}
@@ -140,35 +143,35 @@ func (c *poolEntryControllerImpl) GetAvailableByLeague(ctx *gin.Context) {
 //	@Param			leagueId	path		string								true	"League ID"
 //	@Param			request		body		requests.PoolEntryCreateRequestDTO	true	"Pool entry"
 //	@Success		200			{object}	models.PoolEntry
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		403			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		403			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/pool-entries/single [post]
 func (c *poolEntryControllerImpl) Create(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrNoUserInContext.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrNoUserInContext.Error())
 		return
 	}
 
 	var req requests.PoolEntryCreateRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		sendError(ctx, http.StatusBadRequest, "bad request")
 		return
 	}
 
 	entry, err := c.poolEntryService.Create(currentUser, &req)
 	if err != nil {
-		log.Printf("LOG: (PoolEntryController: Create) - Service method error: %v\n", err)
+		c.logger.Error("Service method error", "error", err, "method", "Create")
 		switch err {
 		case types.ErrInvalidState:
-			ctx.JSON(http.StatusForbidden, gin.H{"error": types.ErrInvalidState.Error()})
+			sendError(ctx, http.StatusForbidden, types.ErrInvalidState.Error())
 		case types.ErrLeagueNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrLeagueNotFound.Error()})
+			sendError(ctx, http.StatusNotFound, types.ErrLeagueNotFound.Error())
 		case types.ErrPokemonSpeciesNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrPokemonSpeciesNotFound.Error()})
+			sendError(ctx, http.StatusNotFound, types.ErrPokemonSpeciesNotFound.Error())
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}
@@ -186,35 +189,35 @@ func (c *poolEntryControllerImpl) Create(ctx *gin.Context) {
 //	@Param			leagueId	path		string									true	"League ID"
 //	@Param			request		body		[]requests.PoolEntryCreateRequestDTO	true	"Pool entries"
 //	@Success		200			{array}		models.PoolEntry
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		403			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		403			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/pool-entries/batch [post]
 func (c *poolEntryControllerImpl) CreateBatch(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrNoUserInContext.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrNoUserInContext.Error())
 		return
 	}
 
 	var req []requests.PoolEntryCreateRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		sendError(ctx, http.StatusBadRequest, "bad request")
 		return
 	}
 
 	entries, err := c.poolEntryService.CreateBatch(currentUser, req)
 	if err != nil {
-		log.Printf("LOG: (PoolEntryController: CreateBatch) - Service method error: %v\n", err)
+		c.logger.Error("Service method error", "error", err, "method", "CreateBatch")
 		switch err {
 		case types.ErrInvalidState:
-			ctx.JSON(http.StatusForbidden, gin.H{"error": types.ErrInvalidState.Error()})
+			sendError(ctx, http.StatusForbidden, types.ErrInvalidState.Error())
 		case types.ErrLeagueNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrLeagueNotFound.Error()})
+			sendError(ctx, http.StatusNotFound, types.ErrLeagueNotFound.Error())
 		case types.ErrPokemonSpeciesNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrPokemonSpeciesNotFound.Error()})
+			sendError(ctx, http.StatusNotFound, types.ErrPokemonSpeciesNotFound.Error())
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}
@@ -232,35 +235,35 @@ func (c *poolEntryControllerImpl) CreateBatch(ctx *gin.Context) {
 //	@Param			leagueId	path		string								true	"League ID"
 //	@Param			request		body		requests.PoolEntryUpdateRequestDTO	true	"Updated entry"
 //	@Success		200			{object}	models.PoolEntry
-//	@Failure		400			{object}	map[string]interface{}
-//	@Failure		403			{object}	map[string]interface{}
-//	@Failure		404			{object}	map[string]interface{}
+//	@Failure		400			{object}	responses.ErrorResponse
+//	@Failure		403			{object}	responses.ErrorResponse
+//	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/pool-entries [put]
 func (c *poolEntryControllerImpl) Update(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": types.ErrNoUserInContext.Error()})
+		sendError(ctx, http.StatusBadRequest, types.ErrNoUserInContext.Error())
 		return
 	}
 
 	var req requests.PoolEntryUpdateRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		sendError(ctx, http.StatusBadRequest, "bad request")
 		return
 	}
 
 	entry, err := c.poolEntryService.Update(currentUser, &req)
 	if err != nil {
-		log.Printf("LOG: (PoolEntryController: Update) - Service method error: %v\n", err)
+		c.logger.Error("Service method error", "error", err, "method", "Update")
 		switch err {
 		case types.ErrPoolEntryNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrPoolEntryNotFound.Error()})
+			sendError(ctx, http.StatusNotFound, types.ErrPoolEntryNotFound.Error())
 		case types.ErrLeagueNotFound:
-			ctx.JSON(http.StatusNotFound, gin.H{"error": types.ErrLeagueNotFound.Error()})
+			sendError(ctx, http.StatusNotFound, types.ErrLeagueNotFound.Error())
 		case types.ErrInvalidState:
-			ctx.JSON(http.StatusForbidden, gin.H{"error": types.ErrInvalidState.Error()})
+			sendError(ctx, http.StatusForbidden, types.ErrInvalidState.Error())
 		default:
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": types.ErrInternalService.Error()})
+			sendError(ctx, http.StatusInternalServerError, types.ErrInternalService.Error())
 		}
 		return
 	}

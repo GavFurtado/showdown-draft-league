@@ -3,7 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
@@ -28,18 +28,21 @@ type transferServiceImpl struct {
 	leagueRepo       repositories.LeagueRepository
 	memberRepo       repositories.LeagueMemberRepository
 	schedulerService SchedulerService
+	logger           *slog.Logger
 
 	claimRepo     repositories.ClaimRepository
 	poolEntryRepo repositories.PoolEntryRepository
 }
 
 func NewTransferService(
+	logger *slog.Logger,
 	leagueRepo repositories.LeagueRepository,
 	memberRepo repositories.LeagueMemberRepository,
 ) TransferService {
 	return &transferServiceImpl{
 		leagueRepo: leagueRepo,
 		memberRepo: memberRepo,
+		logger:     utils.LoggerWithService(logger, "TransferService"),
 	}
 }
 
@@ -59,7 +62,7 @@ func (s *transferServiceImpl) StartTransferPeriod(leagueID uuid.UUID) error {
 	// 1. Fetch the League
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
-		log.Printf("ERROR: (TransferService: StartTransferPeriod) - Failed to fetch league %s: %v\n", leagueID, err)
+		s.logger.Error("StartTransferPeriod - failed to fetch league", "league_id", leagueID, "error", err)
 		return types.ErrLeagueNotFound
 	}
 
@@ -69,16 +72,16 @@ func (s *transferServiceImpl) StartTransferPeriod(leagueID uuid.UUID) error {
 	}
 
 	if league.Status != enums.LeagueStatusRegularSeason && league.Status != enums.LeagueStatusPostDraft {
-		log.Printf("WARN: (TransferService: StartTransferPeriod) - League %s is not in a valid state to start a transfer window. Status: %s\n", leagueID, league.Status)
+		s.logger.Warn("StartTransferPeriod - league not in valid state to start transfer window", "league_id", leagueID, "status", league.Status)
 		return fmt.Errorf("invalid league status to start transfer window: %s", league.Status)
 	}
 
 	// 3. Update Player Credits (if applicable)
 	didAllPlayersAccrueCredits := true
-	if league.Format.TransfersCostCredits {
+	if league.Format.TransferUsesCredits {
 		members, err := s.memberRepo.GetByLeague(leagueID)
 		if err != nil {
-			log.Printf("ERROR: (TransferService: StartTransferPeriod) - Failed to get members for league %s: %v\n", leagueID, err)
+			s.logger.Error("StartTransferPeriod - failed to get members", "league_id", leagueID, "error", err)
 			return types.ErrInternalService
 		}
 
@@ -89,7 +92,7 @@ func (s *transferServiceImpl) StartTransferPeriod(leagueID uuid.UUID) error {
 			}
 			if _, err := s.memberRepo.Update(&member); err != nil {
 				// Log the error but continue trying to update other players
-				log.Printf("ERROR: (TransferService: StartTransferPeriod) - Failed to update transfer credits for member %s: %v\n", member.ID, err)
+				s.logger.Error("StartTransferPeriod - failed to update transfer credits for member", "member_id", member.ID, "error", err)
 				didAllPlayersAccrueCredits = false
 			}
 		}
@@ -115,18 +118,18 @@ func (s *transferServiceImpl) StartTransferPeriod(leagueID uuid.UUID) error {
 
 	// 6. Save Changes
 	if _, err := s.leagueRepo.UpdateLeague(league); err != nil {
-		log.Printf("ERROR: (TransferService: StartTransferPeriod) - Failed to update league %s status: %v\n", leagueID, err)
+		s.logger.Error("StartTransferPeriod - failed to update league status", "league_id", leagueID, "error", err)
 		s.schedulerService.DeregisterTask(taskID)
 		return types.ErrInternalService
 	}
 
-	if !league.Format.TransfersCostCredits {
-		log.Printf("LOG: (TransferService: StartTransferPeriod) - Transfer window started for league %s.\n", leagueID)
+	if !league.Format.TransferUsesCredits {
+		s.logger.Info("StartTransferPeriod - transfer window started", "league_id", leagueID)
 	} else {
 		if !didAllPlayersAccrueCredits {
-			log.Printf("LOG: (TransferService: StartTransferPeriod) - Transfer window started for league %s but there was an error in credit accrual for one or more players.\n", leagueID)
+			s.logger.Warn("StartTransferPeriod - transfer window started but credit accrual error for one or more players", "league_id", leagueID)
 		} else {
-			log.Printf("LOG: (TransferService: StartTransferPeriod) - Transfer window started for league %s and all players accrued credits.\n", leagueID)
+			s.logger.Info("StartTransferPeriod - transfer window started and all players accrued credits", "league_id", leagueID)
 		}
 	}
 	return nil
@@ -138,13 +141,13 @@ func (s *transferServiceImpl) EndTransferPeriod(leagueID uuid.UUID) error {
 	// 1. Fetch the League
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
-		log.Printf("ERROR: (TransferService: EndTransferPeriod) - Failed to fetch league %s: %v\n", leagueID, err)
+		s.logger.Error("EndTransferPeriod - failed to fetch league", "league_id", leagueID, "error", err)
 		return types.ErrLeagueNotFound
 	}
 
 	// 2. Validate Status
 	if league.Status != enums.LeagueStatusTransferWindow {
-		log.Printf("WARN: (TransferService: EndTransferPeriod) - League %s is not in a transfer window. Status: %s\n", leagueID, league.Status)
+		s.logger.Warn("EndTransferPeriod - league is not in a transfer window", "league_id", leagueID, "status", league.Status)
 		return fmt.Errorf("invalid league status to end transfer window: %s", league.Status)
 	}
 
@@ -170,17 +173,17 @@ func (s *transferServiceImpl) EndTransferPeriod(leagueID uuid.UUID) error {
 		// If frequency is 0 or less, don't schedule a next window.
 		league.Format.NextTransferWindowStart = nil
 		league.Format.AllowTransfers = false
-		league.Format.TransfersCostCredits = false
+		league.Format.TransferUsesCredits = false
 	}
 
 	// 5. Save Changes
 	if _, err := s.leagueRepo.UpdateLeague(league); err != nil {
-		log.Printf("ERROR: (TransferService: EndTransferPeriod) - Failed to update league %s: %v\n", leagueID, err)
+		s.logger.Error("EndTransferPeriod - failed to update league", "league_id", leagueID, "error", err)
 		s.schedulerService.DeregisterTask(taskID)
 		return types.ErrInternalService
 	}
 
-	log.Printf("LOG: (TransferService: EndTransferPeriod) - Transfer window ended for league %s.\n", leagueID)
+	s.logger.Info("EndTransferPeriod - transfer window ended", "league_id", leagueID)
 	return nil
 }
 
@@ -235,7 +238,7 @@ func (s *transferServiceImpl) DropPokemon(currentUser *models.User, leagueID, cl
 	// Check if dropping this pokemon would put the player below the minimum
 	currentPokemonCount, err := s.claimRepo.GetActiveCountByPlayer(member.ID)
 	if err != nil {
-		log.Printf("LOG: (Error: TransferService.DropPokemon) - could not get claim count for member %s: %v", member.ID, err)
+		s.logger.Error("DropPokemon - could not get claim count for member", "member_id", member.ID, "error", err)
 		return types.ErrInternalService
 	}
 	if currentPokemonCount <= int64(league.MinPokemonPerPlayer) {
@@ -245,7 +248,7 @@ func (s *transferServiceImpl) DropPokemon(currentUser *models.User, leagueID, cl
 	// Find the pool entry to mark it as available again
 	poolEntry, err := s.poolEntryRepo.GetBySpecies(claim.LeagueID, claim.SpeciesID)
 	if err != nil {
-		log.Printf("WARN: (TransferService.DropPokemon) - Could not find pool entry for species %d (dropping anyway): %v", claim.SpeciesID, err)
+		s.logger.Warn("DropPokemon - could not find pool entry for species (dropping anyway)", "species_id", claim.SpeciesID, "error", err)
 		// Continue even if we can't find the specific pool entry - the claim is still released
 	}
 
@@ -256,7 +259,7 @@ func (s *transferServiceImpl) DropPokemon(currentUser *models.User, leagueID, cl
 
 	err = s.claimRepo.ReleaseTx(nil, claim, member, league.Format.DropCost, league.CurrentWeekNumber, poolEntryID)
 	if err != nil {
-		log.Printf("LOG: (Error: TransferService.DropPokemon) - Failed to release claim with ID %s: %v", claimID, err)
+		s.logger.Error("DropPokemon - failed to release claim", "claim_id", claimID, "error", err)
 		return types.ErrInternalService
 	}
 	return nil
@@ -310,7 +313,7 @@ func (s *transferServiceImpl) PickupFreeAgent(currentUser *models.User, leagueID
 	// Check if picking up this pokemon would put the player above the maximum
 	currentPokemonCount, err := s.claimRepo.GetActiveCountByPlayer(member.ID)
 	if err != nil {
-		log.Printf("LOG: (Error: TransferService.PickupFreeAgent) - could not get claim count for member %s: %v", member.ID, err)
+		s.logger.Error("PickupFreeAgent - could not get claim count for member", "member_id", member.ID, "error", err)
 		return types.ErrInternalService
 	}
 	if currentPokemonCount >= int64(league.MaxPokemonPerPlayer) {
@@ -328,7 +331,7 @@ func (s *transferServiceImpl) PickupFreeAgent(currentUser *models.User, leagueID
 	}
 
 	if err := s.claimRepo.PickupFreeAgentTx(nil, member, newClaim, poolEntry, league.Format.PickupCost); err != nil {
-		log.Printf("LOG: (Error: TransferService.PickupFreeAgent) - Failed to complete pickup free agent transaction: %v", err)
+		s.logger.Error("PickupFreeAgent - failed to complete pickup free agent transaction", "error", err)
 		return types.ErrInternalService
 	}
 

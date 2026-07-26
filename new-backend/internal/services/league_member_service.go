@@ -3,7 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
@@ -11,6 +11,7 @@ import (
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -34,9 +35,11 @@ type leagueMemberServiceImpl struct {
 	memberRepo repositories.LeagueMemberRepository
 	leagueRepo repositories.LeagueRepository
 	userRepo   repositories.UserRepository
+	logger     *slog.Logger
 }
 
 func NewLeagueMemberService(
+	logger *slog.Logger,
 	memberRepo repositories.LeagueMemberRepository,
 	leagueRepo repositories.LeagueRepository,
 	userRepo repositories.UserRepository,
@@ -45,6 +48,7 @@ func NewLeagueMemberService(
 		memberRepo: memberRepo,
 		leagueRepo: leagueRepo,
 		userRepo:   userRepo,
+		logger:     utils.LoggerWithService(logger, "LeagueMemberService"),
 	}
 }
 
@@ -54,7 +58,7 @@ func (s *leagueMemberServiceImpl) GetByID(memberID uuid.UUID) (*models.LeagueMem
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, types.ErrPlayerNotFound
 		}
-		log.Printf("Service: LeagueMemberService.GetByID - Failed to retrieve member %s: %v", memberID, err)
+		s.logger.Error("GetByID - failed to retrieve member", "member_id", memberID, "error", err)
 		return nil, fmt.Errorf("%w: failed to retrieve member data", types.ErrInternalService)
 	}
 	return member, nil
@@ -66,7 +70,7 @@ func (s *leagueMemberServiceImpl) GetByUserAndLeague(userID, leagueID uuid.UUID)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, types.ErrPlayerNotFound
 		}
-		log.Printf("Service: LeagueMemberService.GetByUserAndLeague - Failed to retrieve member (userID %s; leagueID %s): %v", userID, leagueID, err)
+		s.logger.Error("GetByUserAndLeague - failed to retrieve member", "user_id", userID, "league_id", leagueID, "error", err)
 		return nil, fmt.Errorf("%w: failed to retrieve member data", types.ErrInternalService)
 	}
 	return member, nil
@@ -75,7 +79,7 @@ func (s *leagueMemberServiceImpl) GetByUserAndLeague(userID, leagueID uuid.UUID)
 func (s *leagueMemberServiceImpl) GetByLeague(leagueID uuid.UUID) ([]models.LeagueMember, error) {
 	members, err := s.memberRepo.GetByLeague(leagueID)
 	if err != nil {
-		log.Printf("Service: LeagueMemberService.GetByLeague - Failed to retrieve members for league %s: %v", leagueID, err)
+		s.logger.Error("GetByLeague - failed to retrieve members", "league_id", leagueID, "error", err)
 		return nil, fmt.Errorf("%w: failed to retrieve members data", types.ErrInternalService)
 	}
 	return members, nil
@@ -84,7 +88,7 @@ func (s *leagueMemberServiceImpl) GetByLeague(leagueID uuid.UUID) ([]models.Leag
 func (s *leagueMemberServiceImpl) GetByUser(userID uuid.UUID) ([]models.LeagueMember, error) {
 	members, err := s.memberRepo.GetByUser(userID)
 	if err != nil {
-		log.Printf("Service: LeagueMemberService.GetByUser - Failed to retrieve members for user %s: %v", userID, err)
+		s.logger.Error("GetByUser - failed to retrieve members", "user_id", userID, "error", err)
 		return nil, fmt.Errorf("%w: failed to retrieve member data", types.ErrInternalService)
 	}
 	return members, nil
@@ -96,7 +100,7 @@ func (s *leagueMemberServiceImpl) GetWithFullRoster(memberID uuid.UUID) (*models
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, types.ErrPlayerNotFound
 		}
-		log.Printf("Service: LeagueMemberService.GetWithFullRoster - Failed to retrieve member %s with full roster: %v", memberID, err)
+		s.logger.Error("GetWithFullRoster - failed to retrieve member with full roster", "member_id", memberID, "error", err)
 		return nil, fmt.Errorf("%w: failed to retrieve member data", types.ErrInternalService)
 	}
 	return member, nil
@@ -105,7 +109,7 @@ func (s *leagueMemberServiceImpl) GetWithFullRoster(memberID uuid.UUID) (*models
 func (s *leagueMemberServiceImpl) Create(currentUser *models.User, input *requests.LeagueMemberCreateRequestDTO) (*models.LeagueMember, error) {
 	league, err := s.leagueRepo.GetLeagueByID(input.LeagueID)
 	if err != nil {
-		log.Printf("Service: LeagueMemberService.Create - Failed to fetch league %s: %v", input.LeagueID, err)
+		s.logger.Error("Create - failed to fetch league", "league_id", input.LeagueID, "error", err)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, types.ErrLeagueNotFound
 		}
@@ -113,13 +117,13 @@ func (s *leagueMemberServiceImpl) Create(currentUser *models.User, input *reques
 	}
 
 	if league.Status != enums.LeagueStatusSetup {
-		log.Printf("Service: LeagueMemberService.Create - League %s is not in SETUP status: %v", input.LeagueID, err)
+		s.logger.Warn("Create - league is not in SETUP status", "league_id", input.LeagueID, "error", err)
 		return nil, types.ErrInvalidState
 	}
 
 	user, err := s.userRepo.GetUserByID(input.UserID)
 	if err != nil {
-		log.Printf("Service: LeagueMemberService.Create - Failed to fetch user %s: %v", input.UserID, err)
+		s.logger.Error("Create - failed to fetch user", "user_id", input.UserID, "error", err)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, types.ErrUserNotFound
 		}
@@ -137,7 +141,7 @@ func (s *leagueMemberServiceImpl) Create(currentUser *models.User, input *reques
 
 	existingByUser, err := s.memberRepo.FindByUserAndLeague(input.UserID, input.LeagueID)
 	if err != nil {
-		log.Printf("Service: LeagueMemberService.Create - Failed to check existing member by user ID %s in league %s: %v", input.UserID, input.LeagueID, err)
+		s.logger.Error("Create - failed to check existing member by user ID", "user_id", input.UserID, "league_id", input.LeagueID, "error", err)
 		return nil, fmt.Errorf("%w: failed to check existing member data", types.ErrInternalService)
 	}
 	if existingByUser != nil {
@@ -146,7 +150,7 @@ func (s *leagueMemberServiceImpl) Create(currentUser *models.User, input *reques
 
 	existingByName, err := s.memberRepo.FindByInLeagueName(*input.InLeagueName, input.LeagueID)
 	if err != nil {
-		log.Printf("Service: LeagueMemberService.Create - Failed to check existing member by name '%s' in league %s: %v", *input.InLeagueName, input.LeagueID, err)
+		s.logger.Error("Create - failed to check existing member by name", "name", *input.InLeagueName, "league_id", input.LeagueID, "error", err)
 		return nil, fmt.Errorf("%w: failed to check in-league name uniqueness", types.ErrInternalService)
 	}
 	if existingByName != nil {
@@ -155,7 +159,7 @@ func (s *leagueMemberServiceImpl) Create(currentUser *models.User, input *reques
 
 	existingByTeam, err := s.memberRepo.FindByTeamName(*input.TeamName, input.LeagueID)
 	if err != nil {
-		log.Printf("Service: LeagueMemberService.Create - Failed to check existing member by team name '%s' in league %s: %v", *input.TeamName, input.LeagueID, err)
+		s.logger.Error("Create - failed to check existing member by team name", "team_name", *input.TeamName, "league_id", input.LeagueID, "error", err)
 		return nil, fmt.Errorf("%w: failed to check team name uniqueness", types.ErrInternalService)
 	}
 	if existingByTeam != nil {
@@ -181,18 +185,18 @@ func (s *leagueMemberServiceImpl) Create(currentUser *models.User, input *reques
 
 	created, err := s.memberRepo.Create(&member)
 	if err != nil {
-		log.Printf("Service: LeagueMemberService.Create - Failed to create member for user %s in league %s: %v", input.UserID, input.LeagueID, err)
+		s.logger.Error("Create - failed to create member", "user_id", input.UserID, "league_id", input.LeagueID, "error", err)
 		return nil, fmt.Errorf("%w: failed to add member to league", types.ErrFailedToCreatePlayer)
 	}
 
 	league.PlayerCount++
 	league.NewPlayerGroupNumber = ((league.NewPlayerGroupNumber + 1) % league.Format.GroupCount) + 1
 	if _, err = s.leagueRepo.UpdateLeague(league); err != nil {
-		log.Printf("Service: LeagueMemberService.Create - Failed to update league %s for user %s: %v", league.ID, input.UserID, err)
+		s.logger.Error("Create - failed to update league", "league_id", league.ID, "user_id", input.UserID, "error", err)
 		return nil, types.ErrInternalService
 	}
 
-	log.Printf("Service: LeagueMemberService.Create - Member %s created for user %s in league %s.", created.ID, input.UserID, input.LeagueID)
+	s.logger.Info("Create - member created", "member_id", created.ID, "user_id", input.UserID, "league_id", input.LeagueID)
 	return created, nil
 }
 
