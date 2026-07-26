@@ -7,8 +7,10 @@ import (
 	"strings"
 )
 
-type GameStatus string
-type GameType string
+type (
+	GameStatus string
+	GameType   string
+)
 
 const (
 	GameStatusScheduled       GameStatus = "SCHEDULED"
@@ -16,6 +18,7 @@ const (
 	GameStatusCompleted       GameStatus = "COMPLETED"
 	GameStatusDisputed        GameStatus = "DISPUTED"
 )
+
 const (
 	// REGULAR_SEASON or HYBRID leagues
 	GameTypeRegularSeason     GameType = "REGULAR_SEASON"
@@ -36,6 +39,7 @@ var gameStatuses = []GameStatus{
 	GameStatusCompleted,
 	GameStatusDisputed,
 }
+
 var gameTypes = []GameType{
 	GameTypePlayoffUpper,
 	GameTypePlayoffLower,

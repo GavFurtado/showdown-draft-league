@@ -31,10 +31,10 @@ type GameService interface {
 }
 
 type gameServiceImpl struct {
-	logger       *slog.Logger
-	gameRepo     repositories.GameRepository
-	leagueRepo   repositories.LeagueRepository
-	memberRepo   repositories.LeagueMemberRepository
+	logger        *slog.Logger
+	gameRepo      repositories.GameRepository
+	leagueRepo    repositories.LeagueRepository
+	memberRepo    repositories.LeagueMemberRepository
 	leagueService LeagueService
 }
 

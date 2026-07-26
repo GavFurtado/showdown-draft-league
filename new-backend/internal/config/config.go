@@ -21,7 +21,6 @@ type Config struct {
 }
 
 func LoadConfig() *Config {
-
 	// Load environment variables from .env file
 	err := godotenv.Load()
 	if err != nil {

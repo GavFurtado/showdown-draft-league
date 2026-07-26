@@ -20,6 +20,7 @@ func (m *MockLeagueRepository) CreateLeague(league *models.League) (*models.Leag
 	}
 	return result, args.Error(1)
 }
+
 func (m *MockLeagueRepository) GetLeagueByID(leagueID uuid.UUID) (*models.League, error) {
 	args := m.Called(leagueID)
 	var result *models.League
@@ -28,10 +29,12 @@ func (m *MockLeagueRepository) GetLeagueByID(leagueID uuid.UUID) (*models.League
 	}
 	return result, args.Error(1)
 }
+
 func (m *MockLeagueRepository) GetLeaguesCountWhereOwner(ownerID uuid.UUID) (int64, error) {
 	args := m.Called(ownerID)
 	return args.Get(0).(int64), args.Error(1)
 }
+
 func (m *MockLeagueRepository) UpdateLeague(league *models.League) (*models.League, error) {
 	args := m.Called(league)
 	var result *models.League
@@ -40,22 +43,27 @@ func (m *MockLeagueRepository) UpdateLeague(league *models.League) (*models.Leag
 	}
 	return result, args.Error(1)
 }
+
 func (m *MockLeagueRepository) GetLeaguesByOwner(ownerID uuid.UUID) ([]models.League, error) {
 	args := m.Called(ownerID)
 	return args.Get(0).([]models.League), args.Error(1)
 }
+
 func (m *MockLeagueRepository) GetLeaguesByUser(userID uuid.UUID) ([]models.League, error) {
 	args := m.Called(userID)
 	return args.Get(0).([]models.League), args.Error(1)
 }
+
 func (m *MockLeagueRepository) IsUserOwner(userID, leagueID uuid.UUID) (bool, error) {
 	args := m.Called(userID, leagueID)
 	return args.Bool(0), args.Error(1)
 }
+
 func (m *MockLeagueRepository) DeleteLeague(leagueID uuid.UUID) error {
 	args := m.Called(leagueID)
 	return args.Error(0)
 }
+
 func (m *MockLeagueRepository) GetLeagueWithFullDetails(id uuid.UUID) (*models.League, error) {
 	args := m.Called(id)
 	var result *models.League
@@ -64,22 +72,27 @@ func (m *MockLeagueRepository) GetLeagueWithFullDetails(id uuid.UUID) (*models.L
 	}
 	return result, args.Error(1)
 }
+
 func (m *MockLeagueRepository) IsUserPlayerInLeague(userID, leagueID uuid.UUID) (bool, error) {
 	args := m.Called(userID, leagueID)
 	return args.Bool(0), args.Error(1)
 }
+
 func (m *MockLeagueRepository) GetLeagueStatus(leagueID uuid.UUID) (enums.LeagueStatus, error) {
 	args := m.Called(leagueID)
 	return args.Get(0).(enums.LeagueStatus), args.Error(1)
 }
+
 func (m *MockLeagueRepository) GetAllLeaguesByStatus(status enums.LeagueStatus) ([]models.League, error) {
 	args := m.Called(status)
 	return args.Get(0).([]models.League), args.Error(1)
 }
+
 func (m *MockLeagueRepository) GetLeaguesByStatuses(statuses []enums.LeagueStatus) ([]models.League, error) {
 	args := m.Called(statuses)
 	return args.Get(0).([]models.League), args.Error(1)
 }
+
 func (m *MockLeagueRepository) GetLeaguesThatAllowTransfers() ([]models.League, error) {
 	args := m.Called()
 	return args.Get(0).([]models.League), args.Error(1)

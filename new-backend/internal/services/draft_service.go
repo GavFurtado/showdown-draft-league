@@ -31,11 +31,11 @@ type DraftService interface {
 }
 
 type draftServiceImpl struct {
-	logger         *slog.Logger
-	draftRepo      repositories.DraftRepository
-	leagueRepo     repositories.LeagueRepository
-	memberRepo     repositories.LeagueMemberRepository
-	webhookService *WebhookService
+	logger           *slog.Logger
+	draftRepo        repositories.DraftRepository
+	leagueRepo       repositories.LeagueRepository
+	memberRepo       repositories.LeagueMemberRepository
+	webhookService   *WebhookService
 	schedulerService SchedulerService
 
 	draftPickRepo repositories.DraftPickRepository
@@ -51,10 +51,10 @@ func NewDraftService(
 	webhookService *WebhookService,
 ) DraftService {
 	return &draftServiceImpl{
-		logger:        utils.LoggerWithService(logger, "DraftService"),
-		draftRepo:     draftRepo,
-		leagueRepo:    leagueRepo,
-		memberRepo:    memberRepo,
+		logger:         utils.LoggerWithService(logger, "DraftService"),
+		draftRepo:      draftRepo,
+		leagueRepo:     leagueRepo,
+		memberRepo:     memberRepo,
 		webhookService: webhookService,
 	}
 }
@@ -108,7 +108,7 @@ func (s *draftServiceImpl) GetDraftByLeagueID(leagueID uuid.UUID) (*models.Draft
 // player permission rbac.PermissionCreateDraft
 func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*models.Draft, error) {
 	// Retrieve the league
-	league, err := (s.leagueRepo).GetLeagueByID(leagueID)
+	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil || league == nil {
 		s.logger.Error("StartDraft - could not get league", "league_id", leagueID, "error", err)
 		return nil, types.ErrLeagueNotFound
@@ -794,7 +794,6 @@ func (s *draftServiceImpl) executeNewPickTransactions(
 
 		return nil
 	})
-
 	if err != nil {
 		return err
 	}
@@ -908,7 +907,7 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 
 	_, err = s.isSkipAllowed(member, effectiveSkipsInThisAction)
 	if err != nil {
-			s.logger.Warn("validatePicksAndCheckCurrentPickSlotUsed - member cannot implicitly skip current turn as it would violate minimum roster requirement", "member_id", memberID, "pick", draft.CurrentPickOnClock, "skips_left", member.SkipsLeft)
+		s.logger.Warn("validatePicksAndCheckCurrentPickSlotUsed - member cannot implicitly skip current turn as it would violate minimum roster requirement", "member_id", memberID, "pick", draft.CurrentPickOnClock, "skips_left", member.SkipsLeft)
 		return false, err
 	}
 

@@ -219,7 +219,7 @@ func TestDraftService_MakePick(t *testing.T) {
 			},
 		}
 		unavailablePoolEntry := &models.PoolEntry{
-ID:               poolEntryID,
+			ID:          poolEntryID,
 			IsAvailable: false,
 		}
 

@@ -43,9 +43,8 @@ func (s *JWTService) ValidateToken(tokenString string) (uuid.UUID, error) {
 		}
 		return s.secretKey, nil
 	})
-
 	if err != nil {
-			return uuid.Nil, fmt.Errorf("invalid token: %w", err)
+		return uuid.Nil, fmt.Errorf("invalid token: %w", err)
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {

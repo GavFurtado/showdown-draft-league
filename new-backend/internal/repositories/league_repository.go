@@ -74,7 +74,6 @@ func (r *leagueRepositoryImpl) CreateLeague(league *models.League) (*models.Leag
 func (r *leagueRepositoryImpl) IsUserPlayerInLeague(userID, leagueID uuid.UUID) (bool, error) {
 	var member models.LeagueMember
 	err := r.db.Where("user_id = ? AND league_id = ?", userID, leagueID).First(&member).Error
-
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return false, nil // User is not a member in this league
@@ -138,7 +137,6 @@ func (r *leagueRepositoryImpl) GetLeaguesByUser(userID uuid.UUID) ([]models.Leag
 		Joins("JOIN league_members ON league_members.league_id = leagues.id").
 		Where("league_members.user_id = ? AND league_members.deleted_at IS NULL", userID).
 		Find(&leagues).Error // Finds the League records
-
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +147,6 @@ func (r *leagueRepositoryImpl) GetLeaguesByUser(userID uuid.UUID) ([]models.Leag
 // updates a league
 func (r *leagueRepositoryImpl) UpdateLeague(league *models.League) (*models.League, error) {
 	err := r.db.Updates(league).Error
-
 	if err != nil {
 		return nil, fmt.Errorf("(Error: UpdateLeague) - failed to update league: %v", err)
 	}
@@ -194,7 +191,6 @@ func (r *leagueRepositoryImpl) GetLeagueWithFullDetails(id uuid.UUID) (*models.L
 		Preload("PoolEntries").
 		Preload("PoolEntries.PokemonSpecies").
 		First(&league, "id = ?", id).Error
-
 	if err != nil {
 		return nil, err
 	}

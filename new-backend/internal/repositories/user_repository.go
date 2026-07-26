@@ -46,7 +46,6 @@ func (r *userRepositoryImpl) GetUserByID(id uuid.UUID) (*models.User, error) {
 func (r *userRepositoryImpl) GetUserByDiscordID(discordID string) (*models.User, error) {
 	var user models.User
 	err := r.db.Where("discord_id = ?", discordID).First(&user).Error
-
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +69,6 @@ func (r *userRepositoryImpl) GetUserLeagues(userID uuid.UUID) ([]*models.League,
 		Preload("Members.League").
 		Where("id = ?", userID).
 		First(&user).Error
-
 	if err != nil {
 		return nil, err
 	}

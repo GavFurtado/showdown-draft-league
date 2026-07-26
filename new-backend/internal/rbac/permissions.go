@@ -96,7 +96,8 @@ func init() {
 	rolePermissions[MRoleModerator] = make(map[Permission]bool)
 	rolePermissions[MRoleOwner] = make(map[Permission]bool)
 
-	setPermissions(MRoleMember,
+	setPermissions(
+		MRoleMember,
 		PermissionReadLeague,
 		PermissionReadPlayer,
 		PermissionReadDraft,
@@ -122,7 +123,8 @@ func init() {
 	)
 
 	inheritPermissions(MRoleModerator, MRoleMember)
-	setPermissions(MRoleModerator,
+	setPermissions(
+		MRoleModerator,
 		PermissionUpdatePlayerScore,
 		PermissionUpdateLeague,
 		PermissionUpdateDraft,
@@ -144,7 +146,8 @@ func init() {
 	)
 
 	inheritPermissions(MRoleOwner, MRoleModerator)
-	setPermissions(MRoleOwner,
+	setPermissions(
+		MRoleOwner,
 		PermissionCreateLeague,
 		PermissionDeleteLeague,
 		PermissionDeletePlayer,
