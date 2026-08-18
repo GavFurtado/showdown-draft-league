@@ -43,7 +43,8 @@ export interface TokenResponse {
 
 // yeah idk what i was thinking
 export interface NextPickNumberResponse {
-  // eslint-disable-next-line @typescript-eslint/naming-convention -- wire key is snake_case
+  // TODO: server needs to rename this to camelCase
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   next_pick_number: number;
 }
 

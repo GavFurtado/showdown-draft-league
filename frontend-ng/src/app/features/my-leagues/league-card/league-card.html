@@ -1,0 +1,73 @@
+<section tuiCardLarge [tuiCardCollapsed]="collapsed()" appearance="" class="max-w-lg min-w-lg">
+  <header tuiHeader="body-m">
+    <hgroup tuiTitle>
+      <a class="hover:underline" [routerLink]="['/my-leagues', league().ID]">{{ league().Name }}</a>
+      <p tuiSubtitle>{{ league().RulesetDescription }}</p>
+    </hgroup>
+    <aside>
+      <app-status-badge [status]="league().Status" domain="league" size="l" />
+    </aside>
+  </header>
+
+  <div tuiCardRow>
+    <div tuiTitle>
+      <div tuiSubtitle>Players</div>
+      <div class="flex items-center gap-1">
+        <tui-icon icon="@tui.users" class="pr-1" />
+        {{ league().PlayerCount }}/{{ league().MaxPlayers }}
+      </div>
+    </div>
+    <div tuiTitle>
+      <div tuiSubtitle>Season</div>
+      <div class="flex items-center gap-1">
+        <tui-icon icon="@tui.trophy" class="pr-1" />
+        <span autoShrink [startSize]="12" [minSize]="10">{{ league().Format.SeasonType | enumLabel }}</span>
+      </div>
+    </div>
+    <div tuiTitle>
+      <div tuiSubtitle>Week</div>
+      <div class="flex items-center gap-1">
+        <tui-icon icon="@tui.calendar" class="pr-1" />
+        {{ league().CurrentWeekNumber }}
+      </div>
+    </div>
+    <div tuiTitle>
+      <div tuiSubtitle>Points</div>
+      <div class="flex items-center gap-1">
+        <tui-icon icon="@tui.credit-card" class="pr-1" />
+        {{ league().StartingDraftPoints }}
+      </div>
+    </div>
+    <button
+      appearance="secondary"
+      size="s"
+      tuiIconButton
+      type="button"
+      [tuiChevron]="!collapsed()"
+      (click)="collapsed.set(!collapsed())"
+    >
+      Details
+    </button>
+  </div>
+
+  <tui-expand [expanded]="!collapsed()">
+    <!-- TODO: this has to redone once we have proper components for displaying members -->
+    <div class="border-t px-4 py-3">
+      <div class="mb-2 text-xs font-medium text-(--tui-text-secondary) uppercase">Members</div>
+      @if (league().Members?.length) {
+        <div class="flex flex-wrap gap-1">
+          @for (member of league().Members; track member.ID) {
+            <span class="inline-flex items-center gap-1 rounded bg-(--tui-background-elevation-1) px-2 py-0.5 text-xs">
+              @if (member.Role === 'OWNER') {
+                <tui-icon icon="@tui.crown" class="text-amber-500" />
+              }
+              {{ member.DisplayName }}
+            </span>
+          }
+        </div>
+      } @else {
+        <p class="text-xs text-(--tui-text-secondary)">No members yet</p>
+      }
+    </div>
+  </tui-expand>
+</section>

@@ -1,0 +1,14 @@
+<div class="flex min-h-screen items-center justify-center">
+  <div class="w-full max-w-sm p-8">
+    <h1 class="text-2xl font-bold">Sign in</h1>
+    <p class="mb-6 text-(--tui-text-secondary)">Connect your Discord to continue.</p>
+
+    <button tuiButton (click)="login()" [disabled]="state() === 'logging-in'">
+      {{ state() === 'logging-in' ? 'Opening Discord…' : 'Login with Discord' }}
+    </button>
+
+    @if (error(); as message) {
+      <p class="mt-3 text-(--tui-text-negative)">{{ message }}</p>
+    }
+  </div>
+</div>

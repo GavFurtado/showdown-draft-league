@@ -1,0 +1,85 @@
+<app-layout variant="container">
+  <div class="mb-8 flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold">Leagues</h1>
+      <p class="mt-2 text-sm text-(--tui-text-secondary)">Manage your leagues or discover new ones.</p>
+    </div>
+    <a tuiButton iconStart="@tui.plus" routerLink="/create-league">Create League</a>
+  </div>
+
+  <search tuiSearch>
+    <form [formGroup]="form">
+      <fieldset tuiTextfieldSize="m" class="flex items-center justify-between gap-3">
+        <div tuiGroup [collapsed]="true" class="h-8 w-fit">
+          <label
+            [appearance]="form.get('tab')!.value === 'myLeagues' ? 'primary' : 'outline-grayscale'"
+            tuiBlock
+            iconStart="@tui.trophy"
+            class="whitespace-nowrap"
+          >
+            <input tuiBlock="m" size="m" type="radio" formControlName="tab" value="myLeagues" />
+            My Leagues ({{ filteredLeagues().length }})
+          </label>
+          <label
+            [appearance]="form.get('tab')!.value === 'publicLeagues' ? 'primary' : 'outline-grayscale'"
+            tuiBlock
+            iconStart="@tui.telescope"
+            class="whitespace-nowrap"
+          >
+            <input tuiBlock size="m" type="radio" formControlName="tab" value="publicLeagues" />
+            Public Leagues
+          </label>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <tui-textfield iconStart="@tui.search" tuiTextfieldSize="s" class="w-40">
+            <input placeholder="Search..." tuiInput formControlName="search" />
+          </tui-textfield>
+
+          @if (store.activeTab() === 'publicLeagues') {
+            <button
+              tuiButton
+              tuiChevron
+              appearance="outline-grayscale"
+              size="s"
+              type="button"
+              [tuiDropdown]="statusDropdown"
+              [(tuiDropdownOpen)]="statusOpen"
+            >
+              {{ form.get('status')!.value ? (form.get('status')!.value! | enumLabel) : 'All Statuses' }}
+            </button>
+            <ng-template #statusDropdown>
+              <tui-data-list>
+                <button tuiOption type="button" (click)="selectStatus(null)">All Statuses</button>
+                @for (status of statusValues; track status) {
+                  <button tuiOption type="button" [value]="status" (click)="selectStatus(status)">
+                    {{ status | enumLabel }}
+                  </button>
+                }
+              </tui-data-list>
+            </ng-template>
+          }
+
+          <button
+            appearance="flat"
+            iconStart="@tui.rotate-cw"
+            size="s"
+            tuiButton
+            type="button"
+            (click)="clearFilters()"
+          >
+            Clear
+          </button>
+        </div>
+      </fieldset>
+    </form>
+  </search>
+
+  <div class="mt-4">
+    @if (store.activeTab() === 'myLeagues') {
+      <app-my-leagues-list [leagues]="filteredLeagues()" [loading]="store.loading()" [error]="store.error()" />
+    } @else {
+      <app-public-leagues-list />
+    }
+  </div>
+</app-layout>
