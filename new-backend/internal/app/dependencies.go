@@ -24,6 +24,7 @@ type Repositories struct {
 type Services struct {
 	Logger                *slog.Logger
 	AuthService           services.AuthService
+	DevAuthService        services.DevAuthService
 	DraftService          services.DraftService
 	JWTService            services.JWTService
 	LeagueService         services.LeagueService
@@ -43,6 +44,7 @@ type Services struct {
 
 type Controllers struct {
 	AuthController           controllers.AuthController
+	DevAuthController        controllers.DevAuthController
 	LeagueController         controllers.LeagueController
 	UserController           controllers.UserController
 	PokemonSpeciesController controllers.PokemonSpeciesController

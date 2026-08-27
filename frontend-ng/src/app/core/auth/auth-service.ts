@@ -44,25 +44,28 @@ export class AuthService {
 
   readonly user = signal<User | null>(null);
 
-  // Permanent session cache (borrowed from pdz): ONE fetch of /api/users/me,
-  // shared app-wide. refCount:false keeps the value for the whole session,
-  // deliberately decoupled from ApiService's in-flight dedup lifecycle.
-  private readonly me$: Observable<User> = this.api
-    .get<User>(routePaths.users.me)
-    .pipe(shareReplay({ refCount: false }));
+  // Permanent session cache (idea borrowed from pdz)
+  // ONE fetch of /api/users/me, shared app-wide. Reset by refreshUser().
+  private me$: Observable<User> | null = null;
 
-  /**
-   * Persists the JWT from the interim handoff and fetches the current user.
-   * Along with CallbackComponent's navigation, this is the whole handoff
-   * surface the refresh-token rewrite replaces.
-   */
+  private getMe(): Observable<User> {
+    this.me$ ??= this.api
+      .get<User>(routePaths.users.me)
+      .pipe(shareReplay({ refCount: false }));
+    return this.me$;
+  }
+
+  // Persists the JWT from the interim handoff and fetches the current user.
+  // Along with CallbackComponent's navigation, this is the whole handoff
+  // surface the refresh-token rewrite replaces.
   setToken(jwt: string): Promise<void> {
     localStorage.setItem(TOKEN_KEY, jwt);
+    this.me$ = null;
     return this.loadUser();
   }
 
   async loadUser(): Promise<void> {
-    return firstValueFrom(this.me$)
+    return firstValueFrom(this.getMe())
       .then((user) => this.user.set(user))
       .catch(() => {
         // If 401 or a network failure,
@@ -75,6 +78,17 @@ export class AuthService {
 
   isLoggedIn(): boolean {
     return this.user() !== null;
+  }
+
+  // New signups land here until they pick their Showdown username.
+  needsOnboarding(): boolean {
+    return this.user()?.ShowdownUsername == null;
+  }
+
+  // Re-fetches the user after profile changes (e.g. completing onboarding).
+  async refreshUser(): Promise<void> {
+    this.me$ = null;
+    await this.loadUser();
   }
 
   logout(): void {

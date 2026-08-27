@@ -1,15 +1,25 @@
-<section tuiCardLarge [tuiCardCollapsed]="collapsed()" appearance="" class="max-w-lg min-w-lg">
+<section tuiCardLarge [tuiCardCollapsed]="collapsed()" appearance="">
   <header tuiHeader="body-m">
     <hgroup tuiTitle>
       <a class="hover:underline" [routerLink]="['/my-leagues', league().ID]">{{ league().Name }}</a>
-      <p tuiSubtitle>{{ league().RulesetDescription }}</p>
+      @if (league().RulesetDescription) {
+        <p
+          tuiSubtitle
+          class="min-h-12 line-clamp-2"
+          [title]="league().RulesetDescription"
+        >
+          {{ league().RulesetDescription }}
+        </p>
+      } @else {
+        <p tuiSubtitle class="min-h-12 text-(--tui-text-secondary)">No ruleset/description</p>
+      }
     </hgroup>
     <aside>
       <app-status-badge [status]="league().Status" domain="league" size="l" />
     </aside>
   </header>
 
-  <div tuiCardRow>
+  <div tuiCardRow class="stat-row">
     <div tuiTitle>
       <div tuiSubtitle>Players</div>
       <div class="flex items-center gap-1">
@@ -21,7 +31,7 @@
       <div tuiSubtitle>Season</div>
       <div class="flex items-center gap-1">
         <tui-icon icon="@tui.trophy" class="pr-1" />
-        <span autoShrink [startSize]="12" [minSize]="10">{{ league().Format.SeasonType | enumLabel }}</span>
+        <span>{{ league().Format.SeasonType | enumLabel }}</span>
       </div>
     </div>
     <div tuiTitle>

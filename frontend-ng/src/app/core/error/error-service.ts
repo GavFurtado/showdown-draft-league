@@ -18,8 +18,7 @@ export class ErrorService {
 
   handle(error: unknown, options?: ErrorHandlingOptions): Observable<never> {
     const clientError = this.normalize(error);
-    const suppressed =
-      options?.suppressErrorReporting || options?.suppressStatuses?.includes(clientError.status ?? -1);
+    const suppressed = options?.suppressErrorReporting || options?.suppressStatuses?.includes(clientError.status ?? -1);
     if (!suppressed) {
       this.report(clientError);
     }

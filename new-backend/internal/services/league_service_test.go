@@ -48,7 +48,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 			PlayoffSeedingType:       "regular_season",
 			IsSnakeRoundDraft:        true,
 			AllowTransfers:           true,
-			TransfersCostCredits:     false,
+			TransferUsesCredits:      false,
 			TransferCreditsPerWindow: 0,
 		},
 	}
@@ -92,7 +92,8 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 	})
 
 	t.Run("Fails if user already has maximum leagues", func(t *testing.T) {
-		mockLeagueRepo.On("GetLeaguesCountWhereOwner", testUserID).Return(int64(2), nil).Once()
+		// maxLeaguesCommisionable is currently 20
+		mockLeagueRepo.On("GetLeaguesCountWhereOwner", testUserID).Return(int64(20), nil).Once()
 
 		result, err := service.CreateLeague(testUserID, input)
 		assert.Error(t, err)

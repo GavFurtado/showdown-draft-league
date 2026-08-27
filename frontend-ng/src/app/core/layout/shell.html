@@ -1,4 +1,4 @@
-<header tuiNavigationHeader>
+<header tuiNavigationHeader class="!h-16">
   <a routerLink="" tuiNavigationLogo class="no-underline">
     <tui-icon icon="@tui.home" />
     <span class="ml-1 text-lg font-bold">Draft League</span>
@@ -22,10 +22,27 @@
     >
       FAQ
     </a>
+    <a
+      tuiButton
+      #rlaCreateLeague="routerLinkActive"
+      [appearance]="rlaCreateLeague.isActive ? 'primary' : 'flat'"
+      routerLink="/create-league"
+      routerLinkActive
+    >
+      Create League
+    </a>
   </span>
   <hr />
   @if (user(); as currentUser) {
     <span class="ml-auto flex items-center gap-2">
+      <button
+        tuiButton
+        appearance="flat"
+        size="s"
+        (click)="theme.toggle()"
+      >
+        <tui-icon [icon]="theme.isDark() ? '@tui.moon' : '@tui.sun'" />
+      </button>
       <span class="text-sm text-(--tui-text-primary)">{{ currentUser.DiscordUsername }}</span>
       <img [src]="currentUser.DiscordAvatarURL" alt="Avatar" class="h-8 w-8 rounded-full" />
       <button tuiButton appearance="outline" size="s" (click)="logout()">Log out</button>
@@ -35,3 +52,6 @@
 <main tuiNavigationMain>
   <router-outlet />
 </main>
+@if (devTools) {
+  <app-dev-user-switcher />
+}

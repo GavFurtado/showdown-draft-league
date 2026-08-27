@@ -1,0 +1,122 @@
+<div class="flex flex-col gap-6" [formGroup]="form()">
+  <div>
+    <h2 class="mb-1 text-2xl font-semibold">Ready to Create?</h2>
+    <p class="text-sm text-(--tui-text-secondary)">Take a final look before creating your league.</p>
+  </div>
+
+  <div class="flex flex-col gap-5 rounded-xl border border-(--tui-border-normal) p-4">
+    <div class="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+      <div>
+        <span class="block text-xs text-(--tui-text-secondary)">League Name</span>
+        <span class="font-bold wrap-break-word">{{ form().get('Name')!.value }}</span>
+      </div>
+      <div>
+        <span class="block text-xs text-(--tui-text-secondary)">Visibility</span>
+        <span class="font-bold">{{ form().get('Visibility')!.value | enumLabel }}</span>
+      </div>
+
+      <div class="sm:col-span-2">
+        <span class="block text-xs text-(--tui-text-secondary)">Ruleset & Description</span>
+        <span class="wrap-break-word whitespace-pre-wrap">
+          {{ form().get('RulesetDescription')!.value || '—' }}
+        </span>
+      </div>
+    </div>
+
+    <div class="border-t border-(--tui-border-normal) pt-4">
+      <p class="mb-2 text-sm font-bold">Draft</p>
+      <div class="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+        <div>
+          <span class="block text-xs text-(--tui-text-secondary)">Draft Style</span>
+          <span class="font-bold">
+            {{ form().get('Format.IsSnakeRoundDraft')!.value ? 'Snake' : 'Linear' }} ·
+            {{ form().get('Format.DraftOrderType')!.value | enumLabel }}
+          </span>
+        </div>
+        <div>
+          <span class="block text-xs text-(--tui-text-secondary)">Roster Size</span>
+          <span class="font-bold">{{ rosterSize }}</span>
+        </div>
+        <div>
+          <span class="block text-xs text-(--tui-text-secondary)">Starting Draft Points</span>
+          <span class="font-bold">{{ form().get('StartingDraftPoints')!.value }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="border-t border-(--tui-border-normal) pt-4">
+      <p class="mb-2 text-sm font-bold">Season</p>
+      <div class="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+        <div>
+          <span class="block text-xs text-(--tui-text-secondary)">Season Format</span>
+          <span class="font-bold">{{ form().get('Format.SeasonType')!.value | enumLabel: seasonLabels }}</span>
+        </div>
+        <div>
+          <span class="block text-xs text-(--tui-text-secondary)">Groups</span>
+          <span class="font-bold">{{
+            form().get('Format.GroupCount')!.value === 2 ? 'Two Groups' : 'Single Group'
+          }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="border-t border-(--tui-border-normal) pt-4">
+      <p class="mb-2 text-sm font-bold">Playoffs</p>
+      <div class="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+        <div>
+          <span class="block text-xs text-(--tui-text-secondary)">Type</span>
+          <span class="font-bold">{{ form().get('Format.PlayoffType')!.value | enumLabel }}</span>
+        </div>
+        @if (hasPlayoffs) {
+          <div>
+            <span class="block text-xs text-(--tui-text-secondary)">Seeding</span>
+            <span class="font-bold">{{ form().get('Format.PlayoffSeedingType')!.value | enumLabel }}</span>
+          </div>
+          <div>
+            <span class="block text-xs text-(--tui-text-secondary)">Participants</span>
+            <span class="font-bold">{{ form().get('Format.PlayoffParticipantCount')!.value }}</span>
+          </div>
+          <div>
+            <span class="block text-xs text-(--tui-text-secondary)">Byes</span>
+            <span class="font-bold">{{ form().get('Format.PlayoffByesCount')!.value }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="border-t border-(--tui-border-normal) pt-4">
+      <p class="mb-2 text-sm font-bold">Transfer Market</p>
+      <div class="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+        <div>
+          <span class="block text-xs text-(--tui-text-secondary)">Transfers</span>
+          <span class="font-bold">{{ allowTransfers ? 'Enabled' : 'Disabled' }}</span>
+        </div>
+        @if (allowTransfers) {
+          <div>
+            <span class="block text-xs text-(--tui-text-secondary)">Windows</span>
+            <span class="font-bold">
+              Every {{ form().get('Format.TransferWindowFrequencyDays')!.value }} days · open for
+              {{ form().get('Format.TransferWindowDuration')!.value }}h
+            </span>
+          </div>
+          @if (form().get('Format.TransfersCostCredits')!.value) {
+            <div>
+              <span class="block text-xs text-(--tui-text-secondary)">Credits / Window</span>
+              <span class="font-bold">{{ form().get('Format.TransferCreditsPerWindow')!.value }}</span>
+            </div>
+            <div>
+              <span class="block text-xs text-(--tui-text-secondary)">Credit Cap</span>
+              <span class="font-bold">{{ form().get('Format.TransferCreditCap')!.value }}</span>
+            </div>
+            <div>
+              <span class="block text-xs text-(--tui-text-secondary)">Drop : Pickup Cost</span>
+              <span class="font-bold">
+                {{ form().get('Format.DropCost')!.value }} : {{ form().get('Format.PickupCost')!.value }} TCs
+              </span>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  </div>
+</div>

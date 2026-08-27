@@ -5,6 +5,7 @@ export interface User {
   DiscordID: string;
   DiscordUsername: string;
   DiscordAvatarURL: string;
-  ShowdownUsername: string;
+  /** null until the user completes onboarding (new signups). */
+  ShowdownUsername: string | null;
   Role: string;
 }

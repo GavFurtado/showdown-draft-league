@@ -65,6 +65,33 @@ describe('AuthService', () => {
     expect(service.user()).toEqual(user);
   });
 
+  it('refreshUser bypasses the /users/me cache', async () => {
+    const first = service.setToken('jwt');
+    http.expectOne('/api/users/me').flush(user);
+    await first;
+
+    const updated: User = { ...user, ShowdownUsername: 'Renamed' };
+    const second = service.refreshUser();
+    http.expectOne('/api/users/me').flush(updated);
+    await second;
+
+    expect(service.user()).toEqual(updated);
+  });
+
+  it('needsOnboarding reflects a missing Showdown username', async () => {
+    expect(service.needsOnboarding()).toBe(false);
+
+    const promise = service.setToken('jwt');
+    http.expectOne('/api/users/me').flush({ ...user, ShowdownUsername: null });
+    await promise;
+    expect(service.needsOnboarding()).toBe(true);
+
+    const refreshed = service.refreshUser();
+    http.expectOne('/api/users/me').flush(user);
+    await refreshed;
+    expect(service.needsOnboarding()).toBe(false);
+  });
+
   it('prime resolves without a request when no token is stored', async () => {
     await service.prime();
     http.expectNone('/api/users/me');

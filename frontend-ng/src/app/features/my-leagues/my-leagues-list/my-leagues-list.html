@@ -1,7 +1,9 @@
 @if (loading()) {
-  <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+  <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
     @for (i of [1, 2, 3]; track i) {
-      <div class="h-48 animate-pulse rounded-lg border border-(--tui-border-normal) bg-(--tui-background-base) p-6 shadow">
+      <div
+        class="h-48 animate-pulse rounded-lg border border-(--tui-border-normal) bg-(--tui-background-base) p-6 shadow"
+      >
         <div class="mb-4 h-4 w-3/4 rounded bg-(--tui-background-elevation-1)"></div>
         <div class="space-y-3">
           <div class="h-3 rounded bg-(--tui-background-elevation-1)"></div>
@@ -19,13 +21,15 @@
   <div class="rounded-lg border border-(--tui-border-normal) bg-(--tui-background-base) py-12 text-center shadow">
     <tui-icon icon="@tui.trophy" class="text-6xl text-(--tui-text-secondary)" />
     <h3 class="mt-2 text-sm font-semibold">No leagues found</h3>
-    <p class="mt-1 text-sm text-(--tui-text-secondary)">Get started by creating a new league or joining an existing one.</p>
+    <p class="mt-1 text-sm text-(--tui-text-secondary)">
+      Get started by creating a new league or joining an existing one.
+    </p>
     <div class="mt-6">
       <a tuiButton iconStart="@tui.plus" routerLink="/create-league">Create League</a>
     </div>
   </div>
 } @else {
-  <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+  <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
     @for (league of leagues(); track league.ID) {
       <app-league-card [league]="league" />
     }

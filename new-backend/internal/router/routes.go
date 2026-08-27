@@ -56,6 +56,19 @@ func RegisterRoutes(
 		authGroup.POST("/logout", controllers.AuthController.Logout)
 	}
 
+	// ---- Dev-Only Impersonation Routes ---
+	// Bypass Discord OAuth entirely: mint real JWTs for any user, fabricate
+	// test users and league memberships. NEVER exposed outside dev.
+	if cfg.ENVIRONMENT == "dev" {
+		devAuth := r.Group("/auth/dev")
+		{
+			devAuth.GET("/users", controllers.DevAuthController.ListUsers)
+			devAuth.POST("/users", controllers.DevAuthController.CreateUser)
+			devAuth.POST("/login", controllers.DevAuthController.Impersonate)
+			devAuth.POST("/memberships", controllers.DevAuthController.UpsertMembership)
+		}
+	}
+
 	// --- Protected Routes ---
 	// These require authorization
 	api := r.Group("/api")

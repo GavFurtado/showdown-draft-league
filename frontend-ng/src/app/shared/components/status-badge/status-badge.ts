@@ -1,11 +1,10 @@
 import { Component, computed, input } from '@angular/core';
 import { TuiBadge } from '@taiga-ui/kit/components/badge';
-import { TuiStatus } from '@taiga-ui/kit/components/status';
 import { STATUS_PRESENTATIONS, TONE_CLASSES, type StatusDomain } from './presentations';
 
 @Component({
   selector: 'app-status-badge',
-  imports: [TuiBadge, TuiStatus],
+  imports: [TuiBadge],
   templateUrl: './status-badge.html',
   styleUrl: './status-badge.css',
 })

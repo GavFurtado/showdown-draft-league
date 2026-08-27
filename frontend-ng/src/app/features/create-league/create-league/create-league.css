@@ -1,0 +1,7 @@
+tui-stepper [tuiStep] {
+  font-size: 1.125rem;
+}
+
+.error-hint {
+  color: var(--tui-status-negative);
+}

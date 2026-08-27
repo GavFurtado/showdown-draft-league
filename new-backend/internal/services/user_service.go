@@ -81,7 +81,7 @@ func (s *userServiceImpl) UpdateProfileHandler(userID uuid.UUID, input requests.
 	}
 
 	if input.ShowdownName != nil {
-		user.ShowdownUsername = *input.ShowdownName
+		user.ShowdownUsername = input.ShowdownName
 	}
 
 	updatedUser, err := s.userRepo.UpdateUser(user)

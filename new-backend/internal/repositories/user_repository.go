@@ -13,6 +13,8 @@ type UserRepository interface {
 	UpdateUser(user *models.User) (*models.User, error)
 	// fetches all Leagues that a specific user is a player in.
 	GetUserLeagues(userID uuid.UUID) ([]*models.League, error)
+	// fetches all users (dev tooling / admin listing).
+	GetAllUsers() ([]models.User, error)
 }
 
 type userRepositoryImpl struct {
@@ -84,4 +86,14 @@ func (r *userRepositoryImpl) GetUserLeagues(userID uuid.UUID) ([]*models.League,
 	}
 
 	return leagues, nil
+}
+
+// fetches all users (dev tooling / admin listing).
+func (r *userRepositoryImpl) GetAllUsers() ([]models.User, error) {
+	var users []models.User
+	err := r.db.Order("created_at ASC").Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
 }

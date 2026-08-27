@@ -1,0 +1,31 @@
+<div class="flex min-h-[80vh] flex-col items-center justify-center px-4">
+  <div class="w-full max-w-sm rounded-2xl border border-(--tui-border) bg-(--tui-background-base) p-6">
+    <h1 class="mb-1 text-xl font-bold text-(--tui-text-primary)">Welcome!</h1>
+    @if (user(); as currentUser) {
+      <p class="mb-4 text-sm text-(--tui-text-secondary)">
+        Logged in as {{ currentUser.DiscordUsername }}. Pick your Showdown username to finish setting up.
+      </p>
+    }
+
+    @if (error(); as err) {
+      <p class="mb-3 text-sm text-(--tui-text-negative)">{{ err }}</p>
+    }
+
+    <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-(--tui-text-secondary)" for="showdown-username">
+      Showdown username
+    </label>
+    <input
+      id="showdown-username"
+      class="mb-3 w-full rounded-lg border border-(--tui-border) bg-(--tui-background-base-1) px-3 py-2 text-sm text-(--tui-text-primary)"
+      placeholder="e.g. GavinTheGreat"
+      autocomplete="off"
+      [value]="username()"
+      (input)="username.set($any($event.target).value)"
+      (keydown.enter)="submit()"
+    />
+
+    <button tuiButton class="w-full" [disabled]="saving()" (click)="submit()">
+      {{ saving() ? 'Saving…' : 'Start playing' }}
+    </button>
+  </div>
+</div>

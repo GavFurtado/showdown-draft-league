@@ -91,6 +91,7 @@ func NewServices(logger *slog.Logger, repos *Repositories, cfg *config.Config, d
 		WebhookService:        webhookService,
 		LeagueService:         leagueService,
 		AuthService:           services.NewAuthService(logger, repos.UserRepository, jwtService, discordOauthConfig),
+		DevAuthService:        services.NewDevAuthService(logger, repos.UserRepository, repos.LeagueRepository, repos.LeagueMemberRepository, jwtService),
 		DraftService:          draftService,
 		PokemonSpeciesService: services.NewPokemonSpeciesService(logger, repos.PokemonSpeciesRepository),
 		SchedulerService:      schedulerService,
@@ -107,6 +108,7 @@ func NewServices(logger *slog.Logger, repos *Repositories, cfg *config.Config, d
 func NewControllers(logger *slog.Logger, services *Services, repos *Repositories, cfg *config.Config, discordOauthConfig *oauth2.Config) *Controllers {
 	return &Controllers{
 		AuthController:           controllers.NewAuthController(logger, services.AuthService, cfg, discordOauthConfig),
+		DevAuthController:        controllers.NewDevAuthController(logger, services.DevAuthService),
 		LeagueController:         controllers.NewLeagueController(logger, services.LeagueService),
 		UserController:           controllers.NewUserController(logger, services.UserService),
 		PokemonSpeciesController: controllers.NewPokemonSpeciesController(logger, services.PokemonSpeciesService),

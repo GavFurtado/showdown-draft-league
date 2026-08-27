@@ -1,10 +1,10 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Service, inject, signal } from '@angular/core';
 import { ClientError } from '../../core/api/api.model';
 import { MyLeagueService } from './my-league-service';
 import { catchError, EMPTY, finalize, Subject, switchMap } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 
-@Injectable({ providedIn: 'root' })
+@Service()
 export class MyLeagueStore {
   private readonly service = inject(MyLeagueService);
 

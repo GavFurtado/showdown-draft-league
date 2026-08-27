@@ -10,13 +10,13 @@ export class EnumLabelPipe implements PipeTransform {
   private static readonly OVERRIDES: Record<string, string> = {
     ROUND_ROBIN_ONLY: 'Round-Robin',
     BRACKET_ONLY: 'Tournament',
-    TOURNAMENT_ONLY: 'Tournament',
     HYBRID: 'Round-Robin + Playoffs',
   };
 
-  transform(value: string): string {
+  transform(value: string, overrides?: Record<string, string>): string {
     if (!value) return '';
-    if (EnumLabelPipe.OVERRIDES[value]) return EnumLabelPipe.OVERRIDES[value];
+    const label = overrides?.[value] ?? EnumLabelPipe.OVERRIDES[value];
+    if (label) return label;
     return value
       .replace(/_/g, ' ')
       .toLowerCase()

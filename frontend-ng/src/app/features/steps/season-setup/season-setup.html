@@ -1,0 +1,103 @@
+<div class="flex flex-col gap-6" [formGroup]="form()">
+  <div>
+    <h2 class="mb-1 text-2xl font-semibold">Season Setup</h2>
+    <p class="text-sm text-(--tui-text-secondary)">Choose how your regular season takes shape.</p>
+  </div>
+
+  <div>
+    <label tuiLabel class="mb-2 block">Season Format</label>
+    <div class="flex flex-col gap-3">
+      @for (st of [SeasonType.ROUND_ROBIN_ONLY, SeasonType.BRACKET_ONLY, SeasonType.HYBRID]; track st) {
+        <label
+          [appearance]="form().get('Format.SeasonType')!.value === st ? 'primary' : 'secondary'"
+          tuiBlock
+          [class]="st === SeasonType.BRACKET_ONLY ? 'flex-1 cursor-not-allowed opacity-50' : 'flex-1'"
+        >
+          <input
+            tuiBlock="m"
+            type="radio"
+            tuiRadio
+            [formControl]="$any(form().get('Format.SeasonType'))"
+            [value]="st"
+            [attr.disabled]="st === SeasonType.BRACKET_ONLY || null"
+          />
+          <span tuiTitle>
+            {{ st | enumLabel: seasonLabels }}
+            <span tuiSubtitle>
+              @switch (st) {
+                @case (SeasonType.ROUND_ROBIN_ONLY) {
+                  Classic league format. Everyone plays everyone else.
+                }
+                @case (SeasonType.BRACKET_ONLY) {
+                  Simple tournament bracket. (Coming Soon)
+                }
+                @case (SeasonType.HYBRID) {
+                  Regular season followed by a top-cut bracket.
+                }
+              }
+            </span>
+          </span>
+        </label>
+      }
+    </div>
+  </div>
+
+  <div>
+    <label tuiLabel class="mb-2 block">Groups</label>
+    <div class="flex gap-2">
+      @for (group of [1, 2]; track group) {
+        <label
+          [appearance]="form().get('Format.GroupCount')!.value === group ? 'primary' : 'secondary'"
+          tuiBlock
+          class="flex-1"
+        >
+          <input
+            tuiBlock="m"
+            type="radio"
+            tuiRadio
+            [formControl]="$any(form().get('Format.GroupCount'))"
+            [value]="group"
+          />
+          <span tuiTitle>
+            {{ group === 1 ? 'Single Group' : 'Two Groups' }}
+            <span tuiSubtitle>
+              @if (group === 1) {
+                All players compete in one shared group.
+              } @else {
+                Players are split into two groups.
+              }
+            </span>
+          </span>
+        </label>
+      }
+    </div>
+  </div>
+
+  <!--   <div> -->
+  <!--     <label tuiLabel class="mb-2 block">Roster Size & Points</label> -->
+  <!--     <div class="flex flex-col gap-4 sm:flex-row"> -->
+  <!--       <label tuiLabel class="min-w-0 flex-1"> -->
+  <!--         Pokémon per Roster -->
+  <!--         <tui-input-range -->
+  <!--           [formControl]="pokemonRange" -->
+  <!--           [min]="0" -->
+  <!--           [max]="20" -->
+  <!--           [step]="1" -->
+  <!--         > -->
+  <!--           Min / Max -->
+  <!--         </tui-input-range> -->
+  <!--         <span tuiSubtitle class="text-xs">Set min to 0 to disable minimum restriction</span> -->
+  <!--       </label> -->
+  <!--       <label tuiLabel class="min-w-0 flex-1"> -->
+  <!--         Starting Draft Points -->
+  <!--         <tui-textfield iconStart="@tui.settings-2" tuiTextfieldSize="m"> -->
+  <!--           <input tuiInputNumber formControlName="StartingDraftPoints" [min]="0" [max]="9999" [step]="10" /> -->
+  <!--         </tui-textfield> -->
+  <!--         @if (fieldError()(form()!.get('StartingDraftPoints')); as error) { -->
+  <!--           <span class="mt-1 text-xs text-(--tui-status-negative)">{{ error }}</span> -->
+  <!--         } -->
+  <!--       </label> -->
+  <!--     </div> -->
+  <!--   </div> -->
+  <!-- </div> -->
+</div>

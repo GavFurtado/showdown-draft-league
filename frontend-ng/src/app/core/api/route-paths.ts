@@ -3,6 +3,12 @@ export const routePaths = {
     discordLogin: `/auth/discord/login`,
     discordCallback: `/auth/discord/callback`,
     logout: `/auth/logout`,
+    // Dev-only impersonation endpoints (backend registers these when ENV=dev).
+    dev: {
+      users: `/auth/dev/users`,
+      login: `/auth/dev/login`,
+      memberships: `/auth/dev/memberships`,
+    },
   },
 
   // TODO: Server shouldn't expose this.

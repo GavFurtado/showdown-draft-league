@@ -73,10 +73,9 @@ describe('Callback', () => {
     setup({ code: 'code', state: 'state' });
     TestBed.createComponent(Callback);
 
-    http.expectOne((req) => req.url === '/auth/discord/callback').flush(
-      { error: 'bad' },
-      { status: 500, statusText: 'Internal Server Error' },
-    );
+    http
+      .expectOne((req) => req.url === '/auth/discord/callback')
+      .flush({ error: 'bad' }, { status: 500, statusText: 'Internal Server Error' });
     await tick();
 
     expect(TestBed.inject(Router).navigateByUrl).toHaveBeenCalledWith('/login');
