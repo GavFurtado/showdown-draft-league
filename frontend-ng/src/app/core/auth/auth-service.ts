@@ -49,9 +49,7 @@ export class AuthService {
   private me$: Observable<User> | null = null;
 
   private getMe(): Observable<User> {
-    this.me$ ??= this.api
-      .get<User>(routePaths.users.me)
-      .pipe(shareReplay({ refCount: false }));
+    this.me$ ??= this.api.get<User>(routePaths.users.me).pipe(shareReplay({ refCount: false }));
     return this.me$;
   }
 
@@ -80,12 +78,7 @@ export class AuthService {
     return this.user() !== null;
   }
 
-  // New signups land here until they pick their Showdown username.
-  needsOnboarding(): boolean {
-    return this.user()?.ShowdownUsername == null;
-  }
-
-  // Re-fetches the user after profile changes (e.g. completing onboarding).
+  // Re-fetches the user after profile changes (e.g. updating the Showdown username).
   async refreshUser(): Promise<void> {
     this.me$ = null;
     await this.loadUser();

@@ -29,7 +29,7 @@ export class ErrorService {
     if (error instanceof HttpErrorResponse) {
       const apiError = error.error as ApiErrorResponse | null;
       return {
-        message: apiError?.Message ?? error.message,
+        message: apiError?.Message ?? this.fallbackMessage(error),
         status: error.status,
         statusText: error.statusText,
         url: error.url ?? undefined,
@@ -53,6 +53,24 @@ export class ErrorService {
       details: error,
       meta: { requestId: null, timestamp: new Date().toISOString() },
     };
+  }
+
+  /**
+   * Builds a human-readable fallback when the server didn't return a
+   * parseable API error body (e.g. a panic or empty 500 response).
+   */
+  private fallbackMessage(error: HttpErrorResponse): string {
+    if (error.status >= 500) {
+      return `Something went wrong on the server (${error.status})`;
+    }
+    if (error.status === 0) {
+      return 'Unable to reach the server. Please try again.';
+    }
+    if (error.status > 0) {
+      const statusText = error.statusText?.trim();
+      return statusText ? `Request failed (${error.status} ${statusText})` : `Request failed (${error.status})`;
+    }
+    return error.message;
   }
 
   private report(clientError: ClientError): void {

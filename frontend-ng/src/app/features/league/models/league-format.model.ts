@@ -1,3 +1,4 @@
+import { ISODateTimeString } from '../../../shared/types/branded-strings';
 import { LeagueDraftOrderType } from './enums/league-draft-order-type';
 import { LeaguePlayoffSeedingType } from './enums/league-playoff-seeding-type';
 import { LeaguePlayoffType } from './enums/league-playoff-type';
@@ -20,5 +21,5 @@ export interface LeagueFormat {
   TransferCreditsPerWindow: number;
   TransferWindowDuration: number;
   TransferWindowFrequencyDays: number;
-  NextTransferWindowStart: string;
+  NextTransferWindowStart?: ISODateTimeString;
 }

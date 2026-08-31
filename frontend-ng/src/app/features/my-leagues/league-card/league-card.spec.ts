@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { LeagueCard } from './league-card';
+import { MemberRole } from '../../league/models/enums/member-role';
 
 describe('LeagueCard', () => {
   let component: LeagueCard;
@@ -16,7 +17,7 @@ describe('LeagueCard', () => {
     fixture = TestBed.createComponent(LeagueCard);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('league', {
-      ID: 'test-id',
+      ID: '11111111-1111-4111-8111-111111111111',
       Name: 'Test League',
       RulesetDescription: 'A test league',
       PlayerCount: 4,
@@ -24,8 +25,8 @@ describe('LeagueCard', () => {
       Status: 'DRAFTING',
       Format: { SeasonType: 'HYBRID' },
       Members: [
-        { ID: 'm1', DisplayName: 'Alice', Role: 'OWNER', IsActive: true },
-        { ID: 'm2', DisplayName: 'Bob', Role: 'MEMBER', IsActive: true },
+        { ID: '66666666-6666-4666-8666-666666666666', InLeagueName: 'Alice', Role: MemberRole.OWNER, IsActive: true },
+        { ID: '77777777-7777-4777-8777-777777777777', InLeagueName: 'Bob', Role: MemberRole.MEMBER, IsActive: true },
       ],
     });
     fixture.detectChanges();

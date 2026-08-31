@@ -113,7 +113,7 @@ export class CreateLeague {
           DraftOrderType: new FormControl(DEFAULT_FORM.Format.DraftOrderType, { validators: [Validators.required] }),
           SeasonType: new FormControl(DEFAULT_FORM.Format.SeasonType, { validators: [Validators.required] }),
           GroupCount: new FormControl(DEFAULT_FORM.Format.GroupCount, {
-            validators: [Validators.required, Validators.min(0), Validators.max(2)],
+            validators: [Validators.required, Validators.min(1), Validators.max(2)],
           }),
           PlayoffSeedingType: new FormControl(DEFAULT_FORM.Format.PlayoffSeedingType),
           PlayoffType: new FormControl(DEFAULT_FORM.Format.PlayoffType, { validators: [Validators.required] }),

@@ -2,9 +2,51 @@
   display: block;
 }
 
-.stat-row[tuiCardRow] {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1rem;
-  align-items: center;
+.join-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  border: 1px solid var(--tui-border-normal);
+  border-radius: 1.25rem;
+  background: var(--tui-background-base);
+  box-shadow: var(--tui-shadow-popup);
+
+  @media (min-width: 40rem) {
+    padding: 2rem;
+  }
+}
+
+.join-accordion {
+  overflow: hidden;
+  border: 1px solid var(--tui-border-normal);
+  border-radius: 1rem;
+  background: var(--tui-background-base);
+
+  [tuiAccordion],
+  tui-expand {
+    box-shadow: none;
+  }
+
+  [tuiAccordion] {
+    min-block-size: 3.5rem;
+    padding-inline: 1.25rem;
+    font: var(--tui-typography-text-m);
+    font-weight: 600;
+    color: var(--tui-text-primary);
+
+    tui-icon {
+      vertical-align: -0.125em;
+      color: var(--tui-text-secondary);
+    }
+  }
+
+  tui-expand {
+    color: var(--tui-text-secondary);
+  }
+
+  [tuiAccordion] + tui-expand,
+  tui-expand + [tuiAccordion] {
+    border-block-start: 1px solid var(--tui-border-normal);
+  }
 }

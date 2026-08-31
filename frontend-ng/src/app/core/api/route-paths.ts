@@ -1,3 +1,5 @@
+import { UUID } from '../../shared/types/branded-strings';
+
 export const routePaths = {
   auth: {
     discordLogin: `/auth/discord/login`,
@@ -18,7 +20,7 @@ export const routePaths = {
     myLeagues: `/api/users/me/leagues`,
     profile: `/api/users/profile`,
     me: `/api/users/me`,
-    leagueMembersById: (id: string) => `/api/users/${id}/members`,
+    leagueMembersById: (id: UUID) => `/api/users/${id}/members`,
 
     // TODO: Server needs to expose more endpoints here for admin stuff
     // base:
@@ -34,87 +36,87 @@ export const routePaths = {
   },
 
   members: {
-    byId: (id: string) => `/api/members/${id}`,
-    profile: (id: string) => `/api/members/${id}/profile`,
-    draftPoints: (id: string) => `/api/members/${id}/draft-points`,
-    record: (id: string) => `/api/members/${id}/record`,
-    draftPosition: (id: string) => `/api/members/${id}/draft-position`,
-    roster: (id: string) => `/api/members/${id}/roster`,
+    byId: (id: UUID) => `/api/members/${id}`,
+    profile: (id: UUID) => `/api/members/${id}/profile`,
+    draftPoints: (id: UUID) => `/api/members/${id}/draft-points`,
+    record: (id: UUID) => `/api/members/${id}/record`,
+    draftPosition: (id: UUID) => `/api/members/${id}/draft-position`,
+    roster: (id: UUID) => `/api/members/${id}/roster`,
   },
 
   leagues: {
     base: `/api/leagues/`,
-    byId: (leagueId: string) => `/api/leagues/${leagueId}`,
+    byId: (leagueId: UUID) => `/api/leagues/${leagueId}`,
 
     members: {
-      base: (leagueId: string) => `/api/leagues/${leagueId}/members`,
-      join: (leagueId: string) => `/api/leagues/${leagueId}/members/join`,
+      base: (leagueId: UUID) => `/api/leagues/${leagueId}/members`,
+      join: (leagueId: UUID) => `/api/leagues/${leagueId}/members/join`,
     },
 
     poolEntries: {
-      base: (leagueId: string) => `/api/leagues/${leagueId}/pool-entries`,
-      byId: (leagueId: string, id: string) => `/api/leagues/${leagueId}/pool-entries/${id}`,
-      byAvailable: (leagueId: string) => `/api/leagues/${leagueId}/pool-entries/available`,
-      single: (leagueId: string) => `/api/leagues/${leagueId}/pool-entries/single`,
-      batch: (leagueId: string) => `/api/leagues/${leagueId}/pool-entries/batch`,
+      base: (leagueId: UUID) => `/api/leagues/${leagueId}/pool-entries`,
+      byId: (leagueId: UUID, id: UUID) => `/api/leagues/${leagueId}/pool-entries/${id}`,
+      byAvailable: (leagueId: UUID) => `/api/leagues/${leagueId}/pool-entries/available`,
+      single: (leagueId: UUID) => `/api/leagues/${leagueId}/pool-entries/single`,
+      batch: (leagueId: UUID) => `/api/leagues/${leagueId}/pool-entries/batch`,
     },
 
     draft: {
-      base: (leagueId: string) => `/api/leagues/${leagueId}/draft`,
+      base: (leagueId: UUID) => `/api/leagues/${leagueId}/draft`,
       // TF: why is this here? A league can only have one draft right now
       // did I really have this much forethought?
-      byId: (leagueId: string, draftId: string) => `/api/leagues/${leagueId}/draft/${draftId}`,
-      start: (leagueId: string) => `/api/leagues/${leagueId}/draft/start`,
-      pick: (leagueId: string) => `/api/leagues/${leagueId}/draft/pick`,
-      skip: (leagueId: string) => `/api/leagues/${leagueId}/draft/skip`,
+      byId: (leagueId: UUID, draftId: UUID) => `/api/leagues/${leagueId}/draft/${draftId}`,
+      start: (leagueId: UUID) => `/api/leagues/${leagueId}/draft/start`,
+      pick: (leagueId: UUID) => `/api/leagues/${leagueId}/draft/pick`,
+      skip: (leagueId: UUID) => `/api/leagues/${leagueId}/draft/skip`,
     },
 
     draftPicks: {
-      base: (leagueId: string) => `/api/leagues/${leagueId}/draft-picks`,
+      base: (leagueId: UUID) => `/api/leagues/${leagueId}/draft-picks`,
       // this GET does same as base
-      history: (leagueId: string) => `/api/leagues/${leagueId}/draft-picks/history`,
+      history: (leagueId: UUID) => `/api/leagues/${leagueId}/draft-picks/history`,
 
       // returned json object key is snake_case 'next_pick_number'
       // TODO: server needs to fix
-      nextPickNumber: (leagueId: string) => `/api/leagues/${leagueId}/draft-picks/next-pick-number`,
+      nextPickNumber: (leagueId: UUID) => `/api/leagues/${leagueId}/draft-picks/next-pick-number`,
 
       // TODO: server needs to rename this to members
       player: {
-        byId: (leagueId: string, playerId: string) => `/api/leagues/${leagueId}/draft-picks/player/${playerId}`,
+        byId: (leagueId: UUID, playerId: UUID) => `/api/leagues/${leagueId}/draft-picks/player/${playerId}`,
       },
     },
 
     claims: {
-      base: (leagueId: string) => `/api/leagues/${leagueId}/claims`,
-      byId: (leagueId: string, id: string) => `/api/leagues/${leagueId}/claims/${id}`,
-      released: (leagueId: string) => `/api/leagues/${leagueId}/claims/released`,
+      base: (leagueId: UUID) => `/api/leagues/${leagueId}/claims`,
+      byId: (leagueId: UUID, id: UUID) => `/api/leagues/${leagueId}/claims/${id}`,
+      released: (leagueId: UUID) => `/api/leagues/${leagueId}/claims/released`,
 
       player: {
-        byId: (leagueId: string, playerId: string) => `/api/leagues/${leagueId}/claims/player/${playerId}`,
+        byId: (leagueId: UUID, playerId: UUID) => `/api/leagues/${leagueId}/claims/player/${playerId}`,
       },
     },
 
     games: {
-      base: (leagueId: string) => `/api/leagues/${leagueId}/games`,
-      byId: (leagueId: string, gameId: string) => `/api/leagues/${leagueId}/games/${gameId}`,
+      base: (leagueId: UUID) => `/api/leagues/${leagueId}/games`,
+      byId: (leagueId: UUID, gameId: UUID) => `/api/leagues/${leagueId}/games/${gameId}`,
 
-      report: (leagueId: string, gameId: string) => `/api/leagues/${leagueId}/games/report/${gameId}`,
-      finalize: (leagueId: string, gameId: string) => `/api/leagues/${leagueId}/games/finalize/${gameId}`,
+      report: (leagueId: UUID, gameId: UUID) => `/api/leagues/${leagueId}/games/report/${gameId}`,
+      finalize: (leagueId: UUID, gameId: UUID) => `/api/leagues/${leagueId}/games/finalize/${gameId}`,
 
-      startSeason: (leagueId: string) => `/api/leagues/${leagueId}/games/start-season`,
-      generatePlayoffs: (leagueId: string) => `/api/leagues/${leagueId}/games/generate-playoffs`,
+      startSeason: (leagueId: UUID) => `/api/leagues/${leagueId}/games/start-season`,
+      generatePlayoffs: (leagueId: UUID) => `/api/leagues/${leagueId}/games/generate-playoffs`,
 
       members: {
-        byId: (leagueId: string, memberId: string) => `/api/leagues/${leagueId}/games/members/${memberId}`,
+        byId: (leagueId: UUID, memberId: UUID) => `/api/leagues/${leagueId}/games/members/${memberId}`,
       },
     },
 
     transfers: {
-      startWindow: (leagueId: string) => `/api/leagues/${leagueId}/transfers/start`,
-      endWindow: (leagueId: string) => `/api/leagues/${leagueId}/transfers/end`,
+      startWindow: (leagueId: UUID) => `/api/leagues/${leagueId}/transfers/start`,
+      endWindow: (leagueId: UUID) => `/api/leagues/${leagueId}/transfers/end`,
 
-      dropClaim: (leagueId: string, claimId: string) => `/api/leagues/${leagueId}/transfers/drop/${claimId}`,
-      pickupPoolEntry: (leagueId: string, poolEntryId: string) =>
+      dropClaim: (leagueId: UUID, claimId: UUID) => `/api/leagues/${leagueId}/transfers/drop/${claimId}`,
+      pickupPoolEntry: (leagueId: UUID, poolEntryId: UUID) =>
         `/api/leagues/${leagueId}/transfers/pickup/${poolEntryId}`,
     },
   },

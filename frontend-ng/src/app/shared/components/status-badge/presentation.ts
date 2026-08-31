@@ -1,6 +1,5 @@
 import { Component, computed, input } from '@angular/core';
 import { TuiBadge } from '@taiga-ui/kit/components/badge';
-import { TuiStatus } from '@taiga-ui/kit/components/status';
 import { STATUS_PRESENTATIONS, TONE_CLASSES, type StatusDomain } from './presentations';
 
 @Component({

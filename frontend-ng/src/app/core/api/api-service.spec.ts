@@ -5,6 +5,7 @@ import type { Observable } from 'rxjs';
 
 import { ApiService } from './api-service';
 import { ApiErrorResponse } from './api.model';
+import { asIsoDateTime } from '../../shared/types/branded-strings';
 import { errorInterceptor } from '../error/error-interceptor';
 import { ErrorService } from '../error/error-service';
 
@@ -41,7 +42,7 @@ describe('ApiService.get', () => {
 
   function serverError(message: string): ApiErrorResponse {
     return {
-      Timestamp: '2024-01-01T12:00:00Z',
+      Timestamp: asIsoDateTime('2024-01-01T12:00:00Z'),
       Status: 500,
       Error: 'Internal Server Error',
       Message: message,
@@ -124,8 +125,10 @@ describe('ApiService.get', () => {
       req.flush(serverError('boom'), {
         status: 500,
         statusText: 'Internal Server Error',
-        // eslint-disable-next-line @typescript-eslint/naming-convention -- HTTP header name
-        headers: { 'X-Request-ID': 'req-123' },
+        headers: {
+          // eslint-disable-next-line @typescript-eslint/naming-convention -- HTTP header name
+          'X-Request-ID': 'req-123',
+        },
       });
 
       const { error } = await result;

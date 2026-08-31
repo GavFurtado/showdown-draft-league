@@ -190,7 +190,8 @@ func (s *leagueMemberServiceImpl) Create(currentUser *models.User, input *reques
 	}
 
 	league.PlayerCount++
-	league.NewPlayerGroupNumber = ((league.NewPlayerGroupNumber + 1) % league.Format.GroupCount) + 1
+	groups := max(league.Format.GroupCount, 1)
+	league.NewPlayerGroupNumber = ((league.NewPlayerGroupNumber + 1) % groups) + 1
 	if _, err = s.leagueRepo.UpdateLeague(league); err != nil {
 		s.logger.Error("Create - failed to update league", "league_id", league.ID, "user_id", input.UserID, "error", err)
 		return nil, types.ErrInternalService

@@ -1,6 +1,7 @@
 import { Service, inject } from '@angular/core';
 import type { Observable } from 'rxjs';
 
+import { UUID } from '../../shared/types/branded-strings';
 import { ApiService } from '../../core/api/api-service';
 import { routePaths } from '../../core/api/route-paths';
 import { League } from '../league/models/league.model';
@@ -10,8 +11,8 @@ import { LeagueMember } from '../league/models/league-member.model';
 // optional on the wire (Go *string, omitempty validation 3–20 chars when present):
 // the server defaults them to DiscordUsername / "<username>'s Team" when omitted.
 export interface LeagueJoinRequest {
-  UserID: string;
-  LeagueID: string;
+  UserID: UUID;
+  LeagueID: UUID;
   InLeagueName?: string;
   TeamName?: string;
 }
@@ -20,7 +21,7 @@ export interface LeagueJoinRequest {
 export class JoinLeagueService {
   private readonly api = inject(ApiService);
 
-  getLeague(leagueId: string): Observable<League> {
+  getLeague(leagueId: UUID): Observable<League> {
     return this.api.get<League>(routePaths.leagues.byId(leagueId));
   }
 

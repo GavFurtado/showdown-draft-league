@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TuiButton, TuiDataList, TuiDropdown, TuiGroup, TuiInput, TuiOption, TuiTextfield } from '@taiga-ui/core';
 import { TuiBlock, TuiChevron } from '@taiga-ui/kit';
 import { TuiSearch } from '@taiga-ui/layout';
-import { MyLeagueStore } from '../my-league-store';
+import { UserLeaguesStore } from '../../../core/layout/user-leagues-store';
 import { EnumLabelPipe } from '../../../shared/pipes/enum-label.pipe';
 import { LeagueStatus } from '../../league/models/enums/league-status';
 import { MyLeaguesList } from '../my-leagues-list/my-leagues-list';
@@ -37,7 +37,8 @@ import { Layout } from '../../../shared/components/layout/layout';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MyLeagues implements OnInit {
-  protected readonly store = inject(MyLeagueStore);
+  protected readonly store = inject(UserLeaguesStore);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly statusOpen = signal(false);
 
@@ -51,12 +52,14 @@ export class MyLeagues implements OnInit {
     initialValue: this.form.value,
   });
 
+  protected readonly activeTab = computed(() => this.formValue()?.tab ?? 'myLeagues');
+
   protected readonly statusValues = Object.values(LeagueStatus).filter(
     (s) => s !== LeagueStatus.PENDING && s !== LeagueStatus.COMPLETED && s !== LeagueStatus.CANCELLED,
   );
 
   protected readonly filteredLeagues = computed(() => {
-    const leagues = this.store.myLeagues();
+    const leagues = this.store.leagues();
     const { search } = this.formValue();
     const query = search?.toLowerCase() ?? '';
 
@@ -66,8 +69,8 @@ export class MyLeagues implements OnInit {
   });
 
   ngOnInit(): void {
-    this.form.get('tab')!.valueChanges.subscribe((value) => {
-      this.store.activeTab.set(value!);
+    this.route.fragment.subscribe((fragment) => {
+      this.form.get('tab')!.setValue(fragment === 'public' ? 'publicLeagues' : 'myLeagues');
     });
   }
 

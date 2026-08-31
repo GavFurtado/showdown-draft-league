@@ -4,7 +4,7 @@
     <p class="mb-6 text-(--tui-text-secondary)">Connect your Discord to continue.</p>
 
     <button tuiButton (click)="login()" [disabled]="state() === 'logging-in'">
-      {{ state() === 'logging-in' ? 'Opening Discord…' : 'Login with Discord' }}
+      {{ state() === 'logging-in' ? 'Opening Discord...' : 'Login with Discord' }}
     </button>
 
     @if (error(); as message) {

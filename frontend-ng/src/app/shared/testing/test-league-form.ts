@@ -1,7 +1,7 @@
 import { FormControl, FormGroup } from '@angular/forms';
 
 /**
- * Minimal FormGroup mirroring the CreateLeague form shape so step components
+ * Minimal FormGroup mirroring the CreateLeague shape so step components
  * can render in isolation inside unit tests.
  */
 export function createTestLeagueForm(): FormGroup {

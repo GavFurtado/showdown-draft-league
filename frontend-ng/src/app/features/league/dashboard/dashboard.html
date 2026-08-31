@@ -1,0 +1,9 @@
+<section class="flex flex-col gap-2 text-sm text-(--tui-text-secondary)">
+  <p>League: {{ context.league()?.Name ?? '...' }}</p>
+  <p>
+    League ID: <code>{{ leagueId() }}</code>
+  </p>
+  <p>Member: {{ context.userMember()?.InLeagueName ?? 'Not a member' }}</p>
+  <p>Role: {{ context.userMember()?.Role ?? 'none' }} (owner: {{ context.isOwner() }})</p>
+  <p class="pt-4">Dashboard components land with the rest of the league pages.</p>
+</section>

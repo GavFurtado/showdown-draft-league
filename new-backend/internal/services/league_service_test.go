@@ -159,6 +159,39 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 		mockLeagueRepo.AssertExpectations(t)
 		mockLeagueMemberRepo.AssertExpectations(t)
 	})
+
+	t.Run("Fails if GroupCount is zero", func(t *testing.T) {
+		badInput := *input
+		badInput.Format.GroupCount = 0
+
+		mockLeagueRepo.On("GetLeaguesCountWhereOwner", testUserID).Return(int64(0), nil).Once()
+
+		result, err := service.CreateLeague(testUserID, &badInput)
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.Contains(t, err.Error(), "GroupCount must be at least 1")
+
+		mockLeagueRepo.AssertExpectations(t)
+		mockLeagueRepo.AssertNotCalled(t, "CreateLeague")
+		mockLeagueMemberRepo.AssertNotCalled(t, "Create")
+	})
+
+	t.Run("Fails if GroupCount exceeds maximum", func(t *testing.T) {
+		badInput := *input
+		badInput.Format.GroupCount = 3
+
+		mockLeagueRepo.On("GetLeaguesCountWhereOwner", testUserID).Return(int64(0), nil).Once()
+
+		result, err := service.CreateLeague(testUserID, &badInput)
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.True(t, errors.Is(err, types.ErrExceedsMaxAllowableGroupCount))
+		assert.Equal(t, types.ErrExceedsMaxAllowableGroupCount, err)
+
+		mockLeagueRepo.AssertExpectations(t)
+		mockLeagueRepo.AssertNotCalled(t, "CreateLeague")
+		mockLeagueMemberRepo.AssertNotCalled(t, "Create")
+	})
 }
 
 func TestLeagueService_GetLeagueByIDForUser(t *testing.T) {

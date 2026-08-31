@@ -1,6 +1,6 @@
 import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 
-// Pure text-input utilities (ported from React validationUtils.ts) — shared across features.
+// Pure text-input utilities. Shared across features.
 export function containsHtml(input: string): boolean {
   return /[<>]/.test(input);
 }

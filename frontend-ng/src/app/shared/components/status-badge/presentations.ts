@@ -26,13 +26,9 @@ export const STATUS_PRESENTATIONS: Record<StatusDomain, Record<string, StatusPre
     PENDING: { label: 'Pending', tone: 'yellow' },
     SETUP: { label: 'Setup', tone: 'blue' },
     DRAFTING: { label: 'Drafting', tone: 'purple' },
-    // eslint-disable-next-line @typescript-eslint/naming-convention -- backend enum string
     POST_DRAFT: { label: 'Post Draft', tone: 'indigo' },
-    // eslint-disable-next-line @typescript-eslint/naming-convention -- backend enum string
     TRANSFER_WINDOW: { label: 'Transfer Window', tone: 'teal' },
-    // eslint-disable-next-line @typescript-eslint/naming-convention -- backend enum string
     REGULAR_SEASON: { label: 'Regular Season', tone: 'green' },
-    // eslint-disable-next-line @typescript-eslint/naming-convention -- backend enum string
     POST_REGULAR_SEASON: { label: 'Post Regular Season', tone: 'sky' },
     PLAYOFFS: { label: 'Playoffs', tone: 'orange' },
     COMPLETED: { label: 'Completed', tone: 'gray' },
@@ -46,14 +42,12 @@ export const STATUS_PRESENTATIONS: Record<StatusDomain, Record<string, StatusPre
   },
   game: {
     SCHEDULED: { label: 'Scheduled', tone: 'blue' },
-    // eslint-disable-next-line @typescript-eslint/naming-convention -- backend enum string
     APPROVAL_PENDING: { label: 'Approval Pending', tone: 'yellow' },
     COMPLETED: { label: 'Completed', tone: 'green' },
     DISPUTED: { label: 'Disputed', tone: 'red' },
   },
   claim: {
     DRAFT: { label: 'Draft', tone: 'purple' },
-    // eslint-disable-next-line @typescript-eslint/naming-convention -- backend enum string
     FREE_AGENT: { label: 'Free Agent', tone: 'blue' },
   },
   global: {},

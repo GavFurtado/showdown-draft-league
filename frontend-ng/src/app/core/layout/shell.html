@@ -1,57 +1,15 @@
-<header tuiNavigationHeader class="!h-16">
-  <a routerLink="" tuiNavigationLogo class="no-underline">
-    <tui-icon icon="@tui.home" />
-    <span class="ml-1 text-lg font-bold">Draft League</span>
-  </a>
-  <span tuiNavigationSegments class="ml-8 lg:ml-2">
-    <a
-      tuiButton
-      #rlaMyLeagues="routerLinkActive"
-      [appearance]="rlaMyLeagues.isActive ? 'primary' : 'flat'"
-      routerLink="/my-leagues"
-      routerLinkActive
-    >
-      My Leagues
-    </a>
-    <a
-      tuiButton
-      #rlaFaq="routerLinkActive"
-      [appearance]="rlaFaq.isActive ? 'primary' : 'flat'"
-      routerLink="/faq"
-      routerLinkActive
-    >
-      FAQ
-    </a>
-    <a
-      tuiButton
-      #rlaCreateLeague="routerLinkActive"
-      [appearance]="rlaCreateLeague.isActive ? 'primary' : 'flat'"
-      routerLink="/create-league"
-      routerLinkActive
-    >
-      Create League
-    </a>
-  </span>
-  <hr />
-  @if (user(); as currentUser) {
-    <span class="ml-auto flex items-center gap-2">
-      <button
-        tuiButton
-        appearance="flat"
-        size="s"
-        (click)="theme.toggle()"
-      >
-        <tui-icon [icon]="theme.isDark() ? '@tui.moon' : '@tui.sun'" />
-      </button>
-      <span class="text-sm text-(--tui-text-primary)">{{ currentUser.DiscordUsername }}</span>
-      <img [src]="currentUser.DiscordAvatarURL" alt="Avatar" class="h-8 w-8 rounded-full" />
-      <button tuiButton appearance="outline" size="s" (click)="logout()">Log out</button>
+<app-navbar />
+@if (devTools) {
+  <div
+    class="top-0 z-40 flex items-center justify-between gap-2 border-b border-(--tui-border-normal) bg-(--tui-background-elevation-2) px-4 py-1.5"
+  >
+    <span class="flex items-center gap-1.5 text-xs font-medium text-(--tui-text-warning)!">
+      <tui-icon icon="@tui.flask-conical" class="text-(--tui-status-warning)" />
+      DEV MODE
     </span>
-  }
-</header>
+    <app-dev-user-switcher />
+  </div>
+}
 <main tuiNavigationMain>
   <router-outlet />
 </main>
-@if (devTools) {
-  <app-dev-user-switcher />
-}

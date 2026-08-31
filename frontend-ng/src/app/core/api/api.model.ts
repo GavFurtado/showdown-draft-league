@@ -1,7 +1,8 @@
 import { Game } from '../../features/league/models/game.model';
+import { ISODateTimeString } from '../../shared/types/branded-strings';
 
 export interface ApiErrorResponse {
-  Timestamp: string;
+  Timestamp: ISODateTimeString;
   Status: number;
   Error: string;
   Message: string;

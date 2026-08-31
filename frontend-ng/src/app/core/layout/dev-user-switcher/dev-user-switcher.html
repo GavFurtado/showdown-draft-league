@@ -1,0 +1,112 @@
+<button
+  tuiButton
+  appearance="outline"
+  size="xs"
+  tuiChevron
+  type="button"
+  [tuiDropdown]="panel"
+  [(tuiDropdownOpen)]="open"
+  (tuiDropdownOpenChange)="onOpenChange($event)"
+>
+  Switch User
+</button>
+
+<ng-template #panel>
+  <div class="flex w-96 flex-col gap-3 p-4">
+    <div class="flex items-center justify-between">
+      <span class="text-sm font-bold text-(--tui-text-primary)">Impersonate</span>
+      @if (error(); as err) {
+        <span class="text-xs text-(--tui-text-negative)">{{ err }}</span>
+      }
+    </div>
+
+    <tui-textfield tuiChevron [stringify]="stringify" tuiTextfieldSize="m" class="mb-1 block max-h-56 overflow-y-auto">
+      <label tuiLabel>User</label>
+      <input
+        tuiComboBox
+        placeholder="Pick a user to impersonate"
+        [disabled]="busy()"
+        [ngModel]="selectedUserId()"
+        (ngModelChange)="selectUser($event)"
+      />
+      <tui-data-list *tuiDropdown>
+        @for (u of users(); track u.ID) {
+          <button tuiOption type="button" [value]="u.ID">
+            <span class="flex w-full items-center justify-between gap-1">
+              <span class="truncate text-xs" [class.font-bold]="u.ID === selectedUserId()">
+                {{ u.DiscordUsername }}
+                @if (!u.ShowdownUsername) {
+                  <span class="text-(--tui-text-tertiary)">(no showdown name)</span>
+                }
+              </span>
+              <span class="text-xs text-(--tui-text-link)">{{ u.ID === selectedUserId() ? 'current' : 'as' }}</span>
+            </span>
+          </button>
+        } @empty {
+          <div class="p-2 text-xs text-(--tui-text-tertiary)">No users yet.</div>
+        }
+      </tui-data-list>
+    </tui-textfield>
+
+    <div class="border-t border-(--tui-border) pt-2">
+      <span class="text-sm font-bold text-(--tui-text-primary)">Create a fake user</span>
+      <div class="mt-1 flex items-end gap-1">
+        <tui-textfield tuiTextfieldSize="m" class="min-w-0 flex-1">
+          <label tuiLabel>Name</label>
+          <input
+            tuiInput
+            placeholder="e.g. Alice"
+            [ngModel]="newName()"
+            (ngModelChange)="newName.set($event)"
+            (keydown.enter)="createUser()"
+          />
+        </tui-textfield>
+        <button tuiButton size="m" [disabled]="busy()" (click)="createUser()">Add</button>
+      </div>
+    </div>
+
+    <div class="border-t border-(--tui-border) pt-2">
+      <span class="text-sm font-bold text-(--tui-text-primary)">Set a League Role</span>
+      <div class="flex flex-col gap-2">
+        <tui-textfield tuiChevron [stringify]="stringify" tuiTextfieldSize="m" [tuiTextfieldCleaner]="false">
+          <label tuiLabel>User</label>
+          <input tuiSelect [ngModel]="roleTargetUserId()" (ngModelChange)="roleTargetUserId.set($event)" />
+          <tui-data-list *tuiDropdown>
+            @for (u of users(); track u.ID) {
+              <button tuiOption type="button" [value]="u.ID">
+                <span class="flex w-full items-center justify-between gap-1">
+                  <span class="truncate text-xs" [class.font-bold]="u.ID === roleTargetUserId()">
+                    {{ u.DiscordUsername }}
+                    @if (!u.ShowdownUsername) {
+                      <span class="text-(--tui-text-tertiary)">(no showdown name)</span>
+                    }
+                  </span>
+                </span>
+              </button>
+            } @empty {
+              <div class="p-2 text-xs text-(--tui-text-tertiary)">No users yet.</div>
+            }
+          </tui-data-list>
+        </tui-textfield>
+
+        <div class="flex items-end gap-1">
+          <tui-textfield tuiTextfieldSize="m" class="min-w-0 flex-1">
+            <label tuiLabel>League ID</label>
+            <input tuiInput placeholder="UUID" [ngModel]="leagueId()" (ngModelChange)="leagueId.set($event)" />
+          </tui-textfield>
+          <tui-textfield tuiTextfieldSize="m" tuiChevron [tuiTextfieldCleaner]="false" class="w-28">
+            <label tuiLabel>Role</label>
+            <input tuiSelect [ngModel]="role()" (ngModelChange)="role.set($event)" />
+            <tui-data-list-wrapper *tuiDropdown [items]="roles" />
+          </tui-textfield>
+        </div>
+
+        <button tuiButton size="s" [disabled]="busy()" (click)="upsertMembership()">Set role</button>
+
+        @if (success(); as msg) {
+          <span class="text-xs text-(--tui-status-positive)">{{ msg }}</span>
+        }
+      </div>
+    </div>
+  </div>
+</ng-template>

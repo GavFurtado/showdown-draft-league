@@ -131,7 +131,10 @@ func (s *devAuthServiceImpl) UpsertMembership(leagueID, userID uuid.UUID, roleNa
 	existing, err := s.leagueMemberRepo.GetByUserAndLeague(userID, leagueID)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			s.logger.Error("UpsertMembership - failed to look up membership", "user_id", userID, "league_id", leagueID, "error", err)
+			s.logger.Error("UpsertMembership - failed to look up membership",
+				"user_id", userID, "league_id",
+				leagueID,
+				"error", err)
 			return nil, types.ErrInternalService
 		}
 

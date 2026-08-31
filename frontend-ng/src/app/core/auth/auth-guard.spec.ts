@@ -3,16 +3,18 @@ import { ActivatedRouteSnapshot, RouterStateSnapshot, UrlTree, provideRouter } f
 import { TestBed } from '@angular/core/testing';
 
 import { User } from '../../shared/models/user.model';
+import { UserRole } from '../../shared/models/enums/user-role';
+import { asUuid } from '../../shared/types/branded-strings';
 import { AuthService } from './auth-service';
-import { authGuard, onboardingGuard } from './auth-guard';
+import { authGuard } from './auth-guard';
 
 const user: User = {
-  ID: 'user-1',
+  ID: asUuid('33333333-3333-4333-8333-333333333333'),
   DiscordID: '1234',
-  DiscordUsername: 'Gavin',
+  DiscordUsername: 'Tester',
   DiscordAvatarURL: '',
-  ShowdownUsername: 'GavinTest',
-  Role: 'user',
+  ShowdownUsername: 'tester_show',
+  Role: UserRole.USER,
 };
 
 describe('authGuard', () => {
@@ -40,38 +42,5 @@ describe('authGuard', () => {
     const result = executeGuard();
 
     expect((result as UrlTree).toString()).toBe('/login');
-  });
-});
-
-describe('onboardingGuard', () => {
-  const executeGuard: () => unknown = () => TestBed.runInInjectionContext(() => onboardingGuard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot));
-
-  let auth: AuthService;
-
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [provideRouter([]), provideHttpClientTesting()],
-    });
-    auth = TestBed.inject(AuthService);
-  });
-
-  it('redirects to /login when logged out', () => {
-    const result = executeGuard();
-
-    expect((result as UrlTree).toString()).toBe('/login');
-  });
-
-  it('redirects to /onboarding when the user has no Showdown username yet', () => {
-    auth.user.set({ ...user, ShowdownUsername: null });
-
-    const result = executeGuard();
-
-    expect((result as UrlTree).toString()).toBe('/onboarding');
-  });
-
-  it('allows access once the user finished onboarding', () => {
-    auth.user.set(user);
-
-    expect(executeGuard()).toBe(true);
   });
 });

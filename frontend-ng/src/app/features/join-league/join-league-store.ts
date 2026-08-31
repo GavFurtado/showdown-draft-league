@@ -2,6 +2,7 @@ import { Service, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, finalize, switchMap } from 'rxjs';
 
+import { UUID } from '../../shared/types/branded-strings';
 import { ClientError } from '../../core/api/api.model';
 import { LeagueMember } from '../league/models/league-member.model';
 import { JoinLeagueService, LeagueJoinRequest } from './join-league-service';
@@ -17,7 +18,7 @@ export class JoinLeagueStore {
   readonly joinError = signal<ClientError | null>(null);
   readonly joinedMember = signal<LeagueMember | null>(null);
 
-  private readonly leagueId$ = new Subject<string>();
+  private readonly leagueId$ = new Subject<UUID>();
 
   readonly league = toSignal(
     this.leagueId$.pipe(
@@ -36,7 +37,7 @@ export class JoinLeagueStore {
     { initialValue: null },
   );
 
-  load(leagueId: string): void {
+  load(leagueId: UUID): void {
     this.leagueId$.next(leagueId);
   }
 

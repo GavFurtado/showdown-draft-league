@@ -36,7 +36,7 @@
             <input placeholder="Search..." tuiInput formControlName="search" />
           </tui-textfield>
 
-          @if (store.activeTab() === 'publicLeagues') {
+          @if (activeTab() === 'publicLeagues') {
             <button
               tuiButton
               tuiChevron
@@ -76,7 +76,7 @@
   </search>
 
   <div class="mt-4">
-    @if (store.activeTab() === 'myLeagues') {
+    @if (activeTab() === 'myLeagues') {
       <app-my-leagues-list [leagues]="filteredLeagues()" [loading]="store.loading()" [error]="store.error()" />
     } @else {
       <app-public-leagues-list />

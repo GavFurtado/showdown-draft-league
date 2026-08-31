@@ -2,15 +2,17 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 
 import { User } from '../../shared/models/user.model';
+import { UserRole } from '../../shared/models/enums/user-role';
+import { asUuid } from '../../shared/types/branded-strings';
 import { AuthService, LoginError, TOKEN_KEY } from './auth-service';
 
 const user: User = {
-  ID: 'user-1',
+  ID: asUuid('33333333-3333-4333-8333-333333333333'),
   DiscordID: '1234',
-  DiscordUsername: 'Gavin',
+  DiscordUsername: 'Tester',
   DiscordAvatarURL: '',
-  ShowdownUsername: 'GavinTest',
-  Role: 'user',
+  ShowdownUsername: 'tester_show',
+  Role: UserRole.USER,
 };
 
 describe('AuthService', () => {
@@ -76,20 +78,6 @@ describe('AuthService', () => {
     await second;
 
     expect(service.user()).toEqual(updated);
-  });
-
-  it('needsOnboarding reflects a missing Showdown username', async () => {
-    expect(service.needsOnboarding()).toBe(false);
-
-    const promise = service.setToken('jwt');
-    http.expectOne('/api/users/me').flush({ ...user, ShowdownUsername: null });
-    await promise;
-    expect(service.needsOnboarding()).toBe(true);
-
-    const refreshed = service.refreshUser();
-    http.expectOne('/api/users/me').flush(user);
-    await refreshed;
-    expect(service.needsOnboarding()).toBe(false);
   });
 
   it('prime resolves without a request when no token is stored', async () => {

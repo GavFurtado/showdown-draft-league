@@ -1,4 +1,6 @@
+import { UUID } from '../../../shared/types/branded-strings';
+
 export interface Game {
-  ID: string;
-  LeagueID: string;
+  ID: UUID;
+  LeagueID: UUID;
 }

@@ -59,7 +59,7 @@ export class CreateLeagueStore {
         this.isSubmitting.set(true);
         this.error.set(null);
         return this.service.createLeague(this.form()).pipe(
-          tap((league) => void this.router.navigateByUrl(`/my-leagues/${league.ID}`)),
+          tap((league) => void this.router.navigateByUrl(`/leagues/${league.ID}/join`)),
           catchError((err) => {
             this.error.set(err);
             return EMPTY;

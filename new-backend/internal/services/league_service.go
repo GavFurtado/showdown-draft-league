@@ -94,6 +94,10 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.Leagu
 		return nil, types.ErrExceedsMaxAllowableGroupCount
 	}
 
+	if input.Format.GroupCount < 1 {
+		return nil, fmt.Errorf("%w: GroupCount must be at least 1", types.ErrInvalidLeagueConfiguration)
+	}
+
 	if input.Format.AllowTransfers && input.Format.TransferWindowFrequencyDays%7 != 0 {
 		return nil, fmt.Errorf("%w: TransferWindowFrequencyDays must be a multiple of 7", types.ErrInvalidLeagueConfiguration)
 	}

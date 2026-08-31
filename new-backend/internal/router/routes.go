@@ -14,6 +14,10 @@ import (
 	"gorm.io/gorm"
 )
 
+// TODO: This needs refinement. Needs to be cleaner somehow
+// In addition, leagues/:leagueId/members/join is not a protected route yet is under that section
+// Clean that up as well.
+
 func RegisterRoutes(
 	r *gin.Engine,
 	db *gorm.DB,
@@ -211,7 +215,6 @@ func RegisterRoutes(
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadMember),
 					controllers.LeagueMemberController.GetByLeague)
 				leagueMembers.POST("/join",
-					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateMember),
 					controllers.LeagueMemberController.JoinLeague)
 			}
 
@@ -283,6 +286,7 @@ func RegisterRoutes(
 }
 
 // this is temporary
+
 func HomeHandler(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "Welcome to Pokemon Showdown Draft League!"})
 }

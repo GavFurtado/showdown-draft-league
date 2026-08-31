@@ -4,16 +4,18 @@ import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angul
 import { provideTaiga } from '@taiga-ui/core';
 
 import { User } from '../../../shared/models/user.model';
+import { UserRole } from '../../../shared/models/enums/user-role';
+import { asUuid } from '../../../shared/types/branded-strings';
 import { TOKEN_KEY } from '../../../core/auth/auth-service';
 import { Callback } from './callback';
 
 const user: User = {
-  ID: 'user-1',
+  ID: asUuid('33333333-3333-4333-8333-333333333333'),
   DiscordID: '1234',
-  DiscordUsername: 'Gavin',
+  DiscordUsername: 'Tester',
   DiscordAvatarURL: '',
-  ShowdownUsername: 'GavinTest',
-  Role: 'user',
+  ShowdownUsername: 'tester_show',
+  Role: UserRole.USER,
 };
 
 describe('Callback', () => {

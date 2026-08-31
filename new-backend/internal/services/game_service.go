@@ -821,7 +821,7 @@ func isPowerOfTwo(N int) bool {
 func (s *gameServiceImpl) getSeededPlayers(league *models.League, membersByGroup [][]models.LeagueMember) ([]models.LeagueMember, error) {
 	var qualifyingMembers []models.LeagueMember
 
-	numMembersToQualifyPerGroup := league.Format.PlayoffParticipantCount / league.Format.GroupCount
+	numMembersToQualifyPerGroup := league.Format.PlayoffParticipantCount / max(league.Format.GroupCount, 1)
 
 	for i := range membersByGroup {
 		if len(membersByGroup[i]) == 0 {
