@@ -3,9 +3,9 @@ import { RouterOutlet } from '@angular/router';
 import { TuiIcon } from '@taiga-ui/core';
 import { TuiNavigation } from '@taiga-ui/layout';
 
-import { environment } from '../../../environments/environment';
-import { DevUserSwitcher } from './dev-user-switcher/dev-user-switcher';
-import { Navbar } from './navbar/navbar';
+import { environment } from '../../../../../environments/environment';
+import { DevUserSwitcher } from '../dev-user-switcher/dev-user-switcher';
+import { Navbar } from '../navbar/navbar';
 
 @Component({
   selector: 'app-shell',

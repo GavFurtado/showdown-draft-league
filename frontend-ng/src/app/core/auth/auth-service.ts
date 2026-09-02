@@ -78,7 +78,7 @@ export class AuthService {
     return this.user() !== null;
   }
 
-  // Re-fetches the user after profile changes (e.g. updating the Showdown username).
+  // Re-fetches the user after profile changes
   async refreshUser(): Promise<void> {
     this.me$ = null;
     await this.loadUser();

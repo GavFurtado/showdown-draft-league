@@ -4,11 +4,11 @@ import { TuiButton, TuiDataList, TuiDropdown, TuiInput, TuiOption, TuiTextfield 
 import { TuiChevron, TuiComboBox, TuiDataListWrapper, TuiSelect } from '@taiga-ui/kit';
 import { firstValueFrom } from 'rxjs';
 
-import { ApiService } from '../../api/api-service';
-import { routePaths } from '../../api/route-paths';
-import { AuthService, TOKEN_KEY } from '../../auth/auth-service';
-import { User } from '../../../shared/models/user.model';
-import { MemberRole } from '../../../features/league/models/enums/member-role';
+import { ApiService } from '../../../api/api-service';
+import { routePaths } from '../../../api/route-paths';
+import { AuthService, TOKEN_KEY } from '../../../auth/auth-service';
+import { User } from '../../../../shared/models/user.model';
+import { MemberRole } from '../../../../features/league/models/enums/member-role';
 
 interface TokenResponse {
   Token: string;

@@ -2,9 +2,9 @@ import { Service, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, finalize, switchMap } from 'rxjs';
 
-import { ClientError } from '../api/api.model';
-import { League } from '../../features/league/models/league.model';
-import { MyLeagueService } from '../../features/my-leagues/my-league-service';
+import { ClientError } from '../../api/api.model';
+import { League } from '../../../features/league/models/league.model';
+import { MyLeagueService } from '../../../features/my-leagues/my-league-service';
 
 @Service()
 export class UserLeaguesStore {

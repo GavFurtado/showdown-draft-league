@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { LeagueShell } from './league-shell';
-import { LeagueContextStore } from '../league-context-store';
+import { LeagueContextStore } from '../../../features/league/league-context-store';
 
 describe('LeagueShell', () => {
   let component: LeagueShell;

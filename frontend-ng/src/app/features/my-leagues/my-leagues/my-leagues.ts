@@ -5,7 +5,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TuiButton, TuiDataList, TuiDropdown, TuiGroup, TuiInput, TuiOption, TuiTextfield } from '@taiga-ui/core';
 import { TuiBlock, TuiChevron } from '@taiga-ui/kit';
 import { TuiSearch } from '@taiga-ui/layout';
-import { UserLeaguesStore } from '../../../core/layout/user-leagues-store';
+import { UserLeaguesStore } from '../../../core/shell/app-shell/user-leagues-store';
 import { EnumLabelPipe } from '../../../shared/pipes/enum-label.pipe';
 import { LeagueStatus } from '../../league/models/enums/league-status';
 import { MyLeaguesList } from '../my-leagues-list/my-leagues-list';

@@ -5,11 +5,11 @@ import { TuiButton, TuiDropdown, TuiIcon, TuiInput, TuiTextfield } from '@taiga-
 import { TuiChevron, TuiTooltip } from '@taiga-ui/kit';
 import { firstValueFrom } from 'rxjs';
 
-import { ApiService } from '../../api/api-service';
-import { routePaths } from '../../api/route-paths';
-import { ThemeService } from '../../theme/theme-service';
-import { AuthService } from '../../auth/auth-service';
-import { User } from '../../../shared/models/user.model';
+import { ApiService } from '../../../api/api-service';
+import { routePaths } from '../../../api/route-paths';
+import { ThemeService } from '../../../theme/theme-service';
+import { AuthService } from '../../../auth/auth-service';
+import { User } from '../../../../shared/models/user.model';
 
 /**
  * Profile menu: identity at the top, account preferences (optional Showdown

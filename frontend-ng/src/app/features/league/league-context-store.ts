@@ -25,6 +25,7 @@ export class LeagueContextStore {
   readonly loadError = signal<ClientError | null>(null);
 
   isOwner = computed(() => this.userMember()?.Role === MemberRole.OWNER);
+
   isModerator = computed(() => {
     const role = this.userMember()?.Role;
     return role === MemberRole.OWNER || role === MemberRole.MODERATOR;

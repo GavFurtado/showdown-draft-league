@@ -1,13 +1,9 @@
 <section tuiCardLarge [tuiCardCollapsed]="collapsed()" appearance="">
   <header tuiHeader="body-m">
     <hgroup tuiTitle>
-      <a class="hover:underline" [routerLink]="['/leagues', league().ID, 'join']">{{ league().Name }}</a>
+      <a class="hover:underline" [routerLink]="['/leagues', league().ID, 'dashboard']">{{ league().Name }}</a>
       @if (league().RulesetDescription) {
-        <p
-          tuiSubtitle
-          class="min-h-12 line-clamp-2"
-          [title]="league().RulesetDescription"
-        >
+        <p tuiSubtitle class="line-clamp-2 min-h-12" [title]="league().RulesetDescription">
           {{ league().RulesetDescription }}
         </p>
       } @else {
@@ -61,7 +57,7 @@
   </div>
 
   <tui-expand [expanded]="!collapsed()">
-    <!-- TODO: this has to redone once we have proper components for displaying members -->
+    <!-- TODO: This has to redone once we have proper components for displaying members -->
     <div class="border-t px-4 py-3">
       <div class="mb-2 text-xs font-medium text-(--tui-text-secondary) uppercase">Members</div>
       @if (league().Members?.length) {
