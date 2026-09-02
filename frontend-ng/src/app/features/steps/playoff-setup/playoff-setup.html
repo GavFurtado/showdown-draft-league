@@ -1,0 +1,124 @@
+<div class="flex flex-col gap-6" [formGroup]="form()">
+  <div>
+    <h2 class="mb-1 text-2xl font-semibold">Playoff Structure</h2>
+    <p class="text-sm text-(--tui-text-secondary)">Decide how your season ends, i.e., with or without a bracket.</p>
+  </div>
+
+  <div>
+    <label tuiLabel class="mb-2 block">Playoff Type</label>
+    <div class="flex flex-col gap-3 sm:flex-row">
+      @for (pt of [PlayoffType.NONE, PlayoffType.SINGLE_ELIM, PlayoffType.DOUBLE_ELIM]; track pt) {
+        <label
+          [appearance]="form().get('Format.PlayoffType')!.value === pt ? 'primary' : 'secondary'"
+          tuiBlock
+          class="flex-1"
+        >
+          <input
+            tuiBlock="m"
+            type="radio"
+            tuiRadio
+            [formControl]="$any(form().get('Format.PlayoffType'))"
+            [value]="pt"
+          />
+          <span tuiTitle>
+            {{ pt | enumLabel }}
+            <span tuiSubtitle>
+              @switch (pt) {
+                @case (PlayoffType.NONE) {
+                  Season ends after the regular season.
+                }
+                @case (PlayoffType.SINGLE_ELIM) {
+                  One loss and you're out.
+                }
+                @case (PlayoffType.DOUBLE_ELIM) {
+                  Losers bracket opportunity.
+                }
+              }
+            </span>
+          </span>
+        </label>
+      }
+    </div>
+  </div>
+
+  @if (hasPlayoffs) {
+    <div>
+      <label tuiLabel class="mb-2 block">Seeding</label>
+      <div class="flex flex-col gap-3 sm:flex-row">
+        @for (seed of seeds; track seed) {
+          <label
+            [appearance]="form().get('Format.PlayoffSeedingType')!.value === seed ? 'primary' : 'secondary'"
+            tuiBlock
+            class="flex-1"
+          >
+            <input
+              tuiBlock="m"
+              type="radio"
+              tuiRadio
+              [formControl]="$any(form().get('Format.PlayoffSeedingType'))"
+              [value]="seed"
+            />
+            <span tuiTitle>
+              {{ seed | enumLabel }}
+              <span tuiSubtitle>
+                @switch (seed) {
+                  @case (Seeding.STANDARD) {
+                    No byes, all players start in round 1.
+                  }
+                  @case (Seeding.BYES_ONLY) {
+                    Top seeds earn a first-round bye.
+                  }
+                  @case (Seeding.FULLY_SEEDED) {
+                    Top: byes. Mid: upper R1. Low: lower bracket.
+                  }
+                }
+              </span>
+            </span>
+          </label>
+        }
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-4 sm:flex-row">
+      <label tuiLabel class="min-w-0 flex-1">
+        Participants
+        <tui-textfield tuiTextfieldSize="l">
+          <input
+            tuiInputNumber
+            [formControl]="$any(form().get('Format.PlayoffParticipantCount'))"
+            [min]="2"
+            [max]="32"
+            [step]="1"
+          />
+        </tui-textfield>
+        @if (fieldError()(form()!.get('Format.PlayoffParticipantCount')); as error) {
+          <span class="mt-1 text-xs text-(--tui-status-negative)">{{ error }}</span>
+        }
+      </label>
+
+      <label tuiLabel class="min-w-0 flex-1">
+        Byes
+        <tui-textfield tuiTextfieldSize="l">
+          <input
+            tuiInputNumber
+            [formControl]="$any(form().get('Format.PlayoffByesCount'))"
+            [min]="0"
+            [step]="1"
+            [attr.disabled]="isStandardSeeding ? '' : null"
+          />
+        </tui-textfield>
+        @if (isStandardSeeding) {
+          <span class="mt-1 text-xs text-(--tui-text-secondary) italic">Standard seeding uses no byes.</span>
+        } @else if (fieldError()(form()!.get('Format.PlayoffByesCount')); as error) {
+          <span class="mt-1 text-xs text-(--tui-status-negative)">{{ error }}</span>
+        }
+      </label>
+    </div>
+
+    <div class="rounded-xl border border-(--tui-border-normal) p-3 text-xs text-(--tui-text-secondary)">
+      <p class="mb-1 font-bold">Configuration Note</p>
+      Some playoff configurations (like too many byes for the participant count) may be invalid depending on the bracket
+      size. These can be adjusted later in the league settings.
+    </div>
+  }
+</div>

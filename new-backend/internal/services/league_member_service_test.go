@@ -7,6 +7,8 @@ import (
 
 	mock_repos "github.com/GavFurtado/showdown-draft-league/new-backend/internal/mocks/repositories"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models/enums"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/dtos/requests"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/services"
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/google/uuid"
@@ -258,4 +260,43 @@ func TestLeagueMemberService_UpdateDraftPosition(t *testing.T) {
 		assert.Nil(t, result)
 		mockMemberRepo.AssertExpectations(t)
 	})
+}
+
+func TestLeagueMemberService_Create_GroupCountZeroNoPanic(t *testing.T) {
+	service, mockMemberRepo, mockLeagueRepo, mockUserRepo := setupLeagueMemberServiceTest()
+
+	leagueID := uuid.New()
+	userID := uuid.New()
+	discordUsername := "testuser"
+	league := &models.League{
+		ID:                  leagueID,
+		Status:              enums.LeagueStatusSetup,
+		MaxPokemonPerPlayer: 6,
+		MinPokemonPerPlayer: 3,
+		StartingDraftPoints: 140,
+		NewPlayerGroupNumber: 0,
+		Format:              &types.LeagueFormat{GroupCount: 0},
+	}
+	user := &models.User{ID: userID, DiscordUsername: discordUsername}
+	member := &models.LeagueMember{ID: uuid.New()}
+
+	mockLeagueRepo.On("GetLeagueByID", leagueID).Return(league, nil).Once()
+	mockUserRepo.On("GetUserByID", userID).Return(user, nil).Once()
+	mockMemberRepo.On("FindByUserAndLeague", userID, leagueID).Return((*models.LeagueMember)(nil), nil).Once()
+	mockMemberRepo.On("FindByInLeagueName", discordUsername, leagueID).Return((*models.LeagueMember)(nil), nil).Once()
+	mockMemberRepo.On("FindByTeamName", discordUsername+"'s Team", leagueID).Return((*models.LeagueMember)(nil), nil).Once()
+	mockMemberRepo.On("Create", mock.Anything).Return(member, nil).Once()
+	mockLeagueRepo.On("UpdateLeague", mock.Anything).Return(league, nil).Once()
+
+	input := &requests.LeagueMemberCreateRequestDTO{
+		UserID:   userID,
+		LeagueID: leagueID,
+	}
+
+	// Must not panic with a GroupCount of 0.
+	result, err := service.Create(user, input)
+	assert.NoError(t, err)
+	assert.Equal(t, member, result)
+	mockMemberRepo.AssertExpectations(t)
+	mockLeagueRepo.AssertExpectations(t)
 }

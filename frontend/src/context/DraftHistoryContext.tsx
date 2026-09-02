@@ -36,7 +36,10 @@ export const DraftHistoryProvider = ({ children }: DraftHistoryProviderProps) =>
             const response = await getDraftHistory(currentLeague.ID);
             setDraftHistory(response.data);
         } catch (err) {
-            if (axios.isAxiosError(err) && err.response) {
+            if (axios.isAxiosError(err) && err.response?.status === 404) {
+                console.info("No draft history found for this league yet, continuing without it.");
+                setDraftHistory([]);
+            } else if (axios.isAxiosError(err) && err.response) {
                 setError(err.response.data.error || "Failed to load draft history.");
             } else {
                 setError("A network or unknown error occurred while fetching draft history.");

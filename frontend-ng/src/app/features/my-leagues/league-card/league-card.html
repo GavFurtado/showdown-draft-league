@@ -1,0 +1,79 @@
+<section tuiCardLarge [tuiCardCollapsed]="collapsed()" appearance="">
+  <header tuiHeader="body-m">
+    <hgroup tuiTitle>
+      <a class="hover:underline" [routerLink]="['/leagues', league().ID, 'dashboard']">{{ league().Name }}</a>
+      @if (league().RulesetDescription) {
+        <p tuiSubtitle class="line-clamp-2 min-h-12" [title]="league().RulesetDescription">
+          {{ league().RulesetDescription }}
+        </p>
+      } @else {
+        <p tuiSubtitle class="min-h-12 text-(--tui-text-secondary)">No ruleset/description</p>
+      }
+    </hgroup>
+    <aside>
+      <app-status-badge [status]="league().Status" domain="league" size="l" />
+    </aside>
+  </header>
+
+  <div tuiCardRow class="stat-row">
+    <div tuiTitle>
+      <div tuiSubtitle>Players</div>
+      <div class="flex items-center gap-1">
+        <tui-icon icon="@tui.users" class="pr-1" />
+        {{ league().PlayerCount }}/{{ league().MaxPlayers }}
+      </div>
+    </div>
+    <div tuiTitle>
+      <div tuiSubtitle>Season</div>
+      <div class="flex items-center gap-1">
+        <tui-icon icon="@tui.trophy" class="pr-1" />
+        <span>{{ league().Format.SeasonType | enumLabel }}</span>
+      </div>
+    </div>
+    <div tuiTitle>
+      <div tuiSubtitle>Week</div>
+      <div class="flex items-center gap-1">
+        <tui-icon icon="@tui.calendar" class="pr-1" />
+        {{ league().CurrentWeekNumber }}
+      </div>
+    </div>
+    <div tuiTitle>
+      <div tuiSubtitle>Points</div>
+      <div class="flex items-center gap-1">
+        <tui-icon icon="@tui.credit-card" class="pr-1" />
+        {{ league().StartingDraftPoints }}
+      </div>
+    </div>
+    <button
+      appearance="secondary"
+      size="s"
+      tuiIconButton
+      type="button"
+      [tuiChevron]="!collapsed()"
+      (click)="collapsed.set(!collapsed())"
+    >
+      Details
+    </button>
+  </div>
+
+  <tui-expand [expanded]="!collapsed()">
+    <!-- TODO: This has to redone once we have proper components for displaying members -->
+    <div class="border-t px-4 py-3">
+      <div class="mb-2 text-xs font-medium text-(--tui-text-secondary) uppercase">Members</div>
+      @if (league().Members?.length) {
+        <div class="flex flex-wrap gap-1">
+          @for (member of league().Members; track member.ID) {
+            <span class="inline-flex items-center gap-1 rounded bg-(--tui-background-elevation-1) px-2 py-0.5 text-xs">
+              @if (member.Role === memberRole.OWNER) {
+                <tui-icon icon="@tui.crown" class="text-amber-500" />
+              }
+              {{ member.InLeagueName ?? member.User?.DiscordUsername }}
+            </span>
+          }
+        </div>
+      } @else {
+        <p class="text-xs text-(--tui-text-secondary)">No members yet</p>
+      }
+    </div>
+  </tui-expand>
+</section>

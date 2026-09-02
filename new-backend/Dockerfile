@@ -1,35 +1,29 @@
-# docker build -t server .
-# docker run -it -p 8080:8080 -v $(pwd):/app server
-
-# Use a Go base image
-FROM golang:1.23-alpine
-
-# Set the working directory inside the container
+FROM golang:1.23-alpine AS base
 WORKDIR /app
-
-# Install CompileDaemon for hot reloading
-RUN go install github.com/githubnemo/CompileDaemon@latest
-
-ENV PATH=$PATH:/go/bin
-ENV TZ=Asia/Kolkata
-
-# Copy the go.mod and go.sum files to download dependencies
-
 COPY go.mod go.sum ./
 RUN go mod download
-
-# Copy the rest of the application code, including the .env file
 COPY . .
 
-# Expose the port your Go application listens on
+FROM base AS dev
+RUN go install github.com/githubnemo/CompileDaemon@latest
+ENV PATH=$PATH:/go/bin
+ENV TZ=Asia/Kolkata
 EXPOSE 8080
-
-# Command to run CompileDaemon
-# It watches for changes, rebuilds the app, and runs the new executable
-
 CMD CompileDaemon \
     --build="go build -o /app/server /app/cmd/main.go" \
     --command="/app/server" \
     --recursive=true \
     --polling
 
+FROM golang:1.23-alpine AS build
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -o /app/server /app/cmd/main.go
+
+FROM alpine:3.19 AS prod
+WORKDIR /app
+COPY --from=build /app/server .
+EXPOSE 8080
+CMD ["./server"]

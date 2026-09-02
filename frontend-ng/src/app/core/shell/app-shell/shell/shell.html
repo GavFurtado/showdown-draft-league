@@ -1,0 +1,15 @@
+@if (devTools) {
+  <div
+    class="relative z-40 flex items-center justify-between gap-2 border-b border-(--tui-border-normal) bg-(--tui-background-elevation-2) px-4 py-1.5"
+  >
+    <span class="flex items-center gap-1.5 text-xs font-medium text-(--tui-text-warning)!">
+      <tui-icon icon="@tui.flask-conical" class="text-(--tui-status-warning)" />
+      DEV MODE
+    </span>
+    <app-dev-user-switcher />
+  </div>
+}
+<app-navbar />
+<main tuiNavigationMain>
+  <router-outlet />
+</main>

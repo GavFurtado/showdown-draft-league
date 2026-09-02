@@ -1,0 +1,87 @@
+<app-layout variant="container">
+  <div class="mx-auto flex w-full max-w-xl flex-col items-center gap-6">
+    <div class="w-full max-w-md">
+      <tui-stepper orientation="horizontal" tuiConnected [(activeItemIndex)]="stepIndex">
+        @for (step of steps; track step.label; let i = $index) {
+          <button tuiStep [icon]="step.icon" [stepState]="stepState(i)" [disabled]="isStepDisabled(i)">
+            {{ step.label }}
+          </button>
+        }
+      </tui-stepper>
+    </div>
+
+    <div tuiCardLarge appearance="floating" class="w-full border! border-(--tui-border-normal)!">
+      @if (store.error(); as err) {
+        <div
+          role="alert"
+          class="mb-4 flex items-start gap-2 rounded-xl border border-(--tui-status-negative) p-3 text-sm text-(--tui-status-negative)"
+        >
+          <tui-icon icon="@tui.circle-alert" />
+          <span><span class="font-bold">Error:</span> {{ err.message }}</span>
+        </div>
+      }
+
+      @switch (stepIndex) {
+        @case (0) {
+          <app-basic-info [form]="form" [fieldError]="boundFieldError" [showRulesetWarning]="publicNoRuleset()" />
+        }
+        @case (1) {
+          <app-draft-setup [form]="form" [fieldError]="boundFieldError" />
+        }
+        @case (2) {
+          <app-season-setup [form]="form" [fieldError]="boundFieldError" />
+        }
+        @case (3) {
+          <app-playoff-setup [form]="form" [fieldError]="boundFieldError" />
+        }
+        @case (4) {
+          <app-transfer-market [form]="form" [fieldError]="boundFieldError" />
+        }
+        @case (5) {
+          <app-review [form]="form" />
+        }
+      }
+
+      <div class="flex w-full items-center justify-between">
+        @if (stepIndex === 0) {
+          <button appearance="secondary" tuiButton type="button" disabled>Back</button>
+        } @else {
+          <button appearance="secondary" tuiButton type="button" (click)="onBack()">Back</button>
+        }
+
+        <div class="flex items-center gap-3">
+          @if (stepIndex === 5) {
+            <button
+              tuiButton
+              iconEnd="@tui.chevron-right"
+              type="button"
+              [disabled]="store.isSubmitting()"
+              [tuiHint]="stepErrorTooltip"
+              tuiHintAppearance="accent"
+              [tuiHintManual]="stepError() !== null"
+              tuiHintDirection="start"
+              (click)="onSubmit()"
+            >
+              {{ store.isSubmitting() ? 'Creating...' : 'Create League' }}
+            </button>
+          } @else {
+            <button
+              tuiButton
+              iconEnd="@tui.chevron-right"
+              type="button"
+              [tuiHint]="stepErrorTooltip"
+              tuiHintAppearance="accent"
+              [tuiHintManual]="stepError() !== null"
+              tuiHintDirection="start"
+              (click)="onNext()"
+            >
+              Continue
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</app-layout>
+
+<ng-template #stepErrorTooltip>{{ stepError() }}</ng-template>

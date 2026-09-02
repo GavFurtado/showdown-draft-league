@@ -1,0 +1,71 @@
+<div class="flex flex-col gap-6" [formGroup]="form()">
+  <div>
+    <h2 class="mb-1 text-2xl font-semibold">Basic Info</h2>
+    <p class="text-sm text-(--tui-text-secondary)">Give your league an identity and set the ground rules.</p>
+  </div>
+
+  <div class="flex flex-col gap-4 sm:flex-row">
+    <label tuiLabel class="min-w-0 flex-2">
+      League Name
+      <tui-textfield iconStart="@tui.edit" tuiTextfieldSize="m">
+        <input placeholder="League Name" tuiInput formControlName="Name" />
+      </tui-textfield>
+      @if (fieldError()(form()!.get('Name')); as error) {
+        <span class="mt-1 text-xs text-(--tui-status-negative)">{{ error }}</span>
+      }
+    </label>
+
+    <label tuiLabel class="min-w-0 flex-1">
+      Max Players
+      <tui-textfield iconStart="@tui.users" tuiTextfieldSize="m">
+        <input tuiInputNumber formControlName="MaxPlayers" [min]="2" [max]="32" [step]="1" />
+      </tui-textfield>
+      @if (fieldError()(form()!.get('MaxPlayers')); as error) {
+        <span class="mt-1 text-xs text-(--tui-status-negative)">{{ error }}</span>
+      }
+    </label>
+  </div>
+
+  <label tuiLabel>
+    Ruleset & Description
+    <tui-textfield class="w-full" iconStart="@tui.text" tuiTextfieldSize="m">
+      <textarea
+        placeholder="Describe the rules, bans, or special conditions for this league..."
+        tuiTextarea
+        formControlName="RulesetDescription"
+        [min]="6"
+        [max]="12"
+      ></textarea>
+    </tui-textfield>
+    @if (fieldError()(form()!.get('RulesetDescription')); as error) {
+      <span class="mt-1 text-xs text-(--tui-status-negative)">{{ error }}</span>
+    }
+    @if (showRulesetWarning()) {
+      <span class="mt-1 flex items-center gap-1 text-xs text-(--tui-status-warning)">
+        <tui-icon icon="@tui.circle-alert" />
+        Public leagues are more successful with a ruleset or description. Consider adding one.
+      </span>
+    }
+  </label>
+
+  <div>
+    <label tuiLabel class="mb-2 block">Visibility</label>
+    <div class="flex gap-2">
+      @for (vis of [LeagueVisibility.PRIVATE, LeagueVisibility.PUBLIC]; track vis) {
+        <label [appearance]="form().get('Visibility')!.value === vis ? 'primary' : 'secondary'" tuiBlock class="flex-1">
+          <input tuiBlock="m" type="radio" formControlName="Visibility" [value]="vis" />
+          <span tuiTitle>
+            {{ vis | enumLabel }}
+            <span tuiSubtitle>
+              @if (vis === LeagueVisibility.PRIVATE) {
+                Only invited members can find and join this league.
+              } @else {
+                Anyone can discover and request to join this league.
+              }
+            </span>
+          </span>
+        </label>
+      }
+    </div>
+  </div>
+</div>

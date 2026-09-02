@@ -98,8 +98,8 @@ func TestUserService_UpdateProfileHandler(t *testing.T) {
 	updateReq := requests.UserUpdateProfileRequestDTO{ShowdownName: &showdownName}
 
 	t.Run("Successfully updates user profile", func(t *testing.T) {
-		originalUser := &models.User{ID: userID, ShowdownUsername: "oldshowdown"}
-		updatedUser := &models.User{ID: userID, ShowdownUsername: "newshowdown"}
+		originalUser := &models.User{ID: userID}
+		updatedUser := &models.User{ID: userID, ShowdownUsername: &showdownName}
 
 		mockUserRepo.On("GetUserByID", userID).Return(originalUser, nil).Once()
 		mockUserRepo.On("UpdateUser", updatedUser).Return(updatedUser, nil).Once()
@@ -130,8 +130,8 @@ func TestUserService_UpdateProfileHandler(t *testing.T) {
 	})
 
 	t.Run("Returns ErrInternalService if UpdateUser fails", func(t *testing.T) {
-		originalUser := &models.User{ID: userID, ShowdownUsername: "oldshowdown"}
-		updatedUser := &models.User{ID: userID, ShowdownUsername: "newshowdown"}
+		originalUser := &models.User{ID: userID}
+		updatedUser := &models.User{ID: userID, ShowdownUsername: &showdownName}
 		internalErr := errors.New("db update error")
 
 		mockUserRepo.On("GetUserByID", userID).Return(originalUser, nil).Once()

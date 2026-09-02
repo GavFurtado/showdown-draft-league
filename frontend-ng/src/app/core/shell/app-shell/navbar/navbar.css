@@ -1,0 +1,14 @@
+header[tuiNavigationHeader][tuiNavigationHeader] {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+header[tuiNavigationHeader][tuiNavigationHeader] [tuiNavigationSegments] {
+  min-inline-size: 0;
+}
+
+header[tuiNavigationHeader][tuiNavigationHeader] [tuiNavigationSegments] > * {
+  flex: 0 0 auto;
+}

@@ -1,0 +1,263 @@
+<app-layout variant="container">
+  <section class="mx-auto flex w-full max-w-2xl flex-col gap-6">
+    @if (store.loading()) {
+      <div class="animate-pulse rounded-lg border border-(--tui-border-normal) bg-(--tui-background-base) p-8 shadow">
+        <div class="mb-4 h-6 w-1/3 rounded bg-(--tui-background-elevation-1)"></div>
+        <div class="space-y-3">
+          <div class="h-3 rounded bg-(--tui-background-elevation-1)"></div>
+          <div class="h-3 w-5/6 rounded bg-(--tui-background-elevation-1)"></div>
+          <div class="h-3 w-2/3 rounded bg-(--tui-background-elevation-1)"></div>
+        </div>
+      </div>
+    } @else if (store.loadError(); as err) {
+      <div class="rounded-lg border border-(--tui-border-normal) bg-(--tui-background-base) py-12 text-center shadow">
+        <tui-icon icon="@tui.circle-alert" class="text-6xl text-(--tui-text-negative)" />
+        <h3 class="mt-2 text-sm font-semibold">Could not load this league</h3>
+        <p class="mt-1 text-sm text-(--tui-text-secondary)">{{ err.message }}</p>
+        <p class="mt-4 text-sm text-(--tui-text-secondary)">
+          Check the invite link, or go back to
+          <a routerLink="/my-leagues" class="text-(--tui-text-link) hover:underline">My Leagues</a>.
+        </p>
+      </div>
+    } @else if (league(); as l) {
+      @if (success()) {
+        <div class="flex min-h-[60vh] flex-col items-center justify-center gap-8 pb-16 text-center">
+          <tui-icon
+            icon="@tui.circle-check"
+            class="text-[clamp(5rem,24vw,10rem)]! leading-none text-(--tui-status-positive)"
+          />
+          <h1 class="text-4xl font-bold">
+            {{ isNewlyJoined() ? 'You have successfully joined' : "You're already a member of" }} {{ l.Name }}
+          </h1>
+          <p class="flex items-center gap-2 text-lg text-(--tui-text-secondary)">
+            Redirecting to the league's dashboard in {{ countdown() }}s…
+          </p>
+          <a class="mt-4 inline-block text-base text-(--tui-text-link) hover:underline" routerLink="/my-leagues">
+            Not redirecting? Go to My Leagues
+          </a>
+        </div>
+      } @else if (!joinable()) {
+        <div class="rounded-lg border border-(--tui-border-normal) bg-(--tui-background-base) py-12 text-center shadow">
+          <tui-icon icon="@tui.lock" class="text-6xl text-(--tui-text-secondary)" />
+          <h3 class="mt-2 text-sm font-semibold">This league isn't accepting new members right now</h3>
+          <p class="mt-1 text-sm text-(--tui-text-secondary)">
+            Joining is only possible while the league is in Setup state.
+          </p>
+        </div>
+      } @else if (stage() === 'details') {
+        <div class="join-card">
+          <header class="flex items-start justify-between gap-4">
+            <div>
+              <h1 class="text-3xl font-bold">{{ l.Name }}</h1>
+              @if (owner(); as ownerMember) {
+                <p class="mt-2 text-sm text-(--tui-text-secondary)">
+                  Created by {{ memberLabel(ownerMember) }}
+                  @if (memberMeta(ownerMember); as meta) {
+                    <span class="opacity-75">({{ meta }})</span>
+                  }
+                </p>
+              }
+            </div>
+            <app-status-badge [status]="l.Status" domain="league" size="l" />
+          </header>
+
+          <tui-accordion class="join-accordion" [closeOthers]="true">
+            <button tuiAccordion [tuiAccordion]="true">
+              <tui-icon icon="@tui.info" class="pr-2" />
+              Overview
+            </button>
+            <tui-expand>
+              <p class="px-5 py-4 text-sm">
+                {{ l.RulesetDescription || 'No ruleset or description provided.' }}
+              </p>
+            </tui-expand>
+
+            <button tuiAccordion>
+              <tui-icon icon="@tui.users" class="pr-2" />
+              Players
+            </button>
+            <tui-expand>
+              <div class="flex flex-col divide-y divide-(--tui-border-normal)">
+                <div tuiCell>
+                  <span tuiTitle>Players</span>
+                  <span>{{ l.PlayerCount }} / {{ l.MaxPlayers }}</span>
+                </div>
+                <div tuiCell>
+                  <span tuiTitle>Roster size</span>
+                  <span>{{ l.MinPokemonPerPlayer }}–{{ l.MaxPokemonPerPlayer }} per player</span>
+                </div>
+                <div tuiCell>
+                  <span tuiTitle>Draft points</span>
+                  <span>{{ l.StartingDraftPoints }}</span>
+                </div>
+              </div>
+            </tui-expand>
+
+            <button tuiAccordion>
+              <tui-icon icon="@tui.trophy" class="pr-2" />
+              Season &amp; Format
+            </button>
+            <tui-expand>
+              <div class="flex flex-col divide-y divide-(--tui-border-normal)">
+                <div tuiCell>
+                  <span tuiTitle>Season</span>
+                  <span>{{ l.Format.SeasonType | enumLabel }}</span>
+                </div>
+                <div tuiCell>
+                  <span tuiTitle>Draft order</span>
+                  <span>{{ l.Format.DraftOrderType | enumLabel }}</span>
+                </div>
+                <div tuiCell>
+                  <span tuiTitle>Playoffs</span>
+                  <span>{{ l.Format.PlayoffType | enumLabel }}</span>
+                </div>
+              </div>
+            </tui-expand>
+
+            <button tuiAccordion>
+              <tui-icon icon="@tui.store" class="pr-2" />
+              Transfers
+            </button>
+            <tui-expand>
+              @if (l.Format.AllowTransfers) {
+                <div class="flex flex-col divide-y divide-(--tui-border-normal)">
+                  @if (l.Format.TransferUsesCredits) {
+                    <div tuiCell>
+                      <span tuiTitle>Credit cost</span>
+                      <span>Drop {{ l.Format.DropCost }} · Pickup {{ l.Format.PickupCost }}</span>
+                    </div>
+                    <div tuiCell>
+                      <span tuiTitle>Credit cap</span>
+                      <span>{{ l.Format.TransferCreditCap }}</span>
+                    </div>
+                    <div tuiCell>
+                      <span tuiTitle>Per window</span>
+                      <span>{{ l.Format.TransferCreditsPerWindow }}</span>
+                    </div>
+                  } @else {
+                    <div tuiCell>
+                      <span tuiTitle>Credit cost</span>
+                      <span>Free</span>
+                    </div>
+                  }
+                  <div tuiCell>
+                    <span tuiTitle>Frequency</span>
+                    <span>Every {{ l.Format.TransferWindowFrequencyDays }} days</span>
+                  </div>
+                  <div tuiCell>
+                    <span tuiTitle>Window</span>
+                    <span>{{ l.Format.TransferWindowDuration }} days</span>
+                  </div>
+                  @if (l.Format.NextTransferWindowStart; as next) {
+                    <div tuiCell>
+                      <span tuiTitle>Next window</span>
+                      <span>{{ next | date: 'medium' }}</span>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="px-5 py-4 text-sm">Transfers are not enabled for this league.</p>
+              }
+            </tui-expand>
+
+            <button tuiAccordion>
+              <tui-icon icon="@tui.crown" class="pr-2" />
+              Staff
+            </button>
+            <tui-expand>
+              @if (staff().length) {
+                <div class="flex flex-col divide-y divide-(--tui-border-normal)">
+                  @for (member of staff(); track member.ID) {
+                    <div tuiCell>
+                      <tui-icon
+                        [icon]="member.Role === memberRole.OWNER ? '@tui.crown' : '@tui.shield'"
+                        class="text-[1.25rem]"
+                        [class.text-amber-500]="member.Role === memberRole.OWNER"
+                      />
+                      <span tuiTitle>
+                        {{ memberLabel(member) }}
+                        @if (memberMeta(member); as meta) {
+                          <span tuiSubtitle>{{ meta }}</span>
+                        }
+                      </span>
+                      <span tuiBadge appearance="neutral">{{ member.Role | enumLabel }}</span>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="px-5 py-4 text-sm">No staff yet.</p>
+              }
+            </tui-expand>
+          </tui-accordion>
+
+          <button tuiButton size="l" type="button" (click)="continueToForm()" class="self-end">Continue</button>
+        </div>
+      } @else {
+        @if (full()) {
+          <div class="rounded-md bg-(--tui-status-warning) p-4 text-sm">
+            This league is full ({{ l.PlayerCount }}/{{ l.MaxPlayers }}). You can still try to join, but the
+            commissioner may need to make room.
+          </div>
+        }
+
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="join-card flex flex-col gap-5">
+          <span tuiTitle>
+            Set a name for “{{ l.Name }}”
+            <span tuiSubtitle>Optional. Pick a name to stand out in this league.</span>
+          </span>
+
+          <div
+            class="flex items-start gap-2 rounded-md bg-(--tui-status-info) p-4 text-sm text-(--tui-text-primary)"
+            role="alert"
+          >
+            <tui-icon icon="@tui.info" class="mt-0.5 shrink-0" />
+            <p>Your username will be used if the textboxes are left empty.</p>
+          </div>
+
+          <div class="flex flex-col gap-5">
+            <div class="flex flex-col gap-1">
+              <tui-textfield tuiTextfieldSize="l">
+                <label tuiLabel>In-league name</label>
+                <input
+                  tuiInput
+                  [tuiAutoFocus]
+                  formControlName="InLeagueName"
+                  maxlength="20"
+                  [placeholder]="discordUsername()"
+                />
+                <tui-icon
+                  icon="@tui.user"
+                  tuiTooltip="Optional. Defaults to your Discord username. Visible to other members."
+                />
+              </tui-textfield>
+              @if (fieldError('InLeagueName'); as msg) {
+                <p class="text-xs text-(--tui-text-negative)" role="alert">{{ msg }}</p>
+              }
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <tui-textfield tuiTextfieldSize="l">
+                <label tuiLabel>Team name</label>
+                <input tuiInput formControlName="TeamName" maxlength="20" [placeholder]="teamPlaceholder()" />
+                <tui-icon icon="@tui.shield" tuiTooltip="Optional. Defaults to “{{ discordUsername() }}'s Team”." />
+              </tui-textfield>
+              @if (fieldError('TeamName'); as msg) {
+                <p class="text-xs text-(--tui-text-negative)" role="alert">{{ msg }}</p>
+              }
+            </div>
+          </div>
+
+          @if (store.joinError(); as err) {
+            <div class="rounded-md bg-(--tui-status-negative) p-4 text-sm text-(--tui-text-negative)" role="alert">
+              {{ err.message }}
+            </div>
+          }
+
+          <button tuiButton size="l" type="submit" [disabled]="store.joining()" class="self-end">
+            {{ store.joining() ? 'Joining...' : 'Join League' }}
+          </button>
+        </form>
+      }
+    }
+  </section>
+</app-layout>

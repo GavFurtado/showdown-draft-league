@@ -1,0 +1,97 @@
+<div class="flex flex-col gap-6" [formGroup]="form()">
+  <div>
+    <h2 class="mb-1 text-2xl font-semibold">Draft Setup</h2>
+    <p class="text-sm text-(--tui-text-secondary)">Decide how your draft will play out.</p>
+  </div>
+
+  <div>
+    <label tuiLabel class="mb-2 block">Draft Style</label>
+    <div class="flex gap-2">
+      <label
+        [appearance]="form().get('Format.IsSnakeRoundDraft')!.value === true ? 'primary' : 'secondary'"
+        tuiBlock
+        class="flex-1"
+      >
+        <input
+          tuiBlock="m"
+          type="radio"
+          tuiRadio
+          [formControl]="$any(form().get('Format.IsSnakeRoundDraft'))"
+          [value]="true"
+        />
+        <span tuiTitle>
+          Snake Draft
+          <span tuiSubtitle>Order reverses every round (1-10, 10-1).</span>
+        </span>
+      </label>
+      <label
+        [appearance]="form().get('Format.IsSnakeRoundDraft')!.value === false ? 'primary' : 'secondary'"
+        tuiBlock
+        class="flex-1"
+      >
+        <input
+          tuiBlock="m"
+          type="radio"
+          tuiRadio
+          [formControl]="$any(form().get('Format.IsSnakeRoundDraft'))"
+          [value]="false"
+        />
+        <span tuiTitle>
+          Linear Draft
+          <span tuiSubtitle>Order stays the same every round (1-10, 1-10).</span>
+        </span>
+      </label>
+    </div>
+  </div>
+
+  <div>
+    <label tuiLabel class="mb-2 block">Draft Pick Order</label>
+    <div class="flex gap-2">
+      @for (dot of [LeagueDraftOrderType.RANDOM, LeagueDraftOrderType.MANUAL]; track dot) {
+        <label
+          [appearance]="form().get('Format.DraftOrderType')!.value === dot ? 'primary' : 'secondary'"
+          tuiBlock
+          class="flex-1"
+        >
+          <input
+            tuiBlock="m"
+            type="radio"
+            tuiRadio
+            [formControl]="$any(form().get('Format.DraftOrderType'))"
+            [value]="dot"
+          />
+          <span tuiTitle>
+            {{ dot | enumLabel }}
+            <span tuiSubtitle>
+              @if (dot === LeagueDraftOrderType.MANUAL) {
+                Admin sets the draft order manually.
+              } @else {
+                System randomizes the draft order.
+              }
+            </span>
+          </span>
+        </label>
+      }
+    </div>
+  </div>
+
+  <div>
+    <label tuiLabel class="mb-2 block">Roster Size & Points</label>
+    <div class="flex flex-col gap-4 sm:flex-row">
+      <label tuiLabel class="w-auto! min-w-0 flex-1 flex-col! [font:var(--tui-typography-body-s)]!">
+        Pokémon per Roster
+        <tui-input-range [formControl]="pokemonRange" [min]="0" [max]="20" [step]="1"> Min / Max </tui-input-range>
+        <span tuiSubtitle class="text-xs">Set min to 0 to disable minimum restriction</span>
+      </label>
+      <label tuiLabel class="min-w-0 flex-1">
+        Starting Draft Points
+        <tui-textfield iconStart="@tui.settings-2" tuiTextfieldSize="l">
+          <input tuiInputNumber formControlName="StartingDraftPoints" [min]="0" [max]="9999" [step]="10" />
+        </tui-textfield>
+        @if (fieldError()(form()!.get('StartingDraftPoints')); as error) {
+          <span class="mt-1 text-xs text-(--tui-status-negative)">{{ error }}</span>
+        }
+      </label>
+    </div>
+  </div>
+</div>

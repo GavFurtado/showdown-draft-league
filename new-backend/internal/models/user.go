@@ -12,8 +12,9 @@ type User struct {
 	DiscordID        string    `gorm:"uniqueIndex;not null;column:discord_id" json:"DiscordID"`
 	DiscordUsername  string    `gorm:"not null;column:discord_username" json:"DiscordUsername"`
 	DiscordAvatarURL string    `gorm:"column:discord_avatar_url" json:"DiscordAvatarURL"`
-	ShowdownUsername string    `gorm:"not null; unique;column:showdown_username" json:"ShowdownUsername"`
-	Role             string    `gorm:"default:'user';not null;column:role" json:"Role"` // "user", "admin"
+	// Nullable until the user completes onboarding; NULL is allowed by the unique index.
+	ShowdownUsername *string `gorm:"unique;column:showdown_username" json:"ShowdownUsername"`
+	Role             string  `gorm:"default:'user';not null;column:role" json:"Role"` // "user", "admin"
 
 	CreatedAt time.Time      `gorm:"column:created_at" json:"CreatedAt"`
 	UpdatedAt time.Time      `gorm:"column:updated_at" json:"UpdatedAt"`

@@ -14,6 +14,10 @@ import (
 	"gorm.io/gorm"
 )
 
+// TODO: This needs refinement. Needs to be cleaner somehow
+// In addition, leagues/:leagueId/members/join is not a protected route yet is under that section
+// Clean that up as well.
+
 func RegisterRoutes(
 	r *gin.Engine,
 	db *gorm.DB,
@@ -54,6 +58,19 @@ func RegisterRoutes(
 		authGroup.GET("/discord/login", controllers.AuthController.Login)
 		authGroup.GET("/discord/callback", controllers.AuthController.DiscordCallback)
 		authGroup.POST("/logout", controllers.AuthController.Logout)
+	}
+
+	// ---- Dev-Only Impersonation Routes ---
+	// Bypass Discord OAuth entirely: mint real JWTs for any user, fabricate
+	// test users and league memberships. NEVER exposed outside dev.
+	if cfg.ENVIRONMENT == "dev" {
+		devAuth := r.Group("/auth/dev")
+		{
+			devAuth.GET("/users", controllers.DevAuthController.ListUsers)
+			devAuth.POST("/users", controllers.DevAuthController.CreateUser)
+			devAuth.POST("/login", controllers.DevAuthController.Impersonate)
+			devAuth.POST("/memberships", controllers.DevAuthController.UpsertMembership)
+		}
 	}
 
 	// --- Protected Routes ---
@@ -198,7 +215,6 @@ func RegisterRoutes(
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadMember),
 					controllers.LeagueMemberController.GetByLeague)
 				leagueMembers.POST("/join",
-					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionCreateMember),
 					controllers.LeagueMemberController.JoinLeague)
 			}
 
@@ -270,6 +286,7 @@ func RegisterRoutes(
 }
 
 // this is temporary
+
 func HomeHandler(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "Welcome to Pokemon Showdown Draft League!"})
 }

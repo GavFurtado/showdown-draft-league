@@ -11,6 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// TODO: why is this not an interface like the other controllers
+
 type UserController struct {
 	logger      *slog.Logger
 	userService services.UserService

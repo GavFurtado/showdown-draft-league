@@ -1,0 +1,80 @@
+@if (user(); as currentUser) {
+  <button tuiButton appearance="flat" size="s" tuiChevron type="button" [tuiDropdown]="menu" [(tuiDropdownOpen)]="open">
+    <span class="text-sm text-(--tui-text-primary)">{{ currentUser.DiscordUsername }}</span>
+    @if (currentUser.DiscordAvatarURL) {
+      <img [src]="currentUser.DiscordAvatarURL" alt="Avatar" class="ml-2 h-8 w-8 rounded-full" />
+    } @else {
+      <tui-icon icon="@tui.circle-user-round" class="ml-2 h-8 w-8 text-2xl!" />
+    }
+  </button>
+}
+
+<ng-template #menu>
+  <div class="flex w-80 flex-col p-0">
+    <div class="flex items-center gap-3 border-b border-(--tui-border-normal) px-4 py-3">
+      @if (user()?.DiscordAvatarURL; as avatar) {
+        <img [src]="avatar" alt="Avatar" class="h-10 w-10 rounded-full" />
+      } @else {
+        <tui-icon icon="@tui.circle-user-round" class="h-10 w-10" />
+      }
+      <div class="min-w-0 flex-1">
+        <div class="truncate text-sm font-semibold text-(--tui-text-primary)">{{ user()?.DiscordUsername }}</div>
+        <div class="truncate text-xs text-(--tui-text-secondary)">
+          {{ user()?.ShowdownUsername || 'No Showdown username' }}
+        </div>
+      </div>
+      <button tuiButton appearance="flat" size="s" type="button" iconStart="@tui.log-out" (click)="logout()">
+        Log out
+      </button>
+    </div>
+
+    <div class="flex flex-col gap-3 p-4">
+      <div>
+        <div class="mb-2 text-xs font-semibold tracking-wide text-(--tui-text-secondary) uppercase">Account</div>
+
+        @if (saved()) {
+          <div class="mb-2 rounded-md bg-(--tui-status-positive) p-3 text-sm" role="status">Saved</div>
+        }
+
+        <tui-textfield tuiTextfieldSize="m">
+          <label tuiLabel>Showdown username</label>
+          <input
+            tuiInput
+            [placeholder]="user()?.ShowdownUsername ?? 'Optional'"
+            [ngModel]="username()"
+            (ngModelChange)="username.set($event)"
+          />
+          <tui-icon icon="@tui.user" tuiTooltip="Optional. Shown to league members." />
+        </tui-textfield>
+
+        @if (error(); as err) {
+          <p class="mt-1 text-xs text-(--tui-status-negative)" role="alert">{{ err }}</p>
+        }
+
+        <div class="mt-2 flex items-center gap-2">
+          <button tuiButton appearance="flat" type="button" [disabled]="saving()" (click)="save()" class="flex-1">
+            {{ saving() ? 'Saving...' : 'Save' }}
+          </button>
+          @if (user()?.ShowdownUsername) {
+            <button tuiButton type="button" appearance="flat" [disabled]="saving()" (click)="clear()">Clear</button>
+          }
+        </div>
+      </div>
+
+      <div class="border-t border-(--tui-border-normal) pt-3">
+        <div class="mr-4 ml-4 flex items-center gap-3">
+          <button
+            tuiButton
+            appearance="secondary"
+            size="m"
+            type="button"
+            (click)="toggleTheme()"
+            aria-label="Toggle theme"
+          >
+            <tui-icon [icon]="theme() ? '@tui.moon' : '@tui.sun'" />
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-template>

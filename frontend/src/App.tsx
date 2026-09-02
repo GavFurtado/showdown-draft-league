@@ -6,6 +6,7 @@ import { LeagueProvider } from './context/LeagueContext';
 import { UserProvider } from './context/UserContext';
 import Dashboard from './pages/Dashboard';
 import Login from "./pages/Login";
+import Callback from "./pages/Callback";
 import Draftboard from './pages/Draftboard';
 import TeamSheets from './pages/Teamsheets';
 import DraftHistory from './pages/DraftHistory';
@@ -21,6 +22,7 @@ function App() {
                 {/* --- Public routes --- */}
                 <Route path='/' element={<Login />} /> {/* placeholder */}
                 <Route path='/login' element={<Login />} />
+                <Route path='/callback' element={<Callback />} />
                 <Route path='/faq' element={<Login />} /> {/* placeholder */}
 
                 {/* --- Protected Global Routes (user must be logged in) --- */}

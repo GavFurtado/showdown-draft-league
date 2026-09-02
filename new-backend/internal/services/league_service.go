@@ -76,7 +76,7 @@ func (s *leagueServiceImpl) SetTransferService(transferService TransferService) 
 
 // CreateLeague handles the business logic for creating a new league.
 func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.LeagueCreateRequestDTO) (*models.League, error) {
-	const maxLeaguesCommisionable = 2
+	const maxLeaguesCommisionable = 20
 	const maxGroupsAllowed = 2
 
 	// check if user already has two owned leagues
@@ -92,6 +92,10 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.Leagu
 
 	if input.Format.GroupCount > maxGroupsAllowed {
 		return nil, types.ErrExceedsMaxAllowableGroupCount
+	}
+
+	if input.Format.GroupCount < 1 {
+		return nil, fmt.Errorf("%w: GroupCount must be at least 1", types.ErrInvalidLeagueConfiguration)
 	}
 
 	if input.Format.AllowTransfers && input.Format.TransferWindowFrequencyDays%7 != 0 {
@@ -137,6 +141,7 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.Leagu
 		GroupNumber:  1,
 		Role:         rbac.MRoleOwner,
 	}
+	league.PlayerCount = 1
 
 	_, err = s.memberRepo.Create(owner)
 	if err != nil {

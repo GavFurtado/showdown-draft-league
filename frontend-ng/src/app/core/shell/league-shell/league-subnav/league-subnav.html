@@ -1,0 +1,26 @@
+<nav class="border-b border-(--tui-border-normal) px-4">
+  <tui-tabs-with-more [underline]="false">
+    @for (tab of tabs; track tab.segment) {
+      <a
+        *tuiItem
+        tuiTab
+        routerLinkActive="active"
+        [routerLink]="['/leagues', leagueId(), tab.segment]"
+        [queryParamsHandling]="'merge'"
+      >
+        {{ tab.label }}
+      </a>
+    }
+    @if (isStaff()) {
+      <a
+        *tuiItem
+        tuiTab
+        routerLinkActive="active"
+        [routerLink]="['/leagues', leagueId(), 'admin']"
+        [queryParamsHandling]="'merge'"
+      >
+        Admin
+      </a>
+    }
+  </tui-tabs-with-more>
+</nav>

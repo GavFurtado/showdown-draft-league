@@ -9,7 +9,7 @@ type LeagueFormatRequestDTO struct {
 	IsSnakeRoundDraft           bool                           `json:"IsSnakeRoundDraft"`
 	DraftOrderType              enums.DraftOrderType           `json:"DraftOrderType" validate:"isValid"`
 	SeasonType                  enums.LeagueSeasonType         `json:"SeasonType" validate:"isValid"`
-	GroupCount                  int                            `json:"GroupCount"`
+	GroupCount                  int                            `json:"GroupCount" validate:"gte=1,lte=2"`
 	PlayoffType                 enums.LeaguePlayoffType        `json:"PlayoffType" validate:"isValid"`
 	PlayoffParticipantCount     int                            `json:"PlayoffParticipantCount"`
 	PlayoffByesCount            int                            `json:"PlayoffByesCount"`

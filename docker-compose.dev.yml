@@ -1,0 +1,43 @@
+services:
+  frontend:
+    build:
+      context: ./frontend-ng
+      target: dev
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./frontend-ng:/app
+      - frontend-node-modules:/app/node_modules
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - dev
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./new-backend
+      dockerfile: Dockerfile
+      target: dev
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - dev
+    volumes:
+      - ./new-backend:/app
+      - go-mod-cache:/go/pkg/mod
+    env_file:
+      - ./new-backend/.env
+    environment:
+      - TZ=Asia/Kolkata
+      - GIN_MODE=debug
+
+volumes:
+  frontend-node-modules:
+  go-mod-cache:
+
+networks:
+  dev:

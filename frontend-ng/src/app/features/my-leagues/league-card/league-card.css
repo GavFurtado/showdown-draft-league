@@ -1,0 +1,27 @@
+:host {
+  display: block;
+}
+
+section[tuiCardLarge] {
+  transition:
+    box-shadow 0.2s,
+    transform 0.2s;
+}
+
+section[tuiCardLarge]:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Proportional fr distribution: Players / Week / Points each get 1 share,
+   Season gets 2 so its longer values wrap only under real pressure.
+   Everything spreads evenly across the card instead of Season hoarding
+   all leftover space (which shoved Week+Points to the far edge).
+   (.stat-row[tuiCardRow] out-specifies Taiga's un-layered [tuiCardRow]
+   flex rule with its fixed 3rem gaps.) */
+.stat-row[tuiCardRow] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+}

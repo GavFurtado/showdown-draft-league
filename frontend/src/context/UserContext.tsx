@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { User, DiscordUser } from '../api/data_interfaces';
-import { getMyDiscordDetails, logout as apiLogout, getMyProfile } from '../api/api';
+import { getMyDiscordDetails, logout as apiLogout, getMyProfile, TOKEN_KEY } from '../api/api';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -53,11 +53,13 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     const handleLogout = useCallback(async () => {
         try {
             await apiLogout();
+        } catch (error) {
+            console.error('Logout failed: ', error);
+        } finally {
+            localStorage.removeItem(TOKEN_KEY);
             setUser(null);
             setDiscordUser(null);
             navigate("/login");
-        } catch (error) {
-            console.error('Logout failed: ', error);
         }
     }, [navigate]);
 

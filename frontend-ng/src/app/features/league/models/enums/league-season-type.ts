@@ -1,0 +1,5 @@
+export enum LeagueSeasonType {
+  ROUND_ROBIN_ONLY = 'ROUND_ROBIN_ONLY',
+  BRACKET_ONLY = 'BRACKET_ONLY',
+  HYBRID = 'HYBRID',
+}

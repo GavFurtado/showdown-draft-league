@@ -2248,7 +2248,7 @@ const docTemplate = `{
         },
         "/api/users/me/leagues": {
             "get": {
-                "description": "Leagues you're a member of",
+                "description": "Leagues the user a member of",
                 "tags": [
                     "Users"
                 ],
@@ -2280,7 +2280,7 @@ const docTemplate = `{
         },
         "/api/users/profile": {
             "put": {
-                "description": "Update your profile info",
+                "description": "Update the user's profile info",
                 "consumes": [
                     "application/json"
                 ],

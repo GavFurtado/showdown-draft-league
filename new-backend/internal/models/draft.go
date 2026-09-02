@@ -34,7 +34,7 @@ type Draft struct {
 	CurrentTurnMember *LeagueMember `gorm:"foreignKey:current_turn_player_id;references:id" json:"CurrentTurnMember,omitempty"`
 }
 
-// PlayerAccumulatedPicks is a custom type for storing a map of player IDs to their accumulated pick numbers.
+// PlayerAccumulatedPicks stores a map of player IDs to their accumulated pick numbers.
 type PlayerAccumulatedPicks map[uuid.UUID][]int
 
 // Value implements the driver.Valuer interface for PlayerAccumulatedPicks.

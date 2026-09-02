@@ -3,11 +3,19 @@ import { LeagueCreateRequest, UpdatePlayerInfoRequest, UpdateUserProfileRequest,
 import { DiscordUser, Draft, League, LeaguePokemon, Player, PokemonSpecies, User } from './data_interfaces';
 import { ApiSuccessResponse, GetGameByIdResponse, GetGamesResponse } from './response_interfaces';
 
-export const API_BASE_URL = 'http://localhost:8080'; // temp; make this an env var
+export const API_BASE_URL = 'http://localhost:8080'; // used for full-page redirects only (e.g. Discord login)
+export const TOKEN_KEY = 'jwt_token';
 
 const api = axios.create({
-    baseURL: API_BASE_URL,
     withCredentials: true
+});
+
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (token && config.url?.includes('/api/')) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
 });
 
 // --- Public Routes -- -

@@ -14,7 +14,10 @@ import (
 	"gorm.io/gorm"
 )
 
-// defines the interface for user-related business logic.
+// TODO: remove the Handler suffix we have here for the functions
+// handlers in go conventions are generally controller
+
+// UserService defines the interface for user-related business logic.
 type UserService interface {
 	GetMyProfileHandler(userID uuid.UUID) (*models.User, error)
 	GetMyDiscordDetailsHandler(userID uuid.UUID) (*responses.DiscordUserResponse, error)
@@ -81,7 +84,7 @@ func (s *userServiceImpl) UpdateProfileHandler(userID uuid.UUID, input requests.
 	}
 
 	if input.ShowdownName != nil {
-		user.ShowdownUsername = *input.ShowdownName
+		user.ShowdownUsername = input.ShowdownName
 	}
 
 	updatedUser, err := s.userRepo.UpdateUser(user)

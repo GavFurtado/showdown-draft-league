@@ -1,0 +1,48 @@
+<button
+  tuiButton
+  type="button"
+  appearance="outline"
+  size="s"
+  class="min-w-48 justify-between gap-2"
+  [tuiDropdown]="menu"
+  [tuiDropdownOpen]="open"
+  (tuiDropdownOpenChange)="open = $event"
+>
+  @if (currentLeague(); as league) {
+    <span class="flex flex-col items-start leading-tight">
+      <span>{{ league.Name }}</span>
+    </span>
+  } @else {
+    <span>Select League</span>
+  }
+  <tui-icon icon="@tui.chevron-down" />
+</button>
+
+<ng-template #menu>
+  <tui-data-list>
+    @if (store.loading()) {
+      <span tuiOption disabled>Loading leagues...</span>
+    } @else if (store.error()) {
+      <span tuiOption disabled>Couldn't load leagues</span>
+    } @else if (store.leagues().length === 0) {
+      <span tuiOption disabled>No leagues found</span>
+    } @else {
+      @for (league of store.leagues(); track league.ID) {
+        <button tuiOption type="button" class="justify-between" (click)="goTo(league.ID)">
+          <span class="min-w-0 truncate">{{ league.Name }}</span>
+          @if (league.ID === currentLeagueId()) {
+            <tui-icon icon="@tui.check" />
+          }
+        </button>
+      }
+      <a
+        tuiOption
+        class="dropdown-footer"
+        routerLink="/my-leagues"
+        (click)="open = false"
+      >
+        View All My Leagues
+      </a>
+    }
+  </tui-data-list>
+</ng-template>
