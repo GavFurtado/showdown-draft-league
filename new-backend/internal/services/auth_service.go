@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -16,6 +17,7 @@ import (
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/utils"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
+	"gorm.io/gorm"
 )
 
 // AuthService defines the interface for authentication-related business logic.
@@ -50,7 +52,7 @@ func NewAuthService(
 	}
 }
 
-// encapsulates the business logic for Discord OAuth callback.
+// HandleDiscordCallback encapsulates the business logic for Discord OAuth callback.
 func (s *authServiceImpl) HandleDiscordCallback(ctx context.Context, code string) (*models.User, string, error) {
 	// Exchange the authorization code for an access token using the injected config
 	token, err := s.discordOauthConfig.Exchange(ctx, code)
@@ -65,11 +67,12 @@ func (s *authServiceImpl) HandleDiscordCallback(ctx context.Context, code string
 
 	user, err := s.userRepo.GetUserByDiscordID(discordUser.ID)
 	if err != nil {
-		if err.Error() == "record not found" {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			s.logger.Info("creating new user for Discord ID", "discord_id", discordUser.ID)
 			newUser := models.User{
-				DiscordID:        discordUser.ID,
-				DiscordUsername:  fmt.Sprintf("%s#%s", discordUser.Username, discordUser.Discriminator), // Combine if discriminator still exists for old users
+				DiscordID: discordUser.ID,
+				// Combine if discriminator still exists for old users
+				DiscordUsername:  fmt.Sprintf("%s#%s", discordUser.Username, discordUser.Discriminator),
 				DiscordAvatarURL: getDiscordAvatarURL(discordUser.ID, discordUser.Avatar),
 				CreatedAt:        time.Now(),
 				UpdatedAt:        time.Now(),

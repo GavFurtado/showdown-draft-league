@@ -141,7 +141,6 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.Leagu
 		GroupNumber:  1,
 		Role:         rbac.MRoleOwner,
 	}
-	league.PlayerCount = 1
 
 	_, err = s.memberRepo.Create(owner)
 	if err != nil {
@@ -149,10 +148,18 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.Leagu
 		return nil, fmt.Errorf("failed to create league owner: %w", err)
 	}
 
-	return createdLeague, nil
+	// This is the right way to do it but it's two db requests
+	createdLeague.PlayerCount = 1
+	updatedLeague, err := s.leagueRepo.UpdateLeague(league)
+	if err != nil {
+		s.logger.Error("CreateLeague - failed to update league", "user_id", userID, "error", err)
+		return nil, fmt.Errorf("failed to update league: %w", err)
+	}
+
+	return updatedLeague, nil
 }
 
-// Get league entity using leagueID
+// GetLeagueByIDForUser Get league entity using leagueID
 func (s *leagueServiceImpl) GetLeagueByIDForUser(userID, leagueID uuid.UUID) (*models.League, error) {
 	// User in league checks done at middleware
 
@@ -166,7 +173,7 @@ func (s *leagueServiceImpl) GetLeagueByIDForUser(userID, leagueID uuid.UUID) (*m
 	return league, nil
 }
 
-// gets all Leagues where userID is the owner
+// GetLeaguesByCommissioner gets all Leagues where userID is the owner
 func (s *leagueServiceImpl) GetLeaguesByCommissioner(
 	userID uuid.UUID,
 	currentUser *models.User,
