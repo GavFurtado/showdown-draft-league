@@ -77,8 +77,16 @@ export const LeagueProvider = ({ children }: LeagueProviderProps) => {
 
             let playerInCurrentLeague: Player | null = null;
             if (discordUser?.ID) { // Use discordUser from UserContext
-                const playerResponse = await getPlayerByUserIdAndLeagueId(leagueId, discordUser.ID);
-                playerInCurrentLeague = playerResponse.data;
+                try {
+                    const playerResponse = await getPlayerByUserIdAndLeagueId(leagueId, discordUser.ID);
+                    playerInCurrentLeague = playerResponse.data;
+                } catch (playerErr) {
+                    if (axios.isAxiosError(playerErr) && playerErr.response?.status === 404) {
+                        console.info("No player found for this user in this league, continuing without player.");
+                    } else {
+                        console.error("LeagueProvider: Error fetching player data:", playerErr);
+                    }
+                }
             }
 
             let currentDraftWithPlayer = draftData;
