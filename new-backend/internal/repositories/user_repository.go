@@ -21,10 +21,12 @@ type userRepositoryImpl struct {
 	db *gorm.DB
 }
 
+// NewUserRepository creates a new userRepositoryImpl struct
 func NewUserRepository(db *gorm.DB) *userRepositoryImpl {
 	return &userRepositoryImpl{db: db}
 }
 
+// CreateUser creates a new user
 func (r *userRepositoryImpl) CreateUser(user *models.User) (*models.User, error) {
 	err := r.db.Create(user).Error
 	if err != nil {
@@ -33,18 +35,20 @@ func (r *userRepositoryImpl) CreateUser(user *models.User) (*models.User, error)
 	return user, err
 }
 
-// retrieves user by internal user id
+// GetUserByID retrieves user by internal user id
 func (r *userRepositoryImpl) GetUserByID(id uuid.UUID) (*models.User, error) {
 	var user models.User
 
-	err := r.db.First(&user, "id = ?", id).Error
+	err := r.db.
+		Preload("Members").
+		First(&user, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
 	return &user, err
 }
 
-// retrieves a user by their Discord ID
+// GetUserByDiscordID retrieves a user by their Discord ID
 func (r *userRepositoryImpl) GetUserByDiscordID(discordID string) (*models.User, error) {
 	var user models.User
 	err := r.db.Where("discord_id = ?", discordID).First(&user).Error
@@ -54,6 +58,8 @@ func (r *userRepositoryImpl) GetUserByDiscordID(discordID string) (*models.User,
 	return &user, nil
 }
 
+// UpdateUser updates a User
+// Mold Breaker breaks the mold ahh
 func (r *userRepositoryImpl) UpdateUser(user *models.User) (*models.User, error) {
 	err := r.db.Save(&user).Error
 	if err != nil {
@@ -62,7 +68,7 @@ func (r *userRepositoryImpl) UpdateUser(user *models.User) (*models.User, error)
 	return user, nil
 }
 
-// fetches all Leagues that a specific user is a player in.
+// GetUserLeagues fetches all Leagues that a specific user is a player in.
 func (r *userRepositoryImpl) GetUserLeagues(userID uuid.UUID) ([]*models.League, error) {
 	var user models.User
 
@@ -88,7 +94,7 @@ func (r *userRepositoryImpl) GetUserLeagues(userID uuid.UUID) ([]*models.League,
 	return leagues, nil
 }
 
-// fetches all users (dev tooling / admin listing).
+// GetAllUsers fetches all users (dev tooling / admin listing).
 func (r *userRepositoryImpl) GetAllUsers() ([]models.User, error) {
 	var users []models.User
 	err := r.db.Order("created_at ASC").Find(&users).Error

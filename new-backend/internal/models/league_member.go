@@ -9,6 +9,11 @@ import (
 )
 
 // TODO: A lot more of these fields will have to become nullable since they don't apply to spectators
+//  ^ Update (03/09/26): This was a terrible idea. We should have stuck with Player and have Spectator be a completely
+// different entity. If most fields are nullable for spectators, maybe they should be a different entity.
+// Seriously. What was I thinking?
+
+// LeagueMember is the entity of a User within a League
 type LeagueMember struct {
 	ID              uuid.UUID       `gorm:"type:uuid;primaryKey;default:gen_random_uuid();column:id" json:"ID"`
 	UserID          uuid.UUID       `gorm:"type:uuid;not null;column:user_id" json:"UserID"`
@@ -31,6 +36,7 @@ type LeagueMember struct {
 	// Relationships
 	User   *User   `gorm:"foreignKey:user_id;references:id" json:"User,omitempty"`
 	League *League `gorm:"foreignKey:league_id;references:id" json:"League,omitempty"`
+	Claims []Claim `gorm:"foreignKey:player_id;references:id" json:"Claims,omitempty"`
 }
 
 // IsLeagueOwner checks if the member has the LeagueOwner role.
