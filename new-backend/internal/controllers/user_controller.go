@@ -42,7 +42,7 @@ func (ctrl *UserController) GetMyProfile(ctx *gin.Context) {
 		return
 	}
 
-	user, err := ctrl.userService.GetMyProfileHandler(currentUser.ID)
+	user, err := ctrl.userService.GetMyProfile(currentUser.ID)
 	if err != nil {
 		ctrl.logger.Error("Service failed", "error", err, "method", "GetMyProfile")
 		if err.Error() == "user not found" {
@@ -73,7 +73,7 @@ func (ctrl *UserController) GetMyDiscordDetails(ctx *gin.Context) {
 		return
 	}
 
-	discordDetails, err := ctrl.userService.GetMyDiscordDetailsHandler(currentUser.ID)
+	discordDetails, err := ctrl.userService.GetMyDiscordDetails(currentUser.ID)
 	if err != nil {
 		ctrl.logger.Error("Service failed", "error", err, "method", "GetMyDiscordDetails")
 		if err.Error() == "user not found" {
@@ -113,7 +113,7 @@ func (ctrl *UserController) UpdateProfile(ctx *gin.Context) {
 		return
 	}
 
-	updatedUser, err := ctrl.userService.UpdateProfileHandler(currentUser.ID, req)
+	updatedUser, err := ctrl.userService.UpdateProfile(currentUser.ID, req)
 	if err != nil {
 		ctrl.logger.Error("Service failed", "error", err, "method", "UpdateProfile")
 		sendError(ctx, http.StatusInternalServerError, "Failed to update profile")
@@ -140,7 +140,7 @@ func (ctrl *UserController) GetMyLeagues(ctx *gin.Context) {
 		return
 	}
 
-	leagues, err := ctrl.userService.GetMyLeaguesHandler(currentUser.ID)
+	leagues, err := ctrl.userService.GetMyLeagues(currentUser.ID)
 	if err != nil {
 		ctrl.logger.Error("Service failed", "error", err, "method", "GetMyLeagues")
 		sendError(ctx, http.StatusInternalServerError, "Internal Server Error")
