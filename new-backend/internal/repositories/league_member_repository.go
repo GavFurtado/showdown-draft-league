@@ -186,6 +186,7 @@ func (r *leagueMemberRepositoryImpl) GetWithFullRoster(memberID uuid.UUID) (*mod
 	var member models.LeagueMember
 	err := r.db.Preload("User").
 		Preload("League").
+		Preload("Claims").
 		First(&member, "id = ?", memberID).Error
 	if err != nil {
 		return nil, fmt.Errorf("(Error: LeagueMemberRepo.GetWithFullRoster) - failed: %w", err)

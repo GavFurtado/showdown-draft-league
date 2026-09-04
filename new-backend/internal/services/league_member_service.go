@@ -121,6 +121,11 @@ func (s *leagueMemberServiceImpl) Create(currentUser *models.User, input *reques
 		return nil, types.ErrInvalidState
 	}
 
+	if league.MaxPlayers > 0 && league.PlayerCount >= league.MaxPlayers {
+		s.logger.Warn("Create - league is full", "league_id", input.LeagueID, "player_count", league.PlayerCount, "max_players", league.MaxPlayers)
+		return nil, types.ErrLeagueFull
+	}
+
 	user, err := s.userRepo.GetUserByID(input.UserID)
 	if err != nil {
 		s.logger.Error("Create - failed to fetch user", "user_id", input.UserID, "error", err)

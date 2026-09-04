@@ -50,7 +50,7 @@ func main() {
 	corsConfig.AllowOrigins = []string{cfg.APP_BASE_URL}
 	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"}
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
-	corsConfig.ExposeHeaders = []string{"Content-Length"}
+	corsConfig.ExposeHeaders = []string{"Content-Length", "X-Request-ID"}
 	corsConfig.AllowCredentials = true
 	corsConfig.MaxAge = 12 * time.Hour
 

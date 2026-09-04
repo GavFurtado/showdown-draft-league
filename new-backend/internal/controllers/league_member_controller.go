@@ -134,7 +134,7 @@ func (c *leagueMemberControllerImpl) GetByLeague(ctx *gin.Context) {
 //
 //	@Summary		Get members by user
 //	@Description	All league memberships for a user
-//	@Tags			League Members
+//	@Tags			Users
 //	@Produce		json
 //	@Param			id	path		string	true	"User ID"
 //	@Success		200	{array}		models.LeagueMember
@@ -237,7 +237,7 @@ func (c *leagueMemberControllerImpl) JoinLeague(ctx *gin.Context) {
 		switch err {
 		case types.ErrUserNotFound:
 			sendError(ctx, http.StatusNotFound, err.Error())
-		case types.ErrUserAlreadyInLeague, types.ErrInLeagueNameTaken, types.ErrTeamNameTaken:
+		case types.ErrUserAlreadyInLeague, types.ErrInLeagueNameTaken, types.ErrTeamNameTaken, types.ErrLeagueFull:
 			sendError(ctx, http.StatusConflict, err.Error())
 		case types.ErrInternalService, types.ErrFailedToCreatePlayer:
 			sendError(ctx, http.StatusInternalServerError, err.Error())

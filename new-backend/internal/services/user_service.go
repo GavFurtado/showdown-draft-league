@@ -19,10 +19,10 @@ import (
 
 // UserService defines the interface for user-related business logic.
 type UserService interface {
-	GetMyProfileHandler(userID uuid.UUID) (*models.User, error)
-	GetMyDiscordDetailsHandler(userID uuid.UUID) (*responses.DiscordUserResponse, error)
-	UpdateProfileHandler(userID uuid.UUID, req requests.UserUpdateProfileRequestDTO) (*models.User, error)
-	GetMyLeaguesHandler(userID uuid.UUID) ([]*models.League, error)
+	GetMyProfile(userID uuid.UUID) (*models.User, error)
+	GetMyDiscordDetails(userID uuid.UUID) (*responses.DiscordUserResponse, error)
+	UpdateProfile(userID uuid.UUID, req requests.UserUpdateProfileRequestDTO) (*models.User, error)
+	GetMyLeagues(userID uuid.UUID) ([]*models.League, error)
 }
 
 type userServiceImpl struct {
@@ -38,7 +38,7 @@ func NewUserService(logger *slog.Logger, userRepo repositories.UserRepository) U
 }
 
 // retrieves the full user profile.
-func (s *userServiceImpl) GetMyProfileHandler(userID uuid.UUID) (*models.User, error) {
+func (s *userServiceImpl) GetMyProfile(userID uuid.UUID) (*models.User, error) {
 	user, err := s.userRepo.GetUserByID(userID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -51,7 +51,7 @@ func (s *userServiceImpl) GetMyProfileHandler(userID uuid.UUID) (*models.User, e
 }
 
 // retrieves formatted Discord-specific user details.
-func (s *userServiceImpl) GetMyDiscordDetailsHandler(userID uuid.UUID) (*responses.DiscordUserResponse, error) {
+func (s *userServiceImpl) GetMyDiscordDetails(userID uuid.UUID) (*responses.DiscordUserResponse, error) {
 	user, err := s.userRepo.GetUserByID(userID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -71,7 +71,7 @@ func (s *userServiceImpl) GetMyDiscordDetailsHandler(userID uuid.UUID) (*respons
 }
 
 // updates profile with request fields
-func (s *userServiceImpl) UpdateProfileHandler(userID uuid.UUID, input requests.UserUpdateProfileRequestDTO) (*models.User, error) {
+func (s *userServiceImpl) UpdateProfile(userID uuid.UUID, input requests.UserUpdateProfileRequestDTO) (*models.User, error) {
 	s.logger.Info("UpdateProfileHandler called", "user_id", userID, "request", input)
 
 	user, err := s.userRepo.GetUserByID(userID)
@@ -96,7 +96,7 @@ func (s *userServiceImpl) UpdateProfileHandler(userID uuid.UUID, input requests.
 	return updatedUser, nil
 }
 
-func (s *userServiceImpl) GetMyLeaguesHandler(userID uuid.UUID) ([]*models.League, error) {
+func (s *userServiceImpl) GetMyLeagues(userID uuid.UUID) ([]*models.League, error) {
 	s.logger.Info("GetMyLeaguesHandler called", "user_id", userID)
 
 	leagues, err := s.userRepo.GetUserLeagues(userID)

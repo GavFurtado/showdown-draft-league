@@ -21,6 +21,7 @@ var (
 	ErrInLeagueNameTaken    = errors.New("the in-league name is already taken in this league")
 	ErrTeamNameTaken        = errors.New("the team name is already taken in this league")
 	ErrFailedToCreatePlayer = errors.New("failed to add player to league")
+	ErrLeagueFull           = errors.New("league has reached its maximum player capacity")
 
 	// Authorization errors
 	ErrUnauthorized           = errors.New("unauthorized: you do not have permission to perform this action")

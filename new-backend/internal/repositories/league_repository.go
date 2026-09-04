@@ -29,7 +29,7 @@ type LeagueRepository interface {
 	// updates a league (name, start_date, ruleset_id, status, max_pokemon_per_player, free_agents)
 	UpdateLeague(league *models.League) (*models.League, error)
 	// soft deletes a league and all associated data
-	DeleteLeague(leagueId uuid.UUID) error
+	DeleteLeague(leagueID uuid.UUID) error
 	// Public helper to check if a user's player is the owner
 	IsUserOwner(userID, leagueID uuid.UUID) (bool, error)
 	// gets the current status of a league

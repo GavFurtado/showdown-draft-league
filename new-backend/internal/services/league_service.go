@@ -109,7 +109,12 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.Leagu
 		newPlayerGroupNumber = 2
 	}
 
+	// Create the league's ID here so we can defer league creation to after the ownerPlayer is created
+	// whilst still having the league ID available to us, to set for the player
+	leagueID := uuid.New()
+
 	league := &models.League{
+		ID:                   leagueID,
 		Name:                 input.Name,
 		OwnerUserID:          userID,
 		RulesetDescription:   input.RulesetDescription,
@@ -120,39 +125,46 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.Leagu
 		Format:               input.Format.ToLeagueFormatPtr(),
 		Visibility:           input.Visibility,
 		MaxPlayers:           input.MaxPlayers,
+		PlayerCount:          0,
 	}
 	league.StartDate = time.Now()
 
+	// Defer league creation, to avoid the extra DB update for PlayerCount update
+
+	// Create ownerPlayer
+	inLeagueName := "League Owner"
+	teamName := fmt.Sprintf("%s's Team", input.Name)
+
+	ownerPlayer := &models.LeagueMember{
+		UserID:       userID,
+		LeagueID:     leagueID,
+		InLeagueName: &inLeagueName,
+		TeamName:     &teamName,
+		DraftPoints:  int(league.StartingDraftPoints),
+		GroupNumber:  1,
+		Role:         rbac.MRoleOwner,
+	}
+
+	_, err = s.memberRepo.Create(ownerPlayer)
+	if err != nil {
+		s.logger.Error("CreateLeague - failed to create owner", "league_id", leagueID, "error", err)
+		return nil, fmt.Errorf("failed to create league owner: %w", err)
+	}
+
+	// Update PlayerCount now that the ownerPlayer was successful
+	league.PlayerCount = 1
+
+	// Persist league
 	createdLeague, err := s.leagueRepo.CreateLeague(league)
 	if err != nil {
 		s.logger.Error("CreateLeague - failed to create league", "user_id", userID, "error", err)
 		return nil, fmt.Errorf("failed to create league: %w", err)
 	}
 
-	inLeagueName := "League Owner"
-	teamName := fmt.Sprintf("%s's Team", input.Name)
-
-	owner := &models.LeagueMember{
-		UserID:       userID,
-		LeagueID:     createdLeague.ID,
-		InLeagueName: &inLeagueName,
-		TeamName:     &teamName,
-		DraftPoints:  int(createdLeague.StartingDraftPoints),
-		GroupNumber:  1,
-		Role:         rbac.MRoleOwner,
-	}
-	league.PlayerCount = 1
-
-	_, err = s.memberRepo.Create(owner)
-	if err != nil {
-		s.logger.Error("CreateLeague - failed to create owner", "league_id", createdLeague.ID, "error", err)
-		return nil, fmt.Errorf("failed to create league owner: %w", err)
-	}
-
 	return createdLeague, nil
 }
 
-// Get league entity using leagueID
+// GetLeagueByIDForUser Get league entity using leagueID
 func (s *leagueServiceImpl) GetLeagueByIDForUser(userID, leagueID uuid.UUID) (*models.League, error) {
 	// User in league checks done at middleware
 
@@ -166,7 +178,7 @@ func (s *leagueServiceImpl) GetLeagueByIDForUser(userID, leagueID uuid.UUID) (*m
 	return league, nil
 }
 
-// gets all Leagues where userID is the owner
+// GetLeaguesByCommissioner gets all Leagues where userID is the owner
 func (s *leagueServiceImpl) GetLeaguesByCommissioner(
 	userID uuid.UUID,
 	currentUser *models.User,
