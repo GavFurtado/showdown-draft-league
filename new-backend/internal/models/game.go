@@ -24,26 +24,26 @@ type Game struct {
 
 	RoundNumber         int              `gorm:"not null;column:round_number" json:"RoundNumber"` // week number or playoff round number
 	GroupNumber         *int             `gorm:"column:group_number" json:"GroupNumber"`
-	GameType            enums.GameType   `gorm:"not null;default:'REGULAR_SEASON;column:game_type" json:"GameType"`
+	GameType            enums.GameType   `gorm:"not null;default:'REGULAR_SEASON';column:game_type" json:"GameType"`
 	Status              enums.GameStatus `gorm:"type:varchar(50);not null;default:'SCHEDULED';column:status" json:"Status"`
 	BracketPosition     *string          `gorm:"column:bracket_position" json:"BracketPosition"` // flavour text for the type of playoff game
 	ShowdownReplayLinks []string         `gorm:"type:jsonb;column:showdown_replay_links" validate:"url" json:"ShowdownReplayLinks"`
 
-	ReportingPlayerID *uuid.UUID `gorm:"type:uuid;column:reporting_player_id" json:"ReportingPlayerID,omitempty"`
-	ApproverID        *uuid.UUID `gorm:"type:uuid;column:approver_id" json:"ApproverID,omitempty"`
-	WinnerToGameID    uuid.UUID  `gorm:"type:uuid;column:winner_to_game_id" json:"WinnerToGameID"`
-	LoserToGameID     uuid.UUID  `gorm:"type:uuid;column:loser_to_game_id" json:"LoserToGameID"`
+	ReporterUserID  *uuid.UUID `gorm:"type:uuid;column:reporter_user_id" json:"ReporterUserID,omitempty"`
+	ApproverUserID  *uuid.UUID `gorm:"type:uuid;column:approver_user_id" json:"ApproverUserID,omitempty"`
+	WinnerToGameID  uuid.UUID  `gorm:"type:uuid;column:winner_to_game_id" json:"WinnerToGameID"`
+	LoserToGameID   uuid.UUID  `gorm:"type:uuid;column:loser_to_game_id" json:"LoserToGameID"`
 
 	CreatedAt time.Time      `json:"CreatedAt" gorm:"column:created_at"`
 	UpdatedAt time.Time      `json:"UpdatedAt" gorm:"column:updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index;column:deleted_at" json:"-"`
 
 	// Relationships
-	ReportingPlayer *LeagueMember `gorm:"foreignKey:ReportingPlayerID;references:ID" json:"ReportingPlayer,omitempty"`
-	ApproverPlayer  *LeagueMember `gorm:"foreignKey:ApproverID;references:ID" json:"ApproverPlayer,omitempty"`
-	League          *League       `gorm:"foreignKey:league_id;references:id" json:"League,omitempty"`
-	Player1         *LeagueMember `gorm:"foreignKey:player1_id;references:ID" json:"Player1,omitempty"`
-	Player2         *LeagueMember `gorm:"foreignKey:player2_id;references:ID" json:"Player2,omitempty"`
-	Winner          *LeagueMember `gorm:"foreignKey:winner_id;references:ID" json:"Winner,omitempty"`
-	Loser           *LeagueMember `gorm:"foreignKey:loser_id;references:ID" json:"Loser,omitempty"`
+	ReporterUser *User   `gorm:"foreignKey:ReporterUserID;references:ID" json:"ReporterUser,omitempty"`
+	ApproverUser *User   `gorm:"foreignKey:ApproverUserID;references:ID" json:"ApproverUser,omitempty"`
+	League       *League `gorm:"foreignKey:league_id;references:id" json:"League,omitempty"`
+	Player1      *Player `gorm:"foreignKey:player1_id;references:ID" json:"Player1,omitempty"`
+	Player2      *Player `gorm:"foreignKey:player2_id;references:ID" json:"Player2,omitempty"`
+	Winner       *Player `gorm:"foreignKey:winner_id;references:ID" json:"Winner,omitempty"`
+	Loser        *Player `gorm:"foreignKey:loser_id;references:ID" json:"Loser,omitempty"`
 }

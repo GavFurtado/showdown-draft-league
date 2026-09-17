@@ -6,19 +6,13 @@ type Permission string
 // Define permission constants
 const (
 	// League Permissions
-	// PermissionCreateLeague is redundant; League is created then Players
+	// This PermissionCreateLeague is redundant; Permissions are assigned to member (player/spectator) and not to Users.
+	// A League is first created then a member
 	// creating a League is tied to User and not a Player or their role. Kept in to understand the roles
 	PermissionCreateLeague Permission = "create:league"
 	PermissionReadLeague   Permission = "read:league"
 	PermissionUpdateLeague Permission = "update:league"
 	PermissionDeleteLeague Permission = "delete:league"
-
-	// Player Permissions
-	PermissionCreatePlayer      Permission = "create:player"
-	PermissionReadPlayer        Permission = "read:player"
-	PermissionUpdatePlayer      Permission = "update:player_info"
-	PermissionUpdatePlayerScore Permission = "update:player_score"
-	PermissionDeletePlayer      Permission = "delete:player"
 
 	// PoolEntry Permissions
 	PermissionCreatePoolEntry Permission = "create:pool_entry"
@@ -26,12 +20,12 @@ const (
 	PermissionUpdatePoolEntry Permission = "update:pool_entry"
 	PermissionDeletePoolEntry Permission = "delete:pool_entry"
 
-	// Member Permissions
-	PermissionCreateMember      Permission = "create:member"
-	PermissionReadMember        Permission = "read:member"
-	PermissionUpdateMember      Permission = "update:member"
-	PermissionUpdateMemberScore Permission = "update:member_score"
-	PermissionDeleteMember      Permission = "delete:member"
+	// Player Permissions
+	PermissionCreatePlayer      Permission = "create:player"
+	PermissionReadPlayer        Permission = "read:player"
+	PermissionUpdatePlayer      Permission = "update:player"
+	PermissionUpdatePlayerScore Permission = "update:member_score"
+	PermissionDeletePlayer      Permission = "delete:player"
 
 	// DraftPick Permissions
 	PermissionReadDraftPick   Permission = "read:draft_pick"
@@ -73,7 +67,7 @@ const (
 	PermissionReportGame   Permission = "report:game"
 	PermissionFinalizeGame Permission = "finalize:game"
 
-	// User Permissions (for admin-like actions on users)
+	// User Permissions
 	PermissionReadUser   Permission = "read:user"
 	PermissionUpdateUser Permission = "update:user"
 	PermissionDeleteUser Permission = "delete:user"
@@ -84,7 +78,7 @@ const (
 	PermissionUpdatePlayerRoster Permission = "update:player_roster"
 	PermissionDeletePlayerRoster Permission = "delete:player_roster"
 
-	// PokemonSpecies Permissions (likely read-only for most roles)
+	// PokemonSpecies Permissions
 	PermissionReadPokemonSpecies Permission = "read:pokemon_species"
 )
 
@@ -113,8 +107,8 @@ func init() {
 		PermissionReportGame,
 
 		PermissionReadPoolEntry,
-		PermissionReadMember,
-		PermissionUpdateMember,
+		PermissionReadPlayer,
+		PermissionUpdatePlayer,
 		PermissionReadDraftPick,
 		PermissionCreateDraftPick,
 		PermissionReadClaim,
@@ -141,8 +135,8 @@ func init() {
 
 		PermissionCreatePoolEntry,
 		PermissionUpdatePoolEntry,
-		PermissionCreateMember,
-		PermissionUpdateMemberScore,
+		PermissionCreatePlayer,
+		PermissionUpdatePlayerScore,
 	)
 
 	inheritPermissions(MRoleOwner, MRoleModerator)
@@ -163,7 +157,7 @@ func init() {
 		PermissionUpdatePlayerRoster,
 
 		PermissionDeletePoolEntry,
-		PermissionDeleteMember,
+		PermissionDeletePlayer,
 	)
 }
 

@@ -158,14 +158,14 @@ func (h *customHandler) appendAttr(buf []byte, a slog.Attr) []byte {
 	buf = append(buf, '=')
 	switch a.Key {
 	case "request_id", "user_id", "league_id", "pool_entry_id",
-		"draft_id", "game_id", "claim_id", "member_id",
+		"draft_id", "game_id", "claim_id", "player_id",
 		"discord_id", "role":
 		buf = append(buf, colorDim...)
 	}
 	buf = append(buf, a.Value.String()...)
 	switch a.Key {
 	case "request_id", "user_id", "league_id", "pool_entry_id",
-		"draft_id", "game_id", "claim_id", "member_id",
+		"draft_id", "game_id", "claim_id", "player_id",
 		"discord_id", "role":
 		buf = append(buf, colorReset...)
 	}

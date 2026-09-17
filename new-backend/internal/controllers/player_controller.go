@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type LeagueMemberController interface {
+type PlayerController interface {
 	GetByID(ctx *gin.Context)
 	GetByUserAndLeague(ctx *gin.Context)
 	GetByLeague(ctx *gin.Context)
@@ -26,37 +26,37 @@ type LeagueMemberController interface {
 	UpdateDraftPosition(ctx *gin.Context)
 }
 
-type leagueMemberControllerImpl struct {
-	logger              *slog.Logger
-	leagueMemberService services.LeagueMemberService
+type playerControllerImpl struct {
+	logger        *slog.Logger
+	playerService services.PlayerService
 }
 
-func NewLeagueMemberController(logger *slog.Logger, leagueMemberService services.LeagueMemberService) LeagueMemberController {
-	return &leagueMemberControllerImpl{
-		logger:              utils.LoggerWithService(logger, "LeagueMemberController"),
-		leagueMemberService: leagueMemberService,
+func NewPlayerController(logger *slog.Logger, playerService services.PlayerService) PlayerController {
+	return &playerControllerImpl{
+		logger:        utils.LoggerWithService(logger, "PlayerController"),
+		playerService: playerService,
 	}
 }
 
 // GetByID godoc
 //
-//	@Summary		Get a league member
-//	@Description	Member details
-//	@Tags			League Members
+//	@Summary		Get a player
+//	@Description	Player details
+//	@Tags			Players
 //	@Produce		json
-//	@Param			id	path		string	true	"Member ID"
-//	@Success		200	{object}	models.LeagueMember
+//	@Param			id	path		string	true	"Player ID"
+//	@Success		200	{object}	models.Player
 //	@Failure		400	{object}	responses.ErrorResponse
 //	@Failure		404	{object}	responses.ErrorResponse
-//	@Router			/api/members/{id} [get]
-func (c *leagueMemberControllerImpl) GetByID(ctx *gin.Context) {
-	memberID, err := uuid.Parse(ctx.Param("id"))
+//	@Router			/api/players/{id} [get]
+func (c *playerControllerImpl) GetByID(ctx *gin.Context) {
+	playerID, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
 		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
-	member, err := c.leagueMemberService.GetByID(memberID)
+	player, err := c.playerService.GetByID(playerID)
 	if err != nil {
 		c.logger.Error("Service method error", "error", err, "method", "GetByID")
 		switch err {
@@ -68,10 +68,10 @@ func (c *leagueMemberControllerImpl) GetByID(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, member)
+	ctx.JSON(http.StatusOK, player)
 }
 
-func (c *leagueMemberControllerImpl) GetByUserAndLeague(ctx *gin.Context) {
+func (c *playerControllerImpl) GetByUserAndLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
 		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
@@ -85,7 +85,7 @@ func (c *leagueMemberControllerImpl) GetByUserAndLeague(ctx *gin.Context) {
 		return
 	}
 
-	member, err := c.leagueMemberService.GetByUserAndLeague(userID, leagueID)
+	player, err := c.playerService.GetByUserAndLeague(userID, leagueID)
 	if err != nil {
 		c.logger.Error("Service method error", "error", err, "method", "GetByUserAndLeague")
 		switch err {
@@ -97,27 +97,27 @@ func (c *leagueMemberControllerImpl) GetByUserAndLeague(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, member)
+	ctx.JSON(http.StatusOK, player)
 }
 
 // GetByLeague godoc
 //
-//	@Summary		Get league members
-//	@Description	All members of a league
-//	@Tags			League Members
+//	@Summary		Get league players
+//	@Description	All players of a league
+//	@Tags			Players
 //	@Produce		json
 //	@Param			leagueId	path		string	true	"League ID"
-//	@Success		200			{array}		models.LeagueMember
+//	@Success		200			{array}		models.Player
 //	@Failure		400			{object}	responses.ErrorResponse
-//	@Router			/api/leagues/{leagueId}/members [get]
-func (c *leagueMemberControllerImpl) GetByLeague(ctx *gin.Context) {
+//	@Router			/api/leagues/{leagueId}/players [get]
+func (c *playerControllerImpl) GetByLeague(ctx *gin.Context) {
 	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
 	if err != nil {
 		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
-	members, err := c.leagueMemberService.GetByLeague(leagueID)
+	players, err := c.playerService.GetByLeague(leagueID)
 	if err != nil {
 		c.logger.Error("Service method error", "error", err, "method", "GetByLeague")
 		switch err {
@@ -127,27 +127,27 @@ func (c *leagueMemberControllerImpl) GetByLeague(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, members)
+	ctx.JSON(http.StatusOK, players)
 }
 
 // GetByUser godoc
 //
-//	@Summary		Get members by user
-//	@Description	All league memberships for a user
+//	@Summary		Get players by user
+//	@Description	All league players for a user
 //	@Tags			Users
 //	@Produce		json
 //	@Param			id	path		string	true	"User ID"
-//	@Success		200	{array}		models.LeagueMember
+//	@Success		200	{array}		models.Player
 //	@Failure		400	{object}	responses.ErrorResponse
-//	@Router			/api/users/{id}/members [get]
-func (c *leagueMemberControllerImpl) GetByUser(ctx *gin.Context) {
+//	@Router			/api/users/{id}/players [get]
+func (c *playerControllerImpl) GetByUser(ctx *gin.Context) {
 	userID, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
 		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
-	members, err := c.leagueMemberService.GetByUser(userID)
+	players, err := c.playerService.GetByUser(userID)
 	if err != nil {
 		c.logger.Error("Service method error", "error", err, "method", "GetByUser")
 		switch err {
@@ -157,28 +157,28 @@ func (c *leagueMemberControllerImpl) GetByUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, members)
+	ctx.JSON(http.StatusOK, players)
 }
 
 // GetWithFullRoster godoc
 //
-//	@Summary		Get member with full roster
-//	@Description	Member details including all drafted Pokemon
-//	@Tags			League Members
+//	@Summary		Get player with full roster
+//	@Description	Player details including all drafted Pokemon
+//	@Tags			Players
 //	@Produce		json
-//	@Param			id	path		string	true	"Member ID"
-//	@Success		200	{object}	models.LeagueMember
+//	@Param			id	path		string	true	"Player ID"
+//	@Success		200	{object}	models.Player
 //	@Failure		400	{object}	responses.ErrorResponse
 //	@Failure		404	{object}	responses.ErrorResponse
-//	@Router			/api/members/{id}/roster [get]
-func (c *leagueMemberControllerImpl) GetWithFullRoster(ctx *gin.Context) {
-	memberID, err := uuid.Parse(ctx.Param("id"))
+//	@Router			/api/players/{id}/roster [get]
+func (c *playerControllerImpl) GetWithFullRoster(ctx *gin.Context) {
+	playerID, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
 		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
 	}
 
-	member, err := c.leagueMemberService.GetWithFullRoster(memberID)
+	player, err := c.playerService.GetWithFullRoster(playerID)
 	if err != nil {
 		c.logger.Error("Service method error", "error", err, "method", "GetWithFullRoster")
 		switch err {
@@ -190,32 +190,32 @@ func (c *leagueMemberControllerImpl) GetWithFullRoster(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, member)
+	ctx.JSON(http.StatusOK, player)
 }
 
 // JoinLeague godoc
 //
 //	@Summary		Join a league
-//	@Description	Add a member to a league
-//	@Tags			League Members
+//	@Description	Add a player to a league
+//	@Tags			Players
 //	@Accept			json
 //	@Produce		json
 //	@Param			leagueId	path		string									true	"League ID"
-//	@Param			request		body		requests.LeagueMemberCreateRequestDTO	true	"Member details"
-//	@Success		200			{object}	models.LeagueMember
+//	@Param			request		body		requests.PlayerCreateRequestDTO	true	"Player details"
+//	@Success		200			{object}	models.Player
 //	@Failure		400			{object}	responses.ErrorResponse
 //	@Failure		401			{object}	responses.ErrorResponse
 //	@Failure		404			{object}	responses.ErrorResponse
 //	@Failure		409			{object}	responses.ErrorResponse
-//	@Router			/api/leagues/{leagueId}/members/join [post]
-func (c *leagueMemberControllerImpl) JoinLeague(ctx *gin.Context) {
+//	@Router			/api/leagues/{leagueId}/players/join [post]
+func (c *playerControllerImpl) JoinLeague(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
 		sendError(ctx, http.StatusBadRequest, types.ErrNoUserInContext.Error())
 		return
 	}
 
-	var req requests.LeagueMemberCreateRequestDTO
+	var req requests.PlayerCreateRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		sendError(ctx, http.StatusBadRequest, "Missing required fields in payload")
 		return
@@ -231,7 +231,7 @@ func (c *leagueMemberControllerImpl) JoinLeague(ctx *gin.Context) {
 		return
 	}
 
-	member, err := c.leagueMemberService.Create(currentUser, &req)
+	player, err := c.playerService.Create(currentUser, &req)
 	if err != nil {
 		c.logger.Error("Service method error", "error", err, "method", "JoinLeague")
 		switch err {
@@ -249,38 +249,38 @@ func (c *leagueMemberControllerImpl) JoinLeague(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, member)
+	ctx.JSON(http.StatusOK, player)
 }
 
 // UpdateProfile godoc
 //
-//	@Summary		Update member profile
+//	@Summary		Update player profile
 //	@Description	Update in-league name or team name
-//	@Tags			League Members
+//	@Tags			Players
 //	@Accept			json
 //	@Produce		json
-//	@Param			id		path		string										true	"Member ID"
-//	@Param			request	body		requests.UpdateLeagueMemberInfoRequestDTO	true	"Profile fields"
-//	@Success		200		{object}	models.LeagueMember
+//	@Param			id		path		string										true	"Player ID"
+//	@Param			request	body		requests.UpdatePlayerInfoRequestDTO	true	"Profile fields"
+//	@Success		200		{object}	models.Player
 //	@Failure		400		{object}	responses.ErrorResponse
 //	@Failure		401		{object}	responses.ErrorResponse
 //	@Failure		404		{object}	responses.ErrorResponse
 //	@Failure		409		{object}	responses.ErrorResponse
-//	@Router			/api/members/{id}/profile [put]
-func (c *leagueMemberControllerImpl) UpdateProfile(ctx *gin.Context) {
+//	@Router			/api/players/{id}/profile [put]
+func (c *playerControllerImpl) UpdateProfile(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
 		sendError(ctx, http.StatusBadRequest, types.ErrNoUserInContext.Error())
 		return
 	}
 
-	var req requests.UpdateLeagueMemberInfoRequestDTO
+	var req requests.UpdatePlayerInfoRequestDTO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		sendError(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	memberID, err := uuid.Parse(ctx.Param("id"))
+	playerID, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
 		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
@@ -291,7 +291,7 @@ func (c *leagueMemberControllerImpl) UpdateProfile(ctx *gin.Context) {
 		return
 	}
 
-	member, err := c.leagueMemberService.UpdateProfile(currentUser, memberID, req.InLeagueName, req.TeamName)
+	player, err := c.playerService.UpdateProfile(currentUser, playerID, req.InLeagueName, req.TeamName)
 	if err != nil {
 		c.logger.Error("Service method error", "error", err, "method", "UpdateProfile")
 		switch err {
@@ -309,30 +309,30 @@ func (c *leagueMemberControllerImpl) UpdateProfile(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, member)
+	ctx.JSON(http.StatusOK, player)
 }
 
 // UpdateDraftPoints godoc
 //
-//	@Summary		Update member's draft points
-//	@Description	Set a member's draft points
-//	@Tags			League Members
+//	@Summary		Update player's draft points
+//	@Description	Set a player's draft points
+//	@Tags			Players
 //	@Accept			json
 //	@Produce		json
-//	@Param			id	path		string	true	"Member ID"
-//	@Success		200	{object}	models.LeagueMember
+//	@Param			id	path		string	true	"Player ID"
+//	@Success		200	{object}	models.Player
 //	@Failure		400	{object}	responses.ErrorResponse
 //	@Failure		401	{object}	responses.ErrorResponse
 //	@Failure		404	{object}	responses.ErrorResponse
-//	@Router			/api/members/{id}/draft-points [put]
-func (c *leagueMemberControllerImpl) UpdateDraftPoints(ctx *gin.Context) {
+//	@Router			/api/players/{id}/draft-points [put]
+func (c *playerControllerImpl) UpdateDraftPoints(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
 		sendError(ctx, http.StatusBadRequest, types.ErrNoUserInContext.Error())
 		return
 	}
 
-	memberID, err := uuid.Parse(ctx.Param("id"))
+	playerID, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
 		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
@@ -346,7 +346,7 @@ func (c *leagueMemberControllerImpl) UpdateDraftPoints(ctx *gin.Context) {
 		return
 	}
 
-	member, err := c.leagueMemberService.UpdateDraftPoints(currentUser, memberID, req.DraftPoints)
+	player, err := c.playerService.UpdateDraftPoints(currentUser, playerID, req.DraftPoints)
 	if err != nil {
 		c.logger.Error("Service method error", "error", err, "method", "UpdateDraftPoints")
 		switch err {
@@ -362,30 +362,30 @@ func (c *leagueMemberControllerImpl) UpdateDraftPoints(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, member)
+	ctx.JSON(http.StatusOK, player)
 }
 
 // UpdateRecord godoc
 //
-//	@Summary		Update member's record
-//	@Description	Set wins and losses for a member
-//	@Tags			League Members
+//	@Summary		Update player's record
+//	@Description	Set wins and losses for a player
+//	@Tags			Players
 //	@Accept			json
 //	@Produce		json
-//	@Param			id	path		string	true	"Member ID"
-//	@Success		200	{object}	models.LeagueMember
+//	@Param			id	path		string	true	"Player ID"
+//	@Success		200	{object}	models.Player
 //	@Failure		400	{object}	responses.ErrorResponse
 //	@Failure		401	{object}	responses.ErrorResponse
 //	@Failure		404	{object}	responses.ErrorResponse
-//	@Router			/api/members/{id}/record [put]
-func (c *leagueMemberControllerImpl) UpdateRecord(ctx *gin.Context) {
+//	@Router			/api/players/{id}/record [put]
+func (c *playerControllerImpl) UpdateRecord(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
 		sendError(ctx, http.StatusBadRequest, types.ErrNoUserInContext.Error())
 		return
 	}
 
-	memberID, err := uuid.Parse(ctx.Param("id"))
+	playerID, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
 		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
@@ -400,7 +400,7 @@ func (c *leagueMemberControllerImpl) UpdateRecord(ctx *gin.Context) {
 		return
 	}
 
-	member, err := c.leagueMemberService.UpdateRecord(currentUser, memberID, *req.Wins, *req.Losses)
+	player, err := c.playerService.UpdateRecord(currentUser, playerID, *req.Wins, *req.Losses)
 	if err != nil {
 		c.logger.Error("Service method error", "error", err, "method", "UpdateRecord")
 		switch err {
@@ -416,30 +416,30 @@ func (c *leagueMemberControllerImpl) UpdateRecord(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, member)
+	ctx.JSON(http.StatusOK, player)
 }
 
 // UpdateDraftPosition godoc
 //
-//	@Summary		Update member's draft position
-//	@Description	Set the draft order position for a member
-//	@Tags			League Members
+//	@Summary		Update player's draft position
+//	@Description	Set the draft order position for a player
+//	@Tags			Players
 //	@Accept			json
 //	@Produce		json
-//	@Param			id	path		string	true	"Member ID"
-//	@Success		200	{object}	models.LeagueMember
+//	@Param			id	path		string	true	"Player ID"
+//	@Success		200	{object}	models.Player
 //	@Failure		400	{object}	responses.ErrorResponse
 //	@Failure		401	{object}	responses.ErrorResponse
 //	@Failure		404	{object}	responses.ErrorResponse
-//	@Router			/api/members/{id}/draft-position [put]
-func (c *leagueMemberControllerImpl) UpdateDraftPosition(ctx *gin.Context) {
+//	@Router			/api/players/{id}/draft-position [put]
+func (c *playerControllerImpl) UpdateDraftPosition(ctx *gin.Context) {
 	currentUser, exists := middleware.GetUserFromContext(ctx)
 	if !exists {
 		sendError(ctx, http.StatusBadRequest, types.ErrNoUserInContext.Error())
 		return
 	}
 
-	memberID, err := uuid.Parse(ctx.Param("id"))
+	playerID, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
 		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
 		return
@@ -453,7 +453,7 @@ func (c *leagueMemberControllerImpl) UpdateDraftPosition(ctx *gin.Context) {
 		return
 	}
 
-	member, err := c.leagueMemberService.UpdateDraftPosition(currentUser, memberID, *req.DraftPosition)
+	player, err := c.playerService.UpdateDraftPosition(currentUser, playerID, *req.DraftPosition)
 	if err != nil {
 		c.logger.Error("Service method error", "error", err, "method", "UpdateDraftPosition")
 		switch err {
@@ -469,5 +469,5 @@ func (c *leagueMemberControllerImpl) UpdateDraftPosition(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, member)
+	ctx.JSON(http.StatusOK, player)
 }

@@ -20,5 +20,6 @@ type User struct {
 	UpdatedAt time.Time      `gorm:"column:updated_at" json:"UpdatedAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index;column:deleted_at" json:"-"`
 	// Relationships
-	Members []LeagueMember `gorm:"foreignKey:user_id;references:id" json:"Members,omitempty"`
+	Players    []Player    `gorm:"foreignKey:user_id;references:id" json:"Players,omitempty"`
+	Spectators []Spectator `gorm:"foreignKey:user_id;references:id" json:"Spectators,omitempty"`
 }

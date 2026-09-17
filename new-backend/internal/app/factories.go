@@ -20,23 +20,24 @@ func NewRepositories(db *gorm.DB) *Repositories {
 		GameRepository:           repositories.NewGameRepository(db),
 		PokemonSpeciesRepository: repositories.NewPokemonSpeciesRepository(db),
 
-		DraftPickRepository:    repositories.NewDraftPickRepository(db),
-		ClaimRepository:        repositories.NewClaimRepository(db),
-		PoolEntryRepository:    repositories.NewPoolEntryRepository(db),
-		LeagueMemberRepository: repositories.NewLeagueMemberRepository(db),
+		DraftPickRepository: repositories.NewDraftPickRepository(db),
+		ClaimRepository:     repositories.NewClaimRepository(db),
+		PoolEntryRepository: repositories.NewPoolEntryRepository(db),
+		PlayerRepository:    repositories.NewPlayerRepository(db),
+		SpectatorRepository: repositories.NewSpectatorRepository(db),
 	}
 }
 
 func NewServices(logger *slog.Logger, repos *Repositories, cfg *config.Config, discordOauthConfig *oauth2.Config) *Services {
 	jwtService := services.NewJWTService(cfg.JWT_SECRET)
-	rbacService := services.NewRBACService(logger, repos.LeagueRepository, repos.UserRepository, repos.LeagueMemberRepository)
+	rbacService := services.NewRBACService(logger, repos.LeagueRepository, repos.UserRepository, repos.PlayerRepository, repos.SpectatorRepository)
 	webhookService := services.NewWebhookService(logger)
 
 	draftService := services.NewDraftService(
 		logger,
 		repos.LeagueRepository,
 		repos.DraftRepository,
-		repos.LeagueMemberRepository,
+		repos.PlayerRepository,
 		&webhookService,
 	)
 
@@ -56,18 +57,18 @@ func NewServices(logger *slog.Logger, repos *Repositories, cfg *config.Config, d
 	transferService := services.NewTransferService(
 		logger,
 		repos.LeagueRepository,
-		repos.LeagueMemberRepository,
+		repos.PlayerRepository,
 	)
 
 	transferService.SetNewRepositories(
 		repos.ClaimRepository,
 		repos.PoolEntryRepository,
-		repos.LeagueMemberRepository,
+		repos.PlayerRepository,
 	)
 
-	gameService := services.NewGameService(logger, repos.GameRepository, repos.LeagueRepository, repos.LeagueMemberRepository)
+	gameService := services.NewGameService(logger, repos.GameRepository, repos.LeagueRepository, repos.PlayerRepository)
 
-	leagueService := services.NewLeagueService(logger, repos.LeagueRepository, repos.LeagueMemberRepository, repos.DraftRepository, repos.GameRepository)
+	leagueService := services.NewLeagueService(logger, repos.LeagueRepository, repos.PlayerRepository, repos.DraftRepository, repos.GameRepository)
 
 	draftService.SetSchedulerService(schedulerService)
 	schedulerService.SetDraftService(draftService.(services.DraftService))
@@ -91,17 +92,17 @@ func NewServices(logger *slog.Logger, repos *Repositories, cfg *config.Config, d
 		WebhookService:        webhookService,
 		LeagueService:         leagueService,
 		AuthService:           services.NewAuthService(logger, repos.UserRepository, jwtService, discordOauthConfig),
-		DevAuthService:        services.NewDevAuthService(logger, repos.UserRepository, repos.LeagueRepository, repos.LeagueMemberRepository, jwtService),
+		DevAuthService:        services.NewDevAuthService(logger, repos.UserRepository, repos.LeagueRepository, repos.PlayerRepository, jwtService),
 		DraftService:          draftService,
 		PokemonSpeciesService: services.NewPokemonSpeciesService(logger, repos.PokemonSpeciesRepository),
 		SchedulerService:      schedulerService,
 		GameService:           gameService,
 		TransferService:       transferService,
 
-		PoolEntryService:    services.NewPoolEntryService(logger, repos.PoolEntryRepository, repos.LeagueRepository, repos.UserRepository, repos.PokemonSpeciesRepository),
-		LeagueMemberService: services.NewLeagueMemberService(logger, repos.LeagueMemberRepository, repos.LeagueRepository, repos.UserRepository),
-		DraftPickService:    services.NewDraftPickService(logger, repos.DraftPickRepository, repos.DraftRepository),
-		ClaimService:        services.NewClaimService(logger, repos.ClaimRepository),
+		PoolEntryService: services.NewPoolEntryService(logger, repos.PoolEntryRepository, repos.LeagueRepository, repos.UserRepository, repos.PokemonSpeciesRepository),
+		PlayerService:    services.NewPlayerService(logger, repos.PlayerRepository, repos.LeagueRepository, repos.UserRepository),
+		DraftPickService: services.NewDraftPickService(logger, repos.DraftPickRepository, repos.DraftRepository),
+		ClaimService:     services.NewClaimService(logger, repos.ClaimRepository),
 	}
 }
 
@@ -116,9 +117,9 @@ func NewControllers(logger *slog.Logger, services *Services, repos *Repositories
 		GameController:           controllers.NewGameController(logger, services.GameService, services.LeagueService),
 		TransferController:       controllers.NewTransferController(logger, services.TransferService),
 
-		PoolEntryController:    controllers.NewPoolEntryController(logger, services.PoolEntryService),
-		LeagueMemberController: controllers.NewLeagueMemberController(logger, services.LeagueMemberService),
-		DraftPickController:    controllers.NewDraftPickController(logger, services.DraftPickService, services.DraftService),
-		ClaimController:        controllers.NewClaimController(logger, services.ClaimService),
+		PoolEntryController: controllers.NewPoolEntryController(logger, services.PoolEntryService),
+		PlayerController:    controllers.NewPlayerController(logger, services.PlayerService),
+		DraftPickController: controllers.NewDraftPickController(logger, services.DraftPickService, services.DraftService),
+		ClaimController:     controllers.NewClaimController(logger, services.ClaimService),
 	}
 }

@@ -126,7 +126,7 @@ func (ctrl *UserController) UpdateProfile(ctx *gin.Context) {
 // GetMyLeagues godoc
 //
 //	@Summary		Get my leagues
-//	@Description	Leagues the user a member of
+//	@Description	Leagues the user a player of
 //	@Tags			Users
 //	@Success		200	{array}		models.League
 //	@Failure		401	{object}	responses.ErrorResponse

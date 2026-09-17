@@ -939,7 +939,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/leagues/{leagueId}/games/members/{memberId}": {
+        "/api/leagues/{leagueId}/games/players/{playerId}": {
             "get": {
                 "description": "All games for a specific player",
                 "produces": [
@@ -959,8 +959,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Member ID",
-                        "name": "memberId",
+                        "description": "Player ID",
+                        "name": "playerId",
                         "in": "path",
                         "required": true
                     }
@@ -1152,16 +1152,16 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/leagues/{leagueId}/members": {
+        "/api/leagues/{leagueId}/players": {
             "get": {
-                "description": "All members of a league",
+                "description": "All players of a league",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "League Members"
+                    "Players"
                 ],
-                "summary": "Get league members",
+                "summary": "Get league players",
                 "parameters": [
                     {
                         "type": "string",
@@ -1177,7 +1177,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.LeagueMember"
+                                "$ref": "#/definitions/models.Player"
                             }
                         }
                     },
@@ -1190,9 +1190,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/leagues/{leagueId}/members/join": {
+        "/api/leagues/{leagueId}/players/join": {
             "post": {
-                "description": "Add a member to a league",
+                "description": "Add a player to a league",
                 "consumes": [
                     "application/json"
                 ],
@@ -1200,7 +1200,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "League Members"
+                    "Players"
                 ],
                 "summary": "Join a league",
                 "parameters": [
@@ -1212,12 +1212,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Member details",
+                        "description": "Player details",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/requests.LeagueMemberCreateRequestDTO"
+                            "$ref": "#/definitions/requests.PlayerCreateRequestDTO"
                         }
                     }
                 ],
@@ -1225,7 +1225,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.LeagueMember"
+                            "$ref": "#/definitions/models.Player"
                         }
                     },
                     "400": {
@@ -1765,20 +1765,20 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/members/{id}": {
+        "/api/players/{id}": {
             "get": {
-                "description": "Member details",
+                "description": "Player details",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "League Members"
+                    "Players"
                 ],
-                "summary": "Get a league member",
+                "summary": "Get a player",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Member ID",
+                        "description": "Player ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -1788,7 +1788,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.LeagueMember"
+                            "$ref": "#/definitions/models.Player"
                         }
                     },
                     "400": {
@@ -1806,9 +1806,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/members/{id}/draft-points": {
+        "/api/players/{id}/draft-points": {
             "put": {
-                "description": "Set a member's draft points",
+                "description": "Set a player's draft points",
                 "consumes": [
                     "application/json"
                 ],
@@ -1816,13 +1816,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "League Members"
+                    "Players"
                 ],
-                "summary": "Update member's draft points",
+                "summary": "Update player's draft points",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Member ID",
+                        "description": "Player ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -1832,7 +1832,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.LeagueMember"
+                            "$ref": "#/definitions/models.Player"
                         }
                     },
                     "400": {
@@ -1856,9 +1856,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/members/{id}/draft-position": {
+        "/api/players/{id}/draft-position": {
             "put": {
-                "description": "Set the draft order position for a member",
+                "description": "Set the draft order position for a player",
                 "consumes": [
                     "application/json"
                 ],
@@ -1866,13 +1866,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "League Members"
+                    "Players"
                 ],
-                "summary": "Update member's draft position",
+                "summary": "Update player's draft position",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Member ID",
+                        "description": "Player ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -1882,7 +1882,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.LeagueMember"
+                            "$ref": "#/definitions/models.Player"
                         }
                     },
                     "400": {
@@ -1906,7 +1906,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/members/{id}/profile": {
+        "/api/players/{id}/profile": {
             "put": {
                 "description": "Update in-league name or team name",
                 "consumes": [
@@ -1916,13 +1916,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "League Members"
+                    "Players"
                 ],
-                "summary": "Update member profile",
+                "summary": "Update player profile",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Member ID",
+                        "description": "Player ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -1933,7 +1933,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/requests.UpdateLeagueMemberInfoRequestDTO"
+                            "$ref": "#/definitions/requests.UpdatePlayerInfoRequestDTO"
                         }
                     }
                 ],
@@ -1941,7 +1941,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.LeagueMember"
+                            "$ref": "#/definitions/models.Player"
                         }
                     },
                     "400": {
@@ -1971,9 +1971,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/members/{id}/record": {
+        "/api/players/{id}/record": {
             "put": {
-                "description": "Set wins and losses for a member",
+                "description": "Set wins and losses for a player",
                 "consumes": [
                     "application/json"
                 ],
@@ -1981,13 +1981,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "League Members"
+                    "Players"
                 ],
-                "summary": "Update member's record",
+                "summary": "Update player's record",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Member ID",
+                        "description": "Player ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -1997,7 +1997,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.LeagueMember"
+                            "$ref": "#/definitions/models.Player"
                         }
                     },
                     "400": {
@@ -2021,20 +2021,20 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/members/{id}/roster": {
+        "/api/players/{id}/roster": {
             "get": {
-                "description": "Member details including all drafted Pokemon",
+                "description": "Player details including all drafted Pokemon",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "League Members"
+                    "Players"
                 ],
-                "summary": "Get member with full roster",
+                "summary": "Get player with full roster",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Member ID",
+                        "description": "Player ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -2044,7 +2044,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.LeagueMember"
+                            "$ref": "#/definitions/models.Player"
                         }
                     },
                     "400": {
@@ -2248,7 +2248,7 @@ const docTemplate = `{
         },
         "/api/users/me/leagues": {
             "get": {
-                "description": "Leagues the user a member of",
+                "description": "Leagues the user a player of",
                 "tags": [
                     "Users"
                 ],
@@ -2324,16 +2324,16 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/users/{id}/members": {
+        "/api/users/{id}/players": {
             "get": {
-                "description": "All league memberships for a user",
+                "description": "All league players for a user",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "League Members"
+                    "Users"
                 ],
-                "summary": "Get members by user",
+                "summary": "Get players by user",
                 "parameters": [
                     {
                         "type": "string",
@@ -2349,12 +2349,212 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.LeagueMember"
+                                "$ref": "#/definitions/models.Player"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/dev/login": {
+            "post": {
+                "security": [
+                    {
+                        "none": []
+                    }
+                ],
+                "description": "Dev-only. Mints a real session JWT for the given user, bypassing Discord OAuth. Only registered when ENV=dev.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dev"
+                ],
+                "summary": "(DEV) Log in as any user",
+                "parameters": [
+                    {
+                        "description": "Target user",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.DevImpersonateRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.TokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/dev/memberships": {
+            "post": {
+                "security": [
+                    {
+                        "none": []
+                    }
+                ],
+                "description": "Dev-only. Adds the user to the league with the given role (or updates their existing role). Only registered when ENV=dev.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dev"
+                ],
+                "summary": "(DEV) Add/update a league membership role",
+                "parameters": [
+                    {
+                        "description": "Membership",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.DevUpsertMembershipRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Player"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/dev/users": {
+            "get": {
+                "security": [
+                    {
+                        "none": []
+                    }
+                ],
+                "description": "Dev-only. Lists all users for impersonation. Only registered when ENV=dev.",
+                "tags": [
+                    "Dev"
+                ],
+                "summary": "(DEV) List users",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.User"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "none": []
+                    }
+                ],
+                "description": "Dev-only. Creates a fake user for impersonation. Only registered when ENV=dev.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dev"
+                ],
+                "summary": "(DEV) Create a test user",
+                "parameters": [
+                    {
+                        "description": "New user",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.DevCreateUserRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/responses.ErrorResponse"
                         }
@@ -2634,7 +2834,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "Player": {
-                    "$ref": "#/definitions/models.LeagueMember"
+                    "$ref": "#/definitions/models.Player"
                 },
                 "PlayerID": {
                     "type": "string"
@@ -2677,8 +2877,8 @@ const docTemplate = `{
                 "CurrentRound": {
                     "type": "integer"
                 },
-                "CurrentTurnMember": {
-                    "$ref": "#/definitions/models.LeagueMember"
+                "CurrentTurnPlayer": {
+                    "$ref": "#/definitions/models.Player"
                 },
                 "CurrentTurnPlayerID": {
                     "description": "Nullable: Player whose turn it is",
@@ -2745,7 +2945,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "Player": {
-                    "$ref": "#/definitions/models.LeagueMember"
+                    "$ref": "#/definitions/models.Player"
                 },
                 "PlayerID": {
                     "type": "string"
@@ -2771,10 +2971,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "CurrentWeekNumber": {
-                    "description": "starts with 1, 0 is invalid and used when not relevant",
+                    "description": "CurrentWeekNumber starts with 1.\n0 is invalid and used when not relevant. \u003c- TODO: investigate when CurrentWeekNumber is 0\nWhen is it not relevant, I've forgotten.",
                     "type": "integer"
                 },
                 "DiscordWebhookURL": {
+                    "description": "DiscordWebhookURL needs refactoring. There will likely be multiple Webhook URLs",
                     "type": "string"
                 },
                 "EndDate": {
@@ -2794,12 +2995,6 @@ const docTemplate = `{
                 "MaxPokemonPerPlayer": {
                     "type": "integer"
                 },
-                "Members": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.LeagueMember"
-                    }
-                },
                 "MinPokemonPerPlayer": {
                     "type": "integer"
                 },
@@ -2807,7 +3002,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "NewPlayerGroupNumber": {
-                    "description": "used to assign a group number for new players",
+                    "description": "NewPlayerGroupNumber is used to assign a group number for new players",
                     "type": "integer"
                 },
                 "NextWeeklyTick": {
@@ -2827,11 +3022,20 @@ const docTemplate = `{
                 "PlayerCount": {
                     "type": "integer"
                 },
+                "Players": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Player"
+                    }
+                },
                 "RegularSeasonStartDate": {
                     "type": "string"
                 },
                 "RulesetDescription": {
                     "type": "string"
+                },
+                "SpectatorCount": {
+                    "type": "integer"
                 },
                 "StartDate": {
                     "type": "string"
@@ -2850,9 +3054,15 @@ const docTemplate = `{
                 }
             }
         },
-        "models.LeagueMember": {
+        "models.Player": {
             "type": "object",
             "properties": {
+                "Claims": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Claim"
+                    }
+                },
                 "CreatedAt": {
                     "type": "string"
                 },
@@ -2864,7 +3074,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "GroupNumber": {
-                    "description": "group to which member belongs to",
+                    "description": "group to which player belongs to",
                     "type": "integer"
                 },
                 "ID": {
@@ -2872,10 +3082,6 @@ const docTemplate = `{
                 },
                 "InLeagueName": {
                     "type": "string"
-                },
-                "IsParticipating": {
-                    "description": "whether a league member is a player",
-                    "type": "boolean"
                 },
                 "League": {
                     "$ref": "#/definitions/models.League"
@@ -3001,6 +3207,38 @@ const docTemplate = `{
                 }
             }
         },
+        "models.Spectator": {
+            "type": "object",
+            "properties": {
+                "CreatedAt": {
+                    "type": "string"
+                },
+                "ExpiresAt": {
+                    "type": "string"
+                },
+                "ID": {
+                    "type": "string"
+                },
+                "InLeagueName": {
+                    "type": "string"
+                },
+                "IsViewer": {
+                    "type": "boolean"
+                },
+                "LeagueID": {
+                    "type": "string"
+                },
+                "Role": {
+                    "$ref": "#/definitions/rbac.MemberRole"
+                },
+                "UpdatedAt": {
+                    "type": "string"
+                },
+                "UserID": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Sprites": {
             "type": "object",
             "properties": {
@@ -3030,11 +3268,11 @@ const docTemplate = `{
                 "ID": {
                     "type": "string"
                 },
-                "Members": {
+                "Players": {
                     "description": "Relationships",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.LeagueMember"
+                        "$ref": "#/definitions/models.Player"
                     }
                 },
                 "Role": {
@@ -3042,7 +3280,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "ShowdownUsername": {
+                    "description": "Nullable until the user completes onboarding; NULL is allowed by the unique index.",
                     "type": "string"
+                },
+                "Spectators": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Spectator"
+                    }
                 },
                 "UpdatedAt": {
                     "type": "string"
@@ -3061,6 +3306,55 @@ const docTemplate = `{
                 "MRoleModerator",
                 "MRoleMember"
             ]
+        },
+        "requests.DevCreateUserRequestDTO": {
+            "type": "object",
+            "required": [
+                "Name"
+            ],
+            "properties": {
+                "Name": {
+                    "type": "string"
+                },
+                "ShowdownUsername": {
+                    "type": "string"
+                }
+            }
+        },
+        "requests.DevImpersonateRequestDTO": {
+            "type": "object",
+            "required": [
+                "UserId"
+            ],
+            "properties": {
+                "UserId": {
+                    "type": "string"
+                }
+            }
+        },
+        "requests.DevUpsertMembershipRequestDTO": {
+            "type": "object",
+            "required": [
+                "LeagueId",
+                "Role",
+                "UserId"
+            ],
+            "properties": {
+                "LeagueId": {
+                    "type": "string"
+                },
+                "Role": {
+                    "type": "string",
+                    "enum": [
+                        "OWNER",
+                        "MODERATOR",
+                        "MEMBER"
+                    ]
+                },
+                "UserId": {
+                    "type": "string"
+                }
+            }
         },
         "requests.DraftMakePickRequestDTO": {
             "type": "object",
@@ -3083,13 +3377,13 @@ const docTemplate = `{
         "requests.FinalizeGameRequestDTO": {
             "type": "object",
             "required": [
-                "FinalizerID",
+                "ApproverUserID",
                 "Player1Wins",
                 "Player2Wins",
                 "WinnerID"
             ],
             "properties": {
-                "FinalizerID": {
+                "ApproverUserID": {
                     "type": "string"
                 },
                 "Player1Wins": {
@@ -3164,7 +3458,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "GroupCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "maximum": 2,
+                    "minimum": 1
                 },
                 "IsSnakeRoundDraft": {
                     "type": "boolean"
@@ -3204,7 +3500,7 @@ const docTemplate = `{
                 }
             }
         },
-        "requests.LeagueMemberCreateRequestDTO": {
+        "requests.PlayerCreateRequestDTO": {
             "type": "object",
             "required": [
                 "LeagueID",
@@ -3288,7 +3584,7 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
-                "ReporterID": {
+                "ReporterUserID": {
                     "type": "string"
                 },
                 "WinnerID": {
@@ -3311,7 +3607,7 @@ const docTemplate = `{
                 }
             }
         },
-        "requests.UpdateLeagueMemberInfoRequestDTO": {
+        "requests.UpdatePlayerInfoRequestDTO": {
             "type": "object",
             "properties": {
                 "DraftPoints": {

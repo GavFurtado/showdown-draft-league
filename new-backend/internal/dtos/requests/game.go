@@ -5,7 +5,7 @@ import (
 )
 
 type ReportGameRequestDTO struct {
-	ReporterID  uuid.UUID `json:"ReporterID" validate:"omitempty"`
+	ReporterUserID uuid.UUID `json:"ReporterUserID" validate:"omitempty"`
 	WinnerID    uuid.UUID `json:"WinnerID" validate:"required"`
 	Player1Wins *int      `json:"Player1Wins" validate:"required,gte=0"`
 	Player2Wins *int      `json:"Player2Wins" validate:"required,gte=0"`
@@ -13,7 +13,7 @@ type ReportGameRequestDTO struct {
 }
 
 type FinalizeGameRequestDTO struct {
-	FinalizerID uuid.UUID `json:"FinalizerID" validate:"required"`
+	ApproverUserID uuid.UUID `json:"ApproverUserID" validate:"required"`
 	WinnerID    uuid.UUID `json:"WinnerID" validate:"required"`
 	Player1Wins *int      `json:"Player1Wins" validate:"required,gte=0"`
 	Player2Wins *int      `json:"Player2Wins" validate:"required,gte=0"`

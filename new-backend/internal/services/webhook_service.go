@@ -23,7 +23,7 @@ func NewWebhookService(logger *slog.Logger) WebhookService {
 
 // sends a message to the specified webhook URL.
 // Currently, this is a placeholder and only logs the attempt.
-// TODO: Implement actual HTTP POST request to the webhookURL.
+// FIXME: Implement actual HTTP POST request to the webhookURL.
 func (s *webhookService) SendWebhookMessage(webhookURL string, message string) error {
 	if webhookURL == "" {
 		// No webhook configured, just return without error :(

@@ -15,10 +15,11 @@ type Repositories struct {
 	DraftRepository          repositories.DraftRepository
 	GameRepository           repositories.GameRepository
 
-	DraftPickRepository    repositories.DraftPickRepository
-	ClaimRepository        repositories.ClaimRepository
-	PoolEntryRepository    repositories.PoolEntryRepository
-	LeagueMemberRepository repositories.LeagueMemberRepository
+	DraftPickRepository repositories.DraftPickRepository
+	ClaimRepository     repositories.ClaimRepository
+	PoolEntryRepository repositories.PoolEntryRepository
+	PlayerRepository    repositories.PlayerRepository
+	SpectatorRepository repositories.SpectatorRepository
 }
 
 type Services struct {
@@ -36,10 +37,10 @@ type Services struct {
 	GameService           services.GameService
 	TransferService       services.TransferService
 
-	PoolEntryService    services.PoolEntryService
-	LeagueMemberService services.LeagueMemberService
-	DraftPickService    services.DraftPickService
-	ClaimService        services.ClaimService
+	PoolEntryService services.PoolEntryService
+	PlayerService    services.PlayerService
+	DraftPickService services.DraftPickService
+	ClaimService     services.ClaimService
 }
 
 type Controllers struct {
@@ -52,8 +53,8 @@ type Controllers struct {
 	GameController           controllers.GameController
 	TransferController       controllers.TransferController
 
-	PoolEntryController    controllers.PoolEntryController
-	LeagueMemberController controllers.LeagueMemberController
-	DraftPickController    controllers.DraftPickController
-	ClaimController        controllers.ClaimController
+	PoolEntryController controllers.PoolEntryController
+	PlayerController    controllers.PlayerController
+	DraftPickController controllers.DraftPickController
+	ClaimController     controllers.ClaimController
 }

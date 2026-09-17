@@ -131,7 +131,7 @@ func (c *devAuthControllerImpl) Impersonate(ctx *gin.Context) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		requests.DevUpsertMembershipRequestDTO	true	"Membership"
-//	@Success		200	{object}	models.LeagueMember
+//	@Success		200	{object}	models.Player
 //	@Failure		400	{object}	responses.ErrorResponse
 //	@Failure		404	{object}	responses.ErrorResponse
 //	@Failure		500	{object}	responses.ErrorResponse
@@ -155,13 +155,13 @@ func (c *devAuthControllerImpl) UpsertMembership(ctx *gin.Context) {
 		return
 	}
 
-	member, err := c.devAuthService.UpsertMembership(leagueID, userID, req.Role)
+	player, err := c.devAuthService.UpsertMembership(leagueID, userID, req.Role)
 	if err != nil {
 		c.handleServiceError(ctx, "UpsertMembership", err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, member)
+	ctx.JSON(http.StatusOK, player)
 }
 
 func (c *devAuthControllerImpl) handleServiceError(ctx *gin.Context, method string, err error) {

@@ -4,14 +4,14 @@ import (
 	"github.com/google/uuid"
 )
 
-type LeagueMemberCreateRequestDTO struct {
+type PlayerCreateRequestDTO struct {
 	UserID       uuid.UUID `json:"UserID" validate:"required"`
 	LeagueID     uuid.UUID `json:"LeagueID" validate:"required"`
 	InLeagueName *string   `json:"InLeagueName" validate:"omitempty,min=3,max=20"`
 	TeamName     *string   `json:"TeamName" validate:"omitempty,min=3,max=20"`
 }
 
-type UpdateLeagueMemberInfoRequestDTO struct {
+type UpdatePlayerInfoRequestDTO struct {
 	InLeagueName  *string `json:"InLeagueName" validate:"min=3,max=20"`
 	TeamName      *string `json:"TeamName" validate:"min=3,max=20"`
 	Wins          *int    `json:"Wins" validate:"min=0"`

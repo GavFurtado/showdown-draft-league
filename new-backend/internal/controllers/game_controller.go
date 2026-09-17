@@ -120,10 +120,10 @@ func (c *gameControllerImpl) GetGamesByLeague(ctx *gin.Context) {
 //	@Tags			Games
 //	@Produce		json
 //	@Param			leagueId	path		string	true	"League ID"
-//	@Param			memberId	path		string	true	"Member ID"
+//	@Param			playerId	path		string	true	"Player ID"
 //	@Success		200			{object}	map[string]interface{}
 //	@Failure		400			{object}	responses.ErrorResponse
-//	@Router			/api/leagues/{leagueId}/games/members/{memberId} [get]
+//	@Router			/api/leagues/{leagueId}/games/players/{playerId} [get]
 func (c *gameControllerImpl) GetGamesByPlayer(ctx *gin.Context) {
 	playerID, err := uuid.Parse(ctx.Param("playerId"))
 	if err != nil {
@@ -177,12 +177,12 @@ func (c *gameControllerImpl) ReportGame(ctx *gin.Context) {
 		return
 	}
 
-	reporterIDStr, exists := ctx.Get("playerID")
+	reporterUserIDStr, exists := ctx.Get("currentUserID")
 	if !exists {
-		sendError(ctx, http.StatusUnauthorized, "Player ID not found in context")
+		sendError(ctx, http.StatusUnauthorized, "User ID not found in context")
 		return
 	}
-	dto.ReporterID = reporterIDStr.(uuid.UUID)
+	dto.ReporterUserID = reporterUserIDStr.(uuid.UUID)
 
 	if err := c.gameService.ReportGameResult(gameID, &dto); err != nil {
 		c.logger.Error("ReportGame error", "error", err)
@@ -230,13 +230,12 @@ func (c *gameControllerImpl) FinalizeGame(ctx *gin.Context) {
 		return
 	}
 
-	finalizerIDStr, exists := ctx.Get("playerID")
+	approverUserIDStr, exists := ctx.Get("currentUserID")
 	if !exists {
-		sendError(ctx, http.StatusUnauthorized, "Player ID not found in context")
+		sendError(ctx, http.StatusUnauthorized, "User ID not found in context")
 		return
 	}
-	finalizerID := finalizerIDStr.(uuid.UUID)
-	dto.FinalizerID = finalizerID
+	dto.ApproverUserID = approverUserIDStr.(uuid.UUID)
 
 	if err := c.gameService.FinalizeGameResult(gameID, &dto); err != nil {
 		c.logger.Error("FinalizeGameResult error", "error", err)

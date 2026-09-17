@@ -16,18 +16,19 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLeagueService_CreateLeague(t *testing.T) {
 	mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
-	mockLeagueMemberRepo := new(mock_repositories.MockLeagueMemberRepository)
+	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
 	mockDraftRepo := new(mock_repositories.MockDraftRepository)
 	mockGameRepo := new(mock_repositories.MockGameRepository)
 
 	service := services.NewLeagueService(
 		slog.Default(),
 		mockLeagueRepo,
-		mockLeagueMemberRepo,
+		mockPlayerRepo,
 		mockDraftRepo,
 		mockGameRepo,
 	)
@@ -67,7 +68,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 
 		inLeagueName := "League Owner"
 		teamName := fmt.Sprintf("%s's Team", input.Name)
-		expectedOwnerMember := &models.LeagueMember{
+		expectedOwnerPlayer := &models.Player{
 			UserID:       testUserID,
 			LeagueID:     createdLeague.ID,
 			InLeagueName: &inLeagueName,
@@ -78,8 +79,19 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 		}
 
 		mockLeagueRepo.On("GetLeaguesCountWhereOwner", testUserID).Return(int64(0), nil).Once()
-		mockLeagueRepo.On("CreateLeague", mock.AnythingOfType("*models.League")).Return(&createdLeague, nil).Once()
-		mockLeagueMemberRepo.On("Create", expectedOwnerMember).Return(expectedOwnerMember, nil).Once()
+		var leagueArg *models.League
+		mockLeagueRepo.On("CreateLeague", mock.AnythingOfType("*models.League")).
+			Run(func(args mock.Arguments) {
+				leagueArg = args.Get(0).(*models.League)
+			}).
+			Return(&createdLeague, nil).Once()
+
+		var createdOwnerPlayer *models.Player
+		mockPlayerRepo.On("Create", mock.AnythingOfType("*models.Player")).
+			Run(func(args mock.Arguments) {
+				createdOwnerPlayer = args.Get(0).(*models.Player)
+			}).
+			Return(expectedOwnerPlayer, nil).Once()
 
 		result, err := service.CreateLeague(testUserID, input)
 		assert.NoError(t, err)
@@ -87,8 +99,18 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 		assert.Equal(t, createdLeague.ID, result.ID)
 		assert.Equal(t, input.Name, result.Name)
 
+		require.NotNil(t, createdOwnerPlayer)
+		require.NotNil(t, leagueArg)
+		assert.Equal(t, expectedOwnerPlayer.UserID, createdOwnerPlayer.UserID)
+		assert.Equal(t, expectedOwnerPlayer.InLeagueName, createdOwnerPlayer.InLeagueName)
+		assert.Equal(t, expectedOwnerPlayer.TeamName, createdOwnerPlayer.TeamName)
+		assert.Equal(t, expectedOwnerPlayer.DraftPoints, createdOwnerPlayer.DraftPoints)
+		assert.Equal(t, expectedOwnerPlayer.GroupNumber, createdOwnerPlayer.GroupNumber)
+		assert.Equal(t, expectedOwnerPlayer.Role, createdOwnerPlayer.Role)
+		assert.Equal(t, leagueArg.ID, createdOwnerPlayer.LeagueID)
+
 		mockLeagueRepo.AssertExpectations(t)
-		mockLeagueMemberRepo.AssertExpectations(t)
+		mockPlayerRepo.AssertExpectations(t)
 	})
 
 	t.Run("Fails if user already has maximum leagues", func(t *testing.T) {
@@ -102,7 +124,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 
 		mockLeagueRepo.AssertExpectations(t)
 		mockLeagueRepo.AssertNotCalled(t, "CreateLeague")
-		mockLeagueMemberRepo.AssertNotCalled(t, "Create")
+		mockPlayerRepo.AssertNotCalled(t, "Create")
 	})
 
 	t.Run("Fails if GetLeaguesCountWhereOwner returns error", func(t *testing.T) {
@@ -116,7 +138,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 
 		mockLeagueRepo.AssertExpectations(t)
 		mockLeagueRepo.AssertNotCalled(t, "CreateLeague")
-		mockLeagueMemberRepo.AssertNotCalled(t, "Create")
+		mockPlayerRepo.AssertNotCalled(t, "Create")
 	})
 
 	t.Run("Fails if CreateLeague returns error", func(t *testing.T) {
@@ -124,32 +146,24 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 		mockLeagueRepo.On("GetLeaguesCountWhereOwner", testUserID).Return(int64(0), nil).Once()
 		mockLeagueRepo.On("CreateLeague", mock.AnythingOfType("*models.League")).Return((*models.League)(nil), dbError).Once()
 
+		teamName := fmt.Sprintf("%s's Team", input.Name)
+		mockPlayerRepo.On("Create", mock.AnythingOfType("*models.Player")).Return(&models.Player{
+			TeamName: &teamName,
+		}, nil).Once()
+
 		result, err := service.CreateLeague(testUserID, input)
 		assert.Error(t, err)
 		assert.Nil(t, result)
 		assert.Contains(t, err.Error(), "failed to create league")
 
 		mockLeagueRepo.AssertExpectations(t)
-		mockLeagueMemberRepo.AssertNotCalled(t, "Create")
+		mockPlayerRepo.AssertExpectations(t)
 	})
 
-	t.Run("Fails if CreateLeagueMember returns error", func(t *testing.T) {
-		expectedLeague := &models.League{
-			Name:                 input.Name,
-			RulesetDescription:   input.RulesetDescription,
-			MaxPokemonPerPlayer:  input.MaxPokemonPerPlayer,
-			StartingDraftPoints:  input.StartingDraftPoints,
-			NewPlayerGroupNumber: 1, // Must match the service's logic
-			Format:               input.Format.ToLeagueFormatPtr(),
-		}
-
-		createdLeague := *expectedLeague
-		createdLeague.ID = uuid.New()
-
-		dbError := errors.New("member creation error")
+	t.Run("Fails if CreatePlayer returns error", func(t *testing.T) {
+		dbError := errors.New("player creation error")
 		mockLeagueRepo.On("GetLeaguesCountWhereOwner", testUserID).Return(int64(0), nil).Once()
-		mockLeagueRepo.On("CreateLeague", mock.AnythingOfType("*models.League")).Return(&createdLeague, nil).Once()
-		mockLeagueMemberRepo.On("Create", mock.AnythingOfType("*models.LeagueMember")).Return((*models.LeagueMember)(nil), dbError).Once()
+		mockPlayerRepo.On("Create", mock.AnythingOfType("*models.Player")).Return((*models.Player)(nil), dbError).Once()
 
 		result, err := service.CreateLeague(testUserID, input)
 		assert.Error(t, err)
@@ -157,7 +171,8 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 		assert.Contains(t, err.Error(), "failed to create league owner")
 
 		mockLeagueRepo.AssertExpectations(t)
-		mockLeagueMemberRepo.AssertExpectations(t)
+		mockPlayerRepo.AssertExpectations(t)
+		mockLeagueRepo.AssertNotCalled(t, "CreateLeague")
 	})
 
 	t.Run("Fails if GroupCount is zero", func(t *testing.T) {
@@ -173,7 +188,7 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 
 		mockLeagueRepo.AssertExpectations(t)
 		mockLeagueRepo.AssertNotCalled(t, "CreateLeague")
-		mockLeagueMemberRepo.AssertNotCalled(t, "Create")
+		mockPlayerRepo.AssertNotCalled(t, "Create")
 	})
 
 	t.Run("Fails if GroupCount exceeds maximum", func(t *testing.T) {
@@ -190,20 +205,20 @@ func TestLeagueService_CreateLeague(t *testing.T) {
 
 		mockLeagueRepo.AssertExpectations(t)
 		mockLeagueRepo.AssertNotCalled(t, "CreateLeague")
-		mockLeagueMemberRepo.AssertNotCalled(t, "Create")
+		mockPlayerRepo.AssertNotCalled(t, "Create")
 	})
 }
 
 func TestLeagueService_GetLeagueByIDForUser(t *testing.T) {
 	mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
-	mockLeagueMemberRepo := new(mock_repositories.MockLeagueMemberRepository)
+	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
 	mockDraftRepo := new(mock_repositories.MockDraftRepository)
 	mockGameRepo := new(mock_repositories.MockGameRepository)
 
 	service := services.NewLeagueService(
 		slog.Default(),
 		mockLeagueRepo,
-		mockLeagueMemberRepo,
+		mockPlayerRepo,
 		mockDraftRepo,
 		mockGameRepo,
 	)
@@ -246,14 +261,14 @@ func TestLeagueService_GetLeagueByIDForUser(t *testing.T) {
 
 func TestLeagueService_GetLeaguesByCommissioner(t *testing.T) {
 	mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
-	mockLeagueMemberRepo := new(mock_repositories.MockLeagueMemberRepository)
+	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
 	mockDraftRepo := new(mock_repositories.MockDraftRepository)
 	mockGameRepo := new(mock_repositories.MockGameRepository)
 
 	service := services.NewLeagueService(
 		slog.Default(),
 		mockLeagueRepo,
-		mockLeagueMemberRepo,
+		mockPlayerRepo,
 		mockDraftRepo,
 		mockGameRepo,
 	)
@@ -317,14 +332,14 @@ func TestLeagueService_GetLeaguesByCommissioner(t *testing.T) {
 
 func TestLeagueService_GetLeaguesByUser(t *testing.T) {
 	mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
-	mockLeagueMemberRepo := new(mock_repositories.MockLeagueMemberRepository)
+	mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
 	mockDraftRepo := new(mock_repositories.MockDraftRepository)
 	mockGameRepo := new(mock_repositories.MockGameRepository)
 
 	service := services.NewLeagueService(
 		slog.Default(),
 		mockLeagueRepo,
-		mockLeagueMemberRepo,
+		mockPlayerRepo,
 		mockDraftRepo,
 		mockGameRepo,
 	)

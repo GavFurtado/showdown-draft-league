@@ -40,7 +40,7 @@ func (r *userRepositoryImpl) GetUserByID(id uuid.UUID) (*models.User, error) {
 	var user models.User
 
 	err := r.db.
-		Preload("Members").
+		Preload("Players").
 		First(&user, "id = ?", id).Error
 	if err != nil {
 		return nil, err
@@ -73,21 +73,21 @@ func (r *userRepositoryImpl) GetUserLeagues(userID uuid.UUID) ([]*models.League,
 	var user models.User
 
 	err := r.db.
-		Preload("Members").
-		Preload("Members.League").
+		Preload("Players").
+		Preload("Players.League").
 		Where("id = ?", userID).
 		First(&user).Error
 	if err != nil {
 		return nil, err
 	}
 
-	leagues := make([]*models.League, 0, len(user.Members))
+	leagues := make([]*models.League, 0, len(user.Players))
 	uniqueLeagues := make(map[uuid.UUID]struct{})
 
-	for _, member := range user.Members {
-		if _, ok := uniqueLeagues[member.League.ID]; !ok {
-			leagues = append(leagues, member.League)
-			uniqueLeagues[member.League.ID] = struct{}{}
+	for _, player := range user.Players {
+		if _, ok := uniqueLeagues[player.League.ID]; !ok {
+			leagues = append(leagues, player.League)
+			uniqueLeagues[player.League.ID] = struct{}{}
 		}
 	}
 

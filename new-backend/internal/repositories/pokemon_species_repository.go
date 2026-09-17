@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// TODO: This doesn't follow existing conventions of other repositories.
+// FIXME: This doesn't follow existing conventions of other repositories.
 // It doesn't use .Error for GORM calls. Needs to be updated to do that
 
 type PokemonSpeciesRepository interface {

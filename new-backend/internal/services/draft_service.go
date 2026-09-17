@@ -34,7 +34,7 @@ type draftServiceImpl struct {
 	logger           *slog.Logger
 	draftRepo        repositories.DraftRepository
 	leagueRepo       repositories.LeagueRepository
-	memberRepo       repositories.LeagueMemberRepository
+	playerRepo       repositories.PlayerRepository
 	webhookService   *WebhookService
 	schedulerService SchedulerService
 
@@ -47,14 +47,14 @@ func NewDraftService(
 	logger *slog.Logger,
 	leagueRepo repositories.LeagueRepository,
 	draftRepo repositories.DraftRepository,
-	memberRepo repositories.LeagueMemberRepository,
+	playerRepo repositories.PlayerRepository,
 	webhookService *WebhookService,
 ) DraftService {
 	return &draftServiceImpl{
 		logger:         utils.LoggerWithService(logger, "DraftService"),
 		draftRepo:      draftRepo,
 		leagueRepo:     leagueRepo,
-		memberRepo:     memberRepo,
+		playerRepo:     playerRepo,
 		webhookService: webhookService,
 	}
 }
@@ -106,6 +106,7 @@ func (s *draftServiceImpl) GetDraftByLeagueID(leagueID uuid.UUID) (*models.Draft
 // draft state in the database, updates the league status to DRAFTING, and schedules the
 // first turn's timeout task.
 // player permission rbac.PermissionCreateDraft
+// TODO: Make this more of an orchestrator. More testable private functions that this calls
 func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*models.Draft, error) {
 	// Retrieve the league
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
@@ -114,53 +115,54 @@ func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*m
 		return nil, types.ErrLeagueNotFound
 	}
 
-	// Retrieve members in the league, sorted by draft position
-	members, err := s.memberRepo.GetByLeague(leagueID)
+	// Retrieve players in the league, sorted by draft position
+	players, err := s.playerRepo.GetByLeague(leagueID)
 	if err != nil {
-		s.logger.Error("StartDraft - could not get members", "league_id", leagueID, "error", err)
+		s.logger.Error("StartDraft - could not get players", "league_id", leagueID, "error", err)
 		return nil, types.ErrInternalService
 	}
 
-	if len(members) == 0 {
-		s.logger.Warn("StartDraft - no members found", "league_id", leagueID)
+	if len(players) == 0 {
+		s.logger.Warn("StartDraft - no players found", "league_id", leagueID)
 		return nil, types.ErrNoPlayerForDraft
 	}
 
+	// TODO: each case should call it's own respective function
 	switch league.Format.DraftOrderType {
 	case enums.DraftOrderTypeRandom:
 		r := rand.New(rand.NewSource(time.Now().UnixNano())) // set seed
-		r.Shuffle(len(members), func(i, j int) {
-			members[i], members[j] = members[j], members[i]
+		r.Shuffle(len(players), func(i, j int) {
+			players[i], players[j] = players[j], players[i]
 		})
 
 		// Assign new draft positions and update in DB
-		for i := range members {
-			members[i].DraftPosition = i + 1 // Draft positions are 1-based
-			if err := s.memberRepo.UpdateDraftPosition(members[i].ID, members[i].DraftPosition); err != nil {
-				s.logger.Error("StartDraft - failed to update draft position", "member_id", members[i].ID, "error", err)
+		for i := range players {
+			players[i].DraftPosition = i + 1 // Draft positions are 1-based
+			if err := s.playerRepo.UpdateDraftPosition(players[i].ID, players[i].DraftPosition); err != nil {
+				s.logger.Error("StartDraft - failed to update draft position", "player_id", players[i].ID, "error", err)
 				return nil, types.ErrInternalService
 			}
 		}
 		s.logger.Info("StartDraft - randomized draft order complete", "league_id", leagueID)
 
 	case enums.DraftOrderTypeManual:
-		// Members are already sorted by DraftPosition from GetByLeague.
+		// Players are already sorted by DraftPosition from GetByLeague.
 		// This assumes DraftPosition has been set manually prior to starting the draft.
-		// Validate that all members have a unique, positive DraftPosition.
+		// Validate that all players have a unique, positive DraftPosition.
 		seenPositions := make(map[int]bool)
-		for _, m := range members {
+		for _, m := range players {
 			if m.DraftPosition <= 0 {
-				s.logger.Error("StartDraft - member has invalid draft position", "member_id", m.ID, "position", m.DraftPosition)
+				s.logger.Error("StartDraft - player has invalid draft position", "player_id", m.ID, "position", m.DraftPosition)
 				return nil, types.ErrInvalidDraftPosition
 			}
 			if seenPositions[m.DraftPosition] {
-				s.logger.Error("StartDraft - duplicate draft position found", "position", m.DraftPosition, "member_id", m.ID)
+				s.logger.Error("StartDraft - duplicate draft position found", "position", m.DraftPosition, "player_id", m.ID)
 				return nil, types.ErrDuplicateDraftPosition
 			}
 			seenPositions[m.DraftPosition] = true
 		}
-		// Ensure all positions from 1 to len(members) are present
-		if len(seenPositions) != len(members) {
+		// Ensure all positions from 1 to len(players) are present
+		if len(seenPositions) != len(players) {
 			s.logger.Error("StartDraft - missing or extra draft positions for manual draft order", "league_id", leagueID)
 			return nil, types.ErrIncompleteDraftOrder
 		}
@@ -168,7 +170,7 @@ func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*m
 	}
 
 	// Initialize the Draft model
-	firstMemberID := members[0].ID
+	firstPlayerID := players[0].ID
 	currTime := time.Now()
 
 	draft := &models.Draft{
@@ -176,8 +178,8 @@ func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*m
 		Status:                      enums.DraftStatusOngoing,
 		CurrentRound:                1,
 		CurrentPickInRound:          1,
-		CurrentPickOnClock:          1, // formula: ((CurrentRound - 1)*PlayerCount + CurrentPickInRound)
-		CurrentTurnMemberID:         &firstMemberID,
+		CurrentPickOnClock:          1, // NOTE: formula: ((CurrentRound - 1)*PlayerCount + CurrentPickInRound)
+		CurrentTurnPlayerID:         &firstPlayerID,
 		CurrentTurnStartTime:        &currTime,
 		TurnTimeLimit:               TurnTimeLimit,
 		PlayersWithAccumulatedPicks: make(models.PlayerAccumulatedPicks), // map[uuid.UUID][]int
@@ -194,7 +196,7 @@ func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*m
 	league.Status = enums.LeagueStatusDrafting
 	if _, err := s.leagueRepo.UpdateLeague(league); err != nil {
 		s.logger.Error("StartDraft - failed to update league status", "league_id", leagueID, "error", err)
-		// TODO: Consider rolling back draft creation if this fails
+		// FIXME: Consider rolling back draft creation if this fails
 		return nil, fmt.Errorf("failed to update league status: %w", err)
 	}
 
@@ -209,7 +211,7 @@ func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*m
 		Type:      taskType,
 		Payload: utils.PayloadDraftTurnTimeout{
 			LeagueID: draft.LeagueID,
-			PlayerID: *draft.CurrentTurnMemberID,
+			PlayerID: *draft.CurrentTurnPlayerID,
 		},
 	}
 
@@ -217,10 +219,7 @@ func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*m
 
 	// Send an initial webhook notification
 	// TODO: Implement webhook message creation logic
-	// if err := (*s.webhookService).SendWebhookMessage(league.DiscordWebhookURL, "Draft has started!"); err != nil {
-	// 	log.Printf("(Warning: DraftService.StartDraft) - Failed to send webhook for league %s: %v\n", leagueID, err)
-	// 	// Continue execution, webhook failure shouldn't stop the draft
-	// }
+	// Implementation needs to be async as well
 
 	return draft, nil
 }
@@ -229,13 +228,10 @@ func (s *draftServiceImpl) StartDraft(leagueID uuid.UUID, TurnTimeLimit int) (*m
 // - Confirms the draft is in an active state.
 // - Verifies it is the correct player's turn.
 // - Checks that the requested Pokémon are available and affordable.
-// - Ensures the pick doesn't violate league roster rules (e.g., minimum roster size).
+// - Ensures the pick doesn't violate league roster rules (such as the minimum roster size).
 // If all checks pass, it executes the pick as a transaction and advances the draft state.
 // MakePick makes one or more picks (if accumulated) during drafting phase;
 // Different from ForcePick (not implemented yet),
-// MakePick does all the required checks (there's a lot of checks) and validates the input
-//
-// NOTE: This method has been migrated to write DraftPick + Claim records instead of DraftedPokemon.
 func (s *draftServiceImpl) MakePick(
 	currentUser *models.User,
 	leagueID uuid.UUID,
@@ -247,7 +243,7 @@ func (s *draftServiceImpl) MakePick(
 		return types.ErrLeagueNotFound
 	}
 
-	// fetch draft for league
+	// Fetch draft for league
 	draft, err := s.fetchDraftResource(league.ID)
 	if err != nil {
 		switch err {
@@ -259,27 +255,29 @@ func (s *draftServiceImpl) MakePick(
 		return err
 	}
 
-	member, err := s.fetchMemberResource(currentUser.ID, league.ID)
+	// Fetch the player resource
+	player, err := s.fetchPlayerResource(currentUser.ID, league.ID)
 	if err != nil {
 		switch err {
 		case types.ErrPlayerNotFound:
-			s.logger.Warn("MakePick - member not found", "user_id", currentUser.ID, "league_id", league.ID, "error", err)
+			s.logger.Warn("MakePick - player not found", "user_id", currentUser.ID, "league_id", league.ID, "error", err)
 		case types.ErrInternalService:
-			s.logger.Error("MakePick - error fetching member", "user_id", currentUser.ID, "league_id", league.ID, "error", err)
+			s.logger.Error("MakePick - error fetching player", "user_id", currentUser.ID, "league_id", league.ID, "error", err)
 		}
 		return err
 	}
 
-	// START early checks to prevent a expensive checks later
-	// check if it's the right member's turn
-	if currentTurnMemberID := *draft.CurrentTurnMemberID; currentTurnMemberID != member.ID {
-		s.logger.Warn("MakePick - member tried to draft when not their turn", "member_id", currentTurnMemberID, "current_turn_member_id", *draft.CurrentTurnMemberID)
+	// START early checks to prevent doing any of the expensive checks later
+	// Check if it's the right player's turn
+	// TODO: should all be in it's own function (like performEarlyChecks or performInexpensiveChecks)
+	if currentTurnPlayerID := *draft.CurrentTurnPlayerID; currentTurnPlayerID != player.ID {
+		s.logger.Warn("MakePick - player tried to draft when not their turn", "player_id", currentTurnPlayerID, "current_turn_player_id", *draft.CurrentTurnPlayerID)
 		return types.ErrUnauthorized
 	}
 
-	// check if number of requested picks is valid for the member
-	if input.RequestedPickCount > len(draft.PlayersWithAccumulatedPicks[member.ID])+1 {
-		s.logger.Warn("MakePick - member requested too many draft picks", "user_id", currentUser.ID, "member_id", member.ID)
+	// Check if number of requested picks is valid for the player
+	if input.RequestedPickCount > len(draft.PlayersWithAccumulatedPicks[player.ID])+1 {
+		s.logger.Warn("MakePick - player requested too many draft picks", "user_id", currentUser.ID, "player_id", player.ID)
 		return types.ErrTooManyRequestedPicks
 	}
 
@@ -290,7 +288,7 @@ func (s *draftServiceImpl) MakePick(
 	}
 	// END early checks
 
-	// fetch all the pool entries requested
+	// Fetch all the pool entries requested
 	// expensive
 	allRequestedPoolEntries, err := s.fetchRequestedPoolEntries(league.ID, input)
 	if err != nil {
@@ -305,47 +303,47 @@ func (s *draftServiceImpl) MakePick(
 		return err
 	}
 
-	// get member count; needed in multiple places
-	memberCount, err := s.memberRepo.GetCountByLeague(league.ID)
+	// get player count; needed in multiple places
+	playerCount, err := s.playerRepo.GetCountByLeague(league.ID)
 	if err != nil {
-		s.logger.Error("MakePick - failed to get member count", "league_id", league.ID, "error", err)
+		s.logger.Error("MakePick - failed to get player count", "league_id", league.ID, "error", err)
 		return types.ErrInternalService
 	}
-	if memberCount == 0 { // this should never happen if the draft has started or if the league even exists
-		s.logger.Error("MakePick - no members in league (unreachable code)", "league_id", league.ID)
+	if playerCount == 0 { // this should never happen if the draft has started or if the league even exists
+		s.logger.Error("MakePick - no players in league (unreachable code)", "league_id", league.ID)
 		return types.ErrInternalService
 	}
 
 	totalRequestedCost := s.getTotalCostForPoolEntries(allRequestedPoolEntries)
 
 	// perform remaining validation
-	currentPickSlotUsed, err := s.validatePicksAndCheckCurrentPickSlotUsed(draft, member, league, input, totalRequestedCost)
+	currentPickSlotUsed, err := s.validatePicksAndCheckCurrentPickSlotUsed(draft, player, league, input, totalRequestedCost)
 	if err != nil {
 		switch err {
 		case types.ErrInvalidInput:
 			s.logger.Warn("MakePick - invalid pick number in request", "user_id", currentUser.ID, "league_id", league.ID, "error", err)
 		case types.ErrInsufficientDraftPoints:
-			s.logger.Warn("MakePick - insufficient draft points", "user_id", currentUser.ID, "league_id", league.ID, "draft_points", member.DraftPoints, "error", err)
+			s.logger.Warn("MakePick - insufficient draft points", "user_id", currentUser.ID, "league_id", league.ID, "draft_points", player.DraftPoints, "error", err)
 		}
 		return err
 	}
 
 	// execute picks (new model: creates DraftPick + Claim instead of DraftedPokemon)
-	err = s.executeNewPickTransactions(draft, league, member, allRequestedPoolEntries, input, memberCount, totalRequestedCost)
+	err = s.executeNewPickTransactions(draft, league, player, allRequestedPoolEntries, input, playerCount, totalRequestedCost)
 	if err != nil {
 		s.logger.Error("MakePick - batch transaction unsuccessful", "user_id", currentUser.ID, "league_id", league.ID, "error", err)
 		return err
 	}
 
-	// get all members to change set the current member's turn for the next one
-	allMembers, err := s.memberRepo.GetByLeague(draft.LeagueID)
+	// get all players to change set the current player's turn for the next one
+	allPlayers, err := s.playerRepo.GetByLeague(draft.LeagueID)
 	if err != nil {
-		s.logger.Error("MakePick - could not get all members", "league_id", league.ID, "error", err)
+		s.logger.Error("MakePick - could not get all players", "league_id", league.ID, "error", err)
 		return types.ErrInternalService
 	}
 
 	// advance turn (if CurrentPickSlotUsed) and update draft model
-	draft, err = s.advanceDraftState(draft, league, member, allMembers, int(memberCount), currentPickSlotUsed)
+	draft, err = s.advanceDraftState(draft, league, player, allPlayers, int(playerCount), currentPickSlotUsed)
 	if err != nil {
 		s.logger.Error("MakePick - error advancing draft state", "league_id", league.ID, "error", err)
 		return err
@@ -373,7 +371,7 @@ func (s *draftServiceImpl) MakePick(
 		Type:      taskType,
 		Payload: utils.PayloadDraftTurnTimeout{
 			LeagueID: draft.LeagueID,
-			PlayerID: *draft.CurrentTurnMemberID,
+			PlayerID: *draft.CurrentTurnPlayerID,
 		},
 	}
 
@@ -405,13 +403,13 @@ func (s *draftServiceImpl) SkipTurn(currentUser *models.User, leagueID uuid.UUID
 		return err
 	}
 
-	member, err := s.fetchMemberResource(currentUser.ID, league.ID)
+	player, err := s.fetchPlayerResource(currentUser.ID, league.ID)
 	if err != nil {
 		switch err {
 		case types.ErrPlayerNotFound:
-			s.logger.Warn("SkipTurn - member not found", "user_id", currentUser.ID, "league_id", league.ID, "error", err)
+			s.logger.Warn("SkipTurn - player not found", "user_id", currentUser.ID, "league_id", league.ID, "error", err)
 		case types.ErrInternalService:
-			s.logger.Error("SkipTurn - error fetching member", "user_id", currentUser.ID, "league_id", league.ID, "error", err)
+			s.logger.Error("SkipTurn - error fetching player", "user_id", currentUser.ID, "league_id", league.ID, "error", err)
 		}
 		return err
 	}
@@ -421,41 +419,41 @@ func (s *draftServiceImpl) SkipTurn(currentUser *models.User, leagueID uuid.UUID
 		s.logger.Warn("SkipTurn - league is not in drafting status", "user_id", currentUser.ID, "league_id", league.ID)
 		return types.ErrInvalidState
 	}
-	// check if it's the right member's turn
-	if currentTurnMemberID := *draft.CurrentTurnMemberID; currentTurnMemberID != member.ID {
-		s.logger.Warn("SkipTurn - member tried to draft when not their turn", "member_id", currentTurnMemberID, "current_turn_member_id", *draft.CurrentTurnMemberID)
+	// check if it's the right player's turn
+	if currentTurnPlayerID := *draft.CurrentTurnPlayerID; currentTurnPlayerID != player.ID {
+		s.logger.Warn("SkipTurn - player tried to draft when not their turn", "player_id", currentTurnPlayerID, "current_turn_player_id", *draft.CurrentTurnPlayerID)
 		return types.ErrUnauthorized
 	}
 
-	// get all members to change set the current member's turn for the next one
-	allMembers, err := s.memberRepo.GetByLeague(draft.LeagueID)
+	// get all players to change set the current player's turn for the next one
+	allPlayers, err := s.playerRepo.GetByLeague(draft.LeagueID)
 	if err != nil {
-		s.logger.Error("SkipTurn - could not get all members", "league_id", league.ID, "error", err)
+		s.logger.Error("SkipTurn - could not get all players", "league_id", league.ID, "error", err)
 		return types.ErrInternalService
 	}
 
 	effectiveSkipsInThisAction := 1 // One skip for the current turn
-	_, err = s.isSkipAllowed(member, effectiveSkipsInThisAction)
+	_, err = s.isSkipAllowed(player, effectiveSkipsInThisAction)
 	if err != nil {
-		s.logger.Warn("SkipTurn - member cannot skip current turn's pick as it would violate minimum roster requirement", "member_id", member.ID, "pick", draft.CurrentPickOnClock, "skips_left", member.SkipsLeft)
+		s.logger.Warn("SkipTurn - player cannot skip current turn's pick as it would violate minimum roster requirement", "player_id", player.ID, "pick", draft.CurrentPickOnClock, "skips_left", player.SkipsLeft)
 		return err
 	}
 
-	member.SkipsLeft -= effectiveSkipsInThisAction
-	s.logger.Debug("SkipTurn - skips left before DB update", "member_id", member.ID, "skips_left", member.SkipsLeft)
-	if _, err := s.memberRepo.Update(member); err != nil {
-		s.logger.Error("SkipTurn - failed to update member skipsLeft in DB", "member_id", member.ID, "error", err)
+	player.SkipsLeft -= effectiveSkipsInThisAction
+	s.logger.Debug("SkipTurn - skips left before DB update", "player_id", player.ID, "skips_left", player.SkipsLeft)
+	if _, err := s.playerRepo.Update(player); err != nil {
+		s.logger.Error("SkipTurn - failed to update player skipsLeft in DB", "player_id", player.ID, "error", err)
 		return types.ErrInternalService
 	}
-	// Re-fetch member to confirm DB state
-	updatedMember, err := s.memberRepo.GetByID(member.ID)
+	// Re-fetch player to confirm DB state
+	updatedPlayer, err := s.playerRepo.GetByID(player.ID)
 	if err != nil {
-		s.logger.Error("SkipTurn - failed to re-fetch member after update", "member_id", member.ID, "error", err)
+		s.logger.Error("SkipTurn - failed to re-fetch player after update", "player_id", player.ID, "error", err)
 		return types.ErrInternalService
 	}
-	s.logger.Debug("SkipTurn - skips left after DB re-fetch", "member_id", updatedMember.ID, "skips_left", updatedMember.SkipsLeft)
+	s.logger.Debug("SkipTurn - skips left after DB re-fetch", "player_id", updatedPlayer.ID, "skips_left", updatedPlayer.SkipsLeft)
 
-	draft, err = s.advanceDraftState(draft, league, member, allMembers, len(allMembers), false)
+	draft, err = s.advanceDraftState(draft, league, player, allPlayers, len(allPlayers), false)
 	if err != nil {
 		s.logger.Error("SkipTurn - error advancing draft state", "league_id", league.ID, "error", err)
 		return err
@@ -482,7 +480,7 @@ func (s *draftServiceImpl) SkipTurn(currentUser *models.User, leagueID uuid.UUID
 		Type:      taskType,
 		Payload: utils.PayloadDraftTurnTimeout{
 			LeagueID: draft.LeagueID,
-			PlayerID: *draft.CurrentTurnMemberID,
+			PlayerID: *draft.CurrentTurnPlayerID,
 		},
 	}
 	s.schedulerService.RegisterTask(task)
@@ -494,21 +492,21 @@ func (s *draftServiceImpl) SkipTurn(currentUser *models.User, leagueID uuid.UUID
 // AutoSkipTurn is called by the SchedulerService when a player's turn timer expires.
 // It attempts to automatically skip the turn. If the skip is not allowed (e.g., it
 // would violate minimum roster size), the draft is paused for manual intervention.
-func (s *draftServiceImpl) AutoSkipTurn(memberID, leagueID uuid.UUID) error {
-	member, err := s.memberRepo.GetByID(memberID)
+func (s *draftServiceImpl) AutoSkipTurn(playerID, leagueID uuid.UUID) error {
+	player, err := s.playerRepo.GetByID(playerID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			s.logger.Error("AutoSkipTurn - member not found", "member_id", memberID, "league_id", leagueID, "error", err)
+			s.logger.Error("AutoSkipTurn - player not found", "player_id", playerID, "league_id", leagueID, "error", err)
 			return types.ErrPlayerNotFound
 		}
-		s.logger.Error("AutoSkipTurn - error fetching member", "member_id", memberID, "league_id", leagueID, "error", err)
+		s.logger.Error("AutoSkipTurn - error fetching player", "player_id", playerID, "league_id", leagueID, "error", err)
 		return types.ErrInternalService
 	}
 	league, err := s.leagueRepo.GetLeagueByID(leagueID)
 	if err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
-			s.logger.Warn("AutoSkipTurn - league not found", "member_id", memberID, "league_id", leagueID, "error", err)
+			s.logger.Warn("AutoSkipTurn - league not found", "player_id", playerID, "league_id", leagueID, "error", err)
 			return types.ErrLeagueNotFound
 		default:
 			s.logger.Error("AutoSkipTurn - could not fetch league", "league_id", leagueID, "error", err)
@@ -519,18 +517,18 @@ func (s *draftServiceImpl) AutoSkipTurn(memberID, leagueID uuid.UUID) error {
 	if err != nil {
 		switch err {
 		case gorm.ErrRecordNotFound:
-			s.logger.Warn("AutoSkipTurn - draft not found", "member_id", memberID, "league_id", leagueID, "error", err)
+			s.logger.Warn("AutoSkipTurn - draft not found", "player_id", playerID, "league_id", leagueID, "error", err)
 			return types.ErrDraftNotFound
 		default:
-			s.logger.Error("AutoSkipTurn - error fetching draft", "member_id", memberID, "error", err)
+			s.logger.Error("AutoSkipTurn - error fetching draft", "player_id", playerID, "error", err)
 			return types.ErrInternalService
 		}
 	}
 
 	effectiveSkipsInThisAction := 1
-	allowed, err := s.isSkipAllowed(member, effectiveSkipsInThisAction)
+	allowed, err := s.isSkipAllowed(player, effectiveSkipsInThisAction)
 	if !allowed {
-		s.logger.Error("AutoSkipTurn - cannot auto skip", "member_id", memberID, "league_id", leagueID, "error", err, "skips_left", member.SkipsLeft)
+		s.logger.Error("AutoSkipTurn - cannot auto skip", "player_id", playerID, "league_id", leagueID, "error", err, "skips_left", player.SkipsLeft)
 		// set Draft to PAUSED status, awaiting manual league staff intervention
 		draft.Status = enums.DraftStatusPaused
 		draft, err = s.draftRepo.UpdateDraft(draft)
@@ -542,28 +540,28 @@ func (s *draftServiceImpl) AutoSkipTurn(memberID, leagueID uuid.UUID) error {
 		return types.ErrDraftPausedForIntervention
 	}
 
-	member.SkipsLeft -= effectiveSkipsInThisAction
-	s.logger.Debug("AutoSkipTurn - skips left before DB update", "member_id", member.ID, "skips_left", member.SkipsLeft)
-	if _, err := s.memberRepo.Update(member); err != nil {
-		s.logger.Error("AutoSkipTurn - failed to update member skipsLeft in DB", "member_id", member.ID, "error", err)
+	player.SkipsLeft -= effectiveSkipsInThisAction
+	s.logger.Debug("AutoSkipTurn - skips left before DB update", "player_id", player.ID, "skips_left", player.SkipsLeft)
+	if _, err := s.playerRepo.Update(player); err != nil {
+		s.logger.Error("AutoSkipTurn - failed to update player skipsLeft in DB", "player_id", player.ID, "error", err)
 		return types.ErrInternalService
 	}
-	// Re-fetch member to confirm DB state
-	updatedMember, err := s.memberRepo.GetByID(member.ID)
+	// Re-fetch player to confirm DB state
+	updatedPlayer, err := s.playerRepo.GetByID(player.ID)
 	if err != nil {
-		s.logger.Error("AutoSkipTurn - failed to re-fetch member after update", "member_id", member.ID, "error", err)
+		s.logger.Error("AutoSkipTurn - failed to re-fetch player after update", "player_id", player.ID, "error", err)
 		return types.ErrInternalService
 	}
-	s.logger.Debug("AutoSkipTurn - skips left after DB re-fetch", "member_id", updatedMember.ID, "skips_left", updatedMember.SkipsLeft)
-	s.logger.Debug("AutoSkipTurn - skips left updated after auto-skip", "member_id", member.ID, "skips_left", member.SkipsLeft)
+	s.logger.Debug("AutoSkipTurn - skips left after DB re-fetch", "player_id", updatedPlayer.ID, "skips_left", updatedPlayer.SkipsLeft)
+	s.logger.Debug("AutoSkipTurn - skips left updated after auto-skip", "player_id", player.ID, "skips_left", player.SkipsLeft)
 
-	allMembers, err := s.memberRepo.GetByLeague(leagueID)
+	allPlayers, err := s.playerRepo.GetByLeague(leagueID)
 	if err != nil {
-		s.logger.Error("AutoSkipTurn - could not get all members", "league_id", leagueID, "error", err)
+		s.logger.Error("AutoSkipTurn - could not get all players", "league_id", leagueID, "error", err)
 		return types.ErrInternalService
 	}
 
-	draft, err = s.advanceDraftState(draft, league, member, allMembers, len(allMembers), false)
+	draft, err = s.advanceDraftState(draft, league, player, allPlayers, len(allPlayers), false)
 	if err != nil {
 		s.logger.Error("AutoSkipTurn - could not advance draft")
 		return err
@@ -587,7 +585,7 @@ func (s *draftServiceImpl) AutoSkipTurn(memberID, leagueID uuid.UUID) error {
 		Type:      taskType,
 		Payload: utils.PayloadDraftTurnTimeout{
 			LeagueID: draft.LeagueID,
-			PlayerID: *draft.CurrentTurnMemberID,
+			PlayerID: *draft.CurrentTurnPlayerID,
 		},
 	}
 
@@ -603,22 +601,22 @@ func (s *draftServiceImpl) AutoSkipTurn(memberID, leagueID uuid.UUID) error {
 func (s *draftServiceImpl) advanceDraftState(
 	draft *models.Draft,
 	league *models.League,
-	member *models.LeagueMember, // The member whose turn just ended/skipped
-	allMembers []models.LeagueMember, // All members in the league, for turn progression
-	memberCount int,
+	player *models.Player, // The player whose turn just ended/skipped
+	allPlayers []models.Player, // All players in the league, for turn progression
+	playerCount int,
 	currentPickSlotUsed bool, // true if draft.CurrentPickOnClock was used in the request, false if skipped/implicitly skipped
 ) (*models.Draft, error) {
 	if !currentPickSlotUsed {
 		// i.e., a skip/implicit skip. Append CurrentPickOnClock to
-		// accumulated picks for that member
-		s.logger.Debug("advanceDraftState - member skipping pick", "member_id", member.ID, "pick", draft.CurrentPickOnClock, "accumulated_picks", draft.PlayersWithAccumulatedPicks[member.ID])
-		draft.PlayersWithAccumulatedPicks[member.ID] = append(draft.PlayersWithAccumulatedPicks[member.ID], draft.CurrentPickOnClock)
+		// accumulated picks for that player
+		s.logger.Debug("advanceDraftState - player skipping pick", "player_id", player.ID, "pick", draft.CurrentPickOnClock, "accumulated_picks", draft.PlayersWithAccumulatedPicks[player.ID])
+		draft.PlayersWithAccumulatedPicks[player.ID] = append(draft.PlayersWithAccumulatedPicks[player.ID], draft.CurrentPickOnClock)
 	}
 
 	draft.CurrentPickOnClock++ // unconditonal increment
 
 	// Check for draft completion
-	isDraftCompleted, err := s.checkDraftCompletion(league, allMembers)
+	isDraftCompleted, err := s.checkDraftCompletion(league, allPlayers)
 	if err != nil {
 		s.logger.Error("advanceDraftState - error checking draft completion", "league_id", league.ID, "error", err)
 		return nil, types.ErrInternalService
@@ -649,45 +647,45 @@ func (s *draftServiceImpl) advanceDraftState(
 
 	// If draft is still ongoing,
 	// Recalculate CurrentRound and CurrentPickInRound based on draft.CurrentPickOnClock
-	draft.CurrentRound = ((draft.CurrentPickOnClock - 1) / int(memberCount)) + 1
-	draft.CurrentPickInRound = ((draft.CurrentPickOnClock - 1) % int(memberCount)) + 1
+	draft.CurrentRound = ((draft.CurrentPickOnClock - 1) / int(playerCount)) + 1
+	draft.CurrentPickInRound = ((draft.CurrentPickOnClock - 1) % int(playerCount)) + 1
 
-	currentMemberIdx := -1
-	for i, m := range allMembers { // there is likely some smort mafs you can do here to avoid an O(n) search. im stupid tho
-		if m.ID == member.ID {
-			currentMemberIdx = i
+	currentPlayerIdx := -1
+	for i, m := range allPlayers { // there is likely some smort mafs you can do here to avoid an O(n) search. im stupid tho
+		if m.ID == player.ID {
+			currentPlayerIdx = i
 			break
 		}
 	}
-	if currentMemberIdx == -1 { // this is an impossible case
-		s.logger.Error("advanceDraftState - current member not found in allMembers list (unreachable)", "member_id", member.ID)
+	if currentPlayerIdx == -1 { // this is an impossible case
+		s.logger.Error("advanceDraftState - current player not found in allPlayers list (unreachable)", "player_id", player.ID)
 		return nil, types.ErrInternalService
 	}
 
-	var nextMemberIdx int
+	var nextPlayerIdx int
 	if league.Format.IsSnakeRoundDraft {
 		if draft.CurrentRound%2 != 0 { // Odd round (forward order)
-			nextMemberIdx = draft.CurrentPickInRound - 1
+			nextPlayerIdx = draft.CurrentPickInRound - 1
 		} else { // Even round (reverse order)
-			nextMemberIdx = int(memberCount) - draft.CurrentPickInRound
+			nextPlayerIdx = int(playerCount) - draft.CurrentPickInRound
 		}
 	} else { // linear draft
-		nextMemberIdx = currentMemberIdx + 1
+		nextPlayerIdx = currentPlayerIdx + 1
 	}
 
-	if nextMemberIdx >= int(memberCount) || nextMemberIdx < 0 {
+	if nextPlayerIdx >= int(playerCount) || nextPlayerIdx < 0 {
 		// The CurrentRound and CurrentPickInRound are already correctly set by recalculation.
-		// We just need to adjust nextMemberIdx for the start of the new round.
+		// We just need to adjust nextPlayerIdx for the start of the new round.
 		if league.Format.IsSnakeRoundDraft && draft.CurrentRound%2 == 0 { // if snake round drafting and new round is even
-			nextMemberIdx = int(memberCount) - 1 // last member in reverse order
+			nextPlayerIdx = int(playerCount) - 1 // last player in reverse order
 		} else {
-			nextMemberIdx = 0 // first member in forward order
+			nextPlayerIdx = 0 // first player in forward order
 		}
 	}
 
-	// finally set the next turn of member
-	nextTurnMember := allMembers[nextMemberIdx]
-	draft.CurrentTurnMemberID = &nextTurnMember.ID
+	// finally set the next turn of player
+	nextTurnPlayer := allPlayers[nextPlayerIdx]
+	draft.CurrentTurnPlayerID = &nextTurnPlayer.ID
 	draft.CurrentTurnStartTime = func() *time.Time { t := time.Now(); return &t }()
 
 	draft, err = s.draftRepo.UpdateDraft(draft)
@@ -705,10 +703,10 @@ func (s *draftServiceImpl) advanceDraftState(
 func (s *draftServiceImpl) executeNewPickTransactions(
 	draft *models.Draft,
 	league *models.League,
-	member *models.LeagueMember,
+	player *models.Player,
 	allRequestedPoolEntries []*models.PoolEntry,
 	input *requests.DraftMakePickRequestDTO,
-	memberCount int64,
+	playerCount int64,
 	totalRequestedCost int,
 ) error {
 	var err error
@@ -733,12 +731,12 @@ func (s *draftServiceImpl) executeNewPickTransactions(
 		}
 
 		poolEntryIDs = append(poolEntryIDs, currentPoolEntry.ID)
-		draftRoundNumber := ((requestedPick.DraftPickNumber - 1) / int(memberCount)) + 1
+		draftRoundNumber := ((requestedPick.DraftPickNumber - 1) / int(playerCount)) + 1
 
 		// Build DraftPick (immutable event log)
 		draftPick := models.DraftPick{
 			DraftID:     draft.ID,
-			PlayerID:    member.ID,
+			PlayerID:    player.ID,
 			PoolEntryID: currentPoolEntry.ID,
 			RoundNumber: draftRoundNumber,
 			PickNumber:  requestedPick.DraftPickNumber,
@@ -747,7 +745,7 @@ func (s *draftServiceImpl) executeNewPickTransactions(
 
 		// Cache accumulated pick numbers to remove
 		if accumPickIndex := slices.Index(
-			draft.PlayersWithAccumulatedPicks[member.ID], requestedPick.DraftPickNumber,
+			draft.PlayersWithAccumulatedPicks[player.ID], requestedPick.DraftPickNumber,
 		); accumPickIndex != -1 {
 			accumulatedPickNumberIndicesToDelete = append(accumulatedPickNumberIndicesToDelete, accumPickIndex)
 		}
@@ -767,9 +765,9 @@ func (s *draftServiceImpl) executeNewPickTransactions(
 			}
 		}
 
-		// 3. Deduct DraftPoints from the member
-		member.DraftPoints -= totalRequestedCost
-		if _, err := txRepo.memberRepo.Update(member); err != nil {
+		// 3. Deduct DraftPoints from the player
+		player.DraftPoints -= totalRequestedCost
+		if _, err := txRepo.playerRepo.Update(player); err != nil {
 			return err
 		}
 
@@ -779,7 +777,7 @@ func (s *draftServiceImpl) executeNewPickTransactions(
 			claimSource := enums.ClaimSourceDraft
 			claim := &models.Claim{
 				LeagueID:     league.ID,
-				PlayerID:     member.ID,
+				PlayerID:     player.ID,
 				SpeciesID:    poolEntry.PokemonSpeciesID,
 				Source:       claimSource,
 				SourceID:     &dp.ID,
@@ -802,11 +800,11 @@ func (s *draftServiceImpl) executeNewPickTransactions(
 	slices.SortFunc(accumulatedPickNumberIndicesToDelete, func(a, b int) int {
 		return b - a // Descending order
 	})
-	memberAccumulatedPicks := draft.PlayersWithAccumulatedPicks[member.ID]
+	playerAccumulatedPicks := draft.PlayersWithAccumulatedPicks[player.ID]
 	for _, index := range accumulatedPickNumberIndicesToDelete {
-		memberAccumulatedPicks = slices.Delete(memberAccumulatedPicks, index, index+1)
+		playerAccumulatedPicks = slices.Delete(playerAccumulatedPicks, index, index+1)
 	}
-	draft.PlayersWithAccumulatedPicks[member.ID] = memberAccumulatedPicks
+	draft.PlayersWithAccumulatedPicks[player.ID] = playerAccumulatedPicks
 
 	return nil
 }
@@ -816,7 +814,7 @@ type transactionalRepositories struct {
 	draftPickRepo repositories.DraftPickRepository
 	claimRepo     repositories.ClaimRepository
 	poolEntryRepo repositories.PoolEntryRepository
-	memberRepo    repositories.LeagueMemberRepository
+	playerRepo    repositories.PlayerRepository
 }
 
 // executeWithTransaction is a helper to run operations that use the new model repositories.
@@ -829,7 +827,7 @@ func (s *draftServiceImpl) executeWithTransaction(fn func(repos *transactionalRe
 		draftPickRepo: s.draftPickRepo,
 		claimRepo:     s.claimRepo,
 		poolEntryRepo: s.poolEntryRepo,
-		memberRepo:    s.memberRepo,
+		playerRepo:    s.playerRepo,
 	}
 	return fn(txRepos)
 }
@@ -840,19 +838,19 @@ func (s *draftServiceImpl) executeWithTransaction(fn func(repos *transactionalRe
 // indicating if the current "on-the-clock" pick slot was used in the transaction.
 func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 	draft *models.Draft,
-	member *models.LeagueMember,
+	player *models.Player,
 	league *models.League,
 	input *requests.DraftMakePickRequestDTO,
 	totalRequestedCost int,
 ) (bool, error) {
-	memberID := *draft.CurrentTurnMemberID // validated earlier to match currentMember
+	playerID := *draft.CurrentTurnPlayerID // validated earlier to match currentPlayer
 
 	// 1. Validate requested pick numbers against valid slots
-	accumulatedPickNumbers := draft.PlayersWithAccumulatedPicks[memberID]
-	s.logger.Debug("validatePicksAndCheckCurrentPickSlotUsed - current pick on clock and accumulated picks", "member_id", memberID, "current_pick", draft.CurrentPickOnClock, "accumulated_picks", accumulatedPickNumbers)
-	validPickNumbersForMember := make([]int, len(accumulatedPickNumbers))
-	copy(validPickNumbersForMember, accumulatedPickNumbers) // we don't wanna directly append
-	validPickNumbersForMember = append(validPickNumbersForMember, draft.CurrentPickOnClock)
+	accumulatedPickNumbers := draft.PlayersWithAccumulatedPicks[playerID]
+	s.logger.Debug("validatePicksAndCheckCurrentPickSlotUsed - current pick on clock and accumulated picks", "player_id", playerID, "current_pick", draft.CurrentPickOnClock, "accumulated_picks", accumulatedPickNumbers)
+	validPickNumbersForPlayer := make([]int, len(accumulatedPickNumbers))
+	copy(validPickNumbersForPlayer, accumulatedPickNumbers) // we don't wanna directly append
+	validPickNumbersForPlayer = append(validPickNumbersForPlayer, draft.CurrentPickOnClock)
 
 	// track used accumulated picks within this batch to prevent double-usage
 	usedAccumulatedPicksInThisBatch := make(map[int]bool)
@@ -860,15 +858,15 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 
 	for _, requestedPick := range input.RequestedPicks {
 		// check if the requested pick number is a valid slot (current turn or accumulated)
-		if !slices.Contains(validPickNumbersForMember, requestedPick.DraftPickNumber) {
-			s.logger.Warn("validatePicksAndCheckCurrentPickSlotUsed - member requested invalid pick number", "member_id", memberID, "requested_pick", requestedPick.DraftPickNumber, "current_pick", draft.CurrentPickOnClock, "accumulated_picks", accumulatedPickNumbers)
+		if !slices.Contains(validPickNumbersForPlayer, requestedPick.DraftPickNumber) {
+			s.logger.Warn("validatePicksAndCheckCurrentPickSlotUsed - player requested invalid pick number", "player_id", playerID, "requested_pick", requestedPick.DraftPickNumber, "current_pick", draft.CurrentPickOnClock, "accumulated_picks", accumulatedPickNumbers)
 			return false, types.ErrInvalidInput
 		}
 
 		// if it's an accumulated pick, ensure it's not used twice in this batch
 		if requestedPick.DraftPickNumber != draft.CurrentPickOnClock {
 			if usedAccumulatedPicksInThisBatch[requestedPick.DraftPickNumber] {
-				s.logger.Warn("validatePicksAndCheckCurrentPickSlotUsed - member attempted to use accumulated pick multiple times", "member_id", memberID, "accumulated_pick", requestedPick.DraftPickNumber)
+				s.logger.Warn("validatePicksAndCheckCurrentPickSlotUsed - player attempted to use accumulated pick multiple times", "player_id", playerID, "accumulated_pick", requestedPick.DraftPickNumber)
 				return false, types.ErrInvalidInput
 			}
 			usedAccumulatedPicksInThisBatch[requestedPick.DraftPickNumber] = true
@@ -880,13 +878,13 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 		}
 	}
 
-	// 2. Check if member has enough draft points for the entire batch
-	if member.DraftPoints < totalRequestedCost {
+	// 2. Check if player has enough draft points for the entire batch
+	if player.DraftPoints < totalRequestedCost {
 		return false, types.ErrInsufficientDraftPoints
 	}
 
 	// 3. "Skips Left" Preventative Validation
-	// This ensures the member doesn't implicitly skip their current turn's slot
+	// This ensures the player doesn't implicitly skip their current turn's slot
 	// if doing so would prevent them from meeting MinPokemonPerPlayer.
 
 	// Determine if the current "on-the-clock" pick slot is being used in this request.
@@ -905,9 +903,9 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 		effectiveSkipsInThisAction = 1 // Current turn is implicitly skipped
 	}
 
-	_, err = s.isSkipAllowed(member, effectiveSkipsInThisAction)
+	_, err = s.isSkipAllowed(player, effectiveSkipsInThisAction)
 	if err != nil {
-		s.logger.Warn("validatePicksAndCheckCurrentPickSlotUsed - member cannot implicitly skip current turn as it would violate minimum roster requirement", "member_id", memberID, "pick", draft.CurrentPickOnClock, "skips_left", member.SkipsLeft)
+		s.logger.Warn("validatePicksAndCheckCurrentPickSlotUsed - player cannot implicitly skip current turn as it would violate minimum roster requirement", "player_id", playerID, "pick", draft.CurrentPickOnClock, "skips_left", player.SkipsLeft)
 		return false, err
 	}
 
@@ -918,8 +916,8 @@ func (s *draftServiceImpl) validatePicksAndCheckCurrentPickSlotUsed(
 // to meet the league's minimum roster requirement.
 // returns true if allowed, false otherwise
 // was previously a bigger function because we didn't have Player.SkipsLeft
-func (s *draftServiceImpl) isSkipAllowed(member *models.LeagueMember, effectiveSkipsInThisAction int) (bool, error) {
-	if member.SkipsLeft-effectiveSkipsInThisAction >= 0 {
+func (s *draftServiceImpl) isSkipAllowed(player *models.Player, effectiveSkipsInThisAction int) (bool, error) {
+	if player.SkipsLeft-effectiveSkipsInThisAction >= 0 {
 		return true, nil
 	}
 	return false, types.ErrCannotSkipBelowMinimumRoster
@@ -946,18 +944,18 @@ func (s *draftServiceImpl) fetchDraftResource(leagueID uuid.UUID) (*models.Draft
 	return draft, nil
 }
 
-// fetchMemberResource retrieves a member by user and league, converting a gorm.ErrRecordNotFound
+// fetchPlayerResource retrieves a player by user and league, converting a gorm.ErrRecordNotFound
 // into a service-specific error.
-func (s *draftServiceImpl) fetchMemberResource(userID, leagueID uuid.UUID) (*models.LeagueMember, error) {
-	member, err := s.memberRepo.GetByUserAndLeague(userID, leagueID)
+func (s *draftServiceImpl) fetchPlayerResource(userID, leagueID uuid.UUID) (*models.Player, error) {
+	player, err := s.playerRepo.GetByUserAndLeague(userID, leagueID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, types.ErrPlayerNotFound
 		}
 		return nil, types.ErrInternalService
 	}
-	s.logger.Debug("fetchMemberResource - fetched member", "member_id", member.ID, "skips_left", member.SkipsLeft)
-	return member, nil
+	s.logger.Debug("fetchPlayerResource - fetched player", "player_id", player.ID, "skips_left", player.SkipsLeft)
+	return player, nil
 }
 
 // fetchRequestedPoolEntries retrieves a list of PoolEntry by their IDs, ensuring they are
@@ -1001,16 +999,16 @@ func (s *draftServiceImpl) validateLeagueStatusForPick(leagueStatus enums.League
 // Uses the new Claim model for active pokemon counts.
 func (s *draftServiceImpl) checkDraftCompletion(
 	league *models.League,
-	allMembers []models.LeagueMember,
+	allPlayers []models.Player,
 ) (bool, error) {
 	// 1. Calculate total expected picks for the entire draft
-	totalMembers := len(allMembers)
-	if totalMembers == 0 {
-		s.logger.Error("checkDraftCompletion - no members in league, cannot check completion", "league_id", league.ID)
+	totalPlayers := len(allPlayers)
+	if totalPlayers == 0 {
+		s.logger.Error("checkDraftCompletion - no players in league, cannot check completion", "league_id", league.ID)
 		return false, types.ErrInternalService
 	}
-	maxPicksPerMember := league.MaxPokemonPerPlayer
-	totalExpectedPicks := totalMembers * maxPicksPerMember
+	maxPicksPerPlayer := league.MaxPokemonPerPlayer
+	totalExpectedPicks := totalPlayers * maxPicksPerPlayer
 
 	// 2. Get the current count of all active claims in the league
 	currentTotalActiveClaims, err := s.claimRepo.GetActiveCountByLeague(league.ID)
@@ -1024,16 +1022,16 @@ func (s *draftServiceImpl) checkDraftCompletion(
 		return false, nil
 	}
 
-	// Cond. 2: if all members have met their MinPokemonPerRoster requirement
+	// Cond. 2: if all players have met their MinPokemonPerRoster requirement
 	minPokemonPerRoster := league.MinPokemonPerPlayer
 
-	for _, member := range allMembers {
-		memberActiveRosterSize, err := s.claimRepo.GetActiveCountByPlayer(member.ID)
+	for _, player := range allPlayers {
+		playerActiveRosterSize, err := s.claimRepo.GetActiveCountByPlayer(player.ID)
 		if err != nil {
-			s.logger.Error("checkDraftCompletion - failed to get roster count for member", "member_id", member.ID, "league_id", league.ID, "error", err)
+			s.logger.Error("checkDraftCompletion - failed to get roster count for player", "player_id", player.ID, "league_id", league.ID, "error", err)
 			return false, types.ErrInternalService
 		}
-		if memberActiveRosterSize < int64(minPokemonPerRoster) {
+		if playerActiveRosterSize < int64(minPokemonPerRoster) {
 			return false, nil
 		}
 	}

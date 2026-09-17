@@ -17,9 +17,9 @@ import (
 	"gorm.io/gorm"
 )
 
-func newDevAuthService(mockUserRepo *mock_repositories.MockUserRepository, mockLeagueRepo *mock_repositories.MockLeagueRepository, mockMemberRepo *mock_repositories.MockLeagueMemberRepository) services.DevAuthService {
+func newDevAuthService(mockUserRepo *mock_repositories.MockUserRepository, mockLeagueRepo *mock_repositories.MockLeagueRepository, mockPlayerRepo *mock_repositories.MockPlayerRepository) services.DevAuthService {
 	jwtService := services.NewJWTService("test-secret")
-	return services.NewDevAuthService(slog.Default(), mockUserRepo, mockLeagueRepo, mockMemberRepo, jwtService)
+	return services.NewDevAuthService(slog.Default(), mockUserRepo, mockLeagueRepo, mockPlayerRepo, jwtService)
 }
 
 func TestDevAuthService_ListUsers(t *testing.T) {
@@ -153,78 +153,77 @@ func TestDevAuthService_UpsertMembership(t *testing.T) {
 	user := &models.User{ID: userID, DiscordUsername: "alice"}
 
 	// fresh mocks per subtest so .Once()/.Maybe() expectations never leak
-	setup := func() (services.DevAuthService, *mock_repositories.MockLeagueRepository, *mock_repositories.MockUserRepository, *mock_repositories.MockLeagueMemberRepository) {
+	setup := func() (services.DevAuthService, *mock_repositories.MockLeagueRepository, *mock_repositories.MockUserRepository, *mock_repositories.MockPlayerRepository) {
 		mockUserRepo := new(mock_repositories.MockUserRepository)
 		mockLeagueRepo := new(mock_repositories.MockLeagueRepository)
-		mockMemberRepo := new(mock_repositories.MockLeagueMemberRepository)
-		service := newDevAuthService(mockUserRepo, mockLeagueRepo, mockMemberRepo)
-		return service, mockLeagueRepo, mockUserRepo, mockMemberRepo
+		mockPlayerRepo := new(mock_repositories.MockPlayerRepository)
+		service := newDevAuthService(mockUserRepo, mockLeagueRepo, mockPlayerRepo)
+		return service, mockLeagueRepo, mockUserRepo, mockPlayerRepo
 	}
 
 	t.Run("Creates membership when none exists", func(t *testing.T) {
-		service, mockLeagueRepo, mockUserRepo, mockMemberRepo := setup()
+		service, mockLeagueRepo, mockUserRepo, mockPlayerRepo := setup()
 		mockLeagueRepo.On("GetLeagueByID", leagueID).Return(&models.League{ID: leagueID}, nil).Once()
 		mockUserRepo.On("GetUserByID", userID).Return(user, nil).Once()
 
-		created := &models.LeagueMember{}
-		var createdInput *models.LeagueMember
-		mockMemberRepo.On("GetByUserAndLeague", userID, leagueID).
-			Return((*models.LeagueMember)(nil), gorm.ErrRecordNotFound).Once()
-		mockMemberRepo.On("Create", mock.AnythingOfType("*models.LeagueMember")).
+		created := &models.Player{}
+		var createdInput *models.Player
+		mockPlayerRepo.On("GetByUserAndLeague", userID, leagueID).
+			Return((*models.Player)(nil), gorm.ErrRecordNotFound).Once()
+		mockPlayerRepo.On("Create", mock.AnythingOfType("*models.Player")).
 			Return(created, nil).
 			Run(func(args mock.Arguments) {
-				createdInput = args.Get(0).(*models.LeagueMember)
+				createdInput = args.Get(0).(*models.Player)
 				*created = *createdInput
 				created.ID = uuid.New()
 			}).Once()
 
-		member, err := service.UpsertMembership(leagueID, userID, "MODERATOR")
+		player, err := service.UpsertMembership(leagueID, userID, "MODERATOR")
 		assert.NoError(t, err)
-		assert.Same(t, created, member)
-		assert.Equal(t, userID, member.UserID)
-		assert.Equal(t, leagueID, member.LeagueID)
-		assert.Equal(t, rbac.MRoleModerator, member.Role)
-		assert.True(t, member.IsParticipating)
-		require.NotNil(t, member.TeamName)
-		assert.Contains(t, *member.TeamName, "alice")
+		assert.Same(t, created, player)
+		assert.Equal(t, userID, player.UserID)
+		assert.Equal(t, leagueID, player.LeagueID)
+		assert.Equal(t, rbac.MRoleModerator, player.Role)
+		require.NotNil(t, player.TeamName)
+		assert.Contains(t, *player.TeamName, "alice")
 		mockLeagueRepo.AssertExpectations(t)
 		mockUserRepo.AssertExpectations(t)
-		mockMemberRepo.AssertExpectations(t)
+		mockPlayerRepo.AssertExpectations(t)
 	})
 
 	t.Run("Updates role when membership already exists", func(t *testing.T) {
-		service, mockLeagueRepo, mockUserRepo, mockMemberRepo := setup()
+		service, mockLeagueRepo, mockUserRepo, mockPlayerRepo := setup()
 		mockLeagueRepo.On("GetLeagueByID", leagueID).Return(&models.League{ID: leagueID}, nil).Once()
 		mockUserRepo.On("GetUserByID", userID).Return(user, nil).Once()
 
-		existing := &models.LeagueMember{ID: uuid.New(), UserID: userID, LeagueID: leagueID, Role: rbac.MRoleMember}
-		mockMemberRepo.On("GetByUserAndLeague", userID, leagueID).Return(existing, nil).Once()
-		mockMemberRepo.On("UpdateRole", existing.ID, rbac.MRoleOwner).Return(nil).Once()
+		existing := &models.Player{ID: uuid.New(), UserID: userID, LeagueID: leagueID, Role: rbac.MRoleMember}
+		mockPlayerRepo.On("GetByUserAndLeague", userID, leagueID).Return(existing, nil).Once()
+		mockPlayerRepo.On("UpdateRole", existing.ID, rbac.MRoleOwner).Return(nil).Once()
 
-		member, err := service.UpsertMembership(leagueID, userID, "OWNER")
+		player, err := service.UpsertMembership(leagueID, userID, "OWNER")
 		assert.NoError(t, err)
-		assert.Same(t, existing, member)
-		assert.Equal(t, rbac.MRoleOwner, member.Role)
+		assert.Same(t, existing, player)
+		assert.Equal(t, rbac.MRoleOwner, player.Role)
 		mockLeagueRepo.AssertExpectations(t)
 		mockUserRepo.AssertExpectations(t)
-		mockMemberRepo.AssertExpectations(t)
+		mockPlayerRepo.AssertExpectations(t)
 	})
 
 	t.Run("Returns ErrInvalidInput for unknown role", func(t *testing.T) {
 		service, _, _, _ := setup()
 
-		member, err := service.UpsertMembership(leagueID, userID, "SUPREME_LEADER")
+		player, err := service.UpsertMembership(leagueID, userID, "SUPREME_LEADER")
 		assert.ErrorIs(t, err, types.ErrInvalidInput)
-		assert.Nil(t, member)
+		assert.Nil(t, player)
 	})
 
 	t.Run("Returns ErrLeagueNotFound when league missing", func(t *testing.T) {
 		service, mockLeagueRepo, _, _ := setup()
 		mockLeagueRepo.On("GetLeagueByID", leagueID).Return((*models.League)(nil), gorm.ErrRecordNotFound).Once()
 
-		member, err := service.UpsertMembership(leagueID, userID, "MEMBER")
+		player, err := service.UpsertMembership(leagueID, userID, "MEMBER")
 		assert.ErrorIs(t, err, types.ErrLeagueNotFound)
-		assert.Nil(t, member)
+		assert.Nil(t, player)
 		mockLeagueRepo.AssertExpectations(t)
 	})
 
@@ -233,9 +232,9 @@ func TestDevAuthService_UpsertMembership(t *testing.T) {
 		mockLeagueRepo.On("GetLeagueByID", leagueID).Return(&models.League{ID: leagueID}, nil).Once()
 		mockUserRepo.On("GetUserByID", userID).Return((*models.User)(nil), gorm.ErrRecordNotFound).Once()
 
-		member, err := service.UpsertMembership(leagueID, userID, "MEMBER")
+		player, err := service.UpsertMembership(leagueID, userID, "MEMBER")
 		assert.ErrorIs(t, err, types.ErrUserNotFound)
-		assert.Nil(t, member)
+		assert.Nil(t, player)
 		mockLeagueRepo.AssertExpectations(t)
 		mockUserRepo.AssertExpectations(t)
 	})

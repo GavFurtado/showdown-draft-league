@@ -35,12 +35,12 @@ func (role MemberRole) IsMember() bool {
 }
 
 func ParseMemberRole(roleStr string) (MemberRole, bool) {
-	switch strings.ToLower(roleStr) {
-	case "owner":
+	switch strings.ToUpper(roleStr) {
+	case "OWNER":
 		return MRoleOwner, true
-	case "moderator":
+	case "MODERATOR":
 		return MRoleModerator, true
-	case "member":
+	case "MEMBER":
 		return MRoleMember, true
 	default:
 		return "", false

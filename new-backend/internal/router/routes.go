@@ -14,8 +14,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// TODO: This needs refinement. Needs to be cleaner somehow
-// In addition, leagues/:leagueId/members/join is not a protected route yet is under that section
+// FIXME: This needs refinement. Needs to be cleaner somehow
+// In addition, leagues/:leagueId/players/join is not a protected route yet is under that section
 // Clean that up as well.
 
 func RegisterRoutes(
@@ -80,27 +80,27 @@ func RegisterRoutes(
 	{
 		api.GET("/profile", controllers.UserController.GetMyProfile)
 
-		// --- Member Routes ---
-		members := api.Group("/members")
+		// --- Player Routes ---
+		players := api.Group("/players")
 		{
-			members.GET("/:id",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadMember),
-				controllers.LeagueMemberController.GetByID)
-			members.GET("/:id/roster",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadMember),
-				controllers.LeagueMemberController.GetWithFullRoster)
-			members.PUT("/:id/profile",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateMember),
-				controllers.LeagueMemberController.UpdateProfile)
-			members.PUT("/:id/draft-points",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateMemberScore),
-				controllers.LeagueMemberController.UpdateDraftPoints)
-			members.PUT("/:id/record",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateMemberScore),
-				controllers.LeagueMemberController.UpdateRecord)
-			members.PUT("/:id/draft-position",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateMemberScore),
-				controllers.LeagueMemberController.UpdateDraftPosition)
+			players.GET("/:id",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
+				controllers.PlayerController.GetByID)
+			players.GET("/:id/roster",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
+				controllers.PlayerController.GetWithFullRoster)
+			players.PUT("/:id/profile",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdatePlayer),
+				controllers.PlayerController.UpdateProfile)
+			players.PUT("/:id/draft-points",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdatePlayerScore),
+				controllers.PlayerController.UpdateDraftPoints)
+			players.PUT("/:id/record",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdatePlayerScore),
+				controllers.PlayerController.UpdateRecord)
+			players.PUT("/:id/draft-position",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdatePlayerScore),
+				controllers.PlayerController.UpdateDraftPosition)
 		}
 
 		leagues := api.Group("/leagues")
@@ -136,7 +136,7 @@ func RegisterRoutes(
 					controllers.GameController.GetGameByID,
 				)
 				games.GET(
-					"/members/:memberId",
+					"/players/:playerId",
 					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadGame),
 					controllers.GameController.GetGamesByPlayer,
 				)
@@ -208,14 +208,14 @@ func RegisterRoutes(
 					controllers.PoolEntryController.Update)
 			}
 
-			// --- League Member Routes ---
-			leagueMembers := leagues.Group("/:leagueId/members")
+			// --- League Player Routes ---
+			leaguePlayers := leagues.Group("/:leagueId/players")
 			{
-				leagueMembers.GET("/",
-					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadMember),
-					controllers.LeagueMemberController.GetByLeague)
-				leagueMembers.POST("/join",
-					controllers.LeagueMemberController.JoinLeague)
+				leaguePlayers.GET("/",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
+					controllers.PlayerController.GetByLeague)
+				leaguePlayers.POST("/join",
+					controllers.PlayerController.JoinLeague)
 			}
 
 			// --- Draft Pick Routes ---
@@ -277,9 +277,9 @@ func RegisterRoutes(
 			users.GET("/me/discord", controllers.UserController.GetMyDiscordDetails)
 			users.GET("/me/leagues", controllers.UserController.GetMyLeagues)
 			users.PUT("/profile", controllers.UserController.UpdateProfile)
-			users.GET("/:id/members",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadMember),
-				controllers.LeagueMemberController.GetByUser)
+			users.GET("/:id/players",
+				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
+				controllers.PlayerController.GetByUser)
 		}
 
 	}

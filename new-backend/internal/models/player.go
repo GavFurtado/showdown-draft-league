@@ -8,13 +8,10 @@ import (
 	"gorm.io/gorm"
 )
 
-// TODO: A lot more of these fields will have to become nullable since they don't apply to spectators
-//  ^ Update (03/09/26): This was a terrible idea. We should have stuck with Player and have Spectator be a completely
-// different entity. If most fields are nullable for spectators, maybe they should be a different entity.
-// Seriously. What was I thinking?
-
-// LeagueMember is the entity of a User within a League
-type LeagueMember struct {
+// Player is the specific type of entity of a User within the League, that owns a Roster (i.e., Claims),
+// can perform draft actions, transfers, and participate in the games.
+// Player essentially represents the active participation of the User inside a League.
+type Player struct {
 	ID              uuid.UUID       `gorm:"type:uuid;primaryKey;default:gen_random_uuid();column:id" json:"ID"`
 	UserID          uuid.UUID       `gorm:"type:uuid;not null;column:user_id" json:"UserID"`
 	LeagueID        uuid.UUID       `gorm:"type:uuid;not null;column:league_id;uniqueIndex:idx_league_team_name" json:"LeagueID"`
@@ -25,10 +22,9 @@ type LeagueMember struct {
 	DraftPoints     int             `gorm:"default:140;not null;column:draft_points" json:"DraftPoints"`
 	TransferCredits int             `gorm:"default:0;column:transfer_credits" json:"TransferCredits"`
 	DraftPosition   int             `gorm:"default:1;column:draft_position" json:"DraftPosition"` // turn order of player pick
-	GroupNumber     int             `gorm:"default:1;column:group_number" json:"GroupNumber"`     // group to which member belongs to
+	GroupNumber     int             `gorm:"default:1;column:group_number" json:"GroupNumber"`     // group to which player belongs to
 	SkipsLeft       int             `gorm:"column:skips_left" json:"SkipsLeft"`
-	Role            rbac.MemberRole `gorm:"type:varchar(20);not null;default:'member';column:role" json:"Role"`
-	IsParticipating bool            `gorm:"column:is_participating" json:"IsParticipating"` // whether a league member is a player
+	Role            rbac.MemberRole `gorm:"type:varchar(20);not null;default:'MEMBER';column:role" json:"Role"`
 	CreatedAt       time.Time       `gorm:"column:created_at" json:"CreatedAt"`
 	UpdatedAt       time.Time       `gorm:"column:updated_at" json:"UpdatedAt"`
 	DeletedAt       gorm.DeletedAt  `gorm:"index;column:deleted_at" json:"-"`
@@ -39,17 +35,17 @@ type LeagueMember struct {
 	Claims []Claim `gorm:"foreignKey:player_id;references:id" json:"Claims,omitempty"`
 }
 
-// IsLeagueOwner checks if the member has the LeagueOwner role.
-func (m *LeagueMember) IsLeagueOwner() bool {
+// IsOwner checks if the player has the LeagueOwner role.
+func (m *Player) IsOwner() bool {
 	return m.Role.IsOwner()
 }
 
-// IsLeagueModerator checks if the member has the LeagueModerator role.
-func (m *LeagueMember) IsLeagueModerator() bool {
+// IsModerator checks if the player has the LeagueModerator role.
+func (m *Player) IsModerator() bool {
 	return m.Role.IsModerator()
 }
 
-// Can checks if the member's role has a specific permission.
-func (m *LeagueMember) Can(permission rbac.Permission) bool {
+// Can checks if the player's role has a specific permission.
+func (m *Player) Can(permission rbac.Permission) bool {
 	return m.Role.HasPermission(permission)
 }

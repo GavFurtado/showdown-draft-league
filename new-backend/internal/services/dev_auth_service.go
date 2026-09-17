@@ -23,30 +23,30 @@ type DevAuthService interface {
 	ListUsers() ([]models.User, error)
 	CreateDevUser(name string, showdownUsername *string) (*models.User, error)
 	Impersonate(userID uuid.UUID) (*models.User, string, error)
-	UpsertMembership(leagueID, userID uuid.UUID, roleName string) (*models.LeagueMember, error)
+	UpsertMembership(leagueID, userID uuid.UUID, roleName string) (*models.Player, error)
 }
 
 type devAuthServiceImpl struct {
-	userRepo         repositories.UserRepository
-	leagueRepo       repositories.LeagueRepository
-	leagueMemberRepo repositories.LeagueMemberRepository
-	jwtService       *JWTService
-	logger           *slog.Logger
+	userRepo   repositories.UserRepository
+	leagueRepo repositories.LeagueRepository
+	playerRepo repositories.PlayerRepository
+	jwtService *JWTService
+	logger     *slog.Logger
 }
 
 func NewDevAuthService(
 	logger *slog.Logger,
 	userRepo repositories.UserRepository,
 	leagueRepo repositories.LeagueRepository,
-	leagueMemberRepo repositories.LeagueMemberRepository,
+	playerRepo repositories.PlayerRepository,
 	jwtService *JWTService,
 ) DevAuthService {
 	return &devAuthServiceImpl{
-		userRepo:         userRepo,
-		leagueRepo:       leagueRepo,
-		leagueMemberRepo: leagueMemberRepo,
-		jwtService:       jwtService,
-		logger:           utils.LoggerWithService(logger, "DevAuthService"),
+		userRepo:   userRepo,
+		leagueRepo: leagueRepo,
+		playerRepo: playerRepo,
+		jwtService: jwtService,
+		logger:     utils.LoggerWithService(logger, "DevAuthService"),
 	}
 }
 
@@ -105,7 +105,7 @@ func (s *devAuthServiceImpl) Impersonate(userID uuid.UUID) (*models.User, string
 	return user, token, nil
 }
 
-func (s *devAuthServiceImpl) UpsertMembership(leagueID, userID uuid.UUID, roleName string) (*models.LeagueMember, error) {
+func (s *devAuthServiceImpl) UpsertMembership(leagueID, userID uuid.UUID, roleName string) (*models.Player, error) {
 	role, ok := rbac.ParseMemberRole(roleName)
 	if !ok {
 		return nil, types.ErrInvalidInput
@@ -128,7 +128,7 @@ func (s *devAuthServiceImpl) UpsertMembership(leagueID, userID uuid.UUID, roleNa
 		return nil, types.ErrInternalService
 	}
 
-	existing, err := s.leagueMemberRepo.GetByUserAndLeague(userID, leagueID)
+	existing, err := s.playerRepo.GetByUserAndLeague(userID, leagueID)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			s.logger.Error("UpsertMembership - failed to look up membership",
@@ -139,14 +139,13 @@ func (s *devAuthServiceImpl) UpsertMembership(leagueID, userID uuid.UUID, roleNa
 		}
 
 		teamName := fmt.Sprintf("%s's Dev Team", user.DiscordUsername)
-		member := &models.LeagueMember{
-			UserID:          userID,
-			LeagueID:        leagueID,
-			TeamName:        &teamName,
-			Role:            role,
-			IsParticipating: true,
+		player := &models.Player{
+			UserID:   userID,
+			LeagueID: leagueID,
+			TeamName: &teamName,
+			Role:     role,
 		}
-		created, createErr := s.leagueMemberRepo.Create(member)
+		created, createErr := s.playerRepo.Create(player)
 		if createErr != nil {
 			s.logger.Error("UpsertMembership - failed to create membership", "user_id", userID, "league_id", leagueID, "error", createErr)
 			return nil, types.ErrFailedToCreatePlayer
@@ -155,11 +154,11 @@ func (s *devAuthServiceImpl) UpsertMembership(leagueID, userID uuid.UUID, roleNa
 		return created, nil
 	}
 
-	if err := s.leagueMemberRepo.UpdateRole(existing.ID, role); err != nil {
-		s.logger.Error("UpsertMembership - failed to update role", "member_id", existing.ID, "error", err)
+	if err := s.playerRepo.UpdateRole(existing.ID, role); err != nil {
+		s.logger.Error("UpsertMembership - failed to update role", "player_id", existing.ID, "error", err)
 		return nil, types.ErrInternalService
 	}
 	existing.Role = role
-	s.logger.Info("updated dev membership role", "member_id", existing.ID, "role", role)
+	s.logger.Info("updated dev membership role", "player_id", existing.ID, "role", role)
 	return existing, nil
 }

@@ -74,8 +74,8 @@ func (r *gameRepositoryImpl) GetGameByID(id uuid.UUID) (models.Game, error) {
 		Preload("Player2").
 		Preload("Winner").
 		Preload("Loser").
-		Preload("ReportingPlayer").
-		Preload("ApproverPlayer").
+		Preload("ReporterUser").
+		Preload("ApproverUser").
 		First(&game, "id = ?", id).Error
 	if err != nil {
 		return game, fmt.Errorf("(Error: GetGameByID) - failed to get game: %w", err)
@@ -179,7 +179,7 @@ func (r *gameRepositoryImpl) GetDisputedGamesByLeague(leagueID uuid.UUID) ([]mod
 	var games []models.Game
 	err := r.db.Preload("Player1").
 		Preload("Player2").
-		Preload("ReportingPlayer").
+		Preload("ReporterUser").
 		Where("league_id = ? AND status = ?", leagueID, enums.GameStatusDisputed).
 		Order("updated_at DESC").
 		Find(&games).Error
@@ -204,8 +204,8 @@ func (r *gameRepositoryImpl) HasGames(leagueID uuid.UUID, gameType enums.GameTyp
 // marks a game as disputed
 func (r *gameRepositoryImpl) DisputeGame(gameID uuid.UUID, reporterID uuid.UUID) error {
 	updates := map[string]any{
-		"status":              enums.GameStatusDisputed,
-		"reporting_player_id": reporterID,
+		"status":           enums.GameStatusDisputed,
+		"reporter_user_id": reporterID,
 	}
 
 	err := r.db.Model(&models.Game{}).
@@ -295,9 +295,9 @@ func (r *gameRepositoryImpl) UpdateGameReport(gameID uuid.UUID, loserID uuid.UUI
 		"player1_wins":          dto.Player1Wins,
 		"player2_wins":          dto.Player2Wins,
 		"showdown_replay_links": dto.ReplayLinks,
-		"reporting_player_id":   dto.ReporterID,
-		"status":                enums.GameStatusApprovalPending,
-		"approver_id":           nil, // Clear approver when a new report comes in
+		"reporter_user_id":  dto.ReporterUserID,
+		"status":            enums.GameStatusApprovalPending,
+		"approver_user_id":  nil, // Clear approver when a new report comes in
 	}
 
 	err := r.db.Model(&models.Game{}).Where("id = ?", gameID).Updates(updates).Error
@@ -351,8 +351,8 @@ func (r *gameRepositoryImpl) finalizeGame(tx *gorm.DB, gameID uuid.UUID, loserID
 		"player1_wins":          dto.Player1Wins,
 		"player2_wins":          dto.Player2Wins,
 		"showdown_replay_links": dto.ReplayLinks,
-		"approver_id":           dto.FinalizerID,
-		"status":                enums.GameStatusCompleted,
+		"approver_user_id":  dto.ApproverUserID,
+		"status":            enums.GameStatusCompleted,
 	}
 
 	err := tx.Model(&models.Game{}).Where("id = ?", gameID).Updates(updates).Error
@@ -364,10 +364,10 @@ func (r *gameRepositoryImpl) finalizeGame(tx *gorm.DB, gameID uuid.UUID, loserID
 
 // incrementPlayerStats is a private helper to atomically increment player stats within a transaction.
 func (r *gameRepositoryImpl) incrementPlayerStats(tx *gorm.DB, winnerID, loserID uuid.UUID) error {
-	if err := tx.Model(&models.LeagueMember{}).Where("id = ?", winnerID).Update("wins", gorm.Expr("wins + 1")).Error; err != nil {
+	if err := tx.Model(&models.Player{}).Where("id = ?", winnerID).Update("wins", gorm.Expr("wins + 1")).Error; err != nil {
 		return fmt.Errorf("(Repository: incrementPlayerStats) - failed to increment winner's wins: %w", err)
 	}
-	if err := tx.Model(&models.LeagueMember{}).Where("id = ?", loserID).Update("losses", gorm.Expr("losses + 1")).Error; err != nil {
+	if err := tx.Model(&models.Player{}).Where("id = ?", loserID).Update("losses", gorm.Expr("losses + 1")).Error; err != nil {
 		return fmt.Errorf("(Repository: incrementPlayerStats) - failed to increment loser's losses: %w", err)
 	}
 	return nil
@@ -375,10 +375,10 @@ func (r *gameRepositoryImpl) incrementPlayerStats(tx *gorm.DB, winnerID, loserID
 
 // decrementPlayerStats is a private helper to atomically decrement player stats within a transaction.
 func (r *gameRepositoryImpl) decrementPlayerStats(tx *gorm.DB, winnerID, loserID uuid.UUID) error {
-	if err := tx.Model(&models.LeagueMember{}).Where("id = ?", winnerID).Update("wins", gorm.Expr("wins - 1")).Error; err != nil {
+	if err := tx.Model(&models.Player{}).Where("id = ?", winnerID).Update("wins", gorm.Expr("wins - 1")).Error; err != nil {
 		return fmt.Errorf("(Repository: decrementPlayerStats) - failed to decrement winner's wins: %w", err)
 	}
-	if err := tx.Model(&models.LeagueMember{}).Where("id = ?", loserID).Update("losses", gorm.Expr("losses - 1")).Error; err != nil {
+	if err := tx.Model(&models.Player{}).Where("id = ?", loserID).Update("losses", gorm.Expr("losses - 1")).Error; err != nil {
 		return fmt.Errorf("(Repository: decrementPlayerStats) - failed to decrement loser's losses: %w", err)
 	}
 	return nil

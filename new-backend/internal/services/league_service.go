@@ -38,7 +38,7 @@ type LeagueService interface {
 type leagueServiceImpl struct {
 	logger           *slog.Logger
 	leagueRepo       repositories.LeagueRepository
-	memberRepo       repositories.LeagueMemberRepository
+	playerRepo       repositories.PlayerRepository
 	draftRepo        repositories.DraftRepository
 	gameRepo         repositories.GameRepository
 	schedulerService SchedulerService
@@ -49,14 +49,14 @@ type leagueServiceImpl struct {
 func NewLeagueService(
 	logger *slog.Logger,
 	leagueRepo repositories.LeagueRepository,
-	memberRepo repositories.LeagueMemberRepository,
+	playerRepo repositories.PlayerRepository,
 	draftRepo repositories.DraftRepository,
 	gameRepo repositories.GameRepository,
 ) LeagueService {
 	return &leagueServiceImpl{
 		logger:     utils.LoggerWithService(logger, "LeagueService"),
 		leagueRepo: leagueRepo,
-		memberRepo: memberRepo,
+		playerRepo: playerRepo,
 		draftRepo:  draftRepo,
 		gameRepo:   gameRepo,
 	}
@@ -76,10 +76,12 @@ func (s *leagueServiceImpl) SetTransferService(transferService TransferService) 
 
 // CreateLeague handles the business logic for creating a new league.
 func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.LeagueCreateRequestDTO) (*models.League, error) {
-	const maxLeaguesCommisionable = 20
+	const maxLeaguesCommisionable = 10
 	const maxGroupsAllowed = 2
 
-	// check if user already has two owned leagues
+	// TODO: Move these checks to private functions
+
+	// Check if user already has two owned leagues
 	count, err := s.leagueRepo.GetLeaguesCountWhereOwner(userID)
 	if err != nil {
 		s.logger.Error("CreateLeague - could not get commissioner league count", "user_id", userID, "error", err)
@@ -135,7 +137,7 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.Leagu
 	inLeagueName := "League Owner"
 	teamName := fmt.Sprintf("%s's Team", input.Name)
 
-	ownerPlayer := &models.LeagueMember{
+	ownerPlayer := &models.Player{
 		UserID:       userID,
 		LeagueID:     leagueID,
 		InLeagueName: &inLeagueName,
@@ -145,7 +147,8 @@ func (s *leagueServiceImpl) CreateLeague(userID uuid.UUID, input *requests.Leagu
 		Role:         rbac.MRoleOwner,
 	}
 
-	_, err = s.memberRepo.Create(ownerPlayer)
+	// Create the owner Player before creating the league, again to avoid the extra PlayerCount DB update
+	_, err = s.playerRepo.Create(ownerPlayer)
 	if err != nil {
 		s.logger.Error("CreateLeague - failed to create owner", "league_id", leagueID, "error", err)
 		return nil, fmt.Errorf("failed to create league owner: %w", err)

@@ -153,7 +153,7 @@ func (s *schedulerServiceImpl) Start() error {
 			Payload: u.PayloadDraftTurnTimeout{
 				DraftID:  draft.ID,
 				LeagueID: draft.LeagueID,
-				PlayerID: *draft.CurrentTurnMemberID,
+				PlayerID: *draft.CurrentTurnPlayerID,
 			},
 		}
 		heap.Push(s.tasks, newTask)
