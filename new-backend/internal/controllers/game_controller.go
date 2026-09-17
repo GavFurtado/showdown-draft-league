@@ -164,6 +164,12 @@ func (c *gameControllerImpl) GetGamesByPlayer(ctx *gin.Context) {
 //	@Failure		404			{object}	responses.ErrorResponse
 //	@Router			/api/leagues/{leagueId}/games/report/{gameId} [put]
 func (c *gameControllerImpl) ReportGame(ctx *gin.Context) {
+	leagueID, err := uuid.Parse(ctx.Param("leagueId"))
+	if err != nil {
+		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
+		return
+	}
+
 	gameID, err := uuid.Parse(ctx.Param("gameId"))
 	if err != nil {
 		sendError(ctx, http.StatusBadRequest, types.ErrParsingParams.Error())
@@ -184,7 +190,7 @@ func (c *gameControllerImpl) ReportGame(ctx *gin.Context) {
 	}
 	dto.ReporterUserID = reporterUserIDStr.(uuid.UUID)
 
-	if err := c.gameService.ReportGameResult(gameID, &dto); err != nil {
+	if err := c.gameService.ReportGameResult(leagueID, gameID, &dto); err != nil {
 		c.logger.Error("ReportGame error", "error", err)
 		switch {
 		case errors.Is(err, types.ErrConflict):

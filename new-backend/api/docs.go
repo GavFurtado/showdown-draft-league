@@ -1255,6 +1255,440 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/leagues/{leagueId}/players/me/profile": {
+            "put": {
+                "description": "Update your own in-league name or team name. Requires update:own_player.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Players"
+                ],
+                "summary": "Update your own player profile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "League ID",
+                        "name": "leagueId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Profile fields",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.UpdatePlayerInfoRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Player"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/leagues/{leagueId}/players/{playerId}": {
+            "get": {
+                "description": "Player details within a league",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Players"
+                ],
+                "summary": "Get a player",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "League ID",
+                        "name": "leagueId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Player ID",
+                        "name": "playerId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Player"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/leagues/{leagueId}/players/{playerId}/draft-points": {
+            "put": {
+                "description": "Set a player's draft points. Requires update:player_score.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Players"
+                ],
+                "summary": "Update player's draft points",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "League ID",
+                        "name": "leagueId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Player ID",
+                        "name": "playerId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Player"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/leagues/{leagueId}/players/{playerId}/draft-position": {
+            "put": {
+                "description": "Set the draft order position for a player. Requires update:player_score.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Players"
+                ],
+                "summary": "Update player's draft position",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "League ID",
+                        "name": "leagueId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Player ID",
+                        "name": "playerId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Player"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/leagues/{leagueId}/players/{playerId}/profile": {
+            "put": {
+                "description": "Update in-league name or team name for any player. Requires update:player.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Players"
+                ],
+                "summary": "Update a player's profile (staff)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "League ID",
+                        "name": "leagueId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Player ID",
+                        "name": "playerId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Profile fields",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.UpdatePlayerInfoRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Player"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/leagues/{leagueId}/players/{playerId}/record": {
+            "put": {
+                "description": "Set wins and losses for a player. Requires update:player_score.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Players"
+                ],
+                "summary": "Update player's record",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "League ID",
+                        "name": "leagueId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Player ID",
+                        "name": "playerId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Player"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/leagues/{leagueId}/players/{playerId}/role": {
+            "put": {
+                "description": "Change a player's role to another participant role. Requires update:role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Players"
+                ],
+                "summary": "Update a player's role",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "League ID",
+                        "name": "leagueId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Player ID",
+                        "name": "playerId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Role",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Player"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/leagues/{leagueId}/players/{playerId}/roster": {
+            "get": {
+                "description": "Player details including all drafted Pokemon",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Players"
+                ],
+                "summary": "Get player with full roster",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "League ID",
+                        "name": "leagueId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Player ID",
+                        "name": "playerId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Player"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/leagues/{leagueId}/pool-entries": {
             "get": {
                 "description": "All pool entries for a league",
@@ -1565,6 +1999,367 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/leagues/{leagueId}/spectators": {
+            "get": {
+                "description": "All spectators of a league. Requires read:spectator.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Spectators"
+                ],
+                "summary": "Get league spectators",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "League ID",
+                        "name": "leagueId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Spectator"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/leagues/{leagueId}/spectators/join": {
+            "post": {
+                "description": "Add yourself to a league as a spectator (a non-participating member).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Spectators"
+                ],
+                "summary": "Join a league as a spectator",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "League ID",
+                        "name": "leagueId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Specify inLeagueName",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Spectator"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/leagues/{leagueId}/spectators/me": {
+            "delete": {
+                "description": "Remove yourself as a spectator from a league.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Spectators"
+                ],
+                "summary": "Leave a league as a spectator",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "League ID",
+                        "name": "leagueId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/leagues/{leagueId}/spectators/me/profile": {
+            "put": {
+                "description": "Update your own in-league name. Requires update:own_spectator.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Spectators"
+                ],
+                "summary": "Update your own spectator profile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "League ID",
+                        "name": "leagueId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Specify inLeagueName",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Spectator"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/leagues/{leagueId}/spectators/{spectatorId}": {
+            "delete": {
+                "description": "Remove a spectator from a league. Requires delete:spectator.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Spectators"
+                ],
+                "summary": "Delete a spectator (staff)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "League ID",
+                        "name": "leagueId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Spectator ID",
+                        "name": "spectatorId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/leagues/{leagueId}/spectators/{spectatorId}/profile": {
+            "put": {
+                "description": "Update a spectator's in-league name. Requires update:spectator.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Spectators"
+                ],
+                "summary": "Update a spectator's profile (staff)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "League ID",
+                        "name": "leagueId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Spectator ID",
+                        "name": "spectatorId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Specify inLeagueName",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Spectator"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/leagues/{leagueId}/spectators/{spectatorId}/role": {
+            "put": {
+                "description": "Change a spectator's role to another spectator role. Requires update:role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Spectators"
+                ],
+                "summary": "Update a spectator's role",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "League ID",
+                        "name": "leagueId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Spectator ID",
+                        "name": "spectatorId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Role",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Spectator"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/leagues/{leagueId}/transfers/drop/{claimId}": {
             "post": {
                 "description": "Release a Pokemon from your roster",
@@ -1758,303 +2553,6 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/responses.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/players/{id}": {
-            "get": {
-                "description": "Player details",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Players"
-                ],
-                "summary": "Get a player",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Player ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Player"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/responses.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/responses.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/players/{id}/draft-points": {
-            "put": {
-                "description": "Set a player's draft points",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Players"
-                ],
-                "summary": "Update player's draft points",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Player ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Player"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/responses.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/responses.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/responses.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/players/{id}/draft-position": {
-            "put": {
-                "description": "Set the draft order position for a player",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Players"
-                ],
-                "summary": "Update player's draft position",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Player ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Player"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/responses.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/responses.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/responses.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/players/{id}/profile": {
-            "put": {
-                "description": "Update in-league name or team name",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Players"
-                ],
-                "summary": "Update player profile",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Player ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Profile fields",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/requests.UpdatePlayerInfoRequestDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Player"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/responses.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/responses.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/responses.ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict",
-                        "schema": {
-                            "$ref": "#/definitions/responses.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/players/{id}/record": {
-            "put": {
-                "description": "Set wins and losses for a player",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Players"
-                ],
-                "summary": "Update player's record",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Player ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Player"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/responses.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/responses.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/responses.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/players/{id}/roster": {
-            "get": {
-                "description": "Player details including all drafted Pokemon",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Players"
-                ],
-                "summary": "Get player with full roster",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Player ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Player"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/responses.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/responses.ErrorResponse"
                         }
@@ -2317,44 +2815,6 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/responses.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/users/{id}/players": {
-            "get": {
-                "description": "All league players for a user",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Get players by user",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "User ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Player"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/responses.ErrorResponse"
                         }
@@ -3037,6 +3497,12 @@ const docTemplate = `{
                 "SpectatorCount": {
                     "type": "integer"
                 },
+                "Spectators": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Spectator"
+                    }
+                },
                 "StartDate": {
                     "type": "string"
                 },
@@ -3048,6 +3514,9 @@ const docTemplate = `{
                 },
                 "UpdatedAt": {
                     "type": "string"
+                },
+                "ViewerCount": {
+                    "type": "integer"
                 },
                 "Visibility": {
                     "$ref": "#/definitions/enums.LeagueVisibility"
@@ -3225,6 +3694,9 @@ const docTemplate = `{
                 "IsViewer": {
                     "type": "boolean"
                 },
+                "League": {
+                    "$ref": "#/definitions/models.League"
+                },
                 "LeagueID": {
                     "type": "string"
                 },
@@ -3233,6 +3705,14 @@ const docTemplate = `{
                 },
                 "UpdatedAt": {
                     "type": "string"
+                },
+                "User": {
+                    "description": "Relationships",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.User"
+                        }
+                    ]
                 },
                 "UserID": {
                     "type": "string"
@@ -3297,14 +3777,20 @@ const docTemplate = `{
         "rbac.MemberRole": {
             "type": "string",
             "enum": [
-                "OWNER",
+                "REGULAR",
                 "MODERATOR",
-                "MEMBER"
+                "OWNER",
+                "SPECTATOR",
+                "SPECTATOR_MODERATOR",
+                "SPECTATOR_OWNER"
             ],
             "x-enum-varnames": [
-                "MRoleOwner",
+                "MRoleRegular",
                 "MRoleModerator",
-                "MRoleMember"
+                "MRoleOwner",
+                "MRoleSpectator",
+                "MRoleSpectatorModerator",
+                "MRoleSpectatorOwner"
             ]
         },
         "requests.DevCreateUserRequestDTO": {

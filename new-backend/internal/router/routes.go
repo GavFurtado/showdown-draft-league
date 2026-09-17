@@ -15,8 +15,6 @@ import (
 )
 
 // FIXME: This needs refinement. Needs to be cleaner somehow
-// In addition, leagues/:leagueId/players/join is not a protected route yet is under that section
-// Clean that up as well.
 
 func RegisterRoutes(
 	r *gin.Engine,
@@ -80,29 +78,6 @@ func RegisterRoutes(
 	{
 		api.GET("/profile", controllers.UserController.GetMyProfile)
 
-		// --- Player Routes ---
-		players := api.Group("/players")
-		{
-			players.GET("/:id",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
-				controllers.PlayerController.GetByID)
-			players.GET("/:id/roster",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
-				controllers.PlayerController.GetWithFullRoster)
-			players.PUT("/:id/profile",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdatePlayer),
-				controllers.PlayerController.UpdateProfile)
-			players.PUT("/:id/draft-points",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdatePlayerScore),
-				controllers.PlayerController.UpdateDraftPoints)
-			players.PUT("/:id/record",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdatePlayerScore),
-				controllers.PlayerController.UpdateRecord)
-			players.PUT("/:id/draft-position",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdatePlayerScore),
-				controllers.PlayerController.UpdateDraftPosition)
-		}
-
 		leagues := api.Group("/leagues")
 		{
 			leagues.POST(
@@ -113,6 +88,68 @@ func RegisterRoutes(
 				"/:leagueId",
 				controllers.LeagueController.GetLeague,
 			)
+
+			// --- League Player Routes ---
+			players := leagues.Group("/:leagueId/players")
+			{
+				players.GET("/",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
+					controllers.PlayerController.GetByLeague)
+				players.POST("/join",
+					controllers.PlayerController.JoinLeague)
+				players.GET("/by-user/:userId",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
+					controllers.PlayerController.GetByUserAndLeague)
+				players.GET("/:playerId",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
+					controllers.PlayerController.GetByID)
+				players.GET("/:playerId/roster",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
+					controllers.PlayerController.GetWithFullRoster)
+				players.PUT("/me/profile",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateOwnPlayer),
+					controllers.PlayerController.UpdateOwnProfile)
+				players.PUT("/:playerId/profile",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdatePlayer),
+					controllers.PlayerController.UpdateProfile)
+				players.PUT("/:playerId/draft-points",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdatePlayerScore),
+					controllers.PlayerController.UpdateDraftPoints)
+				players.PUT("/:playerId/record",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdatePlayerScore),
+					controllers.PlayerController.UpdateRecord)
+				players.PUT("/:playerId/draft-position",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdatePlayerScore),
+					controllers.PlayerController.UpdateDraftPosition)
+				players.PUT("/:playerId/role",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateRole),
+					controllers.PlayerController.UpdateRole)
+			}
+
+			// --- League Spectator Routes ---
+			spectators := leagues.Group("/:leagueId/spectators")
+			{
+				spectators.GET("/",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadSpectator),
+					controllers.SpectatorController.GetByLeague)
+				spectators.POST("/join",
+					controllers.SpectatorController.JoinLeague)
+				spectators.DELETE("/me",
+					controllers.SpectatorController.LeaveLeague)
+				spectators.PUT("/me/profile",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateOwnSpectator),
+					controllers.SpectatorController.UpdateOwnProfile)
+				spectators.PUT("/:spectatorId/profile",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateSpectator),
+					controllers.SpectatorController.UpdateProfile)
+				spectators.PUT("/:spectatorId/role",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionUpdateRole),
+					controllers.SpectatorController.UpdateRole)
+				spectators.DELETE("/:spectatorId",
+					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionDeleteSpectator),
+					controllers.SpectatorController.DeleteSpectator)
+			}
+			// --- Game Routes ---
 			games := leagues.Group("/:leagueId/games")
 			{
 				games.POST(
@@ -208,16 +245,6 @@ func RegisterRoutes(
 					controllers.PoolEntryController.Update)
 			}
 
-			// --- League Player Routes ---
-			leaguePlayers := leagues.Group("/:leagueId/players")
-			{
-				leaguePlayers.GET("/",
-					middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
-					controllers.PlayerController.GetByLeague)
-				leaguePlayers.POST("/join",
-					controllers.PlayerController.JoinLeague)
-			}
-
 			// --- Draft Pick Routes ---
 			draftPicks := leagues.Group("/:leagueId/draft-picks")
 			{
@@ -277,9 +304,6 @@ func RegisterRoutes(
 			users.GET("/me/discord", controllers.UserController.GetMyDiscordDetails)
 			users.GET("/me/leagues", controllers.UserController.GetMyLeagues)
 			users.PUT("/profile", controllers.UserController.UpdateProfile)
-			users.GET("/:id/players",
-				middleware.LeagueRBACMiddleware(leagueMiddlewareDeps, rbac.PermissionReadPlayer),
-				controllers.PlayerController.GetByUser)
 		}
 
 	}

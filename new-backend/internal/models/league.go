@@ -23,7 +23,7 @@ type League struct {
 	Status     enums.LeagueStatus     `gorm:"type:varchar(50);not null;default:'pending';column:status" json:"Status"`
 	Visibility enums.LeagueVisibility `gorm:"type:varchar(10);not null;default:'private';column:visibility" json:"Visibility"`
 
-PlayerCount    int `gorm:"column:player_count" json:"PlayerCount"`
+	PlayerCount    int `gorm:"column:player_count" json:"PlayerCount"`
 	SpectatorCount int `gorm:"column:spectator_count" json:"SpectatorCount"`
 	ViewerCount    int `gorm:"column:viewer_count" json:"ViewerCount"`
 	MaxPlayers     int `gorm:"default:0;column:max_players" json:"MaxPlayers"` // 0 = unlimited
@@ -51,9 +51,9 @@ PlayerCount    int `gorm:"column:player_count" json:"PlayerCount"`
 	UpdatedAt *time.Time     `gorm:"type:timestamp with time zone;column:updated_at" json:"UpdatedAt"`
 	DeletedAt gorm.DeletedAt `gorm:"index;column:deleted_at" json:"-"`
 
-// Relationships
-	OwnerUser *User       `gorm:"foreignKey:owner_user_id;references:id" json:"OwnerUser,omitempty"`
-	Players   []Player    `gorm:"foreignKey:league_id" json:"Players,omitempty"`
+	// Relationships
+	OwnerUser  *User       `gorm:"foreignKey:owner_user_id;references:id" json:"OwnerUser,omitempty"`
+	Players    []Player    `gorm:"foreignKey:league_id" json:"Players,omitempty"`
 	Spectators []Spectator `gorm:"foreignKey:league_id" json:"Spectators,omitempty"`
 	// League has many PoolEntries (its defined draft pool)
 	// This is never in json, I've kept it here to make the ownership obvious

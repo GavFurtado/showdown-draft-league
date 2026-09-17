@@ -33,7 +33,7 @@ func NewClaimRepository(db *gorm.DB) ClaimRepository {
 
 func (r *claimRepositoryImpl) Create(claim *models.Claim) (*models.Claim, error) {
 	if err := r.db.Create(claim).Error; err != nil {
-		return nil, fmt.Errorf("(Error: ClaimRepo.Create) - failed to create claim: %w", err)
+		return nil, fmt.Errorf("failed to create claim: %w", err)
 	}
 	return claim, nil
 }
@@ -46,7 +46,7 @@ func (r *claimRepositoryImpl) GetByID(id uuid.UUID) (*models.Claim, error) {
 		Preload("PokemonSpecies").
 		First(&claim, "id = ?", id).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: ClaimRepo.GetByID) - failed to get claim: %w", err)
+		return nil, fmt.Errorf("failed to get claim: %w", err)
 	}
 	return &claim, nil
 }
@@ -59,7 +59,7 @@ func (r *claimRepositoryImpl) GetActiveByPlayerAndSpecies(playerID uuid.UUID, sp
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("(Error: ClaimRepo.GetActiveByPlayerAndSpecies) - failed: %w", err)
+		return nil, fmt.Errorf("failed to get active claim for player and species: %w", err)
 	}
 	return &claim, nil
 }
@@ -71,7 +71,7 @@ func (r *claimRepositoryImpl) GetActiveByPlayer(playerID uuid.UUID) ([]models.Cl
 		Order("created_at ASC").
 		Find(&claims).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: ClaimRepo.GetActiveByPlayer) - failed: %w", err)
+		return nil, fmt.Errorf("failed to get active claims for player: %w", err)
 	}
 	return claims, nil
 }
@@ -85,7 +85,7 @@ func (r *claimRepositoryImpl) GetActiveByLeague(leagueID uuid.UUID) ([]models.Cl
 		Order("created_at ASC").
 		Find(&claims).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: ClaimRepo.GetActiveByLeague) - failed: %w", err)
+		return nil, fmt.Errorf("failed to get active claims for league: %w", err)
 	}
 	return claims, nil
 }
@@ -99,7 +99,7 @@ func (r *claimRepositoryImpl) GetReleasedByLeague(leagueID uuid.UUID) ([]models.
 		Order("updated_at DESC").
 		Find(&claims).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: ClaimRepo.GetReleasedByLeague) - failed: %w", err)
+		return nil, fmt.Errorf("failed to get released claims for league: %w", err)
 	}
 	return claims, nil
 }
@@ -110,7 +110,7 @@ func (r *claimRepositoryImpl) GetActiveCountByPlayer(playerID uuid.UUID) (int64,
 		Where("player_id = ? AND is_active = ?", playerID, true).
 		Count(&count).Error
 	if err != nil {
-		return 0, fmt.Errorf("(Error: ClaimRepo.GetActiveCountByPlayer) - failed: %w", err)
+		return 0, fmt.Errorf("failed to count active claims for player: %w", err)
 	}
 	return count, nil
 }
@@ -121,7 +121,7 @@ func (r *claimRepositoryImpl) GetActiveCountByLeague(leagueID uuid.UUID) (int64,
 		Where("league_id = ? AND is_active = ?", leagueID, true).
 		Count(&count).Error
 	if err != nil {
-		return 0, fmt.Errorf("(Error: ClaimRepo.GetActiveCountByLeague) - failed: %w", err)
+		return 0, fmt.Errorf("failed to count active claims for league: %w", err)
 	}
 	return count, nil
 }
@@ -132,14 +132,14 @@ func (r *claimRepositoryImpl) IsSpeciesClaimedInLeague(leagueID uuid.UUID, speci
 		Where("league_id = ? AND species_id = ? AND is_active = ?", leagueID, speciesID, true).
 		Count(&count).Error
 	if err != nil {
-		return false, fmt.Errorf("(Error: ClaimRepo.IsSpeciesClaimedInLeague) - failed: %w", err)
+		return false, fmt.Errorf("failed to check claim status of species in league: %w", err)
 	}
 	return count > 0, nil
 }
 
 func (r *claimRepositoryImpl) Update(claim *models.Claim) (*models.Claim, error) {
 	if err := r.db.Save(claim).Error; err != nil {
-		return nil, fmt.Errorf("(Error: ClaimRepo.Update) - failed: %w", err)
+		return nil, fmt.Errorf("failed to update claim: %w", err)
 	}
 	return claim, nil
 }
@@ -154,18 +154,18 @@ func (r *claimRepositoryImpl) ReleaseTx(tx *gorm.DB, claim *models.Claim, player
 		"is_active":     false,
 		"released_week": releasedWeek,
 	}).Error; err != nil {
-		return fmt.Errorf("(Error: ClaimRepo.ReleaseTx) - failed to release claim: %w", err)
+		return fmt.Errorf("failed to release claim: %w", err)
 	}
 
 	if poolEntryID != uuid.Nil {
 		if err := db.Model(&models.PoolEntry{}).Where("id = ?", poolEntryID).Update("is_available", true).Error; err != nil {
-			return fmt.Errorf("(Error: ClaimRepo.ReleaseTx) - failed to update pool entry: %w", err)
+			return fmt.Errorf("failed to mark pool entry available: %w", err)
 		}
 	}
 
 	player.TransferCredits -= dropCost
 	if err := db.Save(player).Error; err != nil {
-		return fmt.Errorf("(Error: ClaimRepo.ReleaseTx) - failed to update player credits: %w", err)
+		return fmt.Errorf("failed to update player credits on release: %w", err)
 	}
 
 	return nil
@@ -179,15 +179,15 @@ func (r *claimRepositoryImpl) PickupFreeAgentTx(tx *gorm.DB, player *models.Play
 
 	player.TransferCredits -= pickupCost
 	if err := db.Save(player).Error; err != nil {
-		return fmt.Errorf("(Error: ClaimRepo.PickupFreeAgentTx) - failed to update player credits: %w", err)
+		return fmt.Errorf("failed to update player credits on pickup: %w", err)
 	}
 
 	if err := db.Create(newClaim).Error; err != nil {
-		return fmt.Errorf("(Error: ClaimRepo.PickupFreeAgentTx) - failed to create claim: %w", err)
+		return fmt.Errorf("failed to create claim on pickup: %w", err)
 	}
 
 	if err := db.Model(poolEntry).Update("is_available", false).Error; err != nil {
-		return fmt.Errorf("(Error: ClaimRepo.PickupFreeAgentTx) - failed to update pool entry: %w", err)
+		return fmt.Errorf("failed to mark pool entry unavailable: %w", err)
 	}
 
 	return nil

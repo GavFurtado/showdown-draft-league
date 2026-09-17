@@ -14,7 +14,7 @@ fi
 # recompile on dev builds every time
 if [ "$ENV" = "dev" ]; then
   if ! command -v swag &> /dev/null; then
-    echo "run.sh: WARNING: swag is not installed. API documentation may be outdated."
+    echo "run.sh: WARNING: swag is not installed. Tracked API documentation may be outdated."
     echo "run.sh:   Install with: go install github.com/swaggo/swag/cmd/swag@v1.8.12"
   else
     echo "run.sh: Regenerating swagger docs..."
@@ -24,5 +24,6 @@ if [ "$ENV" = "dev" ]; then
   go run ./cmd/main.go
 else
   go build -o ./build/server .
-  ./server
+  chmod +x ./build/server
+  ./build/server
 fi

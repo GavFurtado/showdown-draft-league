@@ -37,7 +37,7 @@ func (s *claimServiceImpl) GetByID(id uuid.UUID) (*models.Claim, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, types.ErrClaimNotFound
 		}
-		s.logger.Error("GetByID - failed", "error", err)
+		s.logger.Error("Failed to get claim", "error", err)
 		return nil, types.ErrInternalService
 	}
 	return claim, nil
@@ -46,7 +46,7 @@ func (s *claimServiceImpl) GetByID(id uuid.UUID) (*models.Claim, error) {
 func (s *claimServiceImpl) GetActiveByPlayer(playerID uuid.UUID) ([]models.Claim, error) {
 	claims, err := s.claimRepo.GetActiveByPlayer(playerID)
 	if err != nil {
-		s.logger.Error("GetActiveByPlayer - failed", "error", err)
+		s.logger.Error("Failed to get active claims for player", "error", err)
 		return nil, types.ErrInternalService
 	}
 	return claims, nil
@@ -55,7 +55,7 @@ func (s *claimServiceImpl) GetActiveByPlayer(playerID uuid.UUID) ([]models.Claim
 func (s *claimServiceImpl) GetActiveByLeague(leagueID uuid.UUID) ([]models.Claim, error) {
 	claims, err := s.claimRepo.GetActiveByLeague(leagueID)
 	if err != nil {
-		s.logger.Error("GetActiveByLeague - failed", "error", err)
+		s.logger.Error("Failed to get active claims for league", "error", err)
 		return nil, types.ErrInternalService
 	}
 	return claims, nil
@@ -64,7 +64,7 @@ func (s *claimServiceImpl) GetActiveByLeague(leagueID uuid.UUID) ([]models.Claim
 func (s *claimServiceImpl) GetReleasedByLeague(leagueID uuid.UUID) ([]models.Claim, error) {
 	claims, err := s.claimRepo.GetReleasedByLeague(leagueID)
 	if err != nil {
-		s.logger.Error("GetReleasedByLeague - failed", "error", err)
+		s.logger.Error("Failed to get released claims for league", "error", err)
 		return nil, types.ErrInternalService
 	}
 	return claims, nil

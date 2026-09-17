@@ -61,7 +61,7 @@ func NewGameRepository(db *gorm.DB) GameRepository {
 func (r *gameRepositoryImpl) CreateGame(game *models.Game) (*models.Game, error) {
 	err := r.db.Create(game).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: CreateGame) - failed to create game: %w", err)
+		return nil, fmt.Errorf("failed to create game: %w", err)
 	}
 	return game, nil
 }
@@ -78,7 +78,7 @@ func (r *gameRepositoryImpl) GetGameByID(id uuid.UUID) (models.Game, error) {
 		Preload("ApproverUser").
 		First(&game, "id = ?", id).Error
 	if err != nil {
-		return game, fmt.Errorf("(Error: GetGameByID) - failed to get game: %w", err)
+		return game, fmt.Errorf("failed to get game: %w", err)
 	}
 	return game, nil
 }
@@ -94,7 +94,7 @@ func (r *gameRepositoryImpl) GetGamesByLeague(leagueID uuid.UUID) ([]models.Game
 		Order("round_number ASC, created_at ASC").
 		Find(&games).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: GetGamesByLeague) - failed to get games by league: %w", err)
+		return nil, fmt.Errorf("failed to get games by league: %w", err)
 	}
 	return games, nil
 }
@@ -110,7 +110,7 @@ func (r *gameRepositoryImpl) GetGamesByPlayer(playerID uuid.UUID) ([]models.Game
 		Order("round_number ASC, created_at ASC").
 		Find(&games).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: GetGamesByPlayer) - failed to get games by player: %w", err)
+		return nil, fmt.Errorf("failed to get games by player: %w", err)
 	}
 	return games, nil
 }
@@ -125,7 +125,7 @@ func (r *gameRepositoryImpl) GetGamesByLeagueAndRound(leagueID uuid.UUID, roundN
 		Order("created_at ASC").
 		Find(&games).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: GetGamesByLeagueAndRound) - failed to get games by league and round: %w", err)
+		return nil, fmt.Errorf("failed to get games by league and round: %w", err)
 	}
 	return games, nil
 }
@@ -139,7 +139,7 @@ func (r *gameRepositoryImpl) GetScheduledGamesByLeague(leagueID uuid.UUID) ([]mo
 		Order("round_number ASC, created_at ASC").
 		Find(&games).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: GetPendingGamesByLeague) - failed to get scheduled games: %w", err)
+		return nil, fmt.Errorf("failed to get scheduled games for league: %w", err)
 	}
 	return games, nil
 }
@@ -153,7 +153,7 @@ func (r *gameRepositoryImpl) GetScheduledGamesByPlayer(playerID uuid.UUID) ([]mo
 		Order("round_number ASC, created_at ASC").
 		Find(&games).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: GetPendingGamesByPlayer) - failed to get scheduled games: %w", err)
+		return nil, fmt.Errorf("failed to get scheduled games for player: %w", err)
 	}
 	return games, nil
 }
@@ -169,7 +169,7 @@ func (r *gameRepositoryImpl) GetCompletedGamesByLeague(leagueID uuid.UUID) ([]mo
 		Order("round_number ASC, updated_at DESC").
 		Find(&games).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: GetCompletedGamesByLeague) - failed to get completed games: %w", err)
+		return nil, fmt.Errorf("failed to get completed games: %w", err)
 	}
 	return games, nil
 }
@@ -184,7 +184,7 @@ func (r *gameRepositoryImpl) GetDisputedGamesByLeague(leagueID uuid.UUID) ([]mod
 		Order("updated_at DESC").
 		Find(&games).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: GetDisputedGamesByLeague) - failed to get disputed games: %w", err)
+		return nil, fmt.Errorf("failed to get disputed games: %w", err)
 	}
 	return games, nil
 }
@@ -196,7 +196,7 @@ func (r *gameRepositoryImpl) HasGames(leagueID uuid.UUID, gameType enums.GameTyp
 		Where("league_id = ? AND game_type = ?", leagueID, gameType).
 		Count(&count).Error
 	if err != nil {
-		return false, fmt.Errorf("(Error: HasGames) - failed to check for existing games: %w", err)
+		return false, fmt.Errorf("failed to check for existing games: %w", err)
 	}
 	return count > 0, nil
 }
@@ -212,7 +212,7 @@ func (r *gameRepositoryImpl) DisputeGame(gameID uuid.UUID, reporterID uuid.UUID)
 		Where("id = ?", gameID).
 		Updates(updates).Error
 	if err != nil {
-		return fmt.Errorf("(Repository: DisputeGame) - failed to dispute game: %w", err)
+		return fmt.Errorf("failed to dispute game: %w", err)
 	}
 	return nil
 }
@@ -229,7 +229,7 @@ func (r *gameRepositoryImpl) GetHeadToHeadRecord(player1ID, player2ID uuid.UUID)
 		Order("updated_at DESC").
 		Find(&games).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: GetHeadToHeadRecord) - failed to get head-to-head record: %w", err)
+		return nil, fmt.Errorf("failed to get head-to-head record: %w", err)
 	}
 	return games, nil
 }
@@ -241,7 +241,7 @@ func (r *gameRepositoryImpl) GetPlayerRecordInLeague(playerID, leagueID uuid.UUI
 		Where("league_id = ? AND winner_id = ? AND status = ?", leagueID, playerID, enums.GameStatusCompleted).
 		Count(&wins).Error
 	if err != nil {
-		return 0, 0, fmt.Errorf("(Error: GetPlayerRecordInLeague) - failed to count wins: %w", err)
+		return 0, 0, fmt.Errorf("failed to count wins: %w", err)
 	}
 
 	// Count losses
@@ -249,7 +249,7 @@ func (r *gameRepositoryImpl) GetPlayerRecordInLeague(playerID, leagueID uuid.UUI
 		Where("league_id = ? AND loser_id = ? AND status = ?", leagueID, playerID, enums.GameStatusCompleted).
 		Count(&losses).Error
 	if err != nil {
-		return 0, 0, fmt.Errorf("(Error: GetPlayerRecordInLeague) - failed to count losses: %w", err)
+		return 0, 0, fmt.Errorf("failed to count losses: %w", err)
 	}
 
 	return wins, losses, nil
@@ -259,7 +259,7 @@ func (r *gameRepositoryImpl) GetPlayerRecordInLeague(playerID, leagueID uuid.UUI
 func (r *gameRepositoryImpl) CreateGames(games []*models.Game) error {
 	tx := r.db.Begin()
 	if tx.Error != nil {
-		return fmt.Errorf("(Error: CreateGamesForRound) - failed to start transaction: %w", tx.Error)
+		return fmt.Errorf("failed to begin transaction: %w", tx.Error)
 	}
 
 	// if fails at any point due to panic, rollback
@@ -272,7 +272,7 @@ func (r *gameRepositoryImpl) CreateGames(games []*models.Game) error {
 	for _, game := range games {
 		if err := tx.Create(&game).Error; err != nil {
 			tx.Rollback()
-			return fmt.Errorf("(Error: CreateGamesForRound) - failed to create game: %w", err)
+			return fmt.Errorf("failed to create game in batch: %w", err)
 		}
 	}
 
@@ -283,7 +283,7 @@ func (r *gameRepositoryImpl) CreateGames(games []*models.Game) error {
 func (r *gameRepositoryImpl) DeleteGame(gameID uuid.UUID) error {
 	err := r.db.Delete(&models.Game{}, "id = ?", gameID).Error
 	if err != nil {
-		return fmt.Errorf("(Error: DeleteGame) - failed to delete game: %w", err)
+		return fmt.Errorf("failed to delete game: %w", err)
 	}
 	return nil
 }
@@ -295,14 +295,14 @@ func (r *gameRepositoryImpl) UpdateGameReport(gameID uuid.UUID, loserID uuid.UUI
 		"player1_wins":          dto.Player1Wins,
 		"player2_wins":          dto.Player2Wins,
 		"showdown_replay_links": dto.ReplayLinks,
-		"reporter_user_id":  dto.ReporterUserID,
-		"status":            enums.GameStatusApprovalPending,
-		"approver_user_id":  nil, // Clear approver when a new report comes in
+		"reporter_user_id":      dto.ReporterUserID,
+		"status":                enums.GameStatusApprovalPending,
+		"approver_user_id":      nil, // Clear approver when a new report comes in
 	}
 
 	err := r.db.Model(&models.Game{}).Where("id = ?", gameID).Updates(updates).Error
 	if err != nil {
-		return fmt.Errorf("(Repository: UpdateGameReport) - failed to update game with report: %w", err)
+		return fmt.Errorf("failed to update game with report: %w", err)
 	}
 	return nil
 }
@@ -311,7 +311,7 @@ func (r *gameRepositoryImpl) UpdateGameReport(gameID uuid.UUID, loserID uuid.UUI
 func (r *gameRepositoryImpl) FinalizeGameAndUpdateStats(game *models.Game, loserID uuid.UUID, dto *requests.FinalizeGameRequestDTO) error {
 	tx := r.db.Begin()
 	if tx.Error != nil {
-		return fmt.Errorf("(Repository: FinalizeGameAndUpdateStats) - failed to begin transaction: %w", tx.Error)
+		return fmt.Errorf("failed to begin finalization transaction: %w", tx.Error)
 	}
 	defer func() {
 		if p := recover(); p != nil {
@@ -324,20 +324,20 @@ func (r *gameRepositoryImpl) FinalizeGameAndUpdateStats(game *models.Game, loser
 	if game.Status == enums.GameStatusCompleted && game.WinnerID != nil && game.LoserID != nil {
 		if err := r.decrementPlayerStats(tx, *game.WinnerID, *game.LoserID); err != nil {
 			tx.Rollback()
-			return fmt.Errorf("FinalizeGameAndUpdateStats: failed to decrement old player stats for game %s: %w", game.ID, err)
+			return fmt.Errorf("failed to decrement old player stats for game %s: %w", game.ID, err)
 		}
 	}
 
 	// Update the game record with the final results
 	if err := r.finalizeGame(tx, game.ID, loserID, dto); err != nil {
 		tx.Rollback()
-		return fmt.Errorf("FinalizeGameAndUpdateStats: failed to finalize game %s: %w", game.ID, err)
+		return fmt.Errorf("failed to finalize game %s: %w", game.ID, err)
 	}
 
 	// Apply new player stats
 	if err := r.incrementPlayerStats(tx, dto.WinnerID, loserID); err != nil {
 		tx.Rollback()
-		return fmt.Errorf("FinalizeGameAndUpdateStats: failed to increment new player stats for game %s: %w", game.ID, err)
+		return fmt.Errorf("failed to increment new player stats for game %s: %w", game.ID, err)
 	}
 
 	return tx.Commit().Error
@@ -351,13 +351,13 @@ func (r *gameRepositoryImpl) finalizeGame(tx *gorm.DB, gameID uuid.UUID, loserID
 		"player1_wins":          dto.Player1Wins,
 		"player2_wins":          dto.Player2Wins,
 		"showdown_replay_links": dto.ReplayLinks,
-		"approver_user_id":  dto.ApproverUserID,
-		"status":            enums.GameStatusCompleted,
+		"approver_user_id":      dto.ApproverUserID,
+		"status":                enums.GameStatusCompleted,
 	}
 
 	err := tx.Model(&models.Game{}).Where("id = ?", gameID).Updates(updates).Error
 	if err != nil {
-		return fmt.Errorf("(Repository: finalizeGame) - failed to finalize game: %w", err)
+		return fmt.Errorf("failed to finalize game: %w", err)
 	}
 	return nil
 }
@@ -365,10 +365,10 @@ func (r *gameRepositoryImpl) finalizeGame(tx *gorm.DB, gameID uuid.UUID, loserID
 // incrementPlayerStats is a private helper to atomically increment player stats within a transaction.
 func (r *gameRepositoryImpl) incrementPlayerStats(tx *gorm.DB, winnerID, loserID uuid.UUID) error {
 	if err := tx.Model(&models.Player{}).Where("id = ?", winnerID).Update("wins", gorm.Expr("wins + 1")).Error; err != nil {
-		return fmt.Errorf("(Repository: incrementPlayerStats) - failed to increment winner's wins: %w", err)
+		return fmt.Errorf("failed to increment winner's wins: %w", err)
 	}
 	if err := tx.Model(&models.Player{}).Where("id = ?", loserID).Update("losses", gorm.Expr("losses + 1")).Error; err != nil {
-		return fmt.Errorf("(Repository: incrementPlayerStats) - failed to increment loser's losses: %w", err)
+		return fmt.Errorf("failed to increment loser's losses: %w", err)
 	}
 	return nil
 }
@@ -376,10 +376,10 @@ func (r *gameRepositoryImpl) incrementPlayerStats(tx *gorm.DB, winnerID, loserID
 // decrementPlayerStats is a private helper to atomically decrement player stats within a transaction.
 func (r *gameRepositoryImpl) decrementPlayerStats(tx *gorm.DB, winnerID, loserID uuid.UUID) error {
 	if err := tx.Model(&models.Player{}).Where("id = ?", winnerID).Update("wins", gorm.Expr("wins - 1")).Error; err != nil {
-		return fmt.Errorf("(Repository: decrementPlayerStats) - failed to decrement winner's wins: %w", err)
+		return fmt.Errorf("failed to decrement winner's wins: %w", err)
 	}
 	if err := tx.Model(&models.Player{}).Where("id = ?", loserID).Update("losses", gorm.Expr("losses - 1")).Error; err != nil {
-		return fmt.Errorf("(Repository: decrementPlayerStats) - failed to decrement loser's losses: %w", err)
+		return fmt.Errorf("failed to decrement loser's losses: %w", err)
 	}
 	return nil
 }

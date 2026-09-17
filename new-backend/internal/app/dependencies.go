@@ -39,6 +39,7 @@ type Services struct {
 
 	PoolEntryService services.PoolEntryService
 	PlayerService    services.PlayerService
+	SpectatorService services.SpectatorService
 	DraftPickService services.DraftPickService
 	ClaimService     services.ClaimService
 }
@@ -55,6 +56,7 @@ type Controllers struct {
 
 	PoolEntryController controllers.PoolEntryController
 	PlayerController    controllers.PlayerController
+	SpectatorController controllers.SpectatorController
 	DraftPickController controllers.DraftPickController
 	ClaimController     controllers.ClaimController
 }

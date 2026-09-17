@@ -15,6 +15,7 @@ var (
 	ErrPoolEntryNotFound      = errors.New("pool entry not found")
 	ErrClaimNotFound          = errors.New("claim not found")
 	ErrDraftPickNotFound      = errors.New("draft pick not found")
+	ErrSpectatorNotFound      = errors.New("spectator not found")
 
 	// Player creation specific errors
 	ErrUserAlreadyInLeague  = errors.New("user is already a player in this league")
@@ -22,6 +23,11 @@ var (
 	ErrTeamNameTaken        = errors.New("the team name is already taken in this league")
 	ErrFailedToCreatePlayer = errors.New("failed to add player to league")
 	ErrLeagueFull           = errors.New("league has reached its maximum player capacity")
+
+	// Spectator errors
+	ErrUserAlreadySpectator    = errors.New("user is already a spectator in this league")
+	ErrOwnerSpectatorJoin      = errors.New("the league owner is currently a spectator and cannot join as a player")
+	ErrCannotDemoteLeagueOwner = errors.New("the league owner cannot be demoted")
 
 	// Authorization errors
 	ErrUnauthorized           = errors.New("unauthorized: you do not have permission to perform this action")

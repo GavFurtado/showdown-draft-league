@@ -116,20 +116,20 @@ func (s *authServiceImpl) HandleDiscordCallback(ctx context.Context, code string
 func getDiscordUserInfo(accessToken string) (*responses.DiscordUserResponse, error) {
 	req, err := http.NewRequest("GET", "https://discord.com/api/v10/users/@me", nil)
 	if err != nil {
-		return nil, fmt.Errorf("(Error: getDiscordUserInfo) - Failed to create Discord user info request: %w", err)
+		return nil, fmt.Errorf("Failed to create Discord user info request: %w", err)
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("(Error: getDiscordUserInfo) - Failed to create Discord user info request: %w", err)
+		return nil, fmt.Errorf("Failed to create Discord user info request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("(Error: getDiscordUserInfo) - Discord API returned non-OK status: %d, body: %s",
+		return nil, fmt.Errorf("Discord API returned non-OK status: %d, body: %s",
 			resp.StatusCode, string(bodyBytes))
 	}
 

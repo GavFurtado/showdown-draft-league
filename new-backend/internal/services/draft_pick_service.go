@@ -45,7 +45,7 @@ func (s *draftPickServiceImpl) GetByID(id uuid.UUID) (*models.DraftPick, error) 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, types.ErrDraftPickNotFound
 		}
-		s.logger.Error("GetByID - failed", "error", err)
+		s.logger.Error("Failed to get draft pick", "error", err)
 		return nil, types.ErrInternalService
 	}
 	return pick, nil
@@ -54,7 +54,7 @@ func (s *draftPickServiceImpl) GetByID(id uuid.UUID) (*models.DraftPick, error) 
 func (s *draftPickServiceImpl) GetByDraft(draftID uuid.UUID) ([]models.DraftPick, error) {
 	picks, err := s.draftPickRepo.GetByDraft(draftID)
 	if err != nil {
-		s.logger.Error("GetByDraft - failed", "error", err)
+		s.logger.Error("Failed to get draft picks for draft", "error", err)
 		return nil, types.ErrInternalService
 	}
 	return picks, nil
@@ -63,7 +63,7 @@ func (s *draftPickServiceImpl) GetByDraft(draftID uuid.UUID) ([]models.DraftPick
 func (s *draftPickServiceImpl) GetByPlayer(playerID uuid.UUID) ([]models.DraftPick, error) {
 	picks, err := s.draftPickRepo.GetByPlayer(playerID)
 	if err != nil {
-		s.logger.Error("GetByPlayer - failed", "error", err)
+		s.logger.Error("Failed to get draft picks for player", "error", err)
 		return nil, types.ErrInternalService
 	}
 	return picks, nil
@@ -72,7 +72,7 @@ func (s *draftPickServiceImpl) GetByPlayer(playerID uuid.UUID) ([]models.DraftPi
 func (s *draftPickServiceImpl) GetCountByDraft(draftID uuid.UUID) (int64, error) {
 	count, err := s.draftPickRepo.GetCountByDraft(draftID)
 	if err != nil {
-		s.logger.Error("GetCountByDraft - failed", "error", err)
+		s.logger.Error("Failed to count draft picks for draft", "error", err)
 		return 0, types.ErrInternalService
 	}
 	return count, nil

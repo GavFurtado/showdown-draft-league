@@ -41,7 +41,7 @@ func NewPlayerRepository(db *gorm.DB) PlayerRepository {
 func (r *playerRepositoryImpl) Create(player *models.Player) (*models.Player, error) {
 	err := r.db.Create(player).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: PlayerRepo.Create) - failed to create player: %w", err)
+		return nil, fmt.Errorf("failed to create player: %w", err)
 	}
 	return player, nil
 }
@@ -50,7 +50,7 @@ func (r *playerRepositoryImpl) GetByID(id uuid.UUID) (*models.Player, error) {
 	var player models.Player
 	err := r.db.First(&player, "id = ?", id).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: PlayerRepo.GetByID) - failed to get player: %w", err)
+		return nil, fmt.Errorf("failed to get player: %w", err)
 	}
 	return &player, nil
 }
@@ -61,7 +61,7 @@ func (r *playerRepositoryImpl) GetByUserAndLeague(userID, leagueID uuid.UUID) (*
 		Where("user_id = ? AND league_id = ?", userID, leagueID).
 		First(&player).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: PlayerRepo.GetByUserAndLeague) - failed: %w", err)
+		return nil, fmt.Errorf("failed to get player by user and league: %w", err)
 	}
 	return &player, nil
 }
@@ -73,7 +73,7 @@ func (r *playerRepositoryImpl) GetByLeague(leagueID uuid.UUID) ([]models.Player,
 		Order("draft_position ASC").
 		Find(&players).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: PlayerRepo.GetByLeague) - failed: %w", err)
+		return nil, fmt.Errorf("failed to get players for league: %w", err)
 	}
 	return players, nil
 }
@@ -85,7 +85,7 @@ func (r *playerRepositoryImpl) GetByLeagueAndGroup(leagueID uuid.UUID, groupNumb
 		Order("draft_position ASC").
 		Find(&players).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: PlayerRepo.GetByLeagueAndGroup) - failed: %w", err)
+		return nil, fmt.Errorf("failed to get players for league group: %w", err)
 	}
 	return players, nil
 }
@@ -96,7 +96,7 @@ func (r *playerRepositoryImpl) GetByUser(userID uuid.UUID) ([]models.Player, err
 		Where("user_id = ?", userID).
 		Find(&players).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: PlayerRepo.GetByUser) - failed: %w", err)
+		return nil, fmt.Errorf("failed to get players for user: %w", err)
 	}
 	return players, nil
 }
@@ -104,7 +104,7 @@ func (r *playerRepositoryImpl) GetByUser(userID uuid.UUID) ([]models.Player, err
 func (r *playerRepositoryImpl) Update(player *models.Player) (*models.Player, error) {
 	err := r.db.Model(player).Select("*").Updates(player).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: PlayerRepo.Update) - failed: %w", err)
+		return nil, fmt.Errorf("failed to update player: %w", err)
 	}
 	return r.GetByID(player.ID)
 }
@@ -114,7 +114,7 @@ func (r *playerRepositoryImpl) UpdateDraftPoints(playerID uuid.UUID, points int)
 		Where("id = ?", playerID).
 		Update("draft_points", points).Error
 	if err != nil {
-		return fmt.Errorf("(Error: PlayerRepo.UpdateDraftPoints) - failed: %w", err)
+		return fmt.Errorf("failed to update player draft points: %w", err)
 	}
 	return nil
 }
@@ -127,7 +127,7 @@ func (r *playerRepositoryImpl) UpdateRecord(playerID uuid.UUID, wins, losses int
 			"losses": losses,
 		}).Error
 	if err != nil {
-		return fmt.Errorf("(Error: PlayerRepo.UpdateRecord) - failed: %w", err)
+		return fmt.Errorf("failed to update player record: %w", err)
 	}
 	return nil
 }
@@ -137,7 +137,7 @@ func (r *playerRepositoryImpl) UpdateDraftPosition(playerID uuid.UUID, position 
 		Where("id = ?", playerID).
 		Update("draft_position", position).Error
 	if err != nil {
-		return fmt.Errorf("(Error: PlayerRepo.UpdateDraftPosition) - failed: %w", err)
+		return fmt.Errorf("failed to update player draft position: %w", err)
 	}
 	return nil
 }
@@ -147,7 +147,7 @@ func (r *playerRepositoryImpl) UpdateRole(playerID uuid.UUID, role rbac.MemberRo
 		Where("id = ?", playerID).
 		Update("role", role).Error
 	if err != nil {
-		return fmt.Errorf("(Error: PlayerRepo.UpdateRole) - failed: %w", err)
+		return fmt.Errorf("failed to update player role: %w", err)
 	}
 	return nil
 }
@@ -158,7 +158,7 @@ func (r *playerRepositoryImpl) GetCountByLeague(leagueID uuid.UUID) (int64, erro
 		Where("league_id = ?", leagueID).
 		Count(&count).Error
 	if err != nil {
-		return 0, fmt.Errorf("(Error: PlayerRepo.GetCountByLeague) - failed: %w", err)
+		return 0, fmt.Errorf("failed to count players for league: %w", err)
 	}
 	return count, nil
 }
@@ -166,7 +166,7 @@ func (r *playerRepositoryImpl) GetCountByLeague(leagueID uuid.UUID) (int64, erro
 func (r *playerRepositoryImpl) Delete(playerID uuid.UUID) error {
 	err := r.db.Delete(&models.Player{}, "id = ?", playerID).Error
 	if err != nil {
-		return fmt.Errorf("(Error: PlayerRepo.Delete) - failed: %w", err)
+		return fmt.Errorf("failed to delete player: %w", err)
 	}
 	return nil
 }
@@ -177,7 +177,7 @@ func (r *playerRepositoryImpl) IsUserInLeague(userID, leagueID uuid.UUID) (bool,
 		Where("user_id = ? AND league_id = ?", userID, leagueID).
 		Count(&count).Error
 	if err != nil {
-		return false, fmt.Errorf("(Error: PlayerRepo.IsUserInLeague) - failed: %w", err)
+		return false, fmt.Errorf("failed to check player membership in league: %w", err)
 	}
 	return count > 0, nil
 }
@@ -189,7 +189,7 @@ func (r *playerRepositoryImpl) GetWithFullRoster(playerID uuid.UUID) (*models.Pl
 		Preload("Claims").
 		First(&player, "id = ?", playerID).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: PlayerRepo.GetWithFullRoster) - failed: %w", err)
+		return nil, fmt.Errorf("failed to get player with full roster: %w", err)
 	}
 	return &player, nil
 }
@@ -203,7 +203,7 @@ func (r *playerRepositoryImpl) FindByUserAndLeague(userID, leagueID uuid.UUID) (
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("(Error: PlayerRepo.FindByUserAndLeague) - failed: %w", err)
+		return nil, fmt.Errorf("failed to find player by user and league: %w", err)
 	}
 	return &player, nil
 }
@@ -217,7 +217,7 @@ func (r *playerRepositoryImpl) FindByInLeagueName(name string, leagueID uuid.UUI
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("(Error: PlayerRepo.FindByInLeagueName) - failed: %w", err)
+		return nil, fmt.Errorf("failed to find player by in-league name: %w", err)
 	}
 	return &player, nil
 }
@@ -231,7 +231,7 @@ func (r *playerRepositoryImpl) FindByTeamName(name string, leagueID uuid.UUID) (
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("(Error: PlayerRepo.FindByTeamName) - failed: %w", err)
+		return nil, fmt.Errorf("failed to find player by team name: %w", err)
 	}
 	return &player, nil
 }

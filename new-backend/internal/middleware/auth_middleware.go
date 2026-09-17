@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/types"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type AuthMiddlewareDependencies struct {
@@ -45,8 +47,8 @@ func AuthMiddleware(
 
 		user, err := deps.UserRepo.GetUserByID(userID)
 		if err != nil {
-			if err.Error() == "record not found" {
-				GetLogger(ctx).Warn("user ID not found in DB", "user_id", userID, "error", err)
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				GetLogger(ctx).Warn("user ID not found", "user_id", userID, "error", err)
 				ctx.AbortWithStatusJSON(http.StatusUnauthorized, responses.NewErrorResponse(http.StatusUnauthorized, "User not found", ctx.Request.URL.Path))
 				return
 			}
@@ -93,7 +95,7 @@ func LeagueRBACMiddleware(
 		}
 
 		// Check if the user has the required permission for the league
-		player, ok, err := deps.RBACService.CanAccess(currentUser.ID, leagueID, requiredPermission)
+		ok, err := deps.RBACService.CanAccess(currentUser.ID, leagueID, requiredPermission)
 		if err != nil {
 			if err == types.ErrInternalService {
 				ctx.AbortWithStatusJSON(http.StatusInternalServerError, responses.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", ctx.Request.URL.Path))
@@ -108,13 +110,6 @@ func LeagueRBACMiddleware(
 			return
 		}
 
-		// Set playerID and player role and player in the context for downstream handlers
-		if player != nil {
-			ctx.Set("playerID", player.ID)
-			ctx.Set("playerRole", player.Role)
-			ctx.Set("player", player)
-		}
-
 		ctx.Next()
 	}
 }
@@ -122,8 +117,8 @@ func LeagueRBACMiddleware(
 // extractToken retrieves the JWT from the Authorization header first, falling back to cookie.
 func extractToken(ctx *gin.Context) string {
 	auth := ctx.GetHeader("Authorization")
-	if strings.HasPrefix(auth, "Bearer ") {
-		return strings.TrimPrefix(auth, "Bearer ")
+	if after, ok := strings.CutPrefix(auth, "Bearer "); ok {
+		return after
 	}
 	token, err := ctx.Cookie("token")
 	if err != nil {
@@ -132,7 +127,7 @@ func extractToken(ctx *gin.Context) string {
 	return token
 }
 
-// Helper for Controllers to get current user context
+// GetUserFromContext Helper for Controllers to get current user context
 func GetUserFromContext(ctx *gin.Context) (*models.User, bool) {
 	val, exists := ctx.Get("currentUser")
 	if !exists {

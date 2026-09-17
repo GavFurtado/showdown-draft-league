@@ -92,7 +92,7 @@ func NewServices(logger *slog.Logger, repos *Repositories, cfg *config.Config, d
 		WebhookService:        webhookService,
 		LeagueService:         leagueService,
 		AuthService:           services.NewAuthService(logger, repos.UserRepository, jwtService, discordOauthConfig),
-		DevAuthService:        services.NewDevAuthService(logger, repos.UserRepository, repos.LeagueRepository, repos.PlayerRepository, jwtService),
+		DevAuthService:        services.NewDevAuthService(logger, repos.UserRepository, repos.LeagueRepository, repos.PlayerRepository, repos.SpectatorRepository, jwtService),
 		DraftService:          draftService,
 		PokemonSpeciesService: services.NewPokemonSpeciesService(logger, repos.PokemonSpeciesRepository),
 		SchedulerService:      schedulerService,
@@ -100,7 +100,8 @@ func NewServices(logger *slog.Logger, repos *Repositories, cfg *config.Config, d
 		TransferService:       transferService,
 
 		PoolEntryService: services.NewPoolEntryService(logger, repos.PoolEntryRepository, repos.LeagueRepository, repos.UserRepository, repos.PokemonSpeciesRepository),
-		PlayerService:    services.NewPlayerService(logger, repos.PlayerRepository, repos.LeagueRepository, repos.UserRepository),
+		PlayerService:    services.NewPlayerService(logger, repos.PlayerRepository, repos.LeagueRepository, repos.UserRepository, repos.SpectatorRepository),
+		SpectatorService: services.NewSpectatorService(logger, repos.SpectatorRepository, repos.PlayerRepository, repos.LeagueRepository),
 		DraftPickService: services.NewDraftPickService(logger, repos.DraftPickRepository, repos.DraftRepository),
 		ClaimService:     services.NewClaimService(logger, repos.ClaimRepository),
 	}
@@ -119,6 +120,7 @@ func NewControllers(logger *slog.Logger, services *Services, repos *Repositories
 
 		PoolEntryController: controllers.NewPoolEntryController(logger, services.PoolEntryService),
 		PlayerController:    controllers.NewPlayerController(logger, services.PlayerService),
+		SpectatorController: controllers.NewSpectatorController(logger, services.SpectatorService),
 		DraftPickController: controllers.NewDraftPickController(logger, services.DraftPickService, services.DraftService),
 		ClaimController:     controllers.NewClaimController(logger, services.ClaimService),
 	}

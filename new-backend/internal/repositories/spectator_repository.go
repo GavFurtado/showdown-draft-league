@@ -4,15 +4,19 @@ import (
 	"fmt"
 
 	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/models"
+	"github.com/GavFurtado/showdown-draft-league/new-backend/internal/rbac"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type SpectatorRepository interface {
 	Create(spectator *models.Spectator) (*models.Spectator, error)
+	GetByID(id uuid.UUID) (*models.Spectator, error)
 	GetByUserAndLeague(userID, leagueID uuid.UUID) (*models.Spectator, error)
 	GetByLeague(leagueID uuid.UUID) ([]models.Spectator, error)
 	GetByUser(userID uuid.UUID) ([]models.Spectator, error)
+	Update(spectator *models.Spectator) (*models.Spectator, error)
+	UpdateRole(spectatorID uuid.UUID, role rbac.MemberRole) error
 	Delete(spectatorID uuid.UUID) error
 }
 
@@ -27,16 +31,25 @@ func NewSpectatorRepository(db *gorm.DB) SpectatorRepository {
 func (r *spectatorRepositoryImpl) Create(spectator *models.Spectator) (*models.Spectator, error) {
 	err := r.db.Create(spectator).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: SpectatorRepo.Create) - failed to create spectator: %w", err)
+		return nil, fmt.Errorf("failed to create spectator: %w", err)
 	}
 	return spectator, nil
+}
+
+func (r *spectatorRepositoryImpl) GetByID(id uuid.UUID) (*models.Spectator, error) {
+	var spectator models.Spectator
+	err := r.db.First(&spectator, "id = ?", id).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to get spectator by ID: %w", err)
+	}
+	return &spectator, nil
 }
 
 func (r *spectatorRepositoryImpl) GetByUserAndLeague(userID, leagueID uuid.UUID) (*models.Spectator, error) {
 	var spectator models.Spectator
 	err := r.db.Where("user_id = ? AND league_id = ?", userID, leagueID).First(&spectator).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: SpectatorRepo.GetByUserAndLeague) - failed: %w", err)
+		return nil, fmt.Errorf("failed to get spectator by user and league: %w", err)
 	}
 	return &spectator, nil
 }
@@ -45,7 +58,7 @@ func (r *spectatorRepositoryImpl) GetByLeague(leagueID uuid.UUID) ([]models.Spec
 	var spectators []models.Spectator
 	err := r.db.Where("league_id = ?", leagueID).Find(&spectators).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: SpectatorRepo.GetByLeague) - failed: %w", err)
+		return nil, fmt.Errorf("failed to get spectators for league: %w", err)
 	}
 	return spectators, nil
 }
@@ -54,15 +67,33 @@ func (r *spectatorRepositoryImpl) GetByUser(userID uuid.UUID) ([]models.Spectato
 	var spectators []models.Spectator
 	err := r.db.Where("user_id = ?", userID).Find(&spectators).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: SpectatorRepo.GetByUser) - failed: %w", err)
+		return nil, fmt.Errorf("failed to get spectators for user: %w", err)
 	}
 	return spectators, nil
+}
+
+func (r *spectatorRepositoryImpl) Update(spectator *models.Spectator) (*models.Spectator, error) {
+	err := r.db.Model(spectator).Select("*").Updates(spectator).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to update spectator: %w", err)
+	}
+	return spectator, nil
+}
+
+func (r *spectatorRepositoryImpl) UpdateRole(spectatorID uuid.UUID, role rbac.MemberRole) error {
+	err := r.db.Model(&models.Spectator{}).
+		Where("id = ?", spectatorID).
+		Update("role", role).Error
+	if err != nil {
+		return fmt.Errorf("failed to update spectator role: %w", err)
+	}
+	return nil
 }
 
 func (r *spectatorRepositoryImpl) Delete(spectatorID uuid.UUID) error {
 	err := r.db.Delete(&models.Spectator{}, "id = ?", spectatorID).Error
 	if err != nil {
-		return fmt.Errorf("(Error: SpectatorRepo.Delete) - failed to delete spectator: %w", err)
+		return fmt.Errorf("failed to delete spectator: %w", err)
 	}
 	return nil
 }

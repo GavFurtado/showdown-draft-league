@@ -1,18 +1,20 @@
 package rbac
 
+import "slices"
+
 // Permission represents a granular action:resource permission.
 type Permission string
 
 // Define permission constants
 const (
 	// League Permissions
-	// This PermissionCreateLeague is redundant; Permissions are assigned to member (player/spectator) and not to Users.
-	// A League is first created then a member
-	// creating a League is tied to User and not a Player or their role. Kept in to understand the roles
-	PermissionCreateLeague Permission = "create:league"
 	PermissionReadLeague   Permission = "read:league"
 	PermissionUpdateLeague Permission = "update:league"
 	PermissionDeleteLeague Permission = "delete:league"
+	// This PermissionCreateLeague is redundant; Permissions are assigned to member (player/spectator) and not to Users.
+	// and creating a League is something the User does and not a member.
+	// A League is first created then a member. Keeping this in to understand the roles
+	PermissionCreateLeague Permission = "create:league"
 
 	// PoolEntry Permissions
 	PermissionCreatePoolEntry Permission = "create:pool_entry"
@@ -24,8 +26,19 @@ const (
 	PermissionCreatePlayer      Permission = "create:player"
 	PermissionReadPlayer        Permission = "read:player"
 	PermissionUpdatePlayer      Permission = "update:player"
+	PermissionUpdateOwnPlayer   Permission = "update:own_player"
 	PermissionUpdatePlayerScore Permission = "update:member_score"
 	PermissionDeletePlayer      Permission = "delete:player"
+
+	// Spectator Permissions
+	PermissionCreateSpectator    Permission = "create:spectator"
+	PermissionReadSpectator      Permission = "read:spectator"
+	PermissionUpdateSpectator    Permission = "update:spectator"
+	PermissionUpdateOwnSpectator Permission = "update:own_spectator"
+	PermissionDeleteSpectator    Permission = "delete:spectator"
+
+	// Role Permissions
+	PermissionUpdateRole Permission = "update:role"
 
 	// DraftPick Permissions
 	PermissionReadDraftPick   Permission = "read:draft_pick"
@@ -82,88 +95,142 @@ const (
 	PermissionReadPokemonSpecies Permission = "read:pokemon_species"
 )
 
+// participationPermissions are Player-only: actions tied to actively playing
+// (drafting, claiming, picking up/set Pokémon, editing your own player profile).
+// Spectator roles are derived from their player counterparts by removing exactly
+// these, so a spectator's role can never grant participation.
+var participationPermissions = []Permission{
+	PermissionCreateDraftPick,
+	PermissionCreateClaim,
+	PermissionUpdateClaim,
+	PermissionCreateDraftedPokemon,
+	PermissionReleaseDraftedPokemon,
+	PermissionUpdateOwnPlayer,
+}
+
+// readPermissions are what a Viewer (expiring read-only spectator) may do.
+var readPermissions = []Permission{
+	PermissionReadLeague,
+	PermissionReadPoolEntry,
+	PermissionReadPlayer,
+	PermissionReadSpectator,
+	PermissionReadDraftPick,
+	PermissionReadClaim,
+	PermissionReadDraft,
+	PermissionReadLeaguePokemon,
+	PermissionReadDraftedPokemon,
+	PermissionReadGame,
+	PermissionReadUser,
+	PermissionReadPlayerRoster,
+	PermissionReadPokemonSpecies,
+}
+
+func IsParticipationPermission(permission Permission) bool {
+	return slices.Contains(participationPermissions, permission)
+}
+
+func IsReadPermission(permission Permission) bool {
+	return slices.Contains(readPermissions, permission)
+}
+
+// basePermissions are shared standing grants: everything a REGULAR Player can do.
+var basePermissions = []Permission{
+	PermissionReadLeague,
+	PermissionReadPoolEntry,
+	PermissionReadPlayer,
+	PermissionReadSpectator,
+	PermissionReadDraftPick,
+	PermissionReadClaim,
+	PermissionReadDraft,
+	PermissionReadLeaguePokemon,
+	PermissionReadDraftedPokemon,
+	PermissionReadGame,
+	PermissionReadUser,
+	PermissionReadPlayerRoster,
+	PermissionReadPokemonSpecies,
+	PermissionReportGame,
+	PermissionUpdateRole,
+	PermissionUpdateOwnSpectator,
+}
+
+// moderatorPermissions are the standing grants MODERATOR adds over REGULAR.
+var moderatorPermissions = []Permission{
+	PermissionUpdatePlayer,
+	PermissionUpdatePlayerScore,
+	PermissionUpdateSpectator,
+	PermissionCreateSpectator,
+	PermissionDeleteSpectator,
+	PermissionUpdateLeague,
+	PermissionUpdateDraft,
+	PermissionUpdateLeaguePokemon,
+	PermissionUpdateDraftedPokemon,
+	PermissionUpdateGame,
+	PermissionCreatePlayer,
+	PermissionCreateLeaguePokemon,
+	PermissionCreateGame,
+	PermissionDeleteGame,
+	PermissionStartTransferPeriod,
+	PermissionEndTransferPeriod,
+	PermissionFinalizeGame,
+	PermissionCreatePoolEntry,
+	PermissionUpdatePoolEntry,
+}
+
+// ownerPermissions are the standing grants OWNER adds over MODERATOR.
+var ownerPermissions = []Permission{
+	PermissionCreateLeague,
+	PermissionDeleteLeague,
+	PermissionDeletePlayer,
+	PermissionDeleteDraft,
+	PermissionDeleteLeaguePokemon,
+	PermissionDeleteDraftedPokemon,
+	PermissionUpdateUser,
+	PermissionDeleteUser,
+	PermissionCreateDraft,
+	PermissionCreatePlayerRoster,
+	PermissionDeletePlayerRoster,
+	PermissionUpdatePlayerRoster,
+	PermissionDeletePoolEntry,
+}
+
 var rolePermissions = make(map[MemberRole]map[Permission]bool)
 
 func init() {
 	// Initialize permissions for each role
-	rolePermissions[MRoleMember] = make(map[Permission]bool)
-	rolePermissions[MRoleModerator] = make(map[Permission]bool)
-	rolePermissions[MRoleOwner] = make(map[Permission]bool)
+	for _, role := range []MemberRole{
+		MRoleRegular, MRoleModerator, MRoleOwner,
+		MRoleSpectator, MRoleSpectatorModerator, MRoleSpectatorOwner,
+	} {
+		rolePermissions[role] = make(map[Permission]bool)
+	}
 
-	setPermissions(
-		MRoleMember,
-		PermissionReadLeague,
-		PermissionReadPlayer,
-		PermissionReadDraft,
-		PermissionReadLeaguePokemon,
-		PermissionReadDraftedPokemon,
-		PermissionReadGame,
-		PermissionReadUser,
-		PermissionReadPlayerRoster,
-		PermissionReadPokemonSpecies,
-		PermissionReleaseDraftedPokemon,
-		PermissionUpdatePlayer,
-		PermissionCreateDraftedPokemon,
-		PermissionReportGame,
-
-		PermissionReadPoolEntry,
-		PermissionReadPlayer,
-		PermissionUpdatePlayer,
-		PermissionReadDraftPick,
-		PermissionCreateDraftPick,
-		PermissionReadClaim,
-		PermissionCreateClaim,
-		PermissionUpdateClaim,
-	)
-
-	inheritPermissions(MRoleModerator, MRoleMember)
-	setPermissions(
-		MRoleModerator,
-		PermissionUpdatePlayerScore,
-		PermissionUpdateLeague,
-		PermissionUpdateDraft,
-		PermissionUpdateLeaguePokemon,
-		PermissionUpdateDraftedPokemon,
-		PermissionUpdateGame,
-		PermissionCreatePlayer,
-		PermissionCreateLeaguePokemon,
-		PermissionCreateGame,
-		PermissionDeleteGame,
-		PermissionStartTransferPeriod,
-		PermissionEndTransferPeriod,
-		PermissionFinalizeGame,
-
-		PermissionCreatePoolEntry,
-		PermissionUpdatePoolEntry,
-		PermissionCreatePlayer,
-		PermissionUpdatePlayerScore,
-	)
-
+	// Player roles: establish standing grants first.
+	setPermissions(MRoleRegular, basePermissions)
+	setPermissions(MRoleRegular, participationPermissions)
+	inheritPermissions(MRoleModerator, MRoleRegular)
+	setPermissions(MRoleModerator, moderatorPermissions)
 	inheritPermissions(MRoleOwner, MRoleModerator)
-	setPermissions(
-		MRoleOwner,
-		PermissionCreateLeague,
-		PermissionDeleteLeague,
-		PermissionDeletePlayer,
-		PermissionDeleteDraft,
-		PermissionDeleteLeaguePokemon,
-		PermissionDeleteDraftedPokemon,
-		PermissionUpdateUser,
-		PermissionDeleteUser,
-		PermissionCreateLeaguePokemon,
-		PermissionCreateDraft,
-		PermissionCreatePlayerRoster,
-		PermissionDeletePlayerRoster,
-		PermissionUpdatePlayerRoster,
+	setPermissions(MRoleOwner, ownerPermissions)
 
-		PermissionDeletePoolEntry,
-		PermissionDeletePlayer,
-	)
+	// Spectator roles: Derivative of the matching player role, minus
+	// participation, a spectator's role can never grant drafting/claims.
+	inheritPermissions(MRoleSpectator, MRoleRegular)
+	removePermissions(MRoleSpectator, participationPermissions)
+	inheritPermissions(MRoleSpectatorModerator, MRoleModerator)
+	removePermissions(MRoleSpectatorModerator, participationPermissions)
+	inheritPermissions(MRoleSpectatorOwner, MRoleOwner)
+	removePermissions(MRoleSpectatorOwner, participationPermissions)
 }
 
-func setPermissions(role MemberRole, perms ...Permission) {
+func setPermissions(role MemberRole, perms []Permission) {
 	for _, perm := range perms {
 		rolePermissions[role][perm] = true
+	}
+}
+
+func removePermissions(role MemberRole, perms []Permission) {
+	for _, perm := range perms {
+		delete(rolePermissions[role], perm)
 	}
 }
 

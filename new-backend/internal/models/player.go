@@ -24,7 +24,7 @@ type Player struct {
 	DraftPosition   int             `gorm:"default:1;column:draft_position" json:"DraftPosition"` // turn order of player pick
 	GroupNumber     int             `gorm:"default:1;column:group_number" json:"GroupNumber"`     // group to which player belongs to
 	SkipsLeft       int             `gorm:"column:skips_left" json:"SkipsLeft"`
-	Role            rbac.MemberRole `gorm:"type:varchar(20);not null;default:'MEMBER';column:role" json:"Role"`
+	Role            rbac.MemberRole `gorm:"type:varchar(20);not null;default:'REGULAR';column:role" json:"Role"`
 	CreatedAt       time.Time       `gorm:"column:created_at" json:"CreatedAt"`
 	UpdatedAt       time.Time       `gorm:"column:updated_at" json:"UpdatedAt"`
 	DeletedAt       gorm.DeletedAt  `gorm:"index;column:deleted_at" json:"-"`

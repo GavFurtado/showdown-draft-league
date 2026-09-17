@@ -13,7 +13,7 @@ type Spectator struct {
 	UserID       uuid.UUID       `gorm:"type:uuid;not null;column:user_id;uniqueIndex:idx_spectator_user_league" json:"UserID"`
 	LeagueID     uuid.UUID       `gorm:"type:uuid;not null;column:league_id;uniqueIndex:idx_spectator_user_league" json:"LeagueID"`
 	InLeagueName *string         `gorm:"column:in_league_name" json:"InLeagueName"`
-	Role         rbac.MemberRole `gorm:"type:varchar(20);not null;default:'MEMBER';column:role" json:"Role"`
+	Role         rbac.MemberRole `gorm:"type:varchar(20);not null;default:'SPECTATOR';column:role" json:"Role"`
 	IsViewer     bool            `gorm:"not null;default:false;column:is_viewer" json:"IsViewer"`
 	ExpiresAt    *time.Time      `gorm:"type:timestamp with time zone;column:expires_at" json:"ExpiresAt"`
 	CreatedAt    *time.Time      `gorm:"type:timestamp with time zone;column:created_at" json:"CreatedAt"`
@@ -38,4 +38,9 @@ func (m *Spectator) IsModerator() bool {
 // Can checks if the spectator's role has a specific permission.
 func (m *Spectator) Can(permission rbac.Permission) bool {
 	return m.Role.HasPermission(permission)
+}
+
+// IsExpired reports whether the spectator's access has lapsed.
+func (m *Spectator) IsExpired() bool {
+	return m.ExpiresAt != nil && m.ExpiresAt.Before(time.Now())
 }

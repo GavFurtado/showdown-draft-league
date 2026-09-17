@@ -44,7 +44,7 @@ func (s *userServiceImpl) GetMyProfile(userID uuid.UUID) (*models.User, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, types.ErrUserNotFound
 		}
-		s.logger.Error("GetMyProfileHandler - failed to get user from repository", "user_id", userID, "error", err)
+		s.logger.Error("Failed to get user from repository", "user_id", userID, "error", err)
 		return nil, types.ErrInternalService
 	}
 	return user, nil
@@ -57,7 +57,7 @@ func (s *userServiceImpl) GetMyDiscordDetails(userID uuid.UUID) (*responses.Disc
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, types.ErrUserNotFound
 		}
-		s.logger.Error("GetMyDiscordDetailsHandler - failed to get user from repository", "user_id", userID, "error", err)
+		s.logger.Error("Failed to get user from repository", "user_id", userID, "error", err)
 		return nil, types.ErrInternalService
 	}
 
@@ -79,7 +79,7 @@ func (s *userServiceImpl) UpdateProfile(userID uuid.UUID, input requests.UserUpd
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, types.ErrUserNotFound
 		}
-		s.logger.Error("UpdateProfileHandler - user fetch failed", "error", err.Error())
+		s.logger.Error("User fetch failed", "error", err.Error())
 		return nil, types.ErrInternalService
 	}
 
@@ -89,7 +89,7 @@ func (s *userServiceImpl) UpdateProfile(userID uuid.UUID, input requests.UserUpd
 
 	updatedUser, err := s.userRepo.UpdateUser(user)
 	if err != nil {
-		s.logger.Error("UpdateProfileHandler - update failed", "error", err)
+		s.logger.Error("Update failed", "error", err)
 		return nil, types.ErrInternalService
 	}
 

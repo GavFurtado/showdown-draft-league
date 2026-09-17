@@ -19,7 +19,7 @@ import (
 type draftServiceMocks struct {
 	draftRepo        *mock_repositories.MockDraftRepository
 	leagueRepo       *mock_repositories.MockLeagueRepository
-	playerRepo *mock_repositories.MockPlayerRepository
+	playerRepo       *mock_repositories.MockPlayerRepository
 	schedulerService *mock_services.MockSchedulerService
 
 	poolEntryRepo *mock_repositories.MockPoolEntryRepository
@@ -31,7 +31,7 @@ func setupDraftServiceTest() (services.DraftService, draftServiceMocks) {
 	mocks := draftServiceMocks{
 		draftRepo:        new(mock_repositories.MockDraftRepository),
 		leagueRepo:       new(mock_repositories.MockLeagueRepository),
-		playerRepo: new(mock_repositories.MockPlayerRepository),
+		playerRepo:       new(mock_repositories.MockPlayerRepository),
 		schedulerService: new(mock_services.MockSchedulerService),
 		poolEntryRepo:    new(mock_repositories.MockPoolEntryRepository),
 		draftPickRepo:    new(mock_repositories.MockDraftPickRepository),

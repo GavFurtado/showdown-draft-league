@@ -65,7 +65,7 @@ func (r *leagueRepositoryImpl) GetLeaguesByStatuses(statuses []enums.LeagueStatu
 func (r *leagueRepositoryImpl) CreateLeague(league *models.League) (*models.League, error) {
 	err := r.db.Create(league).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: CreateLeague) - failed to create league: %v", err)
+		return nil, fmt.Errorf("failed to create league: %v", err)
 	}
 	return league, nil
 }
@@ -148,7 +148,7 @@ func (r *leagueRepositoryImpl) GetLeaguesByUser(userID uuid.UUID) ([]models.Leag
 func (r *leagueRepositoryImpl) UpdateLeague(league *models.League) (*models.League, error) {
 	err := r.db.Updates(league).Error
 	if err != nil {
-		return nil, fmt.Errorf("(Error: UpdateLeague) - failed to update league: %v", err)
+		return nil, fmt.Errorf("failed to update league: %v", err)
 	}
 
 	return r.GetLeagueByID(league.ID)
@@ -158,7 +158,7 @@ func (r *leagueRepositoryImpl) UpdateLeague(league *models.League) (*models.Leag
 func (r *leagueRepositoryImpl) DeleteLeague(leagueId uuid.UUID) error {
 	tx := r.db.Begin()
 	if tx.Error != nil {
-		return fmt.Errorf("(Error: DeleteLeague) - failed to start transaction: %w", tx.Error)
+		return fmt.Errorf("failed to start transaction to delete league: %w", tx.Error)
 	}
 	defer func() {
 		if r := recover(); r != nil {
@@ -169,13 +169,13 @@ func (r *leagueRepositoryImpl) DeleteLeague(leagueId uuid.UUID) error {
 	// Soft delete all players in the league first
 	if err := tx.Where("league_id = ?", leagueId).Delete(&models.Player{}).Error; err != nil {
 		tx.Rollback()
-		return fmt.Errorf("(Error: DeleteLeague) - failed to delete league players: %w", err)
+		return fmt.Errorf("failed to delete league players: %w", err)
 	}
 
 	// Soft delete the league
 	if err := tx.Delete(&models.League{}, "id = ?", leagueId).Error; err != nil {
 		tx.Rollback()
-		return fmt.Errorf("(Error: DeleteLeague) - failed to delete league: %w", err)
+		return fmt.Errorf("failed to delete league: %w", err)
 	}
 
 	return tx.Commit().Error
